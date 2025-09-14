@@ -455,7 +455,7 @@ async function extractAndStoreMemories(userId: string, conversationId: string, u
 }
 
 function extractFactsFromText(text: string): string[] {
-  const facts = [];
+  const facts: string[] = [];
   
   // Extract patterns that look like facts
   const patterns = [
