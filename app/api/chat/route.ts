@@ -5,6 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ConversationLogger } from '@/lib/conversation-logger';
+import { MessageReferenceSystem } from '@/lib/message-reference-system';
+import { SessionContinuitySystem } from '@/lib/session-continuity-system';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 
@@ -69,6 +71,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<ChatResponse 
   let conversationId: string | undefined;
   let userMessage = '';
   let assistantResponse = '';
+  const messageSystem = MessageReferenceSystem.getInstance();
+  const continuitySystem = SessionContinuitySystem.getInstance();
   
   try {
     const requestData: ChatRequest = await req.json();
@@ -141,18 +145,49 @@ export async function POST(req: NextRequest): Promise<NextResponse<ChatResponse 
     assistantResponse = completion.choices[0]?.message?.content || '';
     const tokensUsed = completion.usage?.total_tokens || 0;
     
+    // Monitor token usage for auto-export
+    await continuitySystem.monitorTokenUsage(conversationId, userId, tokensUsed);
+    
     if (!assistantResponse) {
       throw new Error('Empty response from OpenAI');
     }
     
-    // Store messages with enhanced metadata
+    // Store messages with enhanced metadata using MessageReferenceSystem
+    const [userMessageRef, assistantMessageRef] = await Promise.all([
+      messageSystem.storeMessage(
+        conversationId, 
+        userId, 
+        'user', 
+        userMessage, 
+        {
+          intent: analyzeUserIntent(userMessage),
+          complexity: calculateMessageComplexity(userMessage)
+        },
+        projectId
+      ),
+      messageSystem.storeMessage(
+        conversationId, 
+        userId, 
+        'assistant', 
+        assistantResponse, 
+        {
+          tokens: tokensUsed,
+          model: completion.model,
+          references: messageSystem.parseMessageReferences(assistantResponse)
+        },
+        projectId
+      )
+    ]);
+    
+    // Also store in original format for backward compatibility
     await Promise.all([
       storeMessage(conversationId, 'user', userMessage, {
         context: enhancedContext,
         metadata: {
           length: userMessage.length,
           intent: analyzeUserIntent(userMessage),
-          complexity: calculateMessageComplexity(userMessage)
+          complexity: calculateMessageComplexity(userMessage),
+          reference_id: userMessageRef.id
         }
       }),
       storeMessage(conversationId, 'assistant', assistantResponse, {
@@ -162,7 +197,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<ChatResponse 
           tokens_used: tokensUsed,
           model: completion.model,
           processing_time: Date.now() - startTime,
-          auto_actions: analyzeResponseForActions(assistantResponse)
+          auto_actions: analyzeResponseForActions(assistantResponse),
+          reference_id: assistantMessageRef.id
         }
       })
     ]);
