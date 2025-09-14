@@ -201,12 +201,12 @@ export class ConversationLogger {
   
   private static extractFileReferences(text: string): string[] {
     const fileRegex = /\b[\w-]+\.(ts|tsx|js|jsx|json|md|bat|ps1|sql|css|html|py|yml|yaml)\b/gi;
-    return [...new Set(text.match(fileRegex) || [])].slice(0, 10);
+    return Array.from(new Set(text.match(fileRegex) || [])).slice(0, 10);
   }
   
   private static extractSystemCommands(text: string): string[] {
     const cmdRegex = /\b(npm|yarn|git|vercel|docker|cd|mkdir|cp|mv|rm)\s+[^\n]*/gi;
-    return [...new Set(text.match(cmdRegex) || [])].slice(0, 5);
+    return Array.from(new Set(text.match(cmdRegex) || [])).slice(0, 5);
   }
   
   private static analyzeUserIntent(message: string): string {
