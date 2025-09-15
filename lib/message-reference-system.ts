@@ -349,7 +349,12 @@ export class MessageReferenceSystem {
       const decisions: Decision[] = [];
       data?.forEach(row => {
         if (row.decisions && Array.isArray(row.decisions)) {
-          const validDecisions = row.decisions.filter((d: any) => d !== null && typeof d === 'object') as Decision[];
+          const validDecisions = (row.decisions as any[]).filter((d: any) => 
+            d !== null && 
+            typeof d === 'object' && 
+            'id' in d && 
+            'description' in d
+          ) as Decision[];
           decisions.push(...validDecisions);
         }
       });
@@ -391,7 +396,13 @@ export class MessageReferenceSystem {
       const actionItems: ActionItem[] = [];
       data?.forEach(row => {
         if (row.action_items && Array.isArray(row.action_items)) {
-          let items = row.action_items.filter((item: any) => item !== null && typeof item === 'object') as ActionItem[];
+          let items = (row.action_items as any[]).filter((item: any) => 
+            item !== null && 
+            typeof item === 'object' &&
+            'id' in item &&
+            'description' in item &&
+            'status' in item
+          ) as ActionItem[];
           if (filters?.status) {
             items = items.filter(item => item.status === filters.status);
           }

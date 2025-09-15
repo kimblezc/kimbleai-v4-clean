@@ -591,7 +591,7 @@ npm run dev
     const nextSteps = [];
     const blockers = [];
     const importantContext = [];
-    const referenceMessages = [];
+    const referenceMessages: string[] = [];
     
     // Analyze last messages for context
     if (lastUserMessage) {
