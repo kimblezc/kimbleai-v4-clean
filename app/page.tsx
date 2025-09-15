@@ -1,4 +1,3 @@
-﻿// Force rebuild: 2025-09-15 23:17:19
 'use client'
 import { useState, useEffect, useRef } from 'react'
 
@@ -27,18 +26,19 @@ export default function Home() {
   const [currentProject, setCurrentProject] = useState<string>('')
   const [currentTags, setCurrentTags] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
-  const [showSidebar, setShowSidebar] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(true)
   const [userId, setUserId] = useState('')
+  const [tagInputValue, setTagInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
-  // Initialize
+  // Initialize on mount
   useEffect(() => {
-    // Load from localStorage
+    // Load conversations from localStorage
     const stored = localStorage.getItem('kimbleai_conversations')
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
-        setConversations(parsed.map((c: any) => ({
+        const reconstituted = parsed.map((c: any) => ({
           ...c,
           createdAt: new Date(c.createdAt),
           updatedAt: new Date(c.updatedAt),
@@ -46,13 +46,14 @@ export default function Home() {
             ...m,
             timestamp: new Date(m.timestamp)
           }))
-        })))
+        }))
+        setConversations(reconstituted)
       } catch (e) {
         console.error('Error loading conversations:', e)
       }
     }
     
-    // Set user ID
+    // Set or get user ID
     let uid = localStorage.getItem('kimbleai_userId')
     if (!uid) {
       uid = 'user_' + Math.random().toString(36).substring(7)
@@ -61,21 +62,21 @@ export default function Home() {
     setUserId(uid)
   }, [])
   
-  // Save conversations
+  // Save conversations when they change
   useEffect(() => {
     if (conversations.length > 0) {
       localStorage.setItem('kimbleai_conversations', JSON.stringify(conversations))
     }
   }, [conversations])
   
-  // Auto-scroll
+  // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
   
   const createNewConversation = () => {
     const newConv: Conversation = {
-      id: 'conv_' + Date.now(),
+      id: 'conv_' + Date.now() + '_' + Math.random().toString(36).substring(7),
       title: 'New Conversation',
       messages: [],
       project: '',
@@ -101,7 +102,6 @@ export default function Home() {
     e.stopPropagation()
     const updated = conversations.filter(c => c.id !== convId)
     setConversations(updated)
-    localStorage.setItem('kimbleai_conversations', JSON.stringify(updated))
     
     if (currentConversationId === convId) {
       setCurrentConversationId(null)
@@ -116,7 +116,7 @@ export default function Home() {
     if (!input.trim() || loading) return
     
     const userMessage: Message = {
-      id: 'msg_' + Date.now(),
+      id: 'msg_' + Date.now() + '_user',
       role: 'user',
       content: input,
       timestamp: new Date()
@@ -128,7 +128,7 @@ export default function Home() {
     
     if (!convId) {
       const newConv: Conversation = {
-        id: 'conv_' + Date.now(),
+        id: 'conv_' + Date.now() + '_' + Math.random().toString(36).substring(7),
         title: input.substring(0, 30) + (input.length > 30 ? '...' : ''),
         messages: [],
         project: currentProject,
@@ -162,7 +162,7 @@ export default function Home() {
       const data = await response.json()
       
       const assistantMessage: Message = {
-        id: 'msg_' + Date.now(),
+        id: 'msg_' + Date.now() + '_assistant',
         role: 'assistant',
         content: data.response,
         timestamp: new Date()
@@ -171,7 +171,7 @@ export default function Home() {
       const finalMessages = [...newMessages, assistantMessage]
       setMessages(finalMessages)
       
-      // Update conversation
+      // Update conversation in state
       const finalConversations = updatedConversations.map(c => {
         if (c.id === convId) {
           return {
@@ -188,158 +188,204 @@ export default function Home() {
       
     } catch (error) {
       console.error('Error:', error)
-      setMessages([...newMessages, {
+      const errorMessage: Message = {
         id: 'msg_error_' + Date.now(),
         role: 'assistant',
-        content: 'Error: Failed to get response',
+        content: 'Error: Failed to get response. Please try again.',
         timestamp: new Date()
-      }])
+      }
+      setMessages([...newMessages, errorMessage])
     } finally {
       setLoading(false)
     }
   }
   
-  const addTag = (tag: string) => {
-    if (tag && !currentTags.includes(tag)) {
-      setCurrentTags([...currentTags, tag])
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInputValue.trim()) {
+      e.preventDefault()
+      const newTag = tagInputValue.trim()
+      if (!currentTags.includes(newTag)) {
+        setCurrentTags([...currentTags, newTag])
+      }
+      setTagInputValue('')
     }
   }
   
+  const removeTag = (tagToRemove: string) => {
+    setCurrentTags(currentTags.filter(tag => tag !== tagToRemove))
+  }
+  
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
-      <div className="bg-gray-800 p-4 border-b border-gray-700 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="flex h-screen bg-gray-900 text-white">
+      {/* Sidebar */}
+      <div className={`${showSidebar ? 'w-64' : 'w-16'} bg-gray-800 transition-all duration-300 flex flex-col`}>
+        <div className="p-4 border-b border-gray-700 flex items-center">
           <button
             onClick={() => setShowSidebar(!showSidebar)}
-            className="p-2 hover:bg-gray-700 rounded"
+            className="p-2 hover:bg-gray-700 rounded text-xl"
+            aria-label="Toggle sidebar"
           >
-            â˜°
+            ☰
           </button>
-          <h1 className="text-xl font-bold">KimbleAI V4</h1>
+          {showSidebar && (
+            <button
+              onClick={createNewConversation}
+              className="ml-3 px-3 py-1 bg-blue-600 rounded hover:bg-blue-700 text-sm"
+            >
+              + New Chat
+            </button>
+          )}
         </div>
         
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Project..."
-            value={currentProject}
-            onChange={(e) => setCurrentProject(e.target.value)}
-            className="px-2 py-1 bg-gray-700 rounded text-sm"
-          />
-          <input
-            type="text"
-            placeholder="Add tag..."
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                addTag(e.currentTarget.value)
-                e.currentTarget.value = ''
-              }
-            }}
-            className="px-2 py-1 bg-gray-700 rounded text-sm"
-          />
-          {currentTags.map(tag => (
-            <span key={tag} className="bg-blue-600 px-2 py-1 rounded text-xs">
-              {tag}
-              <button 
-                onClick={() => setCurrentTags(currentTags.filter(t => t !== tag))}
-                className="ml-1"
-              >
-                Ã—
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
-      
-      <div className="flex">
-        {/* Sidebar */}
         {showSidebar && (
-          <div className="w-64 bg-gray-800 h-screen overflow-y-auto">
-            <div className="p-4">
-              <button
-                onClick={createNewConversation}
-                className="w-full p-2 bg-blue-600 rounded hover:bg-blue-700"
-              >
-                + New Chat
-              </button>
-            </div>
-            
-            <div className="px-4">
-              <h3 className="text-sm text-gray-400 mb-2">History</h3>
-              {conversations.map(conv => (
+          <div className="flex-1 overflow-y-auto p-4">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Conversations</h3>
+            {conversations.length === 0 ? (
+              <p className="text-gray-500 text-sm">No conversations yet</p>
+            ) : (
+              conversations.map(conv => (
                 <div
                   key={conv.id}
                   onClick={() => loadConversation(conv)}
-                  className={`p-2 mb-2 rounded cursor-pointer hover:bg-gray-700 ${
-                    currentConversationId === conv.id ? 'bg-gray-700' : ''
+                  className={`p-3 mb-2 rounded cursor-pointer transition-colors ${
+                    currentConversationId === conv.id 
+                      ? 'bg-gray-700' 
+                      : 'hover:bg-gray-700/50'
                   }`}
                 >
-                  <div className="flex justify-between">
-                    <div className="flex-1">
-                      <div className="text-sm">{conv.title}</div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{conv.title}</div>
                       {conv.project && (
-                        <div className="text-xs text-blue-400">ðŸ“ {conv.project}</div>
+                        <div className="text-xs text-blue-400 mt-1">📁 {conv.project}</div>
                       )}
                       {conv.tags.length > 0 && (
-                        <div className="text-xs text-gray-500">
-                          {conv.tags.join(', ')}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {conv.tags.map(tag => (
+                            <span key={tag} className="text-xs bg-gray-600 px-1.5 py-0.5 rounded">
+                              {tag}
+                            </span>
+                          ))}
                         </div>
                       )}
+                      <div className="text-xs text-gray-500 mt-1">
+                        {conv.updatedAt.toLocaleDateString()}
+                      </div>
                     </div>
                     <button
                       onClick={(e) => deleteConversation(e, conv.id)}
-                      className="text-red-400 hover:text-red-500"
+                      className="ml-2 text-gray-400 hover:text-red-400 text-lg"
+                      aria-label="Delete conversation"
                     >
-                      Ã—
+                      ×
                     </button>
                   </div>
                 </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header with Project and Tags */}
+        <div className="bg-gray-800 p-4 border-b border-gray-700">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-bold">KimbleAI V4</h1>
+            
+            <div className="flex items-center gap-2 ml-auto">
+              <input
+                type="text"
+                placeholder="Project name..."
+                value={currentProject}
+                onChange={(e) => setCurrentProject(e.target.value)}
+                className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500"
+              />
+              
+              <input
+                type="text"
+                placeholder="Add tag (Enter)..."
+                value={tagInputValue}
+                onChange={(e) => setTagInputValue(e.target.value)}
+                onKeyDown={handleAddTag}
+                className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500"
+              />
+              
+              {currentTags.map(tag => (
+                <span key={tag} className="bg-blue-600 px-2 py-1 rounded text-xs flex items-center gap-1">
+                  {tag}
+                  <button 
+                    onClick={() => removeTag(tag)} 
+                    className="hover:text-red-200 text-sm"
+                    aria-label={`Remove tag ${tag}`}
+                  >
+                    ×
+                  </button>
+                </span>
               ))}
             </div>
           </div>
-        )}
+        </div>
         
-        {/* Main Chat */}
-        <div className="flex-1 flex flex-col">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {messages.map((msg) => (
-              <div key={msg.id} className="mb-4">
-                <div className="font-semibold text-blue-400">
-                  {msg.role === 'user' ? 'user' : 'assistant'}:
-                </div>
-                <div className="pl-4 text-white">{msg.content}</div>
-              </div>
-            ))}
-            {loading && <div className="text-yellow-400">Thinking...</div>}
-            <div ref={messagesEndRef} />
-          </div>
-          
-          {/* Input */}
-          <form onSubmit={handleSubmit} className="p-4 bg-gray-800 border-t border-gray-700">
-            <div className="flex gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="flex-1 bg-gray-700 rounded px-4 py-2"
-                placeholder="Type a message..."
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600"
-                disabled={loading || !input.trim()}
-              >
-                Send
-              </button>
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {messages.length === 0 && (
+            <div className="text-gray-500 text-center mt-20">
+              Start a conversation or select one from the sidebar
             </div>
-          </form>
+          )}
           
-          {/* Status */}
-          <div className="bg-gray-900 px-4 py-1 text-xs text-gray-500">
-            user: {userId} | conversations: {conversations.length}
+          {messages.map((msg) => (
+            <div key={msg.id} className="mb-4">
+              <div className={`font-semibold mb-1 ${
+                msg.role === 'user' ? 'text-blue-400' : 'text-green-400'
+              }`}>
+                {msg.role === 'user' ? 'user' : 'assistant'}
+                <span className="text-xs text-gray-500 ml-2">
+                  {msg.timestamp.toLocaleTimeString()}
+                </span>
+              </div>
+              <div className="pl-4 whitespace-pre-wrap text-gray-100">
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          
+          {loading && (
+            <div className="text-yellow-400 animate-pulse">
+              KimbleAI is thinking...
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+        
+        {/* Input Area */}
+        <form onSubmit={handleSubmit} className="p-4 bg-gray-800 border-t border-gray-700">
+          <div className="flex gap-2">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="flex-1 bg-gray-700 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Type a message..."
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+              disabled={loading || !input.trim()}
+            >
+              Send
+            </button>
           </div>
+        </form>
+        
+        {/* Status Bar */}
+        <div className="bg-gray-900 px-4 py-2 text-xs text-gray-500 flex justify-between">
+          <span>user: {userId}</span>
+          <span>conversations: {conversations.length}</span>
+          <span>current: {currentConversationId ? 'active' : 'none'}</span>
         </div>
       </div>
     </div>
