@@ -172,7 +172,7 @@ Current tags: ${tags.join(', ') || 'None'}`;
               conversationId,
               userId: dbUserId,
               messageCount: messages.length,
-              conversationSummary: messages.map(m => m.content).join(' ').substring(0, 500)
+              conversationSummary: messages.map((m: any) => m.content).join(' ').substring(0, 500)
             })
           }).catch(console.error); // Fire and forget
         }
