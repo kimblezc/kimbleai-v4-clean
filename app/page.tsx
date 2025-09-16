@@ -32,13 +32,11 @@ export default function Home() {
   const [currentTags, setCurrentTags] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load conversations on mount
   useEffect(() => {
     loadConversations();
     startNewConversation();
   }, []);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -54,7 +52,6 @@ export default function Home() {
       console.error('Failed to load conversations:', error);
     }
     
-    // Also load from localStorage as backup
     const saved = localStorage.getItem('kimbleai_conversations');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -78,7 +75,6 @@ export default function Home() {
         setMessages(data.messages);
         setCurrentConversationId(convId);
         
-        // Load project and tags
         const conv = conversations.find(c => c.id === convId);
         if (conv) {
           setCurrentProject(conv.project || '');
@@ -104,7 +100,6 @@ export default function Home() {
       updatedAt: new Date().toISOString()
     };
     
-    // Save to localStorage
     const existing = conversations.filter(c => c.id !== currentConversationId);
     const updated = [conversation, ...existing];
     setConversations(updated);
@@ -164,12 +159,10 @@ export default function Home() {
 
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Update conversation ID if new
       if (data.conversationId && !currentConversationId) {
         setCurrentConversationId(data.conversationId);
       }
       
-      // Save conversation after each message
       saveConversation();
       
     } catch (error: any) {
@@ -186,198 +179,353 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className={`${showSidebar ? 'w-80' : 'w-0'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col overflow-hidden`}>
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">Conversations</h2>
-          
+    <div style={{ display: 'flex', height: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+      {/* Sidebar - ChatGPT/Claude style */}
+      <div style={{
+        width: showSidebar ? '260px' : '0',
+        transition: 'width 0.3s',
+        backgroundColor: '#202123',
+        borderRight: '1px solid #2d2d30',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
+        {/* Sidebar Header */}
+        <div style={{ padding: '12px', borderBottom: '1px solid #2d2d30' }}>
           {/* User Selector */}
-          <div className="mt-3 flex gap-2">
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button
               onClick={() => setCurrentUser('zach')}
-              className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors ${
-                currentUser === 'zach' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              style={{
+                flex: 1,
+                padding: '8px',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: currentUser === 'zach' ? '#3b82f6' : '#343541',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
             >
-              Zach
+              👨‍💻 Zach
             </button>
             <button
               onClick={() => setCurrentUser('rebecca')}
-              className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors ${
-                currentUser === 'rebecca' 
-                  ? 'bg-pink-500 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              style={{
+                flex: 1,
+                padding: '8px',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: currentUser === 'rebecca' ? '#ec4899' : '#343541',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
             >
-              Rebecca
+              👩‍💼 Rebecca
             </button>
           </div>
           
+          {/* New Chat Button */}
           <button
             onClick={startNewConversation}
-            className="w-full mt-3 py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'transparent',
+              border: '1px solid #565869',
+              borderRadius: '6px',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
           >
-            + New Conversation
+            <span style={{ fontSize: '16px' }}>+</span> New chat
           </button>
         </div>
         
-        {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Conversations List */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
           {conversations
             .filter(c => c.userId === currentUser)
             .map(conv => (
             <div
               key={conv.id}
-              className={`mb-2 p-3 rounded-lg cursor-pointer transition-colors ${
-                conv.id === currentConversationId 
-                  ? 'bg-blue-50 border-blue-200 border' 
-                  : 'hover:bg-gray-50 border border-transparent'
-              }`}
+              style={{
+                padding: '12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                backgroundColor: conv.id === currentConversationId ? '#343541' : 'transparent',
+                marginBottom: '2px',
+                position: 'relative',
+                group: 'true'
+              }}
+              onClick={() => loadConversation(conv.id)}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#343541'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = conv.id === currentConversationId ? '#343541' : 'transparent'}
             >
-              <div 
-                onClick={() => loadConversation(conv.id)}
-                className="flex justify-between items-start"
-              >
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800 text-sm">
-                    {conv.title}
-                  </div>
-                  {conv.project && (
-                    <div className="text-xs text-blue-600 mt-1">
-                      📁 {conv.project}
-                    </div>
-                  )}
-                  {conv.tags && conv.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {conv.tags.map((tag, i) => (
-                        <span key={i} className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteConversation(conv.id);
-                  }}
-                  className="text-red-500 hover:text-red-700 text-xs ml-2"
-                >
-                  ×
-                </button>
+              <div style={{ color: '#ececf1', fontSize: '14px', marginBottom: '4px' }}>
+                {conv.title}
               </div>
+              {conv.project && (
+                <div style={{ color: '#3b82f6', fontSize: '12px', marginBottom: '2px' }}>
+                  📁 {conv.project}
+                </div>
+              )}
+              {conv.tags && conv.tags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                  {conv.tags.map((tag, i) => (
+                    <span key={i} style={{
+                      fontSize: '11px',
+                      backgroundColor: '#444654',
+                      color: '#c5c5d2',
+                      padding: '2px 6px',
+                      borderRadius: '3px'
+                    }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteConversation(conv.id);
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '12px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#8e8ea0',
+                  cursor: 'pointer',
+                  fontSize: '18px'
+                }}
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#343541' }}>
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowSidebar(!showSidebar)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ☰
-              </button>
-              <h1 className="text-xl font-semibold text-gray-800">
-                KimbleAI V4 - {currentUser === 'zach' ? '👨‍💻 Zach' : '👩‍💼 Rebecca'}
-              </h1>
-            </div>
-            
-            {/* Project and Tags */}
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={currentProject}
-                onChange={(e) => setCurrentProject(e.target.value)}
-                placeholder="Project"
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-              />
-              <input
-                type="text"
-                value={currentTags}
-                onChange={(e) => setCurrentTags(e.target.value)}
-                placeholder="Tags (comma separated)"
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-              />
-            </div>
+        <div style={{ 
+          backgroundColor: '#343541', 
+          borderBottom: '1px solid #2d2d30',
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#ececf1',
+                cursor: 'pointer',
+                fontSize: '20px',
+                padding: '4px'
+              }}
+            >
+              ☰
+            </button>
+            <h1 style={{ 
+              color: '#ececf1', 
+              fontSize: '18px',
+              fontWeight: '600',
+              margin: 0
+            }}>
+              KimbleAI
+            </h1>
+          </div>
+          
+          {/* Project and Tags */}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <input
+              type="text"
+              value={currentProject}
+              onChange={(e) => setCurrentProject(e.target.value)}
+              placeholder="Project name"
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#40414f',
+                border: '1px solid #565869',
+                borderRadius: '6px',
+                color: '#ececf1',
+                fontSize: '14px',
+                outline: 'none'
+              }}
+            />
+            <input
+              type="text"
+              value={currentTags}
+              onChange={(e) => setCurrentTags(e.target.value)}
+              placeholder="Tags (comma separated)"
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#40414f',
+                border: '1px solid #565869',
+                borderRadius: '6px',
+                color: '#ececf1',
+                fontSize: '14px',
+                outline: 'none',
+                width: '200px'
+              }}
+            />
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-3xl mx-auto">
-            {messages.length === 0 && (
-              <div className="text-center text-gray-500 mt-10">
-                Start a conversation with KimbleAI
-              </div>
-            )}
-            
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] px-4 py-3 rounded-lg ${
-                    message.role === 'user'
-                      ? currentUser === 'zach' 
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-pink-500 text-white'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {message.role === 'user' && message.userId && (
-                    <div className="text-xs opacity-75 mb-1">
-                      {message.userId}
-                    </div>
-                  )}
-                  <div className="whitespace-pre-wrap">{message.content}</div>
+        {/* Messages Area */}
+        <div style={{ 
+          flex: 1, 
+          overflowY: 'auto',
+          padding: '20px 0'
+        }}>
+          {messages.length === 0 && (
+            <div style={{ 
+              textAlign: 'center', 
+              color: '#8e8ea0',
+              marginTop: '100px',
+              fontSize: '20px'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>💬</div>
+              How can I help you today?
+            </div>
+          )}
+          
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              style={{
+                padding: '20px',
+                backgroundColor: message.role === 'user' ? '#343541' : '#444654'
+              }}
+            >
+              <div style={{
+                maxWidth: '800px',
+                margin: '0 auto',
+                display: 'flex',
+                gap: '16px'
+              }}>
+                <div style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '4px',
+                  backgroundColor: message.role === 'user' 
+                    ? (currentUser === 'zach' ? '#3b82f6' : '#ec4899')
+                    : '#10a37f',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  flexShrink: 0
+                }}>
+                  {message.role === 'user' ? (currentUser === 'zach' ? 'Z' : 'R') : 'AI'}
+                </div>
+                <div style={{ 
+                  color: '#ececf1',
+                  fontSize: '15px',
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-wrap',
+                  flex: 1
+                }}>
+                  {message.content}
                 </div>
               </div>
-            ))}
-            
-            {loading && (
-              <div className="flex justify-start mb-4">
-                <div className="bg-gray-100 px-4 py-3 rounded-lg text-gray-500">
+            </div>
+          ))}
+          
+          {loading && (
+            <div style={{ padding: '20px', backgroundColor: '#444654' }}>
+              <div style={{
+                maxWidth: '800px',
+                margin: '0 auto',
+                display: 'flex',
+                gap: '16px'
+              }}>
+                <div style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '4px',
+                  backgroundColor: '#10a37f',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}>
+                  AI
+                </div>
+                <div style={{ color: '#8e8ea0' }}>
                   Thinking...
                 </div>
               </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="border-t border-gray-200 bg-white p-4">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                disabled={loading}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={loading || !inputValue.trim()}
-                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                Send
-              </button>
-            </div>
+        {/* Input Area */}
+        <div style={{ 
+          borderTop: '1px solid #2d2d30',
+          backgroundColor: '#343541',
+          padding: '20px'
+        }}>
+          <div style={{
+            maxWidth: '800px',
+            margin: '0 auto',
+            display: 'flex',
+            gap: '12px'
+          }}>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder="Send a message..."
+              disabled={loading}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                backgroundColor: '#40414f',
+                border: '1px solid #565869',
+                borderRadius: '6px',
+                color: '#ececf1',
+                fontSize: '15px',
+                outline: 'none'
+              }}
+            />
+            <button
+              onClick={sendMessage}
+              disabled={loading || !inputValue.trim()}
+              style={{
+                padding: '12px 20px',
+                backgroundColor: loading || !inputValue.trim() ? '#40414f' : '#10a37f',
+                border: 'none',
+                borderRadius: '6px',
+                color: loading || !inputValue.trim() ? '#8e8ea0' : 'white',
+                cursor: loading || !inputValue.trim() ? 'not-allowed' : 'pointer',
+                fontSize: '15px',
+                fontWeight: '500'
+              }}
+            >
+              Send
+            </button>
           </div>
         </div>
       </div>
