@@ -208,7 +208,7 @@ export default function Home() {
                 fontWeight: '500'
               }}
             >
-              👨‍💻 Zach
+              Zach
             </button>
             <button
               onClick={() => setCurrentUser('rebecca')}
@@ -224,7 +224,7 @@ export default function Home() {
                 fontWeight: '500'
               }}
             >
-              👩‍💼 Rebecca
+              Rebecca
             </button>
           </div>
           
@@ -262,8 +262,7 @@ export default function Home() {
                 cursor: 'pointer',
                 backgroundColor: conv.id === currentConversationId ? '#343541' : 'transparent',
                 marginBottom: '2px',
-                position: 'relative',
-                group: 'true'
+                position: 'relative'
               }}
               onClick={() => loadConversation(conv.id)}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#343541'}
@@ -274,7 +273,7 @@ export default function Home() {
               </div>
               {conv.project && (
                 <div style={{ color: '#3b82f6', fontSize: '12px', marginBottom: '2px' }}>
-                  📁 {conv.project}
+                  Project: {conv.project}
                 </div>
               )}
               {conv.tags && conv.tags.length > 0 && (
