@@ -31,32 +31,44 @@ export default function Home() {
   const [currentProject, setCurrentProject] = useState('');
   const [currentTags, setCurrentTags] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Load conversations on mount ONLY
   useEffect(() => {
-    loadConversations();
-    startNewConversation();
-  }, []);
+    if (!isInitialized) {
+      loadConversationsFromStorage();
+      const savedConvId = localStorage.getItem('kimbleai_current_conversation');
+      if (savedConvId) {
+        setCurrentConversationId(savedConvId);
+        loadConversation(savedConvId);
+      } else {
+        startNewConversation();
+      }
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
 
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const loadConversations = async () => {
-    try {
-      const response = await fetch('/api/chat?userId=' + currentUser);
-      const data = await response.json();
-      if (data.conversations) {
-        setConversations(data.conversations);
-      }
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-    }
-    
+  // Load from localStorage
+  const loadConversationsFromStorage = () => {
     const saved = localStorage.getItem('kimbleai_conversations');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setConversations(prev => [...prev, ...parsed]);
+      try {
+        const parsed = JSON.parse(saved);
+        setConversations(parsed);
+      } catch (e) {
+        console.error('Failed to parse saved conversations:', e);
+      }
     }
+  };
+
+  // Save to localStorage whenever conversations change
+  const saveConversationsToStorage = (convs: Conversation[]) => {
+    localStorage.setItem('kimbleai_conversations', JSON.stringify(convs));
   };
 
   const startNewConversation = () => {
@@ -65,28 +77,21 @@ export default function Home() {
     setMessages([]);
     setCurrentProject('');
     setCurrentTags('');
+    localStorage.setItem('kimbleai_current_conversation', newId);
   };
 
-  const loadConversation = async (convId: string) => {
-    try {
-      const response = await fetch(`/api/chat?conversationId=${convId}`);
-      const data = await response.json();
-      if (data.messages) {
-        setMessages(data.messages);
-        setCurrentConversationId(convId);
-        
-        const conv = conversations.find(c => c.id === convId);
-        if (conv) {
-          setCurrentProject(conv.project || '');
-          setCurrentTags(conv.tags?.join(', ') || '');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load conversation:', error);
+  const loadConversation = (convId: string) => {
+    const conv = conversations.find(c => c.id === convId);
+    if (conv) {
+      setMessages(conv.messages || []);
+      setCurrentConversationId(convId);
+      setCurrentProject(conv.project || '');
+      setCurrentTags(conv.tags?.join(', ') || '');
+      localStorage.setItem('kimbleai_current_conversation', convId);
     }
   };
 
-  const saveConversation = () => {
+  const saveCurrentConversation = () => {
     if (!currentConversationId || messages.length === 0) return;
     
     const conversation: Conversation = {
@@ -96,20 +101,28 @@ export default function Home() {
       project: currentProject,
       tags: currentTags.split(',').map(t => t.trim()).filter(t => t),
       userId: currentUser,
-      createdAt: new Date().toISOString(),
+      createdAt: conversations.find(c => c.id === currentConversationId)?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     
-    const existing = conversations.filter(c => c.id !== currentConversationId);
-    const updated = [conversation, ...existing];
+    const existingIndex = conversations.findIndex(c => c.id === currentConversationId);
+    let updated: Conversation[];
+    
+    if (existingIndex >= 0) {
+      updated = [...conversations];
+      updated[existingIndex] = conversation;
+    } else {
+      updated = [conversation, ...conversations];
+    }
+    
     setConversations(updated);
-    localStorage.setItem('kimbleai_conversations', JSON.stringify(updated));
+    saveConversationsToStorage(updated);
   };
 
   const deleteConversation = (convId: string) => {
     const updated = conversations.filter(c => c.id !== convId);
     setConversations(updated);
-    localStorage.setItem('kimbleai_conversations', JSON.stringify(updated));
+    saveConversationsToStorage(updated);
     
     if (convId === currentConversationId) {
       startNewConversation();
@@ -126,7 +139,8 @@ export default function Home() {
       userId: currentUser
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInputValue('');
     setLoading(true);
 
@@ -137,7 +151,7 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          messages: newMessages,
           userId: currentUser,
           conversationId: currentConversationId,
           projectId: currentProject,
@@ -147,23 +161,19 @@ export default function Home() {
 
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get response');
-      }
-
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.response,
+        content: data.response || data.error || 'No response',
         timestamp: new Date().toISOString()
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      const updatedMessages = [...newMessages, assistantMessage];
+      setMessages(updatedMessages);
       
-      if (data.conversationId && !currentConversationId) {
-        setCurrentConversationId(data.conversationId);
-      }
-      
-      saveConversation();
+      // Save immediately after getting response
+      setTimeout(() => {
+        saveCurrentConversation();
+      }, 100);
       
     } catch (error: any) {
       console.error('Chat error:', error);
@@ -172,27 +182,26 @@ export default function Home() {
         content: `Error: ${error.message}`,
         timestamp: new Date().toISOString()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages([...newMessages, errorMessage]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-      {/* Sidebar - ChatGPT/Claude style */}
+    <div style={{ display: 'flex', height: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      {/* Sidebar */}
       <div style={{
         width: showSidebar ? '260px' : '0',
-        transition: 'width 0.3s',
+        minWidth: showSidebar ? '260px' : '0',
+        transition: 'all 0.3s',
         backgroundColor: '#202123',
         borderRight: '1px solid #2d2d30',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden'
       }}>
-        {/* Sidebar Header */}
         <div style={{ padding: '12px', borderBottom: '1px solid #2d2d30' }}>
-          {/* User Selector */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button
               onClick={() => setCurrentUser('zach')}
@@ -228,7 +237,6 @@ export default function Home() {
             </button>
           </div>
           
-          {/* New Chat Button */}
           <button
             onClick={startNewConversation}
             style={{
@@ -245,12 +253,16 @@ export default function Home() {
               gap: '8px'
             }}
           >
-            <span style={{ fontSize: '16px' }}>+</span> New chat
+            <span>+</span> New chat
           </button>
         </div>
         
-        {/* Conversations List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+        <div style={{ 
+          flex: 1, 
+          overflowY: 'auto', 
+          padding: '8px',
+          overflowX: 'hidden'
+        }}>
           {conversations
             .filter(c => c.userId === currentUser)
             .map(conv => (
@@ -262,29 +274,61 @@ export default function Home() {
                 cursor: 'pointer',
                 backgroundColor: conv.id === currentConversationId ? '#343541' : 'transparent',
                 marginBottom: '2px',
-                position: 'relative'
+                position: 'relative',
+                wordBreak: 'break-word'
               }}
               onClick={() => loadConversation(conv.id)}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#343541'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = conv.id === currentConversationId ? '#343541' : 'transparent'}
+              onMouseEnter={(e) => {
+                if (conv.id !== currentConversationId) {
+                  e.currentTarget.style.backgroundColor = '#2c2c2c';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (conv.id !== currentConversationId) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
             >
-              <div style={{ color: '#ececf1', fontSize: '14px', marginBottom: '4px' }}>
+              <div style={{ 
+                color: '#ececf1', 
+                fontSize: '14px', 
+                marginBottom: '4px',
+                paddingRight: '20px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
                 {conv.title}
               </div>
               {conv.project && (
-                <div style={{ color: '#3b82f6', fontSize: '12px', marginBottom: '2px' }}>
-                  Project: {conv.project}
+                <div style={{ 
+                  color: '#3b82f6', 
+                  fontSize: '12px', 
+                  marginBottom: '2px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  📁 {conv.project}
                 </div>
               )}
               {conv.tags && conv.tags.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                  {conv.tags.map((tag, i) => (
+                <div style={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: '4px', 
+                  marginTop: '4px' 
+                }}>
+                  {conv.tags.slice(0, 3).map((tag, i) => (
                     <span key={i} style={{
                       fontSize: '11px',
                       backgroundColor: '#444654',
                       color: '#c5c5d2',
                       padding: '2px 6px',
-                      borderRadius: '3px'
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '80px'
                     }}>
                       {tag}
                     </span>
@@ -294,7 +338,9 @@ export default function Home() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteConversation(conv.id);
+                  if (confirm('Delete this conversation?')) {
+                    deleteConversation(conv.id);
+                  }
                 }}
                 style={{
                   position: 'absolute',
@@ -304,7 +350,9 @@ export default function Home() {
                   border: 'none',
                   color: '#8e8ea0',
                   cursor: 'pointer',
-                  fontSize: '18px'
+                  fontSize: '16px',
+                  padding: '2px',
+                  lineHeight: '1'
                 }}
               >
                 ×
@@ -315,15 +363,22 @@ export default function Home() {
       </div>
 
       {/* Main Chat Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#343541' }}>
-        {/* Header */}
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        backgroundColor: '#343541',
+        minWidth: 0
+      }}>
         <div style={{ 
           backgroundColor: '#343541', 
           borderBottom: '1px solid #2d2d30',
           padding: '16px 24px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
@@ -345,16 +400,16 @@ export default function Home() {
               fontWeight: '600',
               margin: 0
             }}>
-              KimbleAI
+              KimbleAI - {currentUser === 'zach' ? '👨‍💻 Zach' : '👩‍💼 Rebecca'}
             </h1>
           </div>
           
-          {/* Project and Tags */}
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <input
               type="text"
               value={currentProject}
               onChange={(e) => setCurrentProject(e.target.value)}
+              onBlur={saveCurrentConversation}
               placeholder="Project name"
               style={{
                 padding: '8px 12px',
@@ -363,13 +418,15 @@ export default function Home() {
                 borderRadius: '6px',
                 color: '#ececf1',
                 fontSize: '14px',
-                outline: 'none'
+                outline: 'none',
+                minWidth: '120px'
               }}
             />
             <input
               type="text"
               value={currentTags}
               onChange={(e) => setCurrentTags(e.target.value)}
+              onBlur={saveCurrentConversation}
               placeholder="Tags (comma separated)"
               style={{
                 padding: '8px 12px',
@@ -379,13 +436,12 @@ export default function Home() {
                 color: '#ececf1',
                 fontSize: '14px',
                 outline: 'none',
-                width: '200px'
+                minWidth: '180px'
               }}
             />
           </div>
         </div>
 
-        {/* Messages Area */}
         <div style={{ 
           flex: 1, 
           overflowY: 'auto',
@@ -396,7 +452,8 @@ export default function Home() {
               textAlign: 'center', 
               color: '#8e8ea0',
               marginTop: '100px',
-              fontSize: '20px'
+              fontSize: '20px',
+              padding: '20px'
             }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>💬</div>
               How can I help you today?
@@ -422,7 +479,7 @@ export default function Home() {
                   height: '30px',
                   borderRadius: '4px',
                   backgroundColor: message.role === 'user' 
-                    ? (currentUser === 'zach' ? '#3b82f6' : '#ec4899')
+                    ? (message.userId === 'rebecca' ? '#ec4899' : '#3b82f6')
                     : '#10a37f',
                   display: 'flex',
                   alignItems: 'center',
@@ -432,13 +489,16 @@ export default function Home() {
                   fontWeight: 'bold',
                   flexShrink: 0
                 }}>
-                  {message.role === 'user' ? (currentUser === 'zach' ? 'Z' : 'R') : 'AI'}
+                  {message.role === 'user' 
+                    ? (message.userId === 'rebecca' ? 'R' : 'Z') 
+                    : 'AI'}
                 </div>
                 <div style={{ 
                   color: '#ececf1',
                   fontSize: '15px',
                   lineHeight: '1.6',
                   whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
                   flex: 1
                 }}>
                   {message.content}
@@ -479,7 +539,6 @@ export default function Home() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
         <div style={{ 
           borderTop: '1px solid #2d2d30',
           backgroundColor: '#343541',
@@ -495,7 +554,7 @@ export default function Home() {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
               placeholder="Send a message..."
               disabled={loading}
               style={{
