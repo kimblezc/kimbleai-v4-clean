@@ -11,6 +11,83 @@ const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null;
 
+// Intelligently select the appropriate GPT-5 model based on query complexity
+function selectOptimalModel(messages: any[]): { model: string; reasoning: string } {
+  const lastMessage = messages[messages.length - 1]?.content || '';
+  const messageLength = lastMessage.length;
+  const conversationLength = messages.length;
+  
+  // Complex coding tasks - need full GPT-5
+  if (
+    lastMessage.match(/\b(debug|fix|implement|refactor|optimize|analyze code|write code|create app|build|deploy)\b/i) ||
+    lastMessage.includes('```') || // Code blocks
+    lastMessage.match(/\b(function|class|const|let|var|def|import|export)\b/) // Programming keywords
+  ) {
+    return { 
+      model: 'gpt-5', 
+      reasoning: 'Complex coding task detected' 
+    };
+  }
+  
+  // Complex reasoning or analysis - need full GPT-5
+  if (
+    lastMessage.match(/\b(analyze|compare|evaluate|assess|investigate|research|deep dive|comprehensive|detailed analysis)\b/i) ||
+    lastMessage.match(/\b(explain in detail|walk me through|step by step|how does.*work)\b/i) ||
+    messageLength > 500 // Long, complex queries
+  ) {
+    return { 
+      model: 'gpt-5', 
+      reasoning: 'Complex reasoning required' 
+    };
+  }
+  
+  // Health or legal questions - use full GPT-5 for accuracy
+  if (
+    lastMessage.match(/\b(medical|health|symptom|diagnosis|treatment|legal|lawsuit|contract|agreement)\b/i)
+  ) {
+    return { 
+      model: 'gpt-5', 
+      reasoning: 'Health/legal accuracy needed' 
+    };
+  }
+  
+  // Simple greetings or very short queries - GPT-5-nano is sufficient
+  if (
+    messageLength < 50 ||
+    lastMessage.match(/^(hi|hello|hey|thanks|thank you|bye|goodbye|yes|no|ok|okay)\.?$/i) ||
+    lastMessage.match(/^(what time|what date|what day|how are you)/i)
+  ) {
+    return { 
+      model: 'gpt-5-nano', 
+      reasoning: 'Simple query - nano model sufficient' 
+    };
+  }
+  
+  // Memory queries - GPT-5-mini is fine
+  if (
+    lastMessage.match(/\b(what do you know about me|remember|recall|my preferences|what did i)\b/i)
+  ) {
+    return { 
+      model: 'gpt-5-mini', 
+      reasoning: 'Memory recall - mini model sufficient' 
+    };
+  }
+  
+  // Long conversations might need more context handling
+  if (conversationLength > 10) {
+    return { 
+      model: 'gpt-5', 
+      reasoning: 'Long conversation - better context handling needed' 
+    };
+  }
+  
+  // Default to GPT-5-mini for general conversation
+  return { 
+    model: 'gpt-5-mini', 
+    reasoning: 'Standard conversation - balanced model' 
+  };
+}
+
 // Generate embedding for semantic search
 async function generateEmbedding(text: string): Promise<number[] | null> {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
@@ -62,7 +139,8 @@ export async function POST(request: NextRequest) {
       userId = 'default', 
       conversationId = 'conv_' + Date.now(),
       projectId = '',
-      tags = []
+      tags = [],
+      forceModel = null // Allow manual override if needed
     } = body;
     
     if (messages.length === 0) {
@@ -129,7 +207,14 @@ Current tags: ${tags.join(', ') || 'None'}`;
       ...messages
     ];
     
-    // Save user message to Supabase
+    // SELECT OPTIMAL MODEL
+    const { model, reasoning } = forceModel 
+      ? { model: forceModel, reasoning: 'Manual override' }
+      : selectOptimalModel(messages);
+    
+    console.log(`Model selected: ${model} - Reason: ${reasoning}`);
+    
+    // Save conversation metadata to Supabase
     if (supabase) {
       try {
         // Get user ID from database
@@ -189,10 +274,6 @@ Current tags: ${tags.join(', ') || 'None'}`;
             conversationId,
             messageCount: messages.length
           });
-        } else {
-          await ProjectStateLogger.logFeatureStatus('Zapier Memory Extraction', 'pending', 
-            'ZAPIER_MEMORY_WEBHOOK_URL not configured'
-          );
         }
         
         // TRIGGER ZAPIER AUTO-ORGANIZATION (if 3+ messages)
@@ -212,10 +293,6 @@ Current tags: ${tags.join(', ') || 'None'}`;
             conversationId,
             triggered: true
           });
-        } else if (messages.length >= 3) {
-          await ProjectStateLogger.logFeatureStatus('Zapier Auto-Organization', 'pending',
-            'ZAPIER_ORGANIZE_WEBHOOK_URL not configured'
-          );
         }
       } catch (dbError) {
         console.log('Database operation failed:', dbError);
@@ -223,30 +300,76 @@ Current tags: ${tags.join(', ') || 'None'}`;
       }
     }
     
-    // Call OpenAI with memory context
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: contextMessages,
-        max_tokens: 800,
-        temperature: 0.7
-      })
-    });
+    // Call OpenAI with selected GPT-5 model
+    let assistantResponse = '';
+    let actualModelUsed = model;
     
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    try {
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_KEY}`
+        },
+        body: JSON.stringify({
+          model: model,  // Dynamically selected model
+          messages: contextMessages,
+          max_tokens: model === 'gpt-5' ? 1500 : 800,  // More tokens for complex tasks
+          temperature: 0.7,
+          verbosity: model === 'gpt-5-nano' ? 'low' : 'medium',  // Adjust verbosity
+          reasoning_effort: model === 'gpt-5' ? 'medium' : 'minimal'  // More reasoning for complex
+        })
+      });
+      
+      if (!openaiResponse.ok) {
+        throw new Error(`Model ${model} failed: ${openaiResponse.status}`);
+      }
+      
+      const data = await openaiResponse.json();
+      assistantResponse = data.choices[0].message.content;
+      
+    } catch (modelError: any) {
+      console.log(`${model} failed, trying fallback...`);
+      
+      // Fallback cascade: gpt-5 -> gpt-5-mini -> gpt-4o-mini
+      const fallbackModels = ['gpt-5-mini', 'gpt-4o-mini'];
+      
+      for (const fallbackModel of fallbackModels) {
+        try {
+          const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${OPENAI_KEY}`
+            },
+            body: JSON.stringify({
+              model: fallbackModel,
+              messages: contextMessages,
+              max_tokens: 800,
+              temperature: 0.7
+            })
+          });
+          
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            assistantResponse = fallbackData.choices[0].message.content;
+            actualModelUsed = fallbackModel;
+            console.log(`Fallback to ${fallbackModel} successful`);
+            break;
+          }
+        } catch (fallbackError) {
+          console.log(`${fallbackModel} also failed`);
+          continue;
+        }
+      }
+      
+      if (!assistantResponse) {
+        throw new Error('All models failed');
+      }
     }
     
-    const data = await openaiResponse.json();
-    const assistantResponse = data.choices[0].message.content;
-    
     // Save assistant response to Supabase
-    if (supabase) {
+    if (supabase && assistantResponse) {
       try {
         const { data: userData } = await supabase
           .from('users')
@@ -273,7 +396,10 @@ Current tags: ${tags.join(', ') || 'None'}`;
       conversationId,
       messagesProcessed: messages.length,
       memoryActive: memoryWorking,
-      zapierTriggered: !!(process.env.ZAPIER_MEMORY_WEBHOOK_URL)
+      zapierTriggered: !!(process.env.ZAPIER_MEMORY_WEBHOOK_URL),
+      modelSelected: model,
+      modelUsed: actualModelUsed,
+      modelReasoning: reasoning
     });
     
     return NextResponse.json({
@@ -281,7 +407,9 @@ Current tags: ${tags.join(', ') || 'None'}`;
       conversationId,
       saved: !!supabase,
       memoryActive: !!memoryContext,
-      zapierTriggered: !!(process.env.ZAPIER_MEMORY_WEBHOOK_URL)
+      zapierTriggered: !!(process.env.ZAPIER_MEMORY_WEBHOOK_URL),
+      model: actualModelUsed,
+      modelReasoning: reasoning
     });
     
   } catch (error: any) {
