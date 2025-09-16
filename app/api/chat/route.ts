@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { ProjectStateLogger } from '@/lib/project-logger';
 
 export const runtime = 'nodejs';
 
@@ -40,7 +41,14 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
 export async function POST(request: NextRequest) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   
+  // LOG API CALL
+  await ProjectStateLogger.logApiCall('/api/chat', !!OPENAI_KEY, {
+    hasSupabase: !!supabase,
+    timestamp: new Date().toISOString()
+  });
+  
   if (!OPENAI_KEY) {
+    await ProjectStateLogger.logFeatureStatus('OpenAI Integration', 'broken', 'No API key');
     return NextResponse.json({
       response: "OpenAI API key not configured.",
       error: true
@@ -68,6 +76,8 @@ export async function POST(request: NextRequest) {
     
     // SEARCH PERSISTENT MEMORY
     let memoryContext = '';
+    let memoryWorking = false;
+    
     if (supabase && userMessage.content) {
       // Generate embedding for the user's message
       const searchEmbedding = await generateEmbedding(userMessage.content);
@@ -88,9 +98,17 @@ export async function POST(request: NextRequest) {
           memories.forEach((mem: any) => {
             memoryContext += `- ${mem.content} (${mem.content_type})\n`;
           });
+          memoryWorking = true;
         }
       }
     }
+    
+    // LOG MEMORY STATUS
+    await ProjectStateLogger.logFeatureStatus(
+      'Persistent Memory', 
+      memoryWorking ? 'working' : 'pending',
+      { memoriesFound: memoryWorking ? memoryContext.length : 0 }
+    );
     
     // Build system prompt with memory context
     const systemPrompt = `You are KimbleAI, a helpful assistant with persistent memory for the Kimble family.
@@ -149,6 +167,11 @@ Current tags: ${tags.join(', ') || 'None'}`;
           created_at: new Date().toISOString()
         });
         
+        await ProjectStateLogger.logFeatureStatus('Database Storage', 'working', {
+          conversationId,
+          messageStored: true
+        });
+        
         // TRIGGER ZAPIER MEMORY EXTRACTION
         if (process.env.ZAPIER_MEMORY_WEBHOOK_URL) {
           fetch(process.env.ZAPIER_MEMORY_WEBHOOK_URL, {
@@ -161,6 +184,15 @@ Current tags: ${tags.join(', ') || 'None'}`;
               timestamp: new Date().toISOString()
             })
           }).catch(console.error); // Fire and forget
+          
+          await ProjectStateLogger.logZapierTrigger('memory_extraction', {
+            conversationId,
+            messageCount: messages.length
+          });
+        } else {
+          await ProjectStateLogger.logFeatureStatus('Zapier Memory Extraction', 'pending', 
+            'ZAPIER_MEMORY_WEBHOOK_URL not configured'
+          );
         }
         
         // TRIGGER ZAPIER AUTO-ORGANIZATION (if 3+ messages)
@@ -175,9 +207,19 @@ Current tags: ${tags.join(', ') || 'None'}`;
               conversationSummary: messages.map((m: any) => m.content).join(' ').substring(0, 500)
             })
           }).catch(console.error); // Fire and forget
+          
+          await ProjectStateLogger.logZapierTrigger('auto_organization', {
+            conversationId,
+            triggered: true
+          });
+        } else if (messages.length >= 3) {
+          await ProjectStateLogger.logFeatureStatus('Zapier Auto-Organization', 'pending',
+            'ZAPIER_ORGANIZE_WEBHOOK_URL not configured'
+          );
         }
       } catch (dbError) {
         console.log('Database operation failed:', dbError);
+        await ProjectStateLogger.logFeatureStatus('Database Storage', 'broken', dbError);
       }
     }
     
@@ -226,6 +268,14 @@ Current tags: ${tags.join(', ') || 'None'}`;
       }
     }
     
+    // LOG SUCCESS
+    await ProjectStateLogger.logApiCall('/api/chat', true, {
+      conversationId,
+      messagesProcessed: messages.length,
+      memoryActive: memoryWorking,
+      zapierTriggered: !!(process.env.ZAPIER_MEMORY_WEBHOOK_URL)
+    });
+    
     return NextResponse.json({
       response: assistantResponse,
       conversationId,
@@ -236,6 +286,13 @@ Current tags: ${tags.join(', ') || 'None'}`;
     
   } catch (error: any) {
     console.error('Chat API error:', error);
+    
+    // LOG ERROR
+    await ProjectStateLogger.logApiCall('/api/chat', false, {
+      error: error.message,
+      stack: error.stack
+    });
+    
     return NextResponse.json({
       response: "Sorry, I encountered an error. Please try again.",
       error: true
@@ -245,6 +302,10 @@ Current tags: ${tags.join(', ') || 'None'}`;
 
 // GET endpoint to load conversations with projects and tags
 export async function GET(req: NextRequest) {
+  await ProjectStateLogger.logApiCall('/api/chat GET', !!supabase, {
+    timestamp: new Date().toISOString()
+  });
+  
   if (!supabase) {
     return NextResponse.json({
       error: "Database not configured"
@@ -292,6 +353,11 @@ export async function GET(req: NextRequest) {
     
   } catch (error) {
     console.error('GET endpoint error:', error);
+    
+    await ProjectStateLogger.logApiCall('/api/chat GET', false, {
+      error: error
+    });
+    
     return NextResponse.json({
       error: "Failed to load data"
     }, { status: 500 });
