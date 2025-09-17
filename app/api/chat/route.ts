@@ -11,64 +11,64 @@ const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null;
 
-// Intelligently select the appropriate GPT-5 model based on query complexity
+// Intelligently select the appropriate model based on query complexity
 function selectOptimalModel(messages: any[]): { model: string; reasoning: string } {
   const lastMessage = messages[messages.length - 1]?.content || '';
   const messageLength = lastMessage.length;
   const conversationLength = messages.length;
   
-  // Complex coding tasks - need full GPT-5
+  // Complex coding tasks - need full GPT-4o
   if (
     lastMessage.match(/\b(debug|fix|implement|refactor|optimize|analyze code|write code|create app|build|deploy)\b/i) ||
     lastMessage.includes('```') || // Code blocks
     lastMessage.match(/\b(function|class|const|let|var|def|import|export)\b/) // Programming keywords
   ) {
     return { 
-      model: 'gpt-5', 
+      model: 'gpt-4o', 
       reasoning: 'Complex coding task detected' 
     };
   }
   
-  // Complex reasoning or analysis - need full GPT-5
+  // Complex reasoning or analysis - need full GPT-4o
   if (
     lastMessage.match(/\b(analyze|compare|evaluate|assess|investigate|research|deep dive|comprehensive|detailed analysis)\b/i) ||
     lastMessage.match(/\b(explain in detail|walk me through|step by step|how does.*work)\b/i) ||
     messageLength > 500 // Long, complex queries
   ) {
     return { 
-      model: 'gpt-5', 
+      model: 'gpt-4o', 
       reasoning: 'Complex reasoning required' 
     };
   }
   
-  // Health or legal questions - use full GPT-5 for accuracy
+  // Health or legal questions - use full GPT-4o for accuracy
   if (
     lastMessage.match(/\b(medical|health|symptom|diagnosis|treatment|legal|lawsuit|contract|agreement)\b/i)
   ) {
     return { 
-      model: 'gpt-5', 
+      model: 'gpt-4o', 
       reasoning: 'Health/legal accuracy needed' 
     };
   }
   
-  // Simple greetings or very short queries - GPT-5-nano is sufficient
+  // Simple greetings or very short queries - GPT-4o-mini is sufficient
   if (
     messageLength < 50 ||
     lastMessage.match(/^(hi|hello|hey|thanks|thank you|bye|goodbye|yes|no|ok|okay)\.?$/i) ||
     lastMessage.match(/^(what time|what date|what day|how are you)/i)
   ) {
     return { 
-      model: 'gpt-5-nano', 
-      reasoning: 'Simple query - nano model sufficient' 
+      model: 'gpt-4o-mini', 
+      reasoning: 'Simple query - mini model sufficient' 
     };
   }
   
-  // Memory queries - GPT-5-mini is fine
+  // Memory queries - GPT-4o-mini is fine
   if (
     lastMessage.match(/\b(what do you know about me|remember|recall|my preferences|what did i)\b/i)
   ) {
     return { 
-      model: 'gpt-5-mini', 
+      model: 'gpt-4o-mini', 
       reasoning: 'Memory recall - mini model sufficient' 
     };
   }
@@ -76,14 +76,14 @@ function selectOptimalModel(messages: any[]): { model: string; reasoning: string
   // Long conversations might need more context handling
   if (conversationLength > 10) {
     return { 
-      model: 'gpt-5', 
+      model: 'gpt-4o', 
       reasoning: 'Long conversation - better context handling needed' 
     };
   }
   
-  // Default to GPT-5-mini for general conversation
+  // Default to GPT-4o-mini for general conversation
   return { 
-    model: 'gpt-5-mini', 
+    model: 'gpt-4o-mini', 
     reasoning: 'Standard conversation - balanced model' 
   };
 }
@@ -300,7 +300,7 @@ Current tags: ${tags.join(', ') || 'None'}`;
       }
     }
     
-    // Call OpenAI with selected GPT-5 model
+    // Call OpenAI with selected model
     let assistantResponse = '';
     let actualModelUsed = model;
     
@@ -312,16 +312,16 @@ Current tags: ${tags.join(', ') || 'None'}`;
           'Authorization': `Bearer ${OPENAI_KEY}`
         },
         body: JSON.stringify({
-          model: model,  // Dynamically selected model
+          model: model,  // Dynamically selected model (gpt-4o or gpt-4o-mini)
           messages: contextMessages,
-          max_tokens: model === 'gpt-5' ? 1500 : 800,  // More tokens for complex tasks
-          temperature: 0.7,
-          verbosity: model === 'gpt-5-nano' ? 'low' : 'medium',  // Adjust verbosity
-          reasoning_effort: model === 'gpt-5' ? 'medium' : 'minimal'  // More reasoning for complex
+          max_tokens: model === 'gpt-4o' ? 1500 : 800,  // More tokens for complex tasks
+          temperature: 0.7
         })
       });
       
       if (!openaiResponse.ok) {
+        const errorData = await openaiResponse.text();
+        console.error(`OpenAI API Error: ${openaiResponse.status} - ${errorData}`);
         throw new Error(`Model ${model} failed: ${openaiResponse.status}`);
       }
       
@@ -331,40 +331,36 @@ Current tags: ${tags.join(', ') || 'None'}`;
     } catch (modelError: any) {
       console.log(`${model} failed, trying fallback...`);
       
-      // Fallback cascade: gpt-5 -> gpt-5-mini -> gpt-4o-mini
-      const fallbackModels = ['gpt-5-mini', 'gpt-4o-mini'];
+      // Fallback cascade: try gpt-4o-mini if gpt-4o fails
+      const fallbackModel = 'gpt-4o-mini';
       
-      for (const fallbackModel of fallbackModels) {
-        try {
-          const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${OPENAI_KEY}`
-            },
-            body: JSON.stringify({
-              model: fallbackModel,
-              messages: contextMessages,
-              max_tokens: 800,
-              temperature: 0.7
-            })
-          });
-          
-          if (fallbackResponse.ok) {
-            const fallbackData = await fallbackResponse.json();
-            assistantResponse = fallbackData.choices[0].message.content;
-            actualModelUsed = fallbackModel;
-            console.log(`Fallback to ${fallbackModel} successful`);
-            break;
-          }
-        } catch (fallbackError) {
-          console.log(`${fallbackModel} also failed`);
-          continue;
+      try {
+        const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_KEY}`
+          },
+          body: JSON.stringify({
+            model: fallbackModel,
+            messages: contextMessages,
+            max_tokens: 800,
+            temperature: 0.7
+          })
+        });
+        
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          assistantResponse = fallbackData.choices[0].message.content;
+          actualModelUsed = fallbackModel;
+          console.log(`Fallback to ${fallbackModel} successful`);
+        } else {
+          const errorText = await fallbackResponse.text();
+          throw new Error(`Fallback failed: ${errorText}`);
         }
-      }
-      
-      if (!assistantResponse) {
-        throw new Error('All models failed');
+      } catch (fallbackError) {
+        console.error('All models failed:', fallbackError);
+        throw new Error('Unable to get response from OpenAI');
       }
     }
     
@@ -423,7 +419,8 @@ Current tags: ${tags.join(', ') || 'None'}`;
     
     return NextResponse.json({
       response: "Sorry, I encountered an error. Please try again.",
-      error: true
+      error: true,
+      details: error.message
     });
   }
 }
