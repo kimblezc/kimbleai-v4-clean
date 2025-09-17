@@ -361,7 +361,7 @@ Current tags: ${tags.join(', ') || 'None'}`;
     // Call OpenAI with GPT-5 and proper parameters
     let assistantResponse = '';
     let actualModelUsed = model;
-    let tokenUsage = {};
+    let tokenUsage: any = {};
     
     try {
       // Build request body with GPT-5 specific parameters
@@ -405,8 +405,8 @@ Current tags: ${tags.join(', ') || 'None'}`;
       // Log successful GPT-5 usage
       console.log(`GPT-5 Success:
         Model: ${data.model}
-        Tokens: ${tokenUsage.total_tokens}
-        Reasoning Tokens: ${tokenUsage.reasoning_tokens || 0}`);
+        Tokens: ${tokenUsage?.total_tokens || 0}
+        Reasoning Tokens: ${tokenUsage?.reasoning_tokens || 0}`);
       
     } catch (modelError: any) {
       console.log(`${model} failed, trying fallback cascade...`);
