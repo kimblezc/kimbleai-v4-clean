@@ -159,7 +159,14 @@ export default function Home() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        const responseText = await response.text();
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        data = { response: 'Error: Failed to parse server response', error: true };
+      }
       
       const assistantMessage: Message = {
         role: 'assistant',
