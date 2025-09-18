@@ -16,7 +16,7 @@
 
 ### Variable 1: OPENAI_API_KEY
 - Type: Secret
-- Value: Your OpenAI API key starting with sk-proj-
+- Value: Your OpenAI API key (example: <OPENAI_KEY_PLACEHOLDER>)
 - Get from: .env.local file
 
 ### Variable 2: SUPABASE_SERVICE_ROLE_KEY  

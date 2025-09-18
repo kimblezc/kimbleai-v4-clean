@@ -34,7 +34,7 @@ Add these variables (copy values from your .env.local file):
 
 | Variable | Description | Source |
 |----------|-------------|--------|
-| OPENAI_API_KEY | OpenAI API key (sk-proj-...) | .env.local or Google Drive doc |
+| OPENAI_API_KEY | OpenAI API key (<OPENAI_KEY_PLACEHOLDER>) | .env.local or Google Drive doc |
 | SUPABASE_SERVICE_ROLE_KEY | Supabase service key | .env.local |
 | NEXT_PUBLIC_SUPABASE_URL | https://gbmefnaqsxtloseufjixp.supabase.co | Public - safe to share |
 | NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase anon key | .env.local |

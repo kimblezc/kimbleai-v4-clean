@@ -8,7 +8,7 @@ https://vercel.com/kimblezcs-projects/kimbleai-v4-clean/settings/environment-var
 
 1. **OPENAI_API_KEY**
    - Source: .env.local
-   - Format: sk-proj-[...]
+      - Format: <OPENAI_KEY_PLACEHOLDER>
    - Required for: AI chat functionality
 
 2. **SUPABASE_SERVICE_ROLE_KEY**

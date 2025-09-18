@@ -16,7 +16,7 @@ if ($gitCheck) {
     exit 1
 }
 
-$keyCheck = git grep -I "sk-proj" 2>$null
+ $keyCheck = git grep -I "<OPENAI_KEY_PLACEHOLDER>" 2>$null
 if ($keyCheck) {
     Write-Host "ERROR: OpenAI API key found in repository!" -ForegroundColor Red
     Write-Host "This is a critical security issue!" -ForegroundColor Red

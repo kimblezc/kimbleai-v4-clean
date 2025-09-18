@@ -10,7 +10,7 @@ cat .env.local
 ```
 
 Copy these values:
-- OPENAI_API_KEY=sk-proj-...
+- OPENAI_API_KEY=<OPENAI_KEY_PLACEHOLDER>
 - SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
 ### Step 2: Run Clean Setup

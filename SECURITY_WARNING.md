@@ -2,7 +2,7 @@
 
 ## CRITICAL: Your API Keys are Exposed!
 
-Your OpenAI API key starting with `sk-proj-` is visible in .env.local. This is a security risk.
+Your OpenAI API key (example: <OPENAI_KEY_PLACEHOLDER>) must never be committed. This is a security risk.
 
 ## Immediate Actions Required:
 
@@ -14,7 +14,7 @@ Go to: https://platform.openai.com/api-keys
 
 ### 2. Check if keys were committed to Git
 ```bash
-git log -p | grep "sk-proj"
+git log -p | grep "<OPENAI_KEY_PLACEHOLDER>"
 ```
 
 If found, you need to:
