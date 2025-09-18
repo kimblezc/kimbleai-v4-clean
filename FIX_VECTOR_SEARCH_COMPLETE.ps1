@@ -394,8 +394,8 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // Initialize context variables
-    let relevantContext = [];
+  // Initialize context variables
+  let relevantContext: Memory[] = [];
     let vectorSearchUsed = false;
     let memoriesFound = 0;
     let dbUser: UserData | null = null;
@@ -489,8 +489,8 @@ export async function POST(request: NextRequest) {
     let contextString = '';
     if (relevantContext.length > 0) {
       // Group by source type
-      const messages = relevantContext.filter(c => c.source_type === 'message');
-      const memories = relevantContext.filter(c => c.source_type === 'memory');
+  const messages = relevantContext.filter((c: Memory) => c.source_type === 'message');
+  const memories = relevantContext.filter((c: Memory) => c.source_type === 'memory');
       
       if (messages.length > 0) {
         contextString += '\n\nRELEVANT CONVERSATION HISTORY:\n';
