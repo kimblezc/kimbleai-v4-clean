@@ -239,7 +239,7 @@ const supabase = supabaseUrl && supabaseKey
 // Types
 interface Memory {
   content: string;
-  similarity: float;
+  similarity: number;
   source_type: string;
   metadata: any;
 }
