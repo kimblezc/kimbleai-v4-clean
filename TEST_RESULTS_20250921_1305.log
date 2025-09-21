@@ -1,0 +1,12 @@
+Test Started: Sun 09/21/2025 13:05:33.83 
+================================================ 
+[PASS] API is reachable 
+[PASS] Knowledge storage working 
+[PASS] Knowledge retrieval working 
+[PASS] User isolation working 
+[PASS] File upload working 
+[PASS] File content searchable 
+[PASS] Can list uploaded files 
+[PASS] RAG system active 
+[FAIL] Cross-conversation memory not working 
+[INFO] Project/tag parameters accepted 

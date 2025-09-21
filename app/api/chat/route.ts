@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const lastMessage = messages[messages.length - 1];
     const userName = userId === 'rebecca' ? 'Rebecca' : 'Zach';
     
-    // Get or create user - FIXED: use let instead of const
+    // Get or create user
     let userData: any = null;
     const { data: existingUser } = await supabase
       .from('users')
@@ -92,6 +92,13 @@ export async function POST(request: NextRequest) {
           });
         }
         
+        if (grouped.extracted) {
+          fullContext += '\n## Extracted Knowledge:\n';
+          grouped.extracted.forEach((item: any) => {
+            fullContext += `- ${item.content}\n`;
+          });
+        }
+        
         if (grouped.file) {
           fullContext += '\n## From Your Files:\n';
           grouped.file.forEach((item: any) => {
@@ -109,41 +116,43 @@ export async function POST(request: NextRequest) {
         knowledgeItems = knowledgeResults;
       }
       
-      // Get recent conversation
-      const { data: recentMessages } = await supabase
+      // Get ALL messages from this user (not just current conversation)
+      const { data: allUserMessages } = await supabase
         .from('messages')
-        .select('content, role')
+        .select('content, role, created_at')
         .eq('user_id', userData.id)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);  // Get last 20 messages from ANY conversation
       
-      if (recentMessages && recentMessages.length > 0) {
-        fullContext = '\n## Current Conversation:\n' + 
-          recentMessages.reverse().map(m => 
-            `${m.role === 'user' ? userName : 'AI'}: ${m.content}`
-          ).join('\n') + fullContext;
+      if (allUserMessages && allUserMessages.length > 0) {
+        fullContext += '\n## Recent Message History (All Conversations):\n';
+        allUserMessages.reverse().forEach((m: any) => {
+          const messageDate = new Date(m.created_at).toLocaleDateString();
+          fullContext += `[${messageDate}] ${m.role === 'user' ? userName : 'AI'}: ${m.content.substring(0, 200)}\n`;
+        });
       }
     }
     
     // Build system prompt
-    const systemPrompt = `You are KimbleAI with COMPREHENSIVE MEMORY.
+    const systemPrompt = `You are KimbleAI with COMPREHENSIVE MEMORY across ALL conversations.
     
 Current user: ${userName}
 Current time: ${new Date().toLocaleString()}
 
-YOUR KNOWLEDGE BASE:
+YOUR COMPLETE KNOWLEDGE BASE (from all conversations and sources):
 ${fullContext || 'No previous context found yet.'}
 
 CAPABILITIES:
-- You remember EVERYTHING from conversations, files, and documents
+- You remember EVERYTHING from ALL past conversations, not just the current one
 - You can reference specific documents by name
-- You know user preferences, facts, appointments, and decisions
-- You maintain context across all interactions
+- You know user preferences, facts, appointments, and decisions from any conversation
+- You maintain context across all interactions regardless of conversation ID
 
 INSTRUCTIONS:
 - Reference specific information from the knowledge base when relevant
-- When asked "what do you know", provide specific examples
-- Extract and remember all new information from this conversation`;
+- When asked "what do you know", provide specific examples from any past conversation
+- Extract and remember all new information from this conversation
+- If asked about something from a previous conversation, use the context provided above`;
     
     // Call OpenAI
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -198,14 +207,18 @@ INSTRUCTIONS:
       embedding: assistantEmbedding
     });
     
-    // Extract knowledge from conversation (simplified inline version)
+    // Extract and store knowledge from this conversation
     try {
-      // Extract important facts/dates/preferences
-      const extractPrompt = `Extract facts, preferences, and important information from:
-User: ${lastMessage.content}
+      const extractPrompt = `Extract all facts, preferences, dates, and important information from this conversation:
+User (${userName}): ${lastMessage.content}
 Assistant: ${response}
 
-Return only the most important items as simple statements.`;
+Return specific facts as simple statements like:
+- User's favorite color is X
+- User works at Y
+- User has appointment on Z
+- Project deadline is A
+etc.`;
       
       const extractResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -216,7 +229,7 @@ Return only the most important items as simple statements.`;
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'Extract facts and important information.' },
+            { role: 'system', content: 'Extract all facts and important information. Be thorough.' },
             { role: 'user', content: extractPrompt }
           ],
           temperature: 0.3,
@@ -235,11 +248,11 @@ Return only the most important items as simple statements.`;
             user_id: userData.id,
             source_type: 'extracted',
             category: 'fact',
-            title: 'Extracted from conversation',
+            title: `Extracted: ${new Date().toLocaleDateString()}`,
             content: extracted,
             embedding: extractedEmbedding,
-            importance: 0.7,
-            tags: ['conversation', 'extracted']
+            importance: 0.8,
+            tags: ['conversation', 'extracted', 'fact']
           });
         }
       }
@@ -295,7 +308,8 @@ export async function GET() {
       'file_indexing',
       'document_search',
       'knowledge_extraction',
-      'comprehensive_rag'
+      'comprehensive_rag',
+      'pdf_support'
     ],
     timestamp: new Date().toISOString()
   });

@@ -41,8 +41,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
     
-    // Read file content
-    const content = await file.text();
+    let content = '';
+    
+    // Handle PDF files with dynamic import
+    if (file.type === 'application/pdf') {
+      try {
+        // Dynamic import to avoid build-time issues
+        const pdf = (await import('pdf-parse')).default;
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const data = await pdf(buffer);
+        content = data.text;
+        console.log(`Extracted ${content.length} characters from PDF`);
+      } catch (pdfError) {
+        console.error('PDF parsing error:', pdfError);
+        return NextResponse.json({ 
+          error: 'Failed to parse PDF', 
+          details: 'PDF might be corrupted or password protected' 
+        }, { status: 400 });
+      }
+    } else {
+      // Handle text-based files (TXT, MD, CSV, etc.)
+      content = await file.text();
+    }
+    
+    // Validate content was extracted
+    if (!content || content.length === 0) {
+      return NextResponse.json({ 
+        error: 'No content extracted from file',
+        details: 'File appears to be empty or unreadable'
+      }, { status: 400 });
+    }
     
     // Get user
     const { data: userData } = await supabase
@@ -68,7 +97,8 @@ export async function POST(request: NextRequest) {
         metadata: {
           originalName: file.name,
           uploadedAt: new Date().toISOString(),
-          category: category
+          category: category,
+          contentLength: content.length
         }
       })
       .select()
@@ -85,10 +115,12 @@ export async function POST(request: NextRequest) {
       content: content.substring(0, 2000), // Store first 2000 chars
       embedding: embedding,
       importance: 0.7,
-      tags: ['file', category],
+      tags: ['file', category, file.type === 'application/pdf' ? 'pdf' : 'text'],
       metadata: {
         filename: file.name,
         fileSize: file.size,
+        fileType: file.type,
+        contentLength: content.length,
         uploadDate: new Date().toISOString()
       }
     });
@@ -102,6 +134,8 @@ export async function POST(request: NextRequest) {
           event: 'FILE_INDEXED',
           filename: file.name,
           fileSize: file.size,
+          fileType: file.type,
+          contentLength: content.length,
           userId: userId,
           timestamp: new Date().toISOString()
         })
@@ -112,7 +146,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `File ${file.name} indexed successfully`,
       filename: file.name,
-      size: file.size
+      size: file.size,
+      type: file.type,
+      contentExtracted: content.length,
+      preview: content.substring(0, 200) + '...'
     });
     
   } catch (error: any) {
