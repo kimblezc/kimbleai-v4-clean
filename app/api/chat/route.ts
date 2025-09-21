@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { KnowledgeExtractor } from '@/lib/knowledge-extractor';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,40 +32,43 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages = [], userId = 'zach', conversationId = null, includeFiles = true } = await request.json();
+    const { messages = [], userId = 'zach', conversationId = null } = await request.json();
     
     if (!messages.length) {
       return NextResponse.json({
-        response: "Hi! I'm KimbleAI with comprehensive memory. I remember everything from our conversations, your files, emails, and documents."
+        response: "Hi! I'm KimbleAI with comprehensive memory. I remember everything from our conversations, your files, and documents."
       });
     }
     
     const lastMessage = messages[messages.length - 1];
     const userName = userId === 'rebecca' ? 'Rebecca' : 'Zach';
     
-    // Get or create user
-    const { data: userData } = await supabase
+    // Get or create user - FIXED: use let instead of const
+    let userData: any = null;
+    const { data: existingUser } = await supabase
       .from('users')
       .select('id, name')
       .eq('name', userName)
       .single();
     
-    if (!userData) {
+    if (!existingUser) {
       const { data: newUser } = await supabase
         .from('users')
         .insert({ name: userName, email: `${userName.toLowerCase()}@kimbleai.com` })
         .select('id, name')
         .single();
       userData = newUser;
+    } else {
+      userData = existingUser;
     }
     
     // COMPREHENSIVE RAG RETRIEVAL
     const queryEmbedding = await generateEmbedding(lastMessage.content);
     let fullContext = '';
-    let knowledgeItems = [];
+    let knowledgeItems: any[] = [];
     
     if (queryEmbedding && userData) {
-      // 1. Search ENTIRE knowledge base (not just messages)
+      // Search ENTIRE knowledge base
       const { data: knowledgeResults } = await supabase
         .rpc('search_knowledge_base', {
           query_embedding: queryEmbedding,
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
         });
       
       if (knowledgeResults && knowledgeResults.length > 0) {
-        // Group by source type for better context
+        // Group by source type
         const grouped = knowledgeResults.reduce((acc: any, item: any) => {
           if (!acc[item.source_type]) acc[item.source_type] = [];
           acc[item.source_type].push(item);
@@ -97,27 +99,6 @@ export async function POST(request: NextRequest) {
           });
         }
         
-        if (grouped.drive) {
-          fullContext += '\n## From Google Drive:\n';
-          grouped.drive.forEach((item: any) => {
-            fullContext += `- [${item.title}]: ${item.content}\n`;
-          });
-        }
-        
-        if (grouped.email) {
-          fullContext += '\n## From Emails:\n';
-          grouped.email.forEach((item: any) => {
-            fullContext += `- ${item.title}: ${item.content.substring(0, 200)}\n`;
-          });
-        }
-        
-        if (grouped.extracted) {
-          fullContext += '\n## Extracted Facts & Preferences:\n';
-          grouped.extracted.forEach((item: any) => {
-            fullContext += `- ${item.category}: ${item.content}\n`;
-          });
-        }
-        
         if (grouped.manual) {
           fullContext += '\n## Your Notes:\n';
           grouped.manual.forEach((item: any) => {
@@ -128,7 +109,7 @@ export async function POST(request: NextRequest) {
         knowledgeItems = knowledgeResults;
       }
       
-      // 2. Also get recent conversation for immediate context
+      // Get recent conversation
       const { data: recentMessages } = await supabase
         .from('messages')
         .select('content, role')
@@ -144,8 +125,8 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Build comprehensive system prompt
-    const systemPrompt = `You are KimbleAI, an AI assistant with COMPREHENSIVE MEMORY.
+    // Build system prompt
+    const systemPrompt = `You are KimbleAI with COMPREHENSIVE MEMORY.
     
 Current user: ${userName}
 Current time: ${new Date().toLocaleString()}
@@ -154,18 +135,17 @@ YOUR KNOWLEDGE BASE:
 ${fullContext || 'No previous context found yet.'}
 
 CAPABILITIES:
-- You remember EVERYTHING from conversations, files, emails, and documents
-- You can reference specific documents and files by name
+- You remember EVERYTHING from conversations, files, and documents
+- You can reference specific documents by name
 - You know user preferences, facts, appointments, and decisions
 - You maintain context across all interactions
 
 INSTRUCTIONS:
-- Always reference specific information from the knowledge base when relevant
-- When asked "what do you know", provide specific examples from different sources
-- Cite sources when referencing files or documents
+- Reference specific information from the knowledge base when relevant
+- When asked "what do you know", provide specific examples
 - Extract and remember all new information from this conversation`;
     
-    // Call OpenAI with full context
+    // Call OpenAI
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -218,12 +198,54 @@ INSTRUCTIONS:
       embedding: assistantEmbedding
     });
     
-    // CRITICAL: Extract knowledge from this conversation
-    await KnowledgeExtractor.extractFromConversation(
-      lastMessage.content,
-      response,
-      userData.id
-    );
+    // Extract knowledge from conversation (simplified inline version)
+    try {
+      // Extract important facts/dates/preferences
+      const extractPrompt = `Extract facts, preferences, and important information from:
+User: ${lastMessage.content}
+Assistant: ${response}
+
+Return only the most important items as simple statements.`;
+      
+      const extractResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'Extract facts and important information.' },
+            { role: 'user', content: extractPrompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 500
+        })
+      });
+      
+      if (extractResponse.ok) {
+        const extractData = await extractResponse.json();
+        const extracted = extractData.choices[0].message.content;
+        
+        // Store extracted knowledge
+        if (extracted && extracted.length > 10) {
+          const extractedEmbedding = await generateEmbedding(extracted);
+          await supabase.from('knowledge_base').insert({
+            user_id: userData.id,
+            source_type: 'extracted',
+            category: 'fact',
+            title: 'Extracted from conversation',
+            content: extracted,
+            embedding: extractedEmbedding,
+            importance: 0.7,
+            tags: ['conversation', 'extracted']
+          });
+        }
+      }
+    } catch (extractError) {
+      console.error('Knowledge extraction error:', extractError);
+    }
     
     // Log to Zapier
     if (process.env.ZAPIER_WEBHOOK_URL) {
@@ -272,7 +294,6 @@ export async function GET() {
       'conversation_memory',
       'file_indexing',
       'document_search',
-      'email_integration',
       'knowledge_extraction',
       'comprehensive_rag'
     ],
