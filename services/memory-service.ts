@@ -55,14 +55,18 @@ export class MemoryExtractor {
     const chunks: MemoryChunk[] = [];
     const foundMatches = new Set<string>();
     
-    // Only extract from user messages primarily
-    if (role === 'user') {
+    // Normalize role and only extract from user messages primarily
+    const roleNorm = (role || '').toString().toLowerCase();
+    if (roleNorm === 'user') {
       for (const { pattern, type, importance } of this.extractPatterns) {
-        const regex = new RegExp(pattern);
-        let match;
-        
+        // pattern may already be a RegExp; use it directly when so
+        const regex: RegExp = pattern instanceof RegExp ? pattern : new RegExp(pattern as any);
+        // reset lastIndex in case regex is reused
+        regex.lastIndex = 0;
+        let match: RegExpExecArray | null;
+
         while ((match = regex.exec(content)) !== null) {
-          const extracted = match[0].trim();
+          const extracted = (match[0] || '').trim();
           
           // Avoid duplicates
           if (!foundMatches.has(extracted)) {
@@ -98,8 +102,8 @@ export class MemoryExtractor {
       }
     }
     
-    // For assistant messages, extract summaries of important responses
-    if (role === 'assistant') {
+      // For assistant messages, extract summaries of important responses
+    if (roleNorm === 'assistant') {
       // Check if assistant is confirming understanding of important info
       if (content.includes('I understand') || content.includes('I\'ll remember')) {
         chunks.push({
@@ -130,16 +134,27 @@ export class MemoryExtractor {
           const embedding = await this.generateEmbedding(chunk.content);
           
           if (embedding) {
-            await supabase.from('memory_chunks').insert({
-              user_id: userId,
-              conversation_id: conversationId,
-              content: chunk.content,
-              chunk_type: chunk.type,
-              embedding: embedding,
-              importance: chunk.importance,
-              metadata: chunk.metadata
-            });
-            totalExtracted++;
+            try {
+              const res = await supabase.from('memory_chunks').insert({
+                user_id: userId,
+                conversation_id: conversationId,
+                content: chunk.content,
+                chunk_type: chunk.type,
+                embedding: embedding,
+                importance: chunk.importance,
+                metadata: chunk.metadata
+              });
+              // supabase-js v2 returns { data, error }
+              // check for error to catch failed inserts
+              // @ts-ignore
+              if (res && res.error) {
+                console.error('Supabase insert error:', res.error);
+              } else {
+                totalExtracted++;
+              }
+            } catch (e) {
+              console.error('Failed to save memory chunk (exception):', e);
+            }
           }
         } catch (error) {
           console.error('Failed to save memory chunk:', error);
