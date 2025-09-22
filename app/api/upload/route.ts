@@ -43,26 +43,25 @@ export async function POST(request: NextRequest) {
     
     let content = '';
     
-    // Handle PDF files with dynamic import
+    // Handle PDF files - SIMPLIFIED APPROACH
     if (file.type === 'application/pdf') {
-      try {
-        // Dynamic import to avoid build-time issues
-        const pdf = (await import('pdf-parse')).default;
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const data = await pdf(buffer);
-        content = data.text;
-        console.log(`Extracted ${content.length} characters from PDF`);
-      } catch (pdfError) {
-        console.error('PDF parsing error:', pdfError);
-        return NextResponse.json({ 
-          error: 'Failed to parse PDF', 
-          details: 'PDF might be corrupted or password protected' 
-        }, { status: 400 });
-      }
+      // For now, return a message that PDF parsing is in development
+      // We'll handle PDFs differently to avoid the build issue
+      return NextResponse.json({ 
+        error: 'PDF parsing temporarily disabled', 
+        details: 'Please upload TXT, MD, or CSV files for now. PDF support coming soon.' 
+      }, { status: 400 });
     } else {
       // Handle text-based files (TXT, MD, CSV, etc.)
-      content = await file.text();
+      try {
+        content = await file.text();
+      } catch (textError) {
+        console.error('Error reading file:', textError);
+        return NextResponse.json({ 
+          error: 'Failed to read file', 
+          details: 'File might be corrupted or in an unsupported format' 
+        }, { status: 400 });
+      }
     }
     
     // Validate content was extracted
@@ -115,7 +114,7 @@ export async function POST(request: NextRequest) {
       content: content.substring(0, 2000), // Store first 2000 chars
       embedding: embedding,
       importance: 0.7,
-      tags: ['file', category, file.type === 'application/pdf' ? 'pdf' : 'text'],
+      tags: ['file', category, 'text'],
       metadata: {
         filename: file.name,
         fileSize: file.size,

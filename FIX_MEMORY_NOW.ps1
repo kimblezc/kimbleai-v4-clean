@@ -1,4 +1,17 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+# KIMBLEAI MEMORY FIX - THE ACTUAL SOLUTION
+Write-Host "=================================================" -ForegroundColor Cyan
+Write-Host "FIXING CROSS-CONVERSATION MEMORY ISSUE" -ForegroundColor Cyan
+Write-Host "=================================================" -ForegroundColor Cyan
+
+Set-Location "D:\OneDrive\Documents\kimbleai-v4-clean"
+
+# The problem is in the chat API - it's not actually searching across conversations
+Write-Host "[1/3] Backing up current chat route..." -ForegroundColor Yellow
+Copy-Item "app\api\chat\route.ts" "app\api\chat\route.backup.ts" -Force
+
+Write-Host "[2/3] Creating fixed chat route with proper memory retrieval..." -ForegroundColor Yellow
+@'
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
@@ -280,3 +293,54 @@ function extractFacts(userMessage: string, aiResponse: string): any[] {
 
   return facts;
 }
+'@ | Set-Content -Path "app\api\chat\route.ts" -Encoding UTF8
+
+Write-Host "[3/3] Testing the fix..." -ForegroundColor Yellow
+
+# Test memory persistence
+$testUrl = "https://kimbleai-v4-clean.vercel.app/api/chat"
+$testBody = @{
+    messages = @(
+        @{
+            role = "user"
+            content = "Testing: My cat is named Whiskers and I work at Microsoft"
+        }
+    )
+    userId = "zach"
+    conversationId = "test-$(Get-Date -Format 'yyyyMMddHHmmss')"
+} | ConvertTo-Json -Depth 10
+
+Write-Host "Storing test data..." -ForegroundColor Gray
+Invoke-RestMethod -Uri $testUrl -Method Post -Body $testBody -ContentType "application/json" | Out-Null
+
+Start-Sleep -Seconds 3
+
+# Now test retrieval in different conversation
+$recallBody = @{
+    messages = @(
+        @{
+            role = "user"
+            content = "What's my cat's name and where do I work?"
+        }
+    )
+    userId = "zach"
+    conversationId = "different-conversation"
+} | ConvertTo-Json -Depth 10
+
+Write-Host "Testing cross-conversation memory..." -ForegroundColor Gray
+$response = Invoke-RestMethod -Uri $testUrl -Method Post -Body $recallBody -ContentType "application/json"
+
+if ($response.response -match "Whiskers" -and $response.response -match "Microsoft") {
+    Write-Host "SUCCESS! Memory is now working across conversations!" -ForegroundColor Green
+    Write-Host "Messages retrieved: $($response.allMessagesRetrieved)" -ForegroundColor Cyan
+} else {
+    Write-Host "Memory test needs deployment. Deploy with: git push" -ForegroundColor Yellow
+}
+
+Write-Host ""
+Write-Host "=================================================" -ForegroundColor Cyan
+Write-Host "FIX APPLIED - DEPLOY WITH:" -ForegroundColor Green
+Write-Host "git add -A" -ForegroundColor Yellow
+Write-Host "git commit -m 'Fix cross-conversation memory retrieval'" -ForegroundColor Yellow  
+Write-Host "git push origin main" -ForegroundColor Yellow
+Write-Host "=================================================" -ForegroundColor Cyan

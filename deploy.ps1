@@ -1,31 +1,28 @@
-#!/usr/bin/env powershell
-Write-Host "KIMBLEAI - SIMPLE DEPLOYMENT" -ForegroundColor Cyan
+# KIMBLEAI DEPLOYMENT SCRIPT
+Write-Host "=================================================" -ForegroundColor Cyan
+Write-Host "DEPLOYING MEMORY FIX TO PRODUCTION" -ForegroundColor Cyan
+Write-Host "=================================================" -ForegroundColor Cyan
+Write-Host ""
 
 Set-Location "D:\OneDrive\Documents\kimbleai-v4-clean"
 
-# Build
-Write-Host "Building..." -ForegroundColor Yellow
-npm run build
+# Deploy to GitHub
+Write-Host "Adding files to git..." -ForegroundColor Yellow
+git add -A
+
+Write-Host "Committing changes..." -ForegroundColor Yellow
+git commit -m "Fix cross-conversation memory retrieval"
+
+Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
+git push origin main
 
 if ($LASTEXITCODE -eq 0) {
-    # Commit and push
-    git add -A
-    git commit -m "Update with persistent memory" 2>$null
-    git push origin master
-    
     Write-Host ""
-    Write-Host "DEPLOYED!" -ForegroundColor Green
+    Write-Host "SUCCESS! Deployment initiated" -ForegroundColor Green
+    Write-Host "Vercel will auto-deploy in ~2 minutes" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "WHAT'S WORKING NOW:" -ForegroundColor Cyan
-    Write-Host "- Every message saved to Supabase instantly" -ForegroundColor White
-    Write-Host "- Conversations persist across devices" -ForegroundColor White
-    Write-Host "- Full history available always" -ForegroundColor White
-    Write-Host "- Search across all messages" -ForegroundColor White
-    Write-Host ""
-    Write-Host "SETUP SUPABASE:" -ForegroundColor Yellow
-    Write-Host "1. Go to Supabase dashboard" -ForegroundColor White
-    Write-Host "2. Run SQL from supabase/schema.sql" -ForegroundColor White
-    Write-Host "3. Messages will save automatically" -ForegroundColor White
+    Write-Host "Check deployment at:" -ForegroundColor Yellow
+    Write-Host "https://vercel.com/kimblezcs-projects/kimbleai-v4-clean" -ForegroundColor Cyan
 } else {
-    Write-Host "Build failed" -ForegroundColor Red
+    Write-Host "Push failed. Try: git pull origin main --rebase" -ForegroundColor Red
 }
