@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         id,
         title,
         user_id,
+        metadata,
         messages(id, content, role, created_at)
       `)
       .eq('user_id', userData.id)
