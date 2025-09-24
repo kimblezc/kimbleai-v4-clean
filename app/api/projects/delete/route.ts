@@ -35,10 +35,14 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // First, get all conversations for this user (no metadata column)
+    // First, get all conversations with messages for better project detection
     const { data: conversations, error: fetchError } = await supabase
       .from('conversations')
-      .select('id, title')
+      .select(`
+        id,
+        title,
+        messages(id, content, role, created_at)
+      `)
       .eq('user_id', userData.id);
 
     if (fetchError) {
@@ -49,26 +53,50 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Find conversations that belong to this project using auto-detection
+    // Use the same project detection logic as the conversations API
     const conversationsToUpdate = conversations?.filter(conv => {
-      const detectedProject = autoDetectProject(conv.title || '');
+      const lastMessage = conv.messages?.[0]; // Latest message
+      const projectFromTitle = autoDetectProject(conv.title || '');
+      const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
+      const detectedProject = projectFromTitle || projectFromContent || 'general';
       return detectedProject === projectId;
     }) || [];
 
     console.log(`Found ${conversationsToUpdate.length} conversations to update for project: ${projectId}`);
 
     // Since we don't have metadata column, we'll rename conversation titles to move them to general
-    // For project-specific conversations, we'll add a prefix to indicate they were moved
-    const updatePromises = conversationsToUpdate.map(conv =>
-      supabase
+    // Remove project-specific keywords from titles so they'll be classified as general
+    const updatePromises = conversationsToUpdate.map(conv => {
+      // Remove project-specific keywords from title
+      let newTitle = conv.title || '';
+
+      // Remove automotive keywords
+      newTitle = newTitle.replace(/tesla|car|vehicle|model \d|license plate/gi, '');
+      // Remove business keywords
+      newTitle = newTitle.replace(/project alpha|project beta|budget|financial|allocation|deadline/gi, '');
+      // Remove development keywords
+      newTitle = newTitle.replace(/kimbleai|development|code|api|react|nextjs|typescript|build|deploy/gi, '');
+      // Remove personal keywords (but keep some context)
+      newTitle = newTitle.replace(/rebecca|wife|family|dog|pet/gi, '');
+      // Remove travel keywords
+      newTitle = newTitle.replace(/travel|trip|rome|vacation|planning/gi, '');
+      // Remove gaming keywords
+      newTitle = newTitle.replace(/dnd|d&d|campaign|dungeon|dragon|character|gaming|rpg|dice|adventure/gi, '');
+
+      // Clean up extra spaces and add moved indicator
+      newTitle = newTitle.replace(/\s+/g, ' ').trim();
+      if (!newTitle) newTitle = 'Conversation';
+      newTitle = `[General] ${newTitle}`;
+
+      return supabase
         .from('conversations')
         .update({
-          title: `[Moved from ${projectId}] ${conv.title}`,
+          title: newTitle,
           updated_at: new Date().toISOString()
         })
         .eq('id', conv.id)
-        .eq('user_id', userData.id)
-    );
+        .eq('user_id', userData.id);
+    });
 
     // Execute all updates
     const updateResults = await Promise.all(updatePromises);
