@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
         id,
         title,
         user_id,
-        metadata,
         messages(id, content, role, created_at)
       `)
       .eq('user_id', userData.id)
@@ -49,12 +48,14 @@ export async function GET(request: NextRequest) {
     // Get deleted projects for this user to avoid recreating them
     const { data: deletedProjectMarkers } = await supabase
       .from('conversations')
-      .select('metadata')
+      .select('title')
       .eq('user_id', userData.id)
       .like('title', 'DELETED_PROJECT_MARKER_%');
 
     const deletedProjectIds = new Set(
-      deletedProjectMarkers?.map(marker => marker.metadata?.deleted_project_id).filter(Boolean) || []
+      deletedProjectMarkers?.map(marker =>
+        marker.title?.replace('DELETED_PROJECT_MARKER_', '')
+      ).filter(Boolean) || []
     );
 
     // Filter out deleted project marker conversations from display
@@ -67,21 +68,13 @@ export async function GET(request: NextRequest) {
       const messageCount = conv.messages?.length || 0;
       const lastMessage = conv.messages?.[0]; // Latest message (due to ordering)
 
-      // First check if there's a stored project in metadata
-      let detectedProject = conv.metadata?.project_id;
+      // Auto-detect project from content since we don't have metadata column
+      const projectFromTitle = autoDetectProject(conv.title || '');
+      const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
+      const autoDetected = projectFromTitle || projectFromContent;
 
-      // If no stored project, auto-detect from content (but not if project was deleted)
-      if (!detectedProject) {
-        const projectFromTitle = autoDetectProject(conv.title || '');
-        const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
-        const autoDetected = projectFromTitle || projectFromContent;
-
-        // Only use auto-detected project if it hasn't been deleted
-        detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : 'general';
-      } else if (deletedProjectIds.has(detectedProject)) {
-        // If stored project was deleted, move to general
-        detectedProject = 'general';
-      }
+      // Only use auto-detected project if it hasn't been deleted
+      const detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : 'general';
 
       return {
         id: conv.id,
@@ -141,11 +134,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Conversation ID and Project ID required' }, { status: 400 });
       }
 
-      // Update conversation metadata with project assignment
+      // Update conversation with project assignment (using title for now since no metadata column)
       const { error: updateError } = await supabase
         .from('conversations')
         .update({
-          metadata: { project_id: projectId },
           updated_at: new Date().toISOString()
         })
         .eq('id', conversationId)
@@ -198,7 +190,7 @@ export async function POST(request: NextRequest) {
       conversation: {
         id: conversation.id,
         title: conversation.title,
-        project: conversation.metadata?.project_id || 'general',
+        project: autoDetectProject(conversation.title || '') || 'general',
         messages: formattedMessages
       }
     });
