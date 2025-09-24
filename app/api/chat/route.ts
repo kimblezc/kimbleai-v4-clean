@@ -131,7 +131,16 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
   `[${new Date(m.created_at).toLocaleDateString()}] ${m.role}: ${m.content.substring(0, 100)}...`
 ).join('\n') : 'No previous messages'}
 
-⚡ **INSTRUCTIONS**:
+⚡ **RESPONSE FORMATTING REQUIREMENTS**:
+- **ALWAYS use proper markdown formatting** for professional, readable responses
+- **Use headings (##, ###)** to organize information clearly
+- **Use bullet points** for lists and multiple items
+- **Use code blocks** for technical content, file names, or code
+- **Use bold** for important points and **italic** for emphasis
+- **Add paragraph breaks** - never send walls of text
+- **Structure longer responses** with clear sections and spacing
+
+📋 **CONTENT INSTRUCTIONS**:
 - Always reference relevant data automatically without being asked
 - Proactively mention related files, emails, calendar events, and past conversations
 - Act as a knowledgeable digital butler who remembers everything

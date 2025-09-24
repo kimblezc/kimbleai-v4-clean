@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
+import FormattedMessage from '../components/FormattedMessage';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -30,13 +31,57 @@ export default function Home() {
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [showTags, setShowTags] = useState(false);
   const [conversationTitle, setConversationTitle] = useState('');
-  const [conversationHistory, setConversationHistory] = useState([
-    { id: '1', title: 'GPT-5 model integration discussion', project: 'general', lastMessage: '2 hours ago', messageCount: 15 },
-    { id: '2', title: 'Client requirements review', project: 'client-work', lastMessage: '1 day ago', messageCount: 8 },
-    { id: '3', title: 'Quick CSS question', project: 'general', lastMessage: '3 days ago', messageCount: 3 },
-    { id: '4', title: 'Database schema planning', project: 'personal', lastMessage: '1 week ago', messageCount: 12 }
-  ]);
+  const [conversationHistory, setConversationHistory] = useState<any[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+
+  // Load conversations for current project
+  const loadConversations = async (projectId: string) => {
+    setIsLoadingConversations(true);
+    try {
+      const response = await fetch(`/api/conversations?userId=${currentUser}&projectId=${projectId}&limit=10`);
+      const data = await response.json();
+
+      if (data.success) {
+        setConversationHistory(data.conversations);
+      } else {
+        console.error('Failed to load conversations:', data.error);
+        // Show empty state
+        setConversationHistory([]);
+      }
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      setConversationHistory([]);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  // Load specific conversation
+  const loadConversation = async (conversationId: string) => {
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId, userId: currentUser })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setMessages(data.conversation.messages);
+        setConversationTitle(data.conversation.title);
+        setCurrentProject(data.conversation.project);
+        setCurrentConversationId(conversationId);
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    }
+  };
+
+  // Load conversations when project changes
+  React.useEffect(() => {
+    loadConversations(currentProject);
+  }, [currentProject, currentUser, loadConversations]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -407,7 +452,12 @@ export default function Home() {
           {projects.map((project) => (
             <div
               key={project.id}
-              onClick={() => setCurrentProject(project.id)}
+              onClick={() => {
+                setCurrentProject(project.id);
+                setMessages([]); // Clear current messages
+                setCurrentConversationId(null);
+                setConversationTitle('');
+              }}
               style={{
                 padding: '8px 12px',
                 backgroundColor: currentProject === project.id ? '#2a2a2a' : '#1a1a1a',
@@ -430,7 +480,7 @@ export default function Home() {
                 padding: '2px 6px',
                 borderRadius: '10px'
               }}>
-                {project.conversations}
+                {conversationHistory.filter(conv => conv.project === project.id).length}
               </span>
             </div>
           ))}
@@ -605,13 +655,10 @@ export default function Home() {
               }}>
                 {message.role === 'user' ? currentUser : 'KimbleAI'}
               </div>
-              <div style={{
-                fontSize: '15px',
-                lineHeight: '1.5',
-                color: '#ffffff'
-              }}>
-                {message.content}
-              </div>
+              <FormattedMessage
+                content={message.content}
+                role={message.role}
+              />
               {message.modelInfo && (
                 <div style={{
                   marginTop: '8px',
