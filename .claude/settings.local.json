@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run lint)",
+      "Bash(curl:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm update:*)",
+      "Bash(vercel:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "WebSearch",
+      "Bash(tasklist)",
+      "Bash(findstr:*)",
+      "Bash(npm ls:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx madge:*)",
+      "Bash(node:*)",
+      "Bash(npx @next/codemod@canary next-lint-to-eslint-cli:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git stash:*)",
+      "Bash(git commit:*)",
+      "Bash(npx vercel:*)",
+      "Bash(find:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

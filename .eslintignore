@@ -1,0 +1,36 @@
+# Ignore backup directories
+backup_*/
+*.backup
+*.backup.*
+
+# Ignore build and distribution directories
+.next/
+out/
+dist/
+build/
+
+# Ignore node modules
+node_modules/
+
+# Ignore environment files
+.env.local
+.env.*.local
+
+# Ignore various cache and temp files
+.cache/
+tmp/
+temp/
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore OS files
+.DS_Store
+Thumbs.db

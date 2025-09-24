@@ -1,0 +1,3 @@
+@echo off
+echo Starting Development Environment with Claude Code...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0START_DEV.ps1"
