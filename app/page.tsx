@@ -698,6 +698,17 @@ export default function Home() {
       backgroundColor: '#0f0f0f',
       color: '#ffffff'
     }}>
+      {/* EMERGENCY OAUTH TEST - TOP OF PAGE */}
+      <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 9999, background: 'red', padding: '10px' }}>
+        {status === 'loading' && <div>Auth Loading...</div>}
+        {!session && status !== 'loading' && (
+          <button onClick={() => signIn('google')} style={{ padding: '10px', backgroundColor: 'blue', color: 'white' }}>
+            EMERGENCY OAUTH TEST
+          </button>
+        )}
+        {session && <div style={{ color: 'white' }}>SIGNED IN: {session.user?.email}</div>}
+      </div>
+
       {/* Sidebar */}
       <div style={{
         width: '260px',
