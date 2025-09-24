@@ -1058,8 +1058,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Google Authentication */}
-        <div style={{ marginBottom: '20px' }}>
+        {/* Google Authentication - DEBUG */}
+        <div style={{
+          marginBottom: '20px',
+          border: '2px solid red', // DEBUG: Make visible
+          padding: '10px'
+        }}>
+          <div style={{ color: 'red', fontSize: '10px', marginBottom: '5px' }}>
+            DEBUG: Status = {status}, Session = {session ? 'YES' : 'NO'}
+          </div>
           {status === 'loading' ? (
             <div style={{
               padding: '12px',
