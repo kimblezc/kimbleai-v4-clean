@@ -1,0 +1,3 @@
+Deployment test - this file was created to verify Vercel is picking up git pushes
+Timestamp: September 24, 2025
+Commit: Testing deployment
