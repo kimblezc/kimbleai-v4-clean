@@ -37,6 +37,7 @@ export default function Home() {
   const [selectedAudio, setSelectedAudio] = useState<File | null>(null);
   const [isTranscribingAudio, setIsTranscribingAudio] = useState(false);
   const [deletedProjects, setDeletedProjects] = useState<Set<string>>(new Set());
+  const [createdProjects, setCreatedProjects] = useState<Set<string>>(new Set());
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -62,9 +63,28 @@ export default function Home() {
           status: 'active'
         }));
 
-        // Filter out deleted projects and sort by conversation count (descending)
-        const filteredProjects = dynamicProjects.filter(project => !deletedProjects.has(project.id));
-        filteredProjects.sort((a, b) => b.conversations - a.conversations);
+        // Add any manually created projects that don't exist in conversation data yet
+        const existingProjectIds = new Set(dynamicProjects.map(p => p.id));
+        const createdProjectsToAdd = Array.from(createdProjects)
+          .filter(projectId => !existingProjectIds.has(projectId) && !deletedProjects.has(projectId))
+          .map(projectId => ({
+            id: projectId,
+            name: formatProjectName(projectId),
+            conversations: 0,
+            status: 'active' as const
+          }));
+
+        // Combine dynamic and created projects
+        const allProjects = [...createdProjectsToAdd, ...dynamicProjects];
+
+        // Filter out deleted projects and sort
+        const filteredProjects = allProjects.filter(project => !deletedProjects.has(project.id));
+        filteredProjects.sort((a, b) => {
+          // Created projects with 0 conversations go to top
+          if (a.conversations === 0 && b.conversations > 0) return -1;
+          if (b.conversations === 0 && a.conversations > 0) return 1;
+          return b.conversations - a.conversations;
+        });
         setProjects(filteredProjects);
 
         // Filter conversations by project if specified
@@ -165,6 +185,16 @@ export default function Home() {
         console.error('Error loading deleted projects:', error);
       }
     }
+
+    const savedCreatedProjects = localStorage.getItem(`kimbleai_created_projects_${currentUser}`);
+    if (savedCreatedProjects) {
+      try {
+        const createdArray = JSON.parse(savedCreatedProjects);
+        setCreatedProjects(new Set(createdArray));
+      } catch (error) {
+        console.error('Error loading created projects:', error);
+      }
+    }
   }, [currentUser]);
 
   React.useEffect(() => {
@@ -173,6 +203,13 @@ export default function Home() {
       localStorage.setItem(`kimbleai_deleted_projects_${currentUser}`, JSON.stringify(deletedArray));
     }
   }, [deletedProjects, currentUser]);
+
+  React.useEffect(() => {
+    if (createdProjects.size > 0) {
+      const createdArray = Array.from(createdProjects);
+      localStorage.setItem(`kimbleai_created_projects_${currentUser}`, JSON.stringify(createdArray));
+    }
+  }, [createdProjects, currentUser]);
 
   // Delete project function - completely removes project with persistent storage
   const deleteProject = async (projectId: string) => {
@@ -880,9 +917,17 @@ export default function Home() {
                       alert('Project with this name already exists!');
                       return prev;
                     }
-                    // Add new project at the top (since it's active and user just created it)
+                    // Add new project at the top
                     return [newProject, ...prev];
                   });
+
+                  // Add to created projects set for persistence
+                  setCreatedProjects(prev => {
+                    const newSet = new Set(prev);
+                    newSet.add(projectId);
+                    return newSet;
+                  });
+
                   setCurrentProject(projectId);
                   alert(`Project "${name}" created successfully!`);
                 }
