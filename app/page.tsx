@@ -135,24 +135,57 @@ export default function Home() {
     loadConversations(projectId);
   };
 
-  // Delete project function
+  // Delete project function (UI only - moves conversations to general)
   const deleteProject = async (projectId: string) => {
-    if (!confirm(`Delete all conversations in "${formatProjectName(projectId)}" project?`)) {
+    if (!confirm(`Move all conversations from "${formatProjectName(projectId)}" to General project?`)) {
       return;
     }
 
     try {
-      // This would require implementing a delete API
-      // For now, we'll just hide it from the UI
-      setProjects(prev => prev.filter(p => p.id !== projectId));
+      // Filter out the deleted project from UI
+      setProjects(prev => {
+        const deletedProject = prev.find(p => p.id === projectId);
+        const updatedProjects = prev.filter(p => p.id !== projectId);
+
+        // Move conversations from deleted project to general
+        if (deletedProject) {
+          const generalProject = updatedProjects.find(p => p.id === 'general');
+          if (generalProject) {
+            generalProject.conversations += deletedProject.conversations;
+          } else {
+            // Add general project if it doesn't exist
+            updatedProjects.unshift({
+              id: 'general',
+              name: 'General',
+              conversations: deletedProject.conversations,
+              status: 'active'
+            });
+          }
+        }
+
+        return updatedProjects.sort((a, b) => b.conversations - a.conversations);
+      });
+
+      // Update conversation history to move conversations to general
+      setConversationHistory(prev =>
+        prev.map(conv =>
+          conv.project === projectId
+            ? { ...conv, project: 'general' }
+            : conv
+        )
+      );
 
       // Switch to general if deleting current project
       if (currentProject === projectId) {
         setCurrentProject('general');
-        loadConversations('general');
+        // Filter conversations for general project without reload
+        const generalConversations = conversationHistory.filter(conv =>
+          conv.project === 'general' || conv.project === projectId
+        );
+        setConversationHistory(generalConversations.slice(0, 10));
       }
 
-      alert('Project deleted successfully');
+      alert(`Project "${formatProjectName(projectId)}" conversations moved to General`);
     } catch (error) {
       console.error('Error deleting project:', error);
       alert('Failed to delete project');
@@ -567,15 +600,26 @@ export default function Home() {
             </h3>
             <button
               onClick={() => {
-                const name = prompt('Project name:');
-                if (name) {
+                const name = prompt('Enter project name (e.g., "DND Campaign", "Work Projects"):');
+                if (name && name.trim()) {
+                  const projectId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
                   const newProject = {
-                    id: name.toLowerCase().replace(/\s+/g, '-'),
-                    name,
+                    id: projectId,
+                    name: name.trim(),
                     conversations: 0,
                     status: 'active'
                   };
-                  setProjects([...projects, newProject]);
+                  setProjects(prev => {
+                    // Check if project already exists
+                    if (prev.find(p => p.id === projectId)) {
+                      alert('Project with this name already exists!');
+                      return prev;
+                    }
+                    // Add and sort by conversation count
+                    return [...prev, newProject].sort((a, b) => b.conversations - a.conversations);
+                  });
+                  setCurrentProject(projectId);
+                  alert(`Project "${name}" created successfully!`);
                 }
               }}
               style={{
