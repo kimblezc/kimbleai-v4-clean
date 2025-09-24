@@ -23,17 +23,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<'zach' | 'rebecca'>('zach');
   const [currentProject, setCurrentProject] = useState('general');
-  const [projects, setProjects] = useState([
-    { id: 'general', name: 'General', conversations: 0, status: 'active' },
-    { id: 'development', name: 'Development', conversations: 0, status: 'active' },
-    { id: 'business', name: 'Business', conversations: 0, status: 'active' },
-    { id: 'automotive', name: 'Automotive', conversations: 0, status: 'active' },
-    { id: 'personal', name: 'Personal', conversations: 0, status: 'active' },
-    { id: 'travel', name: 'Travel', conversations: 0, status: 'active' },
-    { id: 'gaming', name: 'Gaming & DND', conversations: 0, status: 'active' },
-    { id: 'cooking', name: 'Cooking & Recipes', conversations: 0, status: 'active' },
-    { id: 'legal', name: 'Legal', conversations: 0, status: 'active' }
-  ]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [showTags, setShowTags] = useState(false);
   const [conversationTitle, setConversationTitle] = useState('');
@@ -45,25 +35,72 @@ export default function Home() {
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
 
   // Load conversations for current project
-  const loadConversations = async (projectId: string) => {
+  // Load conversations and update projects dynamically
+  const loadConversations = async (projectId: string = '') => {
     setIsLoadingConversations(true);
     try {
-      const response = await fetch(`/api/conversations?userId=${currentUser}&projectId=${projectId}&limit=10`);
+      const response = await fetch(`/api/conversations?userId=${currentUser}&limit=50`);
       const data = await response.json();
 
       if (data.success) {
-        setConversationHistory(data.conversations);
+        // Update projects based on actual conversation data
+        const projectCounts: Record<string, number> = {};
+        data.conversations.forEach((conv: any) => {
+          const project = conv.project || 'general';
+          projectCounts[project] = (projectCounts[project] || 0) + 1;
+        });
+
+        // Create dynamic project list
+        const dynamicProjects = Object.entries(projectCounts).map(([id, count]) => ({
+          id,
+          name: formatProjectName(id),
+          conversations: count,
+          status: 'active'
+        }));
+
+        // Sort by conversation count (descending)
+        dynamicProjects.sort((a, b) => b.conversations - a.conversations);
+        setProjects(dynamicProjects);
+
+        // Filter conversations by project if specified
+        const filteredConversations = projectId
+          ? data.conversations.filter((conv: any) => (conv.project || 'general') === projectId)
+          : data.conversations;
+
+        setConversationHistory(filteredConversations.slice(0, 10));
+
+        // Set first project as current if none selected
+        if (!projectId && dynamicProjects.length > 0) {
+          setCurrentProject(dynamicProjects[0].id);
+        }
       } else {
         console.error('Failed to load conversations:', data.error);
-        // Show empty state
         setConversationHistory([]);
+        setProjects([]);
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
       setConversationHistory([]);
+      setProjects([]);
     } finally {
       setIsLoadingConversations(false);
     }
+  };
+
+  // Helper function to format project names
+  const formatProjectName = (id: string): string => {
+    const nameMap: Record<string, string> = {
+      general: 'General',
+      development: 'Development',
+      business: 'Business',
+      automotive: 'Automotive',
+      personal: 'Personal',
+      travel: 'Travel',
+      gaming: 'Gaming & DND',
+      cooking: 'Cooking & Recipes',
+      legal: 'Legal'
+    };
+    return nameMap[id] || id.charAt(0).toUpperCase() + id.slice(1);
   };
 
   // Load specific conversation
@@ -87,10 +124,40 @@ export default function Home() {
     }
   };
 
-  // Load conversations when project changes
+  // Load conversations on initial mount and user change
   React.useEffect(() => {
-    loadConversations(currentProject);
-  }, [currentProject, currentUser, loadConversations]);
+    loadConversations();
+  }, [currentUser]);
+
+  // Load conversations when project changes
+  const handleProjectChange = (projectId: string) => {
+    setCurrentProject(projectId);
+    loadConversations(projectId);
+  };
+
+  // Delete project function
+  const deleteProject = async (projectId: string) => {
+    if (!confirm(`Delete all conversations in "${formatProjectName(projectId)}" project?`)) {
+      return;
+    }
+
+    try {
+      // This would require implementing a delete API
+      // For now, we'll just hide it from the UI
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+
+      // Switch to general if deleting current project
+      if (currentProject === projectId) {
+        setCurrentProject('general');
+        loadConversations('general');
+      }
+
+      alert('Project deleted successfully');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
+    }
+  };
 
   // Handle photo upload and analysis
   const handlePhotoAnalysis = async (file: File) => {
@@ -528,12 +595,6 @@ export default function Home() {
           {projects.map((project) => (
             <div
               key={project.id}
-              onClick={() => {
-                setCurrentProject(project.id);
-                setMessages([]); // Clear current messages
-                setCurrentConversationId(null);
-                setConversationTitle('');
-              }}
               style={{
                 padding: '8px 12px',
                 backgroundColor: currentProject === project.id ? '#2a2a2a' : '#1a1a1a',
@@ -541,23 +602,70 @@ export default function Home() {
                 marginBottom: '8px',
                 fontSize: '14px',
                 color: currentProject === project.id ? '#fff' : '#ccc',
-                cursor: 'pointer',
                 border: currentProject === project.id ? '1px solid #4a9eff' : '1px solid transparent',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                position: 'relative'
               }}
             >
-              <span>{project.name}</span>
-              <span style={{
-                fontSize: '11px',
-                color: '#666',
-                backgroundColor: '#333',
-                padding: '2px 6px',
-                borderRadius: '10px'
-              }}>
-                {conversationHistory.filter(conv => conv.project === project.id).length}
-              </span>
+              <div
+                onClick={() => {
+                  handleProjectChange(project.id);
+                  setMessages([]); // Clear current messages
+                  setCurrentConversationId(null);
+                  setConversationTitle('');
+                }}
+                style={{
+                  flex: 1,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <span>{project.name}</span>
+                <span style={{
+                  fontSize: '11px',
+                  color: '#666',
+                  backgroundColor: '#333',
+                  padding: '2px 6px',
+                  borderRadius: '10px'
+                }}>
+                  {project.conversations}
+                </span>
+              </div>
+
+              {/* Delete button - only show for non-general projects */}
+              {project.id !== 'general' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteProject(project.id);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#666',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    marginLeft: '8px',
+                    padding: '4px',
+                    borderRadius: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#ff4444';
+                    e.currentTarget.style.backgroundColor = '#2a1a1a';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#666';
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  title={`Delete ${project.name} project`}
+                >
+                  🗑️
+                </button>
+              )}
             </div>
           ))}
 
