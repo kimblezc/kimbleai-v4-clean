@@ -45,15 +45,42 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
+    // Get deleted projects for this user to avoid recreating them
+    const { data: deletedProjectMarkers } = await supabase
+      .from('conversations')
+      .select('metadata')
+      .eq('user_id', userData.id)
+      .like('title', 'DELETED_PROJECT_MARKER_%');
+
+    const deletedProjectIds = new Set(
+      deletedProjectMarkers?.map(marker => marker.metadata?.deleted_project_id).filter(Boolean) || []
+    );
+
+    // Filter out deleted project marker conversations from display
+    const realConversations = conversations?.filter(conv =>
+      !conv.title?.startsWith('DELETED_PROJECT_MARKER_')
+    ) || [];
+
     // Format conversations for frontend with auto-project assignment
-    const formattedConversations = conversations?.map(conv => {
+    const formattedConversations = realConversations?.map(conv => {
       const messageCount = conv.messages?.length || 0;
       const lastMessage = conv.messages?.[0]; // Latest message (due to ordering)
 
-      // Auto-detect project from conversation content
-      const projectFromTitle = autoDetectProject(conv.title || '');
-      const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
-      const detectedProject = projectFromTitle || projectFromContent || 'general';
+      // First check if there's a stored project in metadata
+      let detectedProject = conv.metadata?.project_id;
+
+      // If no stored project, auto-detect from content (but not if project was deleted)
+      if (!detectedProject) {
+        const projectFromTitle = autoDetectProject(conv.title || '');
+        const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
+        const autoDetected = projectFromTitle || projectFromContent;
+
+        // Only use auto-detected project if it hasn't been deleted
+        detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : 'general';
+      } else if (deletedProjectIds.has(detectedProject)) {
+        // If stored project was deleted, move to general
+        detectedProject = 'general';
+      }
 
       return {
         id: conv.id,

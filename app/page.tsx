@@ -191,34 +191,41 @@ export default function Home() {
     }
 
     try {
-      // Add to deleted projects set (persistent)
-      setDeletedProjects(prev => {
-        const newSet = new Set(prev);
-        newSet.add(projectId);
-        return newSet;
+      // Call the API to properly delete the project from database
+      const response = await fetch('/api/projects/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          userId: currentUser
+        })
       });
 
-      // Update conversation history to move conversations to general
-      setConversationHistory(prev =>
-        prev.map(conv =>
-          conv.project === projectId
-            ? { ...conv, project: 'general' }
-            : conv
-        )
-      );
+      const data = await response.json();
 
-      // Switch to general if deleting current project
-      if (currentProject === projectId) {
-        setCurrentProject('general');
+      if (data.success) {
+        // Add to local deleted projects set for immediate UI update
+        setDeletedProjects(prev => {
+          const newSet = new Set(prev);
+          newSet.add(projectId);
+          return newSet;
+        });
+
+        // Switch to general if deleting current project
+        if (currentProject === projectId) {
+          setCurrentProject('general');
+        }
+
+        // Reload conversations to get updated data from server
+        setTimeout(() => loadConversations(), 200);
+
+        alert(`Project "${projectName}" deleted successfully!\n${data.conversationsMoved} conversations moved to General.`);
+      } else {
+        throw new Error(data.error || 'Failed to delete project');
       }
-
-      // Reload conversations to update project counts
-      setTimeout(() => loadConversations(), 100);
-
-      alert(`Project "${projectName}" deleted successfully!\nConversations moved to General.`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting project:', error);
-      alert('Failed to delete project');
+      alert(`Failed to delete project: ${error.message}`);
     }
   };
 
