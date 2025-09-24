@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import FormattedMessage from '../components/FormattedMessage';
 
 interface Message {
@@ -18,6 +19,7 @@ interface Message {
 }
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1056,6 +1058,72 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Google Authentication */}
+        <div style={{ marginBottom: '20px' }}>
+          {status === 'loading' ? (
+            <div style={{
+              padding: '12px',
+              backgroundColor: '#2a2a2a',
+              borderRadius: '8px',
+              fontSize: '12px',
+              color: '#888',
+              textAlign: 'center'
+            }}>
+              Loading auth...
+            </div>
+          ) : session ? (
+            <div style={{
+              padding: '12px',
+              backgroundColor: '#1a4a1a',
+              borderRadius: '8px',
+              fontSize: '12px',
+              color: '#4ade80'
+            }}>
+              <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                ✅ Google Connected
+              </div>
+              <div style={{ marginBottom: '8px', fontSize: '11px' }}>
+                {session.user?.email}
+              </div>
+              <button
+                onClick={() => signOut()}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: '#ef4444',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: 'white',
+                  fontSize: '11px',
+                  cursor: 'pointer'
+                }}
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => signIn('google')}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#4285f4',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              🔗 Connect Google
+            </button>
+          )}
+        </div>
+
         {/* System Status */}
         <div style={{
           marginTop: 'auto',
@@ -1068,6 +1136,7 @@ export default function Home() {
           <div>KimbleAI v4</div>
           <div>Status: Online</div>
           <div>Memory: Active</div>
+          {session && <div>Google: Connected ✅</div>}
         </div>
       </div>
 
