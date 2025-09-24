@@ -45,15 +45,20 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Format conversations for frontend
+    // Format conversations for frontend with auto-project assignment
     const formattedConversations = conversations?.map(conv => {
       const messageCount = conv.messages?.length || 0;
       const lastMessage = conv.messages?.[0]; // Latest message (due to ordering)
 
+      // Auto-detect project from conversation content
+      const projectFromTitle = autoDetectProject(conv.title || '');
+      const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
+      const detectedProject = projectFromTitle || projectFromContent || 'general';
+
       return {
         id: conv.id,
         title: conv.title || 'Untitled Conversation',
-        project: 'general', // Default project for now
+        project: detectedProject,
         messageCount,
         lastMessage: lastMessage ? formatTimeAgo(lastMessage.created_at) : 'No messages',
         createdAt: new Date().toISOString(),
@@ -89,7 +94,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { conversationId, userId = 'zach', messages } = await request.json();
+    const { action, conversationId, userId = 'zach', messages, projectId } = await request.json();
 
     // Get user
     const { data: userData } = await supabase
@@ -100,6 +105,37 @@ export async function POST(request: NextRequest) {
 
     if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Handle project assignment action
+    if (action === 'assign_project') {
+      if (!conversationId || !projectId) {
+        return NextResponse.json({ error: 'Conversation ID and Project ID required' }, { status: 400 });
+      }
+
+      // Update conversation metadata with project assignment
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({
+          metadata: { project_id: projectId },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', conversationId)
+        .eq('user_id', userData.id);
+
+      if (updateError) {
+        return NextResponse.json({
+          error: 'Failed to assign project',
+          details: updateError.message
+        }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Project assigned successfully',
+        conversationId,
+        projectId
+      });
     }
 
     // Fetch specific conversation with messages
@@ -158,4 +194,59 @@ function formatTimeAgo(dateString: string): string {
   if (diffInHours < 48) return '1 day ago';
   if (diffInHours < 168) return `${Math.floor(diffInHours / 24)} days ago`;
   return `${Math.floor(diffInHours / 168)} weeks ago`;
+}
+
+function autoDetectProject(content: string): string {
+  if (!content) return '';
+
+  const lowerContent = content.toLowerCase();
+
+  // Development & Technical Projects
+  if (lowerContent.includes('kimbleai') || lowerContent.includes('development') ||
+      lowerContent.includes('code') || lowerContent.includes('api') ||
+      lowerContent.includes('react') || lowerContent.includes('nextjs') ||
+      lowerContent.includes('typescript') || lowerContent.includes('build') ||
+      lowerContent.includes('deploy') || lowerContent.includes('technical documents')) {
+    return 'development';
+  }
+
+  // Personal & Family
+  if (lowerContent.includes('rebecca') || lowerContent.includes('wife') ||
+      lowerContent.includes('family') || lowerContent.includes('pet') ||
+      lowerContent.includes('dog') || lowerContent.includes('home') ||
+      lowerContent.includes('personal')) {
+    return 'personal';
+  }
+
+  // Travel & Planning
+  if (lowerContent.includes('travel') || lowerContent.includes('trip') ||
+      lowerContent.includes('rome') || lowerContent.includes('vacation') ||
+      lowerContent.includes('planning')) {
+    return 'travel';
+  }
+
+  // Finance & Business
+  if (lowerContent.includes('budget') || lowerContent.includes('financial') ||
+      lowerContent.includes('allocation') || lowerContent.includes('project alpha') ||
+      lowerContent.includes('project beta') || lowerContent.includes('deadline')) {
+    return 'business';
+  }
+
+  // Automotive
+  if (lowerContent.includes('tesla') || lowerContent.includes('car') ||
+      lowerContent.includes('license plate') || lowerContent.includes('vehicle') ||
+      lowerContent.includes('model 3') || lowerContent.includes('model y')) {
+    return 'automotive';
+  }
+
+  // Gaming & DND
+  if (lowerContent.includes('dnd') || lowerContent.includes('d&d') ||
+      lowerContent.includes('campaign') || lowerContent.includes('dungeon') ||
+      lowerContent.includes('dragon') || lowerContent.includes('character') ||
+      lowerContent.includes('gaming') || lowerContent.includes('rpg') ||
+      lowerContent.includes('dice') || lowerContent.includes('adventure')) {
+    return 'gaming';
+  }
+
+  return '';
 }

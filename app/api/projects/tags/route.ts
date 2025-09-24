@@ -99,9 +99,11 @@ function autoSuggestTags(content: string, projectId?: string): string[] {
     'typescript': /\b(typescript|\.ts|\.tsx|interface|type)\b/i,
     'api': /\b(api|endpoint|server|backend|rest)\b/i,
     'database': /\b(database|supabase|postgres|sql|query)\b/i,
-    'ai': /\b(ai|openai|gpt|claude|llm|embedding|vector)\b/i,
+    'ai': /\b(ai|openai|gpt|claude|llm|embedding|vector|kimbleai)\b/i,
     'ui': /\b(ui|ux|design|interface|component|styling)\b/i,
-    'mobile': /\b(mobile|ios|android|responsive)\b/i
+    'mobile': /\b(mobile|ios|android|responsive)\b/i,
+    'deployment': /\b(deploy|deployment|vercel|build|production)\b/i,
+    'git': /\b(git|github|commit|merge|branch|repository)\b/i
   };
 
   // Priority and action tags
@@ -117,13 +119,24 @@ function autoSuggestTags(content: string, projectId?: string): string[] {
     'deployment': /\b(deploy|deployment|production|staging|release)\b/i
   };
 
-  // Context tags
+  // Context tags (enhanced)
   const contextPatterns = {
     'client': /\b(client|customer|user|stakeholder)\b/i,
     'team': /\b(team|collaboration|meeting|sync|standup)\b/i,
     'planning': /\b(plan|planning|roadmap|timeline|schedule)\b/i,
     'research': /\b(research|investigate|analyze|study)\b/i,
-    'creative': /\b(creative|design|brand|visual|mockup)\b/i
+    'creative': /\b(creative|design|brand|visual|mockup)\b/i,
+    'personal': /\b(rebecca|wife|family|pet|dog|home|personal)\b/i,
+    'travel': /\b(travel|trip|rome|vacation|italy|flight)\b/i,
+    'automotive': /\b(tesla|car|vehicle|license|model|drive)\b/i,
+    'finance': /\b(budget|financial|money|cost|price|allocation)\b/i,
+    'health': /\b(health|doctor|medical|fitness|exercise)\b/i,
+    'food': /\b(food|restaurant|cooking|meal|dinner|italian)\b/i,
+    'weather': /\b(weather|rain|sunny|temperature|forecast)\b/i,
+    'work': /\b(project alpha|project beta|deadline|business|corporate)\b/i,
+    'gaming': /\b(dnd|d&d|campaign|dungeon|dragon|character|gaming|rpg|dice|adventure|miniature)\b/i,
+    'cooking': /\b(recipe|cooking|ingredient|meal|kitchen|baking|chef)\b/i,
+    'legal': /\b(legal|law|contract|agreement|lawyer|attorney|court)\b/i
   };
 
   // Check all patterns

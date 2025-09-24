@@ -22,11 +22,17 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<'zach' | 'rebecca'>('zach');
-  const [currentProject, setCurrentProject] = useState('General');
+  const [currentProject, setCurrentProject] = useState('general');
   const [projects, setProjects] = useState([
-    { id: 'general', name: 'General', conversations: 12, status: 'active' },
-    { id: 'client-work', name: 'Client Work', conversations: 8, status: 'active' },
-    { id: 'personal', name: 'Personal Projects', conversations: 5, status: 'active' }
+    { id: 'general', name: 'General', conversations: 0, status: 'active' },
+    { id: 'development', name: 'Development', conversations: 0, status: 'active' },
+    { id: 'business', name: 'Business', conversations: 0, status: 'active' },
+    { id: 'automotive', name: 'Automotive', conversations: 0, status: 'active' },
+    { id: 'personal', name: 'Personal', conversations: 0, status: 'active' },
+    { id: 'travel', name: 'Travel', conversations: 0, status: 'active' },
+    { id: 'gaming', name: 'Gaming & DND', conversations: 0, status: 'active' },
+    { id: 'cooking', name: 'Cooking & Recipes', conversations: 0, status: 'active' },
+    { id: 'legal', name: 'Legal', conversations: 0, status: 'active' }
   ]);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [showTags, setShowTags] = useState(false);
@@ -34,6 +40,9 @@ export default function Home() {
   const [conversationHistory, setConversationHistory] = useState<any[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoAnalysisType, setPhotoAnalysisType] = useState('general');
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
 
   // Load conversations for current project
   const loadConversations = async (projectId: string) => {
@@ -82,6 +91,73 @@ export default function Home() {
   React.useEffect(() => {
     loadConversations(currentProject);
   }, [currentProject, currentUser, loadConversations]);
+
+  // Handle photo upload and analysis
+  const handlePhotoAnalysis = async (file: File) => {
+    setIsAnalyzingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      formData.append('analysisType', photoAnalysisType);
+      formData.append('userId', currentUser);
+
+      const response = await fetch('/api/photo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Add photo analysis as a message
+        const photoMessage: Message = {
+          role: 'user',
+          content: `📸 Photo uploaded: ${file.name}`,
+          timestamp: new Date().toISOString(),
+          projectId: data.suggestedProject,
+          tags: data.autoTags
+        };
+
+        const analysisMessage: Message = {
+          role: 'assistant',
+          content: `## Photo Analysis Results\n\n**File:** ${file.name}\n**Analysis Type:** ${photoAnalysisType}\n**Suggested Project:** ${data.suggestedProject}\n**Auto Tags:** ${data.autoTags.join(', ')}\n\n### Analysis:\n${data.analysis}\n\n---\n*Photo ID: ${data.photoId}*`,
+          timestamp: new Date().toISOString(),
+          projectId: data.suggestedProject,
+          tags: data.autoTags
+        };
+
+        setMessages(prev => [...prev, photoMessage, analysisMessage]);
+
+        // Update suggested tags
+        setSuggestedTags(data.autoTags);
+        setShowTags(true);
+
+        // Clear selected photo
+        setSelectedPhoto(null);
+      } else {
+        throw new Error(data.error || 'Photo analysis failed');
+      }
+    } catch (error: any) {
+      console.error('Photo analysis error:', error);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: `❌ **Photo Analysis Failed**\n\nError: ${error.message}\n\nPlease try again with a different image or contact support if the issue persists.`,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsAnalyzingPhoto(false);
+    }
+  };
+
+  // Handle file selection
+  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedPhoto(file);
+      handlePhotoAnalysis(file);
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -754,6 +830,56 @@ export default function Home() {
             >
               🏷️
             </button>
+
+            {/* Photo Upload Button */}
+            <label
+              style={{
+                padding: '12px',
+                backgroundColor: '#333',
+                border: 'none',
+                borderRadius: '12px',
+                color: '#ffffff',
+                fontSize: '12px',
+                cursor: isAnalyzingPhoto ? 'not-allowed' : 'pointer',
+                marginRight: '8px',
+                display: 'inline-block',
+                opacity: isAnalyzingPhoto ? 0.6 : 1
+              }}
+              title="Upload and analyze photo"
+            >
+              {isAnalyzingPhoto ? '⏳' : '📸'}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoSelect}
+                disabled={isAnalyzingPhoto}
+                style={{ display: 'none' }}
+              />
+            </label>
+
+            {/* Photo Analysis Type Selector */}
+            {selectedPhoto && (
+              <select
+                value={photoAnalysisType}
+                onChange={(e) => setPhotoAnalysisType(e.target.value)}
+                style={{
+                  padding: '8px',
+                  backgroundColor: '#2a2a2a',
+                  border: '1px solid #444',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  marginRight: '8px'
+                }}
+              >
+                <option value="general">General Analysis</option>
+                <option value="dnd">D&D / Gaming</option>
+                <option value="document">Document / Text</option>
+                <option value="technical">Technical / Code</option>
+                <option value="automotive">Automotive</option>
+                <option value="recipe">Recipe / Food</option>
+              </select>
+            )}
             <button
               onClick={sendMessage}
               disabled={loading || !input.trim()}
