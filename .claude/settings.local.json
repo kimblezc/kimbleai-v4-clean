@@ -30,7 +30,9 @@
       "Bash(git init:*)",
       "Bash(git remote add:*)",
       "Bash(git push:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "mcp__ide__getDiagnostics",
+      "WebFetch(domain:kimbleai-v4-clean-6y4qdok18-kimblezcs-projects.vercel.app)"
     ],
     "deny": [],
     "ask": []

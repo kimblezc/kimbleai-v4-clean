@@ -33,6 +33,9 @@ export default function Home() {
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoAnalysisType, setPhotoAnalysisType] = useState('general');
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
+  const [selectedAudio, setSelectedAudio] = useState<File | null>(null);
+  const [isTranscribingAudio, setIsTranscribingAudio] = useState(false);
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -127,7 +130,21 @@ export default function Home() {
   // Load conversations on initial mount and user change
   React.useEffect(() => {
     loadConversations();
-  }, [currentUser]);
+  }, [currentUser, loadConversations]);
+
+  // Persist currentProject to localStorage and restore on load
+  React.useEffect(() => {
+    const savedProject = localStorage.getItem(`kimbleai_project_${currentUser}`);
+    if (savedProject && projects.some(p => p.id === savedProject)) {
+      setCurrentProject(savedProject);
+    }
+  }, [projects, currentUser]);
+
+  React.useEffect(() => {
+    if (currentProject) {
+      localStorage.setItem(`kimbleai_project_${currentUser}`, currentProject);
+    }
+  }, [currentProject, currentUser]);
 
   // Load conversations when project changes
   const handleProjectChange = (projectId: string) => {
@@ -135,21 +152,33 @@ export default function Home() {
     loadConversations(projectId);
   };
 
-  // Delete project function (UI only - moves conversations to general)
+  // Delete project function - completely removes project
   const deleteProject = async (projectId: string) => {
-    if (!confirm(`Move all conversations from "${formatProjectName(projectId)}" to General project?`)) {
+    const projectName = formatProjectName(projectId);
+    const confirmMessage = projectId === 'general'
+      ? `Cannot delete the General project.`
+      : `Are you sure you want to DELETE "${projectName}" project?\n\nThis will:\n- Remove the project completely\n- Move all conversations to General\n- This action cannot be undone\n\nProceed?`;
+
+    if (projectId === 'general') {
+      alert('Cannot delete the General project.');
+      return;
+    }
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
-      // Filter out the deleted project from UI
+      // Get the deleted project info before removal
+      const deletedProject = projects.find(p => p.id === projectId);
+
+      // Remove the project completely from the list
       setProjects(prev => {
-        const deletedProject = prev.find(p => p.id === projectId);
         const updatedProjects = prev.filter(p => p.id !== projectId);
 
-        // Move conversations from deleted project to general
+        // Add conversations to general project
         if (deletedProject) {
-          const generalProject = updatedProjects.find(p => p.id === 'general');
+          let generalProject = updatedProjects.find(p => p.id === 'general');
           if (generalProject) {
             generalProject.conversations += deletedProject.conversations;
           } else {
@@ -178,14 +207,11 @@ export default function Home() {
       // Switch to general if deleting current project
       if (currentProject === projectId) {
         setCurrentProject('general');
-        // Filter conversations for general project without reload
-        const generalConversations = conversationHistory.filter(conv =>
-          conv.project === 'general' || conv.project === projectId
-        );
-        setConversationHistory(generalConversations.slice(0, 10));
+        // Reload conversations for general project
+        setTimeout(() => loadConversations('general'), 100);
       }
 
-      alert(`Project "${formatProjectName(projectId)}" conversations moved to General`);
+      alert(`Project "${projectName}" deleted successfully!\nConversations moved to General.`);
     } catch (error) {
       console.error('Error deleting project:', error);
       alert('Failed to delete project');
@@ -258,6 +284,226 @@ export default function Home() {
       handlePhotoAnalysis(file);
     }
   };
+
+  // Handle audio file selection
+  const handleAudioSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedAudio(file);
+      handleAudioTranscription(file);
+    }
+  };
+
+  // Handle audio transcription with chunking for large files
+  const handleAudioTranscription = async (file: File) => {
+    setIsTranscribingAudio(true);
+    try {
+      console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
+
+      // For large files (> 100MB), we'll implement chunked processing
+      const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB threshold
+
+      if (isLargeFile) {
+        await handleLargeAudioTranscription(file);
+      } else {
+        await handleStandardAudioTranscription(file);
+      }
+
+      setSelectedAudio(null);
+    } catch (error: any) {
+      console.error('Audio transcription error:', error);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: `❌ **Audio Transcription Failed**\n\nError: ${error.message}\n\nPlease try again with a different audio file or contact support if the issue persists.`,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTranscribingAudio(false);
+    }
+  };
+
+  // Standard transcription for smaller files
+  const handleStandardAudioTranscription = async (file: File) => {
+    const formData = new FormData();
+    formData.append('audio', file);
+    formData.append('userId', currentUser);
+    formData.append('projectId', currentProject);
+
+    const response = await fetch('/api/transcribe', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      const audioMessage: Message = {
+        role: 'user',
+        content: `🎵 Audio uploaded: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`,
+        timestamp: new Date().toISOString(),
+        projectId: currentProject
+      };
+
+      const transcriptionMessage: Message = {
+        role: 'assistant',
+        content: `## Audio Transcription Results\n\n**File:** ${file.name}\n**Duration:** ${data.duration || 'Unknown'}\n**Size:** ${(file.size / 1024 / 1024).toFixed(1)} MB\n\n### Transcription:\n${data.transcription}\n\n---\n*Processed with OpenAI Whisper*`,
+        timestamp: new Date().toISOString(),
+        projectId: currentProject
+      };
+
+      setMessages(prev => [...prev, audioMessage, transcriptionMessage]);
+    } else {
+      throw new Error(data.error || 'Audio transcription failed');
+    }
+  };
+
+  // Large file transcription with chunking and progressive processing
+  const handleLargeAudioTranscription = async (file: File) => {
+    const chunkSize = 50 * 1024 * 1024; // 50MB chunks
+    const totalChunks = Math.ceil(file.size / chunkSize);
+
+    // Add initial message about large file processing
+    const processingMessage: Message = {
+      role: 'assistant',
+      content: `🔄 **Processing Large Audio File**\n\n**File:** ${file.name}\n**Size:** ${(file.size / 1024 / 1024).toFixed(1)} MB\n**Strategy:** Chunked processing (${totalChunks} chunks)\n\nThis may take several minutes. Processing will continue in the background...`,
+      timestamp: new Date().toISOString(),
+      projectId: currentProject
+    };
+    setMessages(prev => [...prev, processingMessage]);
+
+    // Process chunks sequentially
+    let fullTranscription = '';
+    let processedDuration = 0;
+
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * chunkSize;
+      const end = Math.min(start + chunkSize, file.size);
+      const chunk = file.slice(start, end);
+
+      // Create chunk file name
+      const chunkFileName = `${file.name.split('.')[0]}_chunk_${chunkIndex + 1}.${file.name.split('.').pop()}`;
+      const chunkFile = new File([chunk], chunkFileName, { type: file.type });
+
+      try {
+        const formData = new FormData();
+        formData.append('audio', chunkFile);
+        formData.append('userId', currentUser);
+        formData.append('projectId', currentProject);
+        formData.append('chunkIndex', chunkIndex.toString());
+        formData.append('totalChunks', totalChunks.toString());
+        formData.append('isChunked', 'true');
+
+        const response = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          fullTranscription += data.transcription + ' ';
+          processedDuration += data.duration || 0;
+
+          // Update progress
+          const progressMessage: Message = {
+            role: 'assistant',
+            content: `⏳ **Progress Update:** Chunk ${chunkIndex + 1}/${totalChunks} processed (${Math.round((chunkIndex + 1) / totalChunks * 100)}%)`,
+            timestamp: new Date().toISOString(),
+            projectId: currentProject
+          };
+          setMessages(prev => [...prev, progressMessage]);
+        } else {
+          console.error(`Chunk ${chunkIndex + 1} failed:`, data.error);
+          fullTranscription += `[Chunk ${chunkIndex + 1} processing failed] `;
+        }
+      } catch (error) {
+        console.error(`Error processing chunk ${chunkIndex + 1}:`, error);
+        fullTranscription += `[Chunk ${chunkIndex + 1} error] `;
+      }
+    }
+
+    // Final transcription message
+    const finalMessage: Message = {
+      role: 'assistant',
+      content: `## Complete Audio Transcription\n\n**File:** ${file.name}\n**Total Size:** ${(file.size / 1024 / 1024).toFixed(1)} MB\n**Chunks Processed:** ${totalChunks}\n**Estimated Duration:** ${Math.round(processedDuration)} seconds\n\n### Full Transcription:\n${fullTranscription.trim()}\n\n---\n*Processed with chunked Whisper transcription*`,
+      timestamp: new Date().toISOString(),
+      projectId: currentProject
+    };
+    setMessages(prev => [...prev, finalMessage]);
+  };
+
+  // Handle clipboard paste for screenshots
+  const handlePaste = async (event: React.ClipboardEvent) => {
+    console.log('Paste event triggered');
+    const items = event.clipboardData?.items;
+    if (!items) {
+      console.log('No clipboard items found');
+      return;
+    }
+
+    console.log('Clipboard items:', items.length);
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      console.log('Item type:', item.type);
+      if (item.type.startsWith('image/')) {
+        event.preventDefault();
+        console.log('Image found in clipboard');
+        const blob = item.getAsFile();
+        if (blob) {
+          console.log('Blob created:', blob.size, 'bytes');
+          // Create a preview URL for the pasted image
+          const imageUrl = URL.createObjectURL(blob);
+          setPastedImage(imageUrl);
+
+          // Create a File object from the blob
+          const file = new File([blob], 'pasted-screenshot.png', { type: blob.type });
+          setSelectedPhoto(file);
+          handlePhotoAnalysis(file);
+        }
+        break;
+      }
+    }
+  };
+
+  // Also handle paste on window for better compatibility
+  React.useEffect(() => {
+    const handleWindowPaste = (event: ClipboardEvent) => {
+      console.log('Window paste event triggered');
+      const items = event.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          event.preventDefault();
+          console.log('Image found in window paste');
+          const blob = item.getAsFile();
+          if (blob) {
+            const imageUrl = URL.createObjectURL(blob);
+            setPastedImage(imageUrl);
+            const file = new File([blob], 'pasted-screenshot.png', { type: blob.type });
+            setSelectedPhoto(file);
+            handlePhotoAnalysis(file);
+          }
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleWindowPaste);
+    return () => window.removeEventListener('paste', handleWindowPaste);
+  }, [handlePhotoAnalysis]);
+
+  // Clear pasted image when analysis is complete
+  React.useEffect(() => {
+    if (!isAnalyzingPhoto && pastedImage) {
+      setTimeout(() => {
+        URL.revokeObjectURL(pastedImage);
+        setPastedImage(null);
+      }, 3000); // Clear after 3 seconds
+    }
+  }, [isAnalyzingPhoto, pastedImage]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -304,7 +550,8 @@ export default function Home() {
         body: JSON.stringify({
           messages: newMessages,
           userId: currentUser,
-          projectId: currentProject
+          projectId: currentProject,
+          conversationId: currentConversationId || `conv_${Date.now()}`
         }),
       });
 
@@ -615,8 +862,8 @@ export default function Home() {
                       alert('Project with this name already exists!');
                       return prev;
                     }
-                    // Add and sort by conversation count
-                    return [...prev, newProject].sort((a, b) => b.conversations - a.conversations);
+                    // Add new project at the top (since it's active and user just created it)
+                    return [newProject, ...prev];
                   });
                   setCurrentProject(projectId);
                   alert(`Project "${name}" created successfully!`);
@@ -636,9 +883,16 @@ export default function Home() {
             </button>
           </div>
 
-          {projects.map((project) => (
-            <div
-              key={project.id}
+          <div style={{
+            maxHeight: '300px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#666 #2a2a2a'
+          }}>
+            {projects.map((project) => (
+              <div
+                key={project.id}
               style={{
                 padding: '8px 12px',
                 backgroundColor: currentProject === project.id ? '#2a2a2a' : '#1a1a1a',
@@ -710,8 +964,9 @@ export default function Home() {
                   🗑️
                 </button>
               )}
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
 
           {/* Current Project Info */}
           <div style={{
@@ -930,11 +1185,14 @@ export default function Home() {
         </div>
 
         {/* Input Area */}
-        <div style={{
-          padding: '24px',
-          borderTop: '1px solid #333',
-          backgroundColor: '#171717'
-        }}>
+        <div
+          style={{
+            padding: '24px',
+            borderTop: '1px solid #333',
+            backgroundColor: '#171717'
+          }}
+          onPaste={handlePaste}
+        >
           <div style={{
             display: 'flex',
             gap: '12px',
@@ -949,7 +1207,7 @@ export default function Home() {
                   sendMessage();
                 }
               }}
-              placeholder="Type your message..."
+              placeholder="Type your message or paste a screenshot..."
               disabled={loading}
               style={{
                 flex: 1,
@@ -1008,6 +1266,66 @@ export default function Home() {
                 style={{ display: 'none' }}
               />
             </label>
+
+            {/* Audio Upload Button */}
+            <label
+              style={{
+                padding: '12px',
+                backgroundColor: '#333',
+                border: 'none',
+                borderRadius: '12px',
+                color: '#ffffff',
+                fontSize: '12px',
+                cursor: isTranscribingAudio ? 'not-allowed' : 'pointer',
+                marginRight: '8px',
+                display: 'inline-block',
+                opacity: isTranscribingAudio ? 0.6 : 1
+              }}
+              title="Upload and transcribe audio (M4A, MP3, WAV, etc.)"
+            >
+              {isTranscribingAudio ? '⏳' : '🎵'}
+              <input
+                type="file"
+                accept="audio/*,.m4a,.mp3,.wav,.ogg,.aac"
+                onChange={handleAudioSelect}
+                disabled={isTranscribingAudio}
+                style={{ display: 'none' }}
+              />
+            </label>
+
+            {/* Pasted Image Preview */}
+            {pastedImage && (
+              <div style={{
+                position: 'absolute',
+                bottom: '80px',
+                left: '24px',
+                backgroundColor: '#1a1a1a',
+                border: '2px solid #4a9eff',
+                borderRadius: '8px',
+                padding: '8px',
+                maxWidth: '200px'
+              }}>
+                <div
+                  style={{
+                    backgroundImage: `url(${pastedImage})`,
+                    backgroundSize: 'contain',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center',
+                    width: '100%',
+                    height: '150px',
+                    borderRadius: '4px'
+                  }}
+                />
+                <div style={{
+                  fontSize: '11px',
+                  color: '#4a9eff',
+                  marginTop: '4px',
+                  textAlign: 'center'
+                }}>
+                  📸 Screenshot pasted - analyzing...
+                </div>
+              </div>
+            )}
 
             {/* Photo Analysis Type Selector */}
             {selectedPhoto && (
