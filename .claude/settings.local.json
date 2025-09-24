@@ -32,7 +32,8 @@
       "Bash(git push:*)",
       "WebFetch(domain:localhost)",
       "mcp__ide__getDiagnostics",
-      "WebFetch(domain:kimbleai-v4-clean-6y4qdok18-kimblezcs-projects.vercel.app)"
+      "WebFetch(domain:kimbleai-v4-clean-6y4qdok18-kimblezcs-projects.vercel.app)",
+      "WebFetch(domain:kimbleai.com)"
     ],
     "deny": [],
     "ask": []

@@ -36,6 +36,7 @@ export default function Home() {
   const [pastedImage, setPastedImage] = useState<string | null>(null);
   const [selectedAudio, setSelectedAudio] = useState<File | null>(null);
   const [isTranscribingAudio, setIsTranscribingAudio] = useState(false);
+  const [deletedProjects, setDeletedProjects] = useState<Set<string>>(new Set());
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -61,9 +62,10 @@ export default function Home() {
           status: 'active'
         }));
 
-        // Sort by conversation count (descending)
-        dynamicProjects.sort((a, b) => b.conversations - a.conversations);
-        setProjects(dynamicProjects);
+        // Filter out deleted projects and sort by conversation count (descending)
+        const filteredProjects = dynamicProjects.filter(project => !deletedProjects.has(project.id));
+        filteredProjects.sort((a, b) => b.conversations - a.conversations);
+        setProjects(filteredProjects);
 
         // Filter conversations by project if specified
         const filteredConversations = projectId
@@ -152,7 +154,27 @@ export default function Home() {
     loadConversations(projectId);
   };
 
-  // Delete project function - completely removes project
+  // Persist deleted projects to localStorage
+  React.useEffect(() => {
+    const savedDeletedProjects = localStorage.getItem(`kimbleai_deleted_projects_${currentUser}`);
+    if (savedDeletedProjects) {
+      try {
+        const deletedArray = JSON.parse(savedDeletedProjects);
+        setDeletedProjects(new Set(deletedArray));
+      } catch (error) {
+        console.error('Error loading deleted projects:', error);
+      }
+    }
+  }, [currentUser]);
+
+  React.useEffect(() => {
+    if (deletedProjects.size > 0) {
+      const deletedArray = Array.from(deletedProjects);
+      localStorage.setItem(`kimbleai_deleted_projects_${currentUser}`, JSON.stringify(deletedArray));
+    }
+  }, [deletedProjects, currentUser]);
+
+  // Delete project function - completely removes project with persistent storage
   const deleteProject = async (projectId: string) => {
     const projectName = formatProjectName(projectId);
     const confirmMessage = projectId === 'general'
@@ -169,30 +191,11 @@ export default function Home() {
     }
 
     try {
-      // Get the deleted project info before removal
-      const deletedProject = projects.find(p => p.id === projectId);
-
-      // Remove the project completely from the list
-      setProjects(prev => {
-        const updatedProjects = prev.filter(p => p.id !== projectId);
-
-        // Add conversations to general project
-        if (deletedProject) {
-          let generalProject = updatedProjects.find(p => p.id === 'general');
-          if (generalProject) {
-            generalProject.conversations += deletedProject.conversations;
-          } else {
-            // Add general project if it doesn't exist
-            updatedProjects.unshift({
-              id: 'general',
-              name: 'General',
-              conversations: deletedProject.conversations,
-              status: 'active'
-            });
-          }
-        }
-
-        return updatedProjects.sort((a, b) => b.conversations - a.conversations);
+      // Add to deleted projects set (persistent)
+      setDeletedProjects(prev => {
+        const newSet = new Set(prev);
+        newSet.add(projectId);
+        return newSet;
       });
 
       // Update conversation history to move conversations to general
@@ -207,15 +210,23 @@ export default function Home() {
       // Switch to general if deleting current project
       if (currentProject === projectId) {
         setCurrentProject('general');
-        // Reload conversations for general project
-        setTimeout(() => loadConversations('general'), 100);
       }
+
+      // Reload conversations to update project counts
+      setTimeout(() => loadConversations(), 100);
 
       alert(`Project "${projectName}" deleted successfully!\nConversations moved to General.`);
     } catch (error) {
       console.error('Error deleting project:', error);
       alert('Failed to delete project');
     }
+  };
+
+  // Function to restore deleted projects (for debugging)
+  const restoreDeletedProjects = () => {
+    setDeletedProjects(new Set());
+    localStorage.removeItem(`kimbleai_deleted_projects_${currentUser}`);
+    loadConversations();
   };
 
   // Handle photo upload and analysis
