@@ -33,22 +33,22 @@ const handler = NextAuth({
     async session({ session, token }) {
       session.accessToken = token.accessToken;
 
-      // Store tokens in Supabase for the user
-      if (session.user?.email) {
-        const userId = session.user.email === 'rebecca@kimbleai.com' ? 'rebecca' : 'zach';
+      // Store tokens in Supabase for the user - TEMPORARILY DISABLED FOR TESTING
+      // if (session.user?.email) {
+      //   const userId = session.user.email === 'rebecca@kimbleai.com' ? 'rebecca' : 'zach';
 
-        try {
-          await supabase.from('user_tokens').upsert({
-            user_id: userId,
-            email: session.user.email,
-            access_token: token.accessToken,
-            refresh_token: token.refreshToken,
-            updated_at: new Date().toISOString()
-          });
-        } catch (error) {
-          console.error('Error storing user tokens:', error);
-        }
-      }
+      //   try {
+      //     await supabase.from('user_tokens').upsert({
+      //       user_id: userId,
+      //       email: session.user.email,
+      //       access_token: token.accessToken,
+      //       refresh_token: token.refreshToken,
+      //       updated_at: new Date().toISOString()
+      //     });
+      //   } catch (error) {
+      //     console.error('Error storing user tokens:', error);
+      //   }
+      // }
 
       return session;
     }
