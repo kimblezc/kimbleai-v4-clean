@@ -17,6 +17,13 @@ export default function GoogleServicesPanel() {
     calendar: 'idle'
   });
   const [results, setResults] = useState<{[key: string]: any}>({});
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [emailCompose, setEmailCompose] = useState({
+    to: '',
+    subject: '',
+    body: '',
+    sending: false
+  });
 
   const testService = async (service: 'gmail' | 'drive' | 'calendar') => {
     setStatus(prev => ({ ...prev, [service]: 'testing' }));
@@ -66,6 +73,39 @@ export default function GoogleServicesPanel() {
     } catch (error) {
       setStatus(prev => ({ ...prev, [service]: 'error' }));
       setResults(prev => ({ ...prev, [service]: { error: `Failed to fetch ${service} data`, details: String(error) } }));
+    }
+  };
+
+  const sendEmail = async () => {
+    setEmailCompose(prev => ({ ...prev, sending: true }));
+
+    try {
+      const response = await fetch('/api/google/gmail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_email',
+          userId: session?.user?.email?.includes('zach') ? 'zach' : 'rebecca',
+          emailData: {
+            to: emailCompose.to,
+            subject: emailCompose.subject,
+            body: emailCompose.body
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setEmailCompose({ to: '', subject: '', body: '', sending: false });
+        alert('Email sent successfully!');
+      } else {
+        alert('Failed to send email: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      alert('Error sending email: ' + String(error));
+    } finally {
+      setEmailCompose(prev => ({ ...prev, sending: false }));
     }
   };
 
@@ -268,6 +308,122 @@ export default function GoogleServicesPanel() {
       >
         🚀 Test All Services
       </button>
+
+      {/* Advanced Features Toggle */}
+      <button
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        style={{
+          width: '100%',
+          padding: '8px',
+          backgroundColor: 'transparent',
+          color: '#888',
+          border: '1px dashed #444',
+          borderRadius: '6px',
+          fontSize: '14px',
+          cursor: 'pointer',
+          marginTop: '10px'
+        }}
+      >
+        {showAdvanced ? '📝 Hide Advanced Features' : '📝 Show Advanced Features'}
+      </button>
+
+      {/* Advanced Features Panel */}
+      {showAdvanced && (
+        <div style={{
+          marginTop: '20px',
+          padding: '20px',
+          backgroundColor: '#0f0f0f',
+          borderRadius: '12px',
+          border: '1px solid #333'
+        }}>
+          <h3 style={{ color: '#fff', marginBottom: '20px', fontSize: '18px' }}>
+            ✨ Power User Features
+          </h3>
+
+          {/* Gmail Compose */}
+          <div style={{ marginBottom: '25px' }}>
+            <h4 style={{ color: '#4ade80', marginBottom: '10px' }}>📧 Send Email</h4>
+            <input
+              type="email"
+              placeholder="To: recipient@example.com"
+              value={emailCompose.to}
+              onChange={(e) => setEmailCompose(prev => ({ ...prev, to: e.target.value }))}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: '#1a1a1a',
+                border: '1px solid #444',
+                borderRadius: '6px',
+                color: '#fff',
+                marginBottom: '8px'
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Subject"
+              value={emailCompose.subject}
+              onChange={(e) => setEmailCompose(prev => ({ ...prev, subject: e.target.value }))}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: '#1a1a1a',
+                border: '1px solid #444',
+                borderRadius: '6px',
+                color: '#fff',
+                marginBottom: '8px'
+              }}
+            />
+            <textarea
+              placeholder="Email body..."
+              value={emailCompose.body}
+              onChange={(e) => setEmailCompose(prev => ({ ...prev, body: e.target.value }))}
+              rows={4}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: '#1a1a1a',
+                border: '1px solid #444',
+                borderRadius: '6px',
+                color: '#fff',
+                marginBottom: '8px',
+                resize: 'vertical'
+              }}
+            />
+            <button
+              onClick={sendEmail}
+              disabled={emailCompose.sending || !emailCompose.to || !emailCompose.subject}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: emailCompose.sending ? '#666' : '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: (emailCompose.sending || !emailCompose.to || !emailCompose.subject) ? 'not-allowed' : 'pointer',
+                opacity: (emailCompose.sending || !emailCompose.to || !emailCompose.subject) ? 0.6 : 1
+              }}
+            >
+              {emailCompose.sending ? 'Sending...' : '📤 Send Email'}
+            </button>
+          </div>
+
+          {/* Drive Upload Placeholder */}
+          <div style={{ marginBottom: '25px' }}>
+            <h4 style={{ color: '#2563eb', marginBottom: '10px' }}>📁 Drive Upload</h4>
+            <p style={{ color: '#888', fontSize: '14px' }}>
+              Coming next: Drag & drop file upload to Google Drive
+            </p>
+          </div>
+
+          {/* Calendar Create Placeholder */}
+          <div>
+            <h4 style={{ color: '#16a34a', marginBottom: '10px' }}>📅 Create Event</h4>
+            <p style={{ color: '#888', fontSize: '14px' }}>
+              Coming next: Quick calendar event creation
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
