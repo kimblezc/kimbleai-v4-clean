@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Get user's Google token
     const { data: tokenData } = await supabase
       .from('user_tokens')
-      .select('access_token')
+      .select('access_token, refresh_token')
       .eq('user_id', userId)
       .single();
 
@@ -49,9 +49,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Gmail client
-    const oauth2Client = new google.auth.OAuth2();
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+    );
     oauth2Client.setCredentials({
-      access_token: tokenData.access_token
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token
     });
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
