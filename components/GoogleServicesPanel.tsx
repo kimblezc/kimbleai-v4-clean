@@ -56,7 +56,7 @@ export default function GoogleServicesPanel() {
 
       const data = await response.json();
 
-      if (data.success || (data.messages && data.messages.length > 0) || (data.files && data.files.length > 0)) {
+      if (data.success || (data.messages && data.messages.length > 0) || (data.files && data.files.length > 0) || (data.events && data.events.length > 0)) {
         setStatus(prev => ({ ...prev, [service]: 'success' }));
         setResults(prev => ({ ...prev, [service]: data }));
       } else {
@@ -95,7 +95,7 @@ export default function GoogleServicesPanel() {
     if (service === 'calendar') {
       return data.events?.length > 0
         ? `✓ Found ${data.events.length} event(s)`
-        : data.error?.includes('Calendar API')
+        : data.details?.includes('Calendar API') || data.error?.includes('Calendar API')
           ? '⚠ Calendar API needs to be enabled in Google Cloud Console'
           : 'No events found';
     }
