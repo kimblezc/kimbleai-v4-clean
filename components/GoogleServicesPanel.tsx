@@ -78,8 +78,22 @@ export default function GoogleServicesPanel() {
   if (!session) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
-        <h2>Google Services</h2>
-        <p>Please sign in with Google to access your services.</p>
+        <h2 style={{ color: '#fff', marginBottom: '20px' }}>🔗 Google Services</h2>
+        <div style={{
+          backgroundColor: '#1a1a1a',
+          padding: '30px',
+          borderRadius: '12px',
+          border: '2px dashed #444'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔐</div>
+          <h3 style={{ color: '#fff', marginBottom: '15px' }}>Authentication Required</h3>
+          <p style={{ color: '#888', marginBottom: '20px', lineHeight: '1.5' }}>
+            Sign in with your Google account to access Gmail, Drive, and Calendar integrations.
+          </p>
+          <p style={{ color: '#666', fontSize: '12px' }}>
+            Your Google Services button is visible but requires authentication to function.
+          </p>
+        </div>
       </div>
     );
   }

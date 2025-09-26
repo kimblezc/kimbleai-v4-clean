@@ -1071,14 +1071,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Google Authentication - DEBUG */}
+        {/* Google Authentication */}
         <div style={{
           marginBottom: '20px',
-          border: '2px solid red', // DEBUG: Make visible
           padding: '10px'
         }}>
-          <div style={{ color: 'red', fontSize: '10px', marginBottom: '5px' }}>
-            DEBUG: Status = {status}, Session = {session ? 'YES' : 'NO'}
+          <div style={{ color: '#888', fontSize: '10px', marginBottom: '5px' }}>
+            Google Account Status
           </div>
           {status === 'loading' ? (
             <div style={{
@@ -1145,27 +1144,31 @@ export default function Home() {
         </div>
 
         {/* Google Services Toggle */}
-        {session && (
-          <div style={{ marginBottom: '20px' }}>
-            <button
-              onClick={() => setShowGoogleServices(!showGoogleServices)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: showGoogleServices ? '#4ade80' : '#2a2a2a',
-                border: '1px solid #444',
-                borderRadius: '6px',
-                color: '#ffffff',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500',
-                transition: 'all 0.2s'
-              }}
-            >
-              {showGoogleServices ? '📱 Hide Google Services' : '🔗 Show Google Services'}
-            </button>
-          </div>
-        )}
+        <div style={{ marginBottom: '20px' }}>
+          <button
+            onClick={() => setShowGoogleServices(!showGoogleServices)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: showGoogleServices ? '#4ade80' : '#2a2a2a',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              color: '#ffffff',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              transition: 'all 0.2s',
+              opacity: session ? 1 : 0.6
+            }}
+          >
+            {showGoogleServices ? '📱 Hide Google Services' : '🔗 Show Google Services'}
+          </button>
+          {!session && (
+            <div style={{ fontSize: '10px', color: '#666', marginTop: '4px', textAlign: 'center' }}>
+              Sign in to enable
+            </div>
+          )}
+        </div>
 
         {/* System Status */}
         <div style={{
