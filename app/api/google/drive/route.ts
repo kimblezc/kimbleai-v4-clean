@@ -71,6 +71,9 @@ export async function POST(request: NextRequest) {
       case 'create_file':
         return await createFile(drive, userId, fileData, projectId);
 
+      case 'upload_file':
+        return await uploadFile(drive, userId, fileData, projectId);
+
       case 'get_file_content':
         return await getFileContent(drive, fileData.fileId);
 
@@ -149,7 +152,9 @@ async function searchFiles(drive: any, query: string, userId: string, projectId?
       }
 
       // Generate embedding and store in knowledge base
-      if (content && content.length > 10) {
+      // TEMPORARILY DISABLED - CAUSING DATABASE OVERFLOW
+      // TODO: Add opt-in sync with size limits and user control
+      if (false && content && content.length > 10) {
         const embedding = await generateEmbedding(content);
 
         await supabase.from('knowledge_base').upsert({
@@ -257,7 +262,9 @@ async function syncSingleFile(drive: any, file: any, userId: string, projectId: 
     content = exportResponse.data as string;
   }
 
-  if (content.length > 10) {
+  // TEMPORARILY DISABLED - CAUSING DATABASE OVERFLOW
+  // TODO: Add opt-in sync with size limits and user control
+  if (false && content.length > 10) {
     const embedding = await generateEmbedding(content);
 
     await supabase.from('knowledge_base').insert({
@@ -308,7 +315,9 @@ async function createFile(drive: any, userId: string, fileData: any, projectId?:
   const createdFile = response.data;
 
   // Add to knowledge base
-  if (content) {
+  // TEMPORARILY DISABLED - CAUSING DATABASE OVERFLOW
+  // TODO: Add opt-in sync with size limits and user control
+  if (false && content) {
     const embedding = await generateEmbedding(content);
 
     await supabase.from('knowledge_base').insert({
