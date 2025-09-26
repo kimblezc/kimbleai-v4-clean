@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import FormattedMessage from '../components/FormattedMessage';
+import GoogleServicesPanel from '../components/GoogleServicesPanel';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -40,6 +41,7 @@ export default function Home() {
   const [isTranscribingAudio, setIsTranscribingAudio] = useState(false);
   const [deletedProjects, setDeletedProjects] = useState<Set<string>>(new Set());
   const [createdProjects, setCreatedProjects] = useState<Set<string>>(new Set());
+  const [showGoogleServices, setShowGoogleServices] = useState(false);
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -1142,6 +1144,29 @@ export default function Home() {
           )}
         </div>
 
+        {/* Google Services Toggle */}
+        {session && (
+          <div style={{ marginBottom: '20px' }}>
+            <button
+              onClick={() => setShowGoogleServices(!showGoogleServices)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: showGoogleServices ? '#4ade80' : '#2a2a2a',
+                border: '1px solid #444',
+                borderRadius: '6px',
+                color: '#ffffff',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s'
+              }}
+            >
+              {showGoogleServices ? '📱 Hide Google Services' : '🔗 Show Google Services'}
+            </button>
+          </div>
+        )}
+
         {/* System Status */}
         <div style={{
           marginTop: 'auto',
@@ -1158,13 +1183,26 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#0f0f0f'
-      }}>
+      {/* Main Content Area */}
+      {showGoogleServices ? (
+        /* Google Services Panel */
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#0f0f0f',
+          padding: '24px'
+        }}>
+          <GoogleServicesPanel />
+        </div>
+      ) : (
+        /* Main Chat Area */
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#0f0f0f'
+        }}>
         {/* Header */}
         <div style={{
           padding: '16px 24px',
@@ -1561,7 +1599,8 @@ export default function Home() {
             </div>
           )}
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
