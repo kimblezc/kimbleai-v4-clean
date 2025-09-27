@@ -4,6 +4,8 @@ import OpenAI from 'openai';
 import { BackgroundIndexer } from '@/lib/background-indexer';
 import { AutoReferenceButler } from '@/lib/auto-reference-butler';
 import { ModelSelector, TaskContext } from '@/lib/model-selector';
+import { google } from 'googleapis';
+import { WorkspaceRAGSystem } from '@/app/api/google/workspace/rag-system';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -188,66 +190,129 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
 
     const aiResponse = completion.choices[0].message.content || 'I apologize, but I could not generate a response.';
 
-    // Save the conversation to database
-    const { data: convData } = await supabase
-      .from('conversations')
-      .upsert({
-        id: conversationId,
-        user_id: userData.id,
-        title: userMessage.substring(0, 50),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    // 🗂️ GOOGLE DRIVE STORAGE: Save conversation to Google Workspace Memory System
+    let driveStorageSuccessful = false;
 
-    // Save user message
-    const userEmbedding = await generateEmbedding(userMessage);
-    const { data: userMessageData } = await supabase.from('messages').insert({
-      conversation_id: conversationId,
-      user_id: userData.id,
-      role: 'user',
-      content: userMessage,
-      embedding: userEmbedding
-    }).select().single();
+    try {
+      // Get user's Google OAuth tokens
+      const { data: tokenData } = await supabase
+        .from('user_tokens')
+        .select('access_token, refresh_token')
+        .eq('user_id', userId)
+        .single();
 
-    // Save AI response
-    const aiEmbedding = await generateEmbedding(aiResponse);
-    const { data: aiMessageData } = await supabase.from('messages').insert({
-      conversation_id: conversationId,
-      user_id: userData.id,
-      role: 'assistant',
-      content: aiResponse,
-      embedding: aiEmbedding
-    }).select().single();
+      if (tokenData?.access_token) {
+        // Initialize Google Drive client
+        const oauth2Client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID!,
+          process.env.GOOGLE_CLIENT_SECRET!,
+          process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+        );
+        oauth2Client.setCredentials({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token
+        });
+
+        const drive = google.drive({ version: 'v3', auth: oauth2Client });
+        const ragSystem = new WorkspaceRAGSystem(drive);
+
+        // Store conversation directly in Google Drive
+        const conversationData = {
+          id: conversationId,
+          title: userMessage.substring(0, 50) + '...',
+          project: lastMessage.projectId || 'general',
+          messages: [
+            {
+              role: 'user',
+              content: userMessage,
+              timestamp: new Date().toISOString()
+            },
+            {
+              role: 'assistant',
+              content: aiResponse,
+              timestamp: new Date().toISOString()
+            }
+          ]
+        };
+
+        const result = await ragSystem.storeConversationWithRAG(userId, conversationData);
+        driveStorageSuccessful = true;
+        console.log('💾 Google Drive storage: SUCCESS', result.conversationId);
+      } else {
+        console.log('⚠️ No Google OAuth tokens found for user:', userId);
+      }
+
+    } catch (storageError) {
+      console.error('🚨 Google Drive storage error:', storageError);
+      driveStorageSuccessful = false;
+    }
+
+    // Fallback to Supabase if Google Drive fails
+    if (!driveStorageSuccessful) {
+      console.log('⚠️ Google Drive failed, falling back to Supabase...');
+
+      try {
+        const { data: convData } = await supabase
+          .from('conversations')
+          .upsert({
+            id: conversationId,
+            user_id: userData.id,
+            title: userMessage.substring(0, 50),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        // Save user message to Supabase
+        const userEmbedding = await generateEmbedding(userMessage);
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          user_id: userData.id,
+          role: 'user',
+          content: userMessage,
+          embedding: userEmbedding
+        });
+
+        // Save AI response to Supabase
+        const aiEmbedding = await generateEmbedding(aiResponse);
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          user_id: userData.id,
+          role: 'assistant',
+          content: aiResponse,
+          embedding: aiEmbedding
+        });
+
+        console.log('💾 Supabase fallback storage: SUCCESS');
+      } catch (supabaseError) {
+        console.error('🚨 Supabase fallback failed:', supabaseError);
+      }
+    }
 
     // 🚀 AUTOMATIC BACKGROUND INDEXING - This runs without blocking the response
     const backgroundIndexer = BackgroundIndexer.getInstance();
 
     // Index user message in background
-    if (userMessageData) {
-      backgroundIndexer.indexMessage(
-        userMessageData.id,
-        conversationId,
-        userData.id,
-        'user',
-        userMessage
-      ).catch(error => {
-        console.error('Background indexing failed for user message:', error);
-      });
-    }
+    backgroundIndexer.indexMessage(
+      `${conversationId}-user-${Date.now()}`,
+      conversationId,
+      userData.id,
+      'user',
+      userMessage
+    ).catch(error => {
+      console.error('Background indexing failed for user message:', error);
+    });
 
     // Index AI response in background
-    if (aiMessageData) {
-      backgroundIndexer.indexMessage(
-        aiMessageData.id,
-        conversationId,
-        userData.id,
-        'assistant',
-        aiResponse
-      ).catch(error => {
-        console.error('Background indexing failed for AI message:', error);
-      });
-    }
+    backgroundIndexer.indexMessage(
+      `${conversationId}-assistant-${Date.now()}`,
+      conversationId,
+      userData.id,
+      'assistant',
+      aiResponse
+    ).catch(error => {
+      console.error('Background indexing failed for AI message:', error);
+    });
 
     // Extract and save knowledge
     const facts = extractFacts(userMessage, aiResponse);
@@ -272,6 +337,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     return NextResponse.json({
       response: aiResponse,
       saved: true,
+      storageLocation: driveStorageSuccessful ? 'google-drive' : 'supabase-fallback',
       memoryActive: true,
       knowledgeItemsFound: autoContext.relevantKnowledge.length,
       allMessagesRetrieved: allUserMessages?.length || 0,
