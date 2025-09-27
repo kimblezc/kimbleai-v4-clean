@@ -44,6 +44,21 @@ const handler = NextAuth({
     })
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Restrict access to only authorized emails
+      const authorizedEmails = [
+        'zach.kimble@gmail.com',
+        'becky.aza.kimble@gmail.com'
+      ];
+
+      if (!user.email || !authorizedEmails.includes(user.email)) {
+        console.log('Unauthorized sign-in attempt:', user.email);
+        return false; // Deny access
+      }
+
+      console.log('Authorized sign-in:', user.email);
+      return true; // Allow access
+    },
     async jwt({ token, account, profile }) {
       if (account) {
         token.accessToken = account.access_token;
