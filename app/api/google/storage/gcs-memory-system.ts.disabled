@@ -1,0 +1,580 @@
+// Google Cloud Storage-Based Persistent Memory System
+// Leverages 2TB Google storage with efficient RAG and vector search
+
+import { Storage } from '@google-cloud/storage';
+
+interface GCSMemoryConfig {
+  bucketName: string;
+  projectId: string;
+  paths: {
+    conversations: string;
+    knowledge: string;
+    embeddings: string;
+    transcriptions: string;
+    analysis: string;
+    rawAudio: string;
+    vectorIndex: string;
+    memories: string;
+  };
+}
+
+interface MemoryChunk {
+  id: string;
+  content: string;
+  embedding?: number[];
+  metadata: {
+    type: 'conversation' | 'document' | 'transcription' | 'knowledge' | 'analysis';
+    title: string;
+    source: string;
+    userId: string;
+    tags: string[];
+    importance: number;
+    created: string;
+    updated?: string;
+    size: number;
+  };
+}
+
+export class GCSMemorySystem {
+  private storage: Storage;
+  private bucket: any;
+  private config: GCSMemoryConfig;
+  private vectorCache = new Map<string, MemoryChunk>();
+  private cacheLastUpdate = 0;
+  private readonly CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+  constructor(projectId: string, bucketName: string, keyFilename?: string) {
+    this.storage = new Storage({
+      projectId,
+      keyFilename // Path to service account key
+    });
+
+    this.config = {
+      bucketName,
+      projectId,
+      paths: {
+        conversations: 'kimbleai/conversations/',
+        knowledge: 'kimbleai/knowledge/',
+        embeddings: 'kimbleai/embeddings/',
+        transcriptions: 'kimbleai/transcriptions/',
+        analysis: 'kimbleai/analysis/',
+        rawAudio: 'kimbleai/audio/',
+        vectorIndex: 'kimbleai/vectors/',
+        memories: 'kimbleai/memories/'
+      }
+    };
+
+    this.bucket = this.storage.bucket(bucketName);
+  }
+
+  // Initialize bucket structure
+  async initialize(): Promise<void> {
+    try {
+      // Check if bucket exists, create if not
+      const [exists] = await this.bucket.exists();
+      if (!exists) {
+        await this.storage.createBucket(this.config.bucketName, {
+          location: 'US',
+          storageClass: 'STANDARD'
+        });
+        console.log(`Created bucket: ${this.config.bucketName}`);
+      }
+
+      // Create folder structure markers
+      for (const [key, path] of Object.entries(this.config.paths)) {
+        await this.uploadText(`${path}.folder`, '# KimbleAI Memory System Folder');
+      }
+
+      console.log('GCS Memory System initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize GCS Memory System:', error);
+      throw error;
+    }
+  }
+
+  // Store memory chunk with automatic embedding generation
+  async storeMemory(userId: string, content: string, metadata: Partial<MemoryChunk['metadata']>): Promise<string> {
+    const id = `${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Generate embedding
+    const embedding = await this.generateEmbedding(content);
+
+    const chunk: MemoryChunk = {
+      id,
+      content: content.substring(0, 10000), // Reasonable content limit
+      embedding,
+      metadata: {
+        type: metadata.type || 'knowledge',
+        title: metadata.title || 'Untitled Memory',
+        source: metadata.source || 'manual',
+        userId,
+        tags: metadata.tags || [],
+        importance: metadata.importance || 0.5,
+        created: new Date().toISOString(),
+        size: content.length,
+        ...metadata
+      }
+    };
+
+    // Store content and embedding separately for efficiency
+    const contentPath = `${this.config.paths[chunk.metadata.type]}${id}_content.json`;
+    const embeddingPath = `${this.config.paths.embeddings}${id}_embedding.json`;
+
+    // Store content
+    await this.uploadJSON(contentPath, {
+      id: chunk.id,
+      content: chunk.content,
+      metadata: chunk.metadata
+    });
+
+    // Store embedding separately
+    await this.uploadJSON(embeddingPath, {
+      id: chunk.id,
+      embedding: chunk.embedding,
+      created: chunk.metadata.created
+    });
+
+    // Update cache
+    this.vectorCache.set(id, chunk);
+
+    // Store lightweight index in database
+    await this.updateSearchIndex(chunk);
+
+    console.log(`Stored memory chunk: ${id} (${chunk.metadata.title})`);
+    return id;
+  }
+
+  // Store conversation with automatic chunking
+  async storeConversation(userId: string, conversation: any): Promise<string[]> {
+    const chunkIds: string[] = [];
+
+    // Store full conversation
+    const conversationPath = `${this.config.paths.conversations}${conversation.id}.json`;
+    await this.uploadJSON(conversationPath, conversation);
+
+    // Extract important chunks for RAG
+    for (const message of conversation.messages || []) {
+      if (message.role === 'assistant' && message.content.length > 100) {
+        const chunkId = await this.storeMemory(userId, message.content, {
+          type: 'conversation',
+          title: `${conversation.title || 'Chat'} - Assistant Response`,
+          source: 'conversation',
+          tags: ['conversation', 'assistant'],
+          importance: 0.7
+        });
+        chunkIds.push(chunkId);
+      }
+
+      // Also store important user messages
+      if (message.role === 'user' && message.content.length > 200) {
+        const chunkId = await this.storeMemory(userId, message.content, {
+          type: 'conversation',
+          title: `${conversation.title || 'Chat'} - User Query`,
+          source: 'conversation',
+          tags: ['conversation', 'user'],
+          importance: 0.6
+        });
+        chunkIds.push(chunkId);
+      }
+    }
+
+    return chunkIds;
+  }
+
+  // Store large audio file with chunked transcription
+  async storeAudioWithTranscription(userId: string, audioFile: Buffer, fileName: string, transcription?: string): Promise<{
+    audioId: string;
+    transcriptionId?: string;
+    chunks: string[];
+  }> {
+    // Store raw audio file
+    const audioId = `audio_${userId}_${Date.now()}`;
+    const audioPath = `${this.config.paths.rawAudio}${audioId}_${fileName}`;
+    await this.uploadBuffer(audioPath, audioFile);
+
+    let transcriptionId: string | undefined;
+    const chunks: string[] = [];
+
+    if (transcription) {
+      // Store full transcription
+      transcriptionId = `transcription_${audioId}`;
+      const transcriptionPath = `${this.config.paths.transcriptions}${transcriptionId}.json`;
+      await this.uploadJSON(transcriptionPath, {
+        id: transcriptionId,
+        audioId,
+        fileName,
+        content: transcription,
+        created: new Date().toISOString()
+      });
+
+      // Chunk transcription for RAG
+      const textChunks = this.chunkText(transcription, 800);
+      for (let i = 0; i < textChunks.length; i++) {
+        const chunkId = await this.storeMemory(userId, textChunks[i], {
+          type: 'transcription',
+          title: `${fileName} - Part ${i + 1}`,
+          source: 'audio',
+          tags: ['transcription', 'audio', fileName],
+          importance: 0.8
+        });
+        chunks.push(chunkId);
+      }
+    }
+
+    return { audioId, transcriptionId, chunks };
+  }
+
+  // Vector similarity search across all memories
+  async vectorSearch(userId: string, query: string, options: {
+    limit?: number;
+    threshold?: number;
+    types?: MemoryChunk['metadata']['type'][];
+    tags?: string[];
+  } = {}): Promise<MemoryChunk[]> {
+    const { limit = 10, threshold = 0.7, types, tags } = options;
+
+    // Ensure vector cache is loaded
+    await this.loadVectorCache(userId);
+
+    // Generate query embedding
+    const queryEmbedding = await this.generateEmbedding(query);
+
+    // Search through cached vectors
+    const results: Array<{ chunk: MemoryChunk; similarity: number }> = [];
+
+    for (const chunk of this.vectorCache.values()) {
+      if (chunk.metadata.userId !== userId) continue;
+
+      // Filter by type if specified
+      if (types && !types.includes(chunk.metadata.type)) continue;
+
+      // Filter by tags if specified
+      if (tags && !tags.some(tag => chunk.metadata.tags.includes(tag))) continue;
+
+      if (chunk.embedding) {
+        const similarity = this.cosineSimilarity(queryEmbedding, chunk.embedding);
+        if (similarity >= threshold) {
+          results.push({ chunk, similarity });
+        }
+      }
+    }
+
+    return results
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit)
+      .map(r => r.chunk);
+  }
+
+  // Advanced RAG query with multi-step reasoning
+  async ragQuery(userId: string, question: string, options: {
+    maxContext?: number;
+    includeHistory?: boolean;
+    analysisLevel?: 'basic' | 'detailed' | 'comprehensive';
+  } = {}): Promise<{
+    answer: string;
+    reasoning: string[];
+    sources: MemoryChunk[];
+    confidence: number;
+  }> {
+    const { maxContext = 3000, includeHistory = true, analysisLevel = 'basic' } = options;
+
+    console.log(`RAG Query: "${question}" for ${userId}`);
+
+    // Multi-step search strategy
+    const searchResults = await this.vectorSearch(userId, question, { limit: 10, threshold: 0.6 });
+
+    // Build context from most relevant chunks
+    let context = '';
+    let tokenCount = 0;
+    const usedSources: MemoryChunk[] = [];
+
+    for (const chunk of searchResults) {
+      const chunkTokens = chunk.content.length / 4; // Rough estimation
+
+      if (tokenCount + chunkTokens <= maxContext * 0.8) { // Leave room for question
+        context += `\n\n[Source: ${chunk.metadata.title}]\n${chunk.content}`;
+        usedSources.push(chunk);
+        tokenCount += chunkTokens;
+      }
+    }
+
+    // Add recent conversation history if requested
+    if (includeHistory) {
+      const recentConversations = await this.vectorSearch(userId, question, {
+        limit: 3,
+        types: ['conversation'],
+        threshold: 0.5
+      });
+
+      for (const conv of recentConversations) {
+        if (tokenCount < maxContext * 0.9) {
+          context += `\n\n[Recent Context: ${conv.metadata.title}]\n${conv.content}`;
+          tokenCount += conv.content.length / 4;
+        }
+      }
+    }
+
+    // Generate comprehensive answer
+    const result = await this.generateRagAnswer(question, context, analysisLevel);
+
+    // Calculate confidence based on source relevance
+    const confidence = this.calculateConfidence(searchResults, usedSources);
+
+    return {
+      ...result,
+      sources: usedSources,
+      confidence
+    };
+  }
+
+  // Enhanced answer generation with reasoning
+  private async generateRagAnswer(question: string, context: string, analysisLevel: string): Promise<{
+    answer: string;
+    reasoning: string[];
+  }> {
+    const systemPrompt = analysisLevel === 'comprehensive'
+      ? 'You are an advanced AI assistant with deep analytical capabilities. Provide comprehensive answers with detailed reasoning steps.'
+      : analysisLevel === 'detailed'
+      ? 'You are a knowledgeable assistant. Provide thorough answers with clear reasoning.'
+      : 'You are a helpful assistant. Provide accurate, concise answers based on the context.';
+
+    const userPrompt = `Context Information:
+${context}
+
+Question: ${question}
+
+Please provide:
+1. A direct answer to the question
+2. Your reasoning steps (how you arrived at this answer)
+3. Any limitations or uncertainties in your answer
+
+Format your response as:
+ANSWER: [your answer]
+REASONING: [step-by-step reasoning]`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 800,
+        temperature: 0.3
+      })
+    });
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content || 'Unable to generate response';
+
+    // Parse answer and reasoning
+    const answerMatch = content.match(/ANSWER:\s*(.+?)(?=REASONING:|$)/s);
+    const reasoningMatch = content.match(/REASONING:\s*(.+?)$/s);
+
+    return {
+      answer: answerMatch?.[1]?.trim() || content,
+      reasoning: reasoningMatch?.[1]?.trim().split('\n').filter(r => r.trim()) || []
+    };
+  }
+
+  // Load vector cache from GCS
+  private async loadVectorCache(userId: string): Promise<void> {
+    if (this.vectorCache.size > 0 && (Date.now() - this.cacheLastUpdate) < this.CACHE_TTL) {
+      return; // Cache is still fresh
+    }
+
+    console.log('Loading vector cache from GCS...');
+    this.vectorCache.clear();
+
+    try {
+      // List all embedding files
+      const [files] = await this.bucket.getFiles({
+        prefix: this.config.paths.embeddings
+      });
+
+      const loadPromises = files.map(async (file) => {
+        try {
+          const embeddingData = await this.downloadJSON(file.name);
+          const contentData = await this.loadContentForEmbedding(embeddingData.id);
+
+          if (contentData && contentData.metadata.userId === userId) {
+            this.vectorCache.set(embeddingData.id, {
+              id: embeddingData.id,
+              content: contentData.content,
+              embedding: embeddingData.embedding,
+              metadata: contentData.metadata
+            });
+          }
+        } catch (error) {
+          console.warn(`Failed to load embedding ${file.name}:`, error);
+        }
+      });
+
+      await Promise.all(loadPromises);
+      this.cacheLastUpdate = Date.now();
+
+      console.log(`Loaded ${this.vectorCache.size} vectors for user ${userId}`);
+    } catch (error) {
+      console.error('Failed to load vector cache:', error);
+    }
+  }
+
+  // Helper methods
+  private async generateEmbedding(text: string): Promise<number[]> {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text.substring(0, 8000),
+        dimensions: 1536
+      })
+    });
+
+    const data = await response.json();
+    return data.data[0].embedding;
+  }
+
+  private cosineSimilarity(a: number[], b: number[]): number {
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < a.length; i++) {
+      dotProduct += a[i] * b[i];
+      normA += a[i] * a[i];
+      normB += b[i] * b[i];
+    }
+
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+
+  private chunkText(text: string, maxSize: number): string[] {
+    const chunks: string[] = [];
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    let currentChunk = '';
+
+    for (const sentence of sentences) {
+      if (currentChunk.length + sentence.length <= maxSize) {
+        currentChunk += sentence + '. ';
+      } else {
+        if (currentChunk.trim()) chunks.push(currentChunk.trim());
+        currentChunk = sentence + '. ';
+      }
+    }
+
+    if (currentChunk.trim()) chunks.push(currentChunk.trim());
+    return chunks;
+  }
+
+  private calculateConfidence(searchResults: MemoryChunk[], usedSources: MemoryChunk[]): number {
+    if (searchResults.length === 0) return 0;
+
+    const avgImportance = usedSources.reduce((sum, chunk) => sum + chunk.metadata.importance, 0) / usedSources.length;
+    const sourceRatio = usedSources.length / Math.min(searchResults.length, 5);
+
+    return Math.min(0.95, avgImportance * sourceRatio);
+  }
+
+  // Storage operations
+  private async uploadJSON(path: string, data: any): Promise<void> {
+    const file = this.bucket.file(path);
+    await file.save(JSON.stringify(data), { metadata: { contentType: 'application/json' } });
+  }
+
+  private async uploadText(path: string, text: string): Promise<void> {
+    const file = this.bucket.file(path);
+    await file.save(text, { metadata: { contentType: 'text/plain' } });
+  }
+
+  private async uploadBuffer(path: string, buffer: Buffer): Promise<void> {
+    const file = this.bucket.file(path);
+    await file.save(buffer);
+  }
+
+  private async downloadJSON(path: string): Promise<any> {
+    const file = this.bucket.file(path);
+    const [content] = await file.download();
+    return JSON.parse(content.toString());
+  }
+
+  private async loadContentForEmbedding(embeddingId: string): Promise<any> {
+    // Search for content file across different types
+    const contentTypes = ['conversations', 'knowledge', 'transcriptions', 'analysis'];
+
+    for (const type of contentTypes) {
+      try {
+        const contentPath = `${this.config.paths[type]}${embeddingId}_content.json`;
+        return await this.downloadJSON(contentPath);
+      } catch (error) {
+        // Continue searching in other folders
+      }
+    }
+
+    return null;
+  }
+
+  private async updateSearchIndex(chunk: MemoryChunk): Promise<void> {
+    // Store lightweight metadata in Supabase for fast searching
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    await supabase.from('gcs_memory_index').upsert({
+      id: chunk.id,
+      user_id: chunk.metadata.userId,
+      type: chunk.metadata.type,
+      title: chunk.metadata.title,
+      source: chunk.metadata.source,
+      tags: chunk.metadata.tags,
+      importance: chunk.metadata.importance,
+      size: chunk.metadata.size,
+      created_at: chunk.metadata.created
+    });
+  }
+
+  // Memory statistics
+  async getMemoryStats(userId: string): Promise<{
+    totalChunks: number;
+    totalSize: string;
+    typeBreakdown: Record<string, number>;
+    storageUsed: string;
+  }> {
+    const stats = {
+      totalChunks: 0,
+      totalSize: '0 MB',
+      typeBreakdown: {} as Record<string, number>,
+      storageUsed: '0 MB'
+    };
+
+    let totalBytes = 0;
+
+    // Get file statistics from GCS
+    for (const [type, path] of Object.entries(this.config.paths)) {
+      const [files] = await this.bucket.getFiles({ prefix: path });
+      const typeSize = files.reduce((sum, file) => {
+        const size = parseInt(file.metadata?.size || '0');
+        return sum + size;
+      }, 0);
+
+      stats.typeBreakdown[type] = files.length;
+      totalBytes += typeSize;
+      stats.totalChunks += files.length;
+    }
+
+    stats.totalSize = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
+    stats.storageUsed = stats.totalSize;
+
+    return stats;
+  }
+}

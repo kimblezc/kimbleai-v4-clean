@@ -1,0 +1,11 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Test message to verify Google Drive storage is working",
+      "projectId": "storage-test"
+    }
+  ],
+  "userId": "zach",
+  "conversationId": "test-drive-storage-001"
+}

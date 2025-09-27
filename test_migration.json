@@ -1,0 +1,21 @@
+{
+  "action": "store_conversation",
+  "userId": "zach",
+  "conversation": {
+    "id": "test",
+    "title": "test message",
+    "project": "general",
+    "messages": [
+      {
+        "role": "user",
+        "content": "test message",
+        "timestamp": "2025-09-24T17:28:39.146538"
+      },
+      {
+        "role": "assistant",
+        "content": "## Test message received\n\n**Thanks — I got your message.** This chat is working fine.\n\n### What I see right now\n- Recent test activity in this conversation (you previously sent several test messages).\n- Previous context mentions:\n  - attempts to **scan Google Drive** and **authorize an OAuth scan** (I wasn't able to start the scan without OAuth consent).\n  - issues around **deleting projects** (you asked which \"projects\" you were trying to delete).\n  - a Drive link and a note about your **D&D escapades** folder.\n  - you set a file/folder sharing to **\"Anyone with link — Viewer\"** in a recent message.\n\n### Quick next steps (pick one)\n- *Send another test message* (I'll echo it back).\n- *Start a Drive/Gmail scan* — I'll need you to **authorize OAuth** (I can give the exact steps).\n- *Try the project deletion again* — tell me which project(s) or paste the link.\n- *Schedule a quick call/meeting* to walk through the scan or deletion (I can create a Calendar invite).\n\nWhat would you like me to do next?",
+        "timestamp": "2025-09-24T17:28:40.048202"
+      }
+    ]
+  }
+}
