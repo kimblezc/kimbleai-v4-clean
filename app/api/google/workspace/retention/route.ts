@@ -19,31 +19,31 @@ interface RetentionPolicy {
 const DEFAULT_RETENTION_POLICIES: RetentionPolicy[] = [
   {
     type: 'conversation',
-    maxAgedays: 180, // 6 months
+    maxAgeDays: 180, // 6 months
     importanceThreshold: 0.3,
     action: 'archive'
   },
   {
     type: 'transcription',
-    maxAgedays: 365, // 1 year
+    maxAgeDays: 365, // 1 year
     importanceThreshold: 0.5,
     action: 'compress'
   },
   {
     type: 'knowledge',
-    maxAgedays: 730, // 2 years
+    maxAgeDays: 730, // 2 years
     importanceThreshold: 0.7,
     action: 'archive'
   },
   {
     type: 'audio',
-    maxAgedays: 90, // 3 months for raw audio
+    maxAgeDays: 90, // 3 months for raw audio
     importanceThreshold: 0.4,
     action: 'delete' // Keep transcriptions, delete raw audio
   },
   {
     type: 'analysis',
-    maxAgedays: 90,
+    maxAgeDays: 90,
     importanceThreshold: 0.6,
     action: 'compress'
   }
@@ -266,7 +266,7 @@ async function performCleanup(
     results.totalMemories = memoryData.length;
 
     for (const policy of policies) {
-      const cutoffDate = new Date(Date.now() - policy.maxAgedays * 24 * 60 * 60 * 1000);
+      const cutoffDate = new Date(Date.now() - policy.maxAgeDays * 24 * 60 * 60 * 1000);
 
       const candidateMemories = memoryData.filter(memory => {
         return memory.type === policy.type &&
