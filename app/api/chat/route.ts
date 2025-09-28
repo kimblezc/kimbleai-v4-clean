@@ -288,58 +288,60 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       const functionResults = [];
 
       for (const toolCall of toolCalls) {
-        const functionName = toolCall.function.name;
-        const functionArgs = JSON.parse(toolCall.function.arguments);
+        if (toolCall.type === 'function') {
+          const functionName = toolCall.function.name;
+          const functionArgs = JSON.parse(toolCall.function.arguments || '{}');
 
-        console.log(`📞 Calling function: ${functionName}`, functionArgs);
+          console.log(`📞 Calling function: ${functionName}`, functionArgs);
 
-        let functionResult = null;
+          let functionResult = null;
 
-        try {
-          switch (functionName) {
-            case 'get_recent_emails':
-              functionResult = await callGmailAPI('get_recent', {
-                userId,
-                maxResults: functionArgs.maxResults || 5,
-                query: functionArgs.query || ''
-              });
-              break;
+          try {
+            switch (functionName) {
+              case 'get_recent_emails':
+                functionResult = await callGmailAPI('get_recent', {
+                  userId,
+                  maxResults: functionArgs.maxResults || 5,
+                  query: functionArgs.query || ''
+                });
+                break;
 
-            case 'get_emails_from_date_range':
-              const daysAgo = functionArgs.days || 30;
-              const dateQuery = `after:${new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split('T')[0].replace(/-/g, '/')}`;
-              functionResult = await callGmailAPI('search', {
-                userId,
-                query: dateQuery,
-                maxResults: functionArgs.maxResults || 5
-              });
-              break;
+              case 'get_emails_from_date_range':
+                const daysAgo = functionArgs.days || 30;
+                const dateQuery = `after:${new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split('T')[0].replace(/-/g, '/')}`;
+                functionResult = await callGmailAPI('search', {
+                  userId,
+                  query: dateQuery,
+                  maxResults: functionArgs.maxResults || 5
+                });
+                break;
 
-            case 'search_google_drive':
-              functionResult = await callDriveAPI('search', {
-                userId,
-                query: functionArgs.query,
-                maxResults: functionArgs.maxResults || 5
-              });
-              break;
+              case 'search_google_drive':
+                functionResult = await callDriveAPI('search', {
+                  userId,
+                  query: functionArgs.query,
+                  maxResults: functionArgs.maxResults || 5
+                });
+                break;
 
-            default:
-              functionResult = { error: `Unknown function: ${functionName}` };
+              default:
+                functionResult = { error: `Unknown function: ${functionName}` };
+            }
+
+            functionResults.push({
+              tool_call_id: toolCall.id,
+              role: 'tool',
+              content: JSON.stringify(functionResult)
+            });
+
+          } catch (error: any) {
+            console.error(`Function call error for ${functionName}:`, error);
+            functionResults.push({
+              tool_call_id: toolCall.id,
+              role: 'tool',
+              content: JSON.stringify({ error: error.message })
+            });
           }
-
-          functionResults.push({
-            tool_call_id: toolCall.id,
-            role: 'tool',
-            content: JSON.stringify(functionResult)
-          });
-
-        } catch (error: any) {
-          console.error(`Function call error for ${functionName}:`, error);
-          functionResults.push({
-            tool_call_id: toolCall.id,
-            role: 'tool',
-            content: JSON.stringify({ error: error.message })
-          });
         }
       }
 
@@ -610,50 +612,163 @@ function extractFacts(userMessage: string, aiResponse: string): any[] {
   return facts;
 }
 
-// Helper function to call Gmail API
+// Helper function to call Gmail API directly
 async function callGmailAPI(action: string, params: any) {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/google/gmail`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action,
-        ...params
-      })
-    });
+    const { userId } = params;
 
-    if (!response.ok) {
-      throw new Error(`Gmail API error: ${response.status}`);
+    // Get user's Google token
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('access_token, refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    if (!tokenData?.access_token) {
+      return { error: 'User not authenticated with Google' };
     }
 
-    return await response.json();
+    // Initialize Gmail client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+    );
+    oauth2Client.setCredentials({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token
+    });
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    if (action === 'get_recent') {
+      const response = await gmail.users.messages.list({
+        userId: 'me',
+        maxResults: params.maxResults || 5,
+        q: params.query || ''
+      });
+
+      const messages = [];
+      for (const message of response.data.messages || []) {
+        try {
+          const fullMessage = await gmail.users.messages.get({
+            userId: 'me',
+            id: message.id!
+          });
+
+          const headers = fullMessage.data.payload?.headers || [];
+          const subject = headers.find((h: any) => h.name === 'Subject')?.value || 'No subject';
+          const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown';
+          const date = headers.find((h: any) => h.name === 'Date')?.value || '';
+
+          messages.push({
+            id: message.id,
+            subject,
+            from,
+            date,
+            snippet: fullMessage.data.snippet || ''
+          });
+        } catch (err) {
+          console.error(`Error processing message ${message.id}:`, err);
+        }
+      }
+
+      return { success: true, messages };
+    }
+
+    if (action === 'search') {
+      const response = await gmail.users.messages.list({
+        userId: 'me',
+        q: params.query,
+        maxResults: params.maxResults || 5
+      });
+
+      const messages = [];
+      for (const message of response.data.messages || []) {
+        try {
+          const fullMessage = await gmail.users.messages.get({
+            userId: 'me',
+            id: message.id!
+          });
+
+          const headers = fullMessage.data.payload?.headers || [];
+          const subject = headers.find((h: any) => h.name === 'Subject')?.value || 'No subject';
+          const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown';
+          const date = headers.find((h: any) => h.name === 'Date')?.value || '';
+
+          messages.push({
+            id: message.id,
+            subject,
+            from,
+            date,
+            snippet: fullMessage.data.snippet || ''
+          });
+        } catch (err) {
+          console.error(`Error processing message ${message.id}:`, err);
+        }
+      }
+
+      return { success: true, messages };
+    }
+
+    return { error: `Unknown Gmail action: ${action}` };
+
   } catch (error: any) {
     console.error('Gmail API call failed:', error);
     return { error: error.message };
   }
 }
 
-// Helper function to call Google Drive API
+// Helper function to call Google Drive API directly
 async function callDriveAPI(action: string, params: any) {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/google/drive`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action,
-        ...params
-      })
-    });
+    const { userId } = params;
 
-    if (!response.ok) {
-      throw new Error(`Drive API error: ${response.status}`);
+    // Get user's Google token
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('access_token, refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    if (!tokenData?.access_token) {
+      return { error: 'User not authenticated with Google' };
     }
 
-    return await response.json();
+    // Initialize Drive client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+    );
+    oauth2Client.setCredentials({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token
+    });
+
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    if (action === 'search') {
+      const response = await drive.files.list({
+        q: `name contains '${params.query}' or fullText contains '${params.query}'`,
+        fields: 'files(id, name, mimeType, size, modifiedTime, webViewLink)',
+        pageSize: params.maxResults || 5
+      });
+
+      const files = (response.data.files || []).map((file: any) => ({
+        id: file.id,
+        name: file.name,
+        type: file.mimeType,
+        size: file.size,
+        modified: file.modifiedTime,
+        link: file.webViewLink
+      }));
+
+      return { success: true, files };
+    }
+
+    return { error: `Unknown Drive action: ${action}` };
+
   } catch (error: any) {
     console.error('Drive API call failed:', error);
     return { error: error.message };

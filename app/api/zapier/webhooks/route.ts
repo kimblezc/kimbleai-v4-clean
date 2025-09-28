@@ -45,22 +45,22 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'google_drive':
-        result = await processGoogleDriveWebhook(data, userId, ragSystem);
+        result = await processGoogleDriveWebhook(data, userId);
         processed = true;
         break;
 
       case 'google_calendar':
-        result = await processGoogleCalendarWebhook(data, userId, ragSystem);
+        result = await processGoogleCalendarWebhook(data, userId);
         processed = true;
         break;
 
       case 'slack':
-        result = await processSlackWebhook(data, userId, ragSystem);
+        result = await processSlackWebhook(data, userId);
         processed = true;
         break;
 
       case 'notion':
-        result = await processNotionWebhook(data, userId, ragSystem);
+        result = await processNotionWebhook(data, userId);
         processed = true;
         break;
 
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
       default:
         // Generic processor for unknown sources
-        result = await processGenericWebhook(source, data, userId, ragSystem);
+        result = await processGenericWebhook(source, data, userId);
         processed = true;
     }
 

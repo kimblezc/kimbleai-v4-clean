@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface MemoryStats {
   totalMemories: number;
@@ -64,10 +64,6 @@ export default function WorkspaceMemoryDashboard() {
 
   const userId = 'zach'; // TODO: Get from auth context
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
   const callWorkspaceAPI = async (action: string, params: any = {}) => {
     const response = await fetch('/api/google/workspace', {
       method: 'POST',
@@ -83,7 +79,7 @@ export default function WorkspaceMemoryDashboard() {
     return await response.json();
   };
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true);
       const result = await callWorkspaceAPI('get_stats');
@@ -95,7 +91,11 @@ export default function WorkspaceMemoryDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   const initializeSystem = async () => {
     try {

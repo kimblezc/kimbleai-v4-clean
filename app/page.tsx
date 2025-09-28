@@ -45,7 +45,7 @@ export default function Home() {
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
-  const loadConversations = async (projectId: string = '') => {
+  const loadConversations = React.useCallback(async (projectId: string = '') => {
     setIsLoadingConversations(true);
     try {
       const response = await fetch(`/api/conversations?userId=${currentUser}&limit=50`);
@@ -114,7 +114,7 @@ export default function Home() {
     } finally {
       setIsLoadingConversations(false);
     }
-  };
+  }, [currentUser, createdProjects, deletedProjects]);
 
   // Helper function to format project names
   const formatProjectName = (id: string): string => {
@@ -278,7 +278,7 @@ export default function Home() {
   };
 
   // Handle photo upload and analysis
-  const handlePhotoAnalysis = async (file: File) => {
+  const handlePhotoAnalysis = React.useCallback(async (file: File) => {
     setIsAnalyzingPhoto(true);
     try {
       const formData = new FormData();
@@ -333,7 +333,7 @@ export default function Home() {
     } finally {
       setIsAnalyzingPhoto(false);
     }
-  };
+  }, [currentUser, photoAnalysisType]);
 
   // Handle file selection
   const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
