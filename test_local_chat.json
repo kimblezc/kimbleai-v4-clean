@@ -1,0 +1,10 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, testing local chat while kimbleai.com is paused"
+    }
+  ],
+  "userId": "zach",
+  "conversationId": "local-test-001"
+}
