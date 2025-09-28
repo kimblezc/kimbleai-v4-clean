@@ -246,7 +246,8 @@ async function transcribeWithWhisper(
 }
 
 // Chunk large audio files (for files > 25MB)
-export async function POST_CHUNKED(request: NextRequest) {
+// Chunked processing disabled for Vercel deployment
+// export async function POST_CHUNKED(request: NextRequest) {
   try {
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File;
