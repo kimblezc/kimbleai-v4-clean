@@ -381,7 +381,7 @@ export class WorkspaceMemorySystem {
     return data.data[0].embedding;
   }
 
-  private cosineSimilarity(a: number[], b: number[]): number {
+  protected cosineSimilarity(a: number[], b: number[]): number {
     let dotProduct = 0;
     let normA = 0;
     let normB = 0;
