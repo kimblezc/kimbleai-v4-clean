@@ -86,7 +86,8 @@ export class WorkspaceMemorySystem {
     // Generate embedding (only for important content)
     let embedding: number[] = [];
     if ((metadata.importance || 0) > 0.6 && content.length > 100) {
-      embedding = await this.generateEmbedding(content);
+      const embeddingResult = await this.generateEmbedding(content);
+      embedding = embeddingResult || [];
     }
 
     // Compress content and embedding
@@ -358,7 +359,7 @@ export class WorkspaceMemorySystem {
     return data;
   }
 
-  private async generateEmbedding(text: string): Promise<number[]> {
+  private async generateEmbedding(text: string): Promise<number[] | null> {
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
