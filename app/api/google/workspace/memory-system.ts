@@ -483,7 +483,7 @@ export class WorkspaceMemorySystem {
     });
   }
 
-  private async getRelevantMemoryIds(userId: string, filters: any): Promise<string[]> {
+  protected async getRelevantMemoryIds(userId: string, filters: any): Promise<string[]> {
     const { createClient } = require('@supabase/supabase-js');
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
