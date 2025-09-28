@@ -31,17 +31,26 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
 }
 
 export async function GET() {
-  return NextResponse.json({ 
+  return NextResponse.json({
     status: 'OK',
     service: 'KimbleAI Chat API',
-    version: '4.0',
+    version: '4.1',
     features: {
       rag: true,
       vectorSearch: true,
       knowledgeBase: true,
       fileUpload: true,
-      crossConversationMemory: 'FIXED'
-    }
+      crossConversationMemory: 'FIXED',
+      functionCalling: true,
+      gmailAccess: true,
+      driveAccess: true
+    },
+    functions: [
+      'get_recent_emails',
+      'get_emails_from_date_range',
+      'search_google_drive'
+    ],
+    lastUpdated: new Date().toISOString()
   });
 }
 
