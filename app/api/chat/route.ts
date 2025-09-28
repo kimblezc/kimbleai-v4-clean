@@ -122,6 +122,14 @@ You automatically reference ALL relevant data from:
 - Uploaded files & knowledge base
 - Project data & task information
 
+🔧 **FUNCTION CALLING CAPABILITIES**
+You have active access to Gmail and Google Drive functions:
+- get_recent_emails: Retrieve recent emails from Gmail
+- get_emails_from_date_range: Get emails from specific time periods (last 30 days, etc.)
+- search_google_drive: Search Drive for files, documents, and content
+- Use these functions when users ask for emails, files, or recent data
+- ALWAYS call these functions when users request Gmail or Drive information
+
 **User**: ${userData.name} (${userData.email})
 **Role**: ${userData.role} ${userData.role === 'admin' ? '(Full System Access)' : '(Standard User)'}
 
@@ -167,11 +175,84 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     const selectedModel = ModelSelector.selectModel(taskContext);
     console.log(`[MODEL] ${ModelSelector.getModelExplanation(selectedModel, taskContext)}`);
 
+    // Define function tools for Gmail and Drive access
+    const tools = [
+      {
+        type: "function" as const,
+        function: {
+          name: "get_recent_emails",
+          description: "Get recent emails from Gmail inbox",
+          parameters: {
+            type: "object",
+            properties: {
+              maxResults: {
+                type: "number",
+                description: "Maximum number of emails to retrieve (default: 5, max: 20)",
+                default: 5
+              },
+              query: {
+                type: "string",
+                description: "Gmail search query (e.g., 'after:2025/08/01', 'from:sender@email.com')",
+                default: ""
+              }
+            }
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "search_google_drive",
+          description: "Search Google Drive for files and documents",
+          parameters: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description: "Search query for files (keywords, file names, content)",
+                required: true
+              },
+              maxResults: {
+                type: "number",
+                description: "Maximum number of files to return (default: 5, max: 20)",
+                default: 5
+              }
+            },
+            required: ["query"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_emails_from_date_range",
+          description: "Get emails from a specific date range (last 30 days, last week, etc.)",
+          parameters: {
+            type: "object",
+            properties: {
+              days: {
+                type: "number",
+                description: "Number of days back to search (e.g., 30 for last 30 days)",
+                default: 30
+              },
+              maxResults: {
+                type: "number",
+                description: "Maximum number of emails to retrieve",
+                default: 5
+              }
+            }
+          }
+        }
+      }
+    ];
+
     // Prepare model parameters (GPT-5 specific requirements)
     const modelParams: any = {
       model: selectedModel.model,
       messages: contextMessages,
-      max_completion_tokens: selectedModel.maxTokens || 1000
+      max_completion_tokens: selectedModel.maxTokens || 1000,
+      tools: tools,
+      tool_choice: "auto"
     };
 
     // GPT-5 models require temperature = 1 (default), GPT-4 can use 0.7
@@ -188,7 +269,87 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     // Get AI response with GPT-5 models (direct call - no fallback)
     const completion = await openai.chat.completions.create(modelParams);
 
-    const aiResponse = completion.choices[0].message.content || 'I apologize, but I could not generate a response.';
+    let aiResponse = completion.choices[0].message.content || 'I apologize, but I could not generate a response.';
+
+    // Handle function calls if the AI wants to call Gmail/Drive functions
+    const toolCalls = completion.choices[0].message.tool_calls;
+    if (toolCalls && toolCalls.length > 0) {
+      console.log(`🔧 AI requested ${toolCalls.length} function call(s)`);
+
+      const functionResults = [];
+
+      for (const toolCall of toolCalls) {
+        const functionName = toolCall.function.name;
+        const functionArgs = JSON.parse(toolCall.function.arguments);
+
+        console.log(`📞 Calling function: ${functionName}`, functionArgs);
+
+        let functionResult = null;
+
+        try {
+          switch (functionName) {
+            case 'get_recent_emails':
+              functionResult = await callGmailAPI('get_recent', {
+                userId,
+                maxResults: functionArgs.maxResults || 5,
+                query: functionArgs.query || ''
+              });
+              break;
+
+            case 'get_emails_from_date_range':
+              const daysAgo = functionArgs.days || 30;
+              const dateQuery = `after:${new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split('T')[0].replace(/-/g, '/')}`;
+              functionResult = await callGmailAPI('search', {
+                userId,
+                query: dateQuery,
+                maxResults: functionArgs.maxResults || 5
+              });
+              break;
+
+            case 'search_google_drive':
+              functionResult = await callDriveAPI('search', {
+                userId,
+                query: functionArgs.query,
+                maxResults: functionArgs.maxResults || 5
+              });
+              break;
+
+            default:
+              functionResult = { error: `Unknown function: ${functionName}` };
+          }
+
+          functionResults.push({
+            tool_call_id: toolCall.id,
+            role: 'tool',
+            content: JSON.stringify(functionResult)
+          });
+
+        } catch (error: any) {
+          console.error(`Function call error for ${functionName}:`, error);
+          functionResults.push({
+            tool_call_id: toolCall.id,
+            role: 'tool',
+            content: JSON.stringify({ error: error.message })
+          });
+        }
+      }
+
+      // If we have function results, make another call to get the final response
+      if (functionResults.length > 0) {
+        const followUpParams = {
+          ...modelParams,
+          messages: [
+            ...contextMessages,
+            completion.choices[0].message,
+            ...functionResults
+          ]
+        };
+
+        const followUpCompletion = await openai.chat.completions.create(followUpParams);
+        aiResponse = followUpCompletion.choices[0].message.content || aiResponse;
+        console.log(`✅ Function calls completed, final response generated`);
+      }
+    }
 
     // 🗂️ GOOGLE DRIVE STORAGE: Save conversation to Google Workspace Memory System
     let driveStorageSuccessful = false;
@@ -438,4 +599,54 @@ function extractFacts(userMessage: string, aiResponse: string): any[] {
   }
 
   return facts;
+}
+
+// Helper function to call Gmail API
+async function callGmailAPI(action: string, params: any) {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/google/gmail`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action,
+        ...params
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gmail API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('Gmail API call failed:', error);
+    return { error: error.message };
+  }
+}
+
+// Helper function to call Google Drive API
+async function callDriveAPI(action: string, params: any) {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/google/drive`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action,
+        ...params
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Drive API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('Drive API call failed:', error);
+    return { error: error.message };
+  }
 }
