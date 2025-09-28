@@ -276,8 +276,10 @@ async function processWordFile(
 ) {
   try {
     // Try to parse Word document (requires mammoth dependency)
-    const mammoth = require('mammoth');
-    const result = await mammoth.extractRawText({ buffer: buffer });
+    // Note: mammoth disabled for Vercel deployment
+    // const mammoth = require('mammoth');
+    // const result = await mammoth.extractRawText({ buffer: buffer });
+    const result = { value: '[Word document - text extraction disabled in production]' };
 
     const ragResult = await ragSystem.storeDocumentWithRAG(userId, {
       title: title,
