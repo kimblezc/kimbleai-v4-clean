@@ -335,7 +335,7 @@ export class WorkspaceMemorySystem {
     });
   }
 
-  private async loadCompressedMemory(id: string): Promise<CompressedMemory> {
+  protected async loadCompressedMemory(id: string): Promise<CompressedMemory> {
     const response = await this.drive.files.list({
       q: `name='${id}.json' and parents in '${this.config.folderId}'`,
       fields: 'files(id)'
