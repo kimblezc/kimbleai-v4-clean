@@ -358,7 +358,7 @@ Answer:`;
 
     let totalBytes = 0;
 
-    for (const [folderName, folderId] of Object.entries(this.config.folders)) {
+    for (const [folderName, folderId] of Object.entries((this as any).config.folders)) {
       const files = await this.searchMemoryFiles(userId, '', folderName as any);
       const folderSize = files.reduce((sum, file) => sum + (parseInt(file.size) || 0), 0);
 
