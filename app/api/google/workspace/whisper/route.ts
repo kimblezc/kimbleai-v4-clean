@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Store original audio file
     const audioBuffer = Buffer.from(await audioFile.arrayBuffer());
     const audioId = await ragSystem.storeCompressedMemory(userId, audioBuffer.toString('base64'), {
-      type: 'audio',
+      type: 'transcription',
       title: `${title} (Original Audio)`,
       tags: ['audio', 'original', ...tags.split(',')],
       importance: 0.6
