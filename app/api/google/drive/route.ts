@@ -395,6 +395,66 @@ async function getFileContent(drive: any, fileId: string) {
   }
 }
 
+async function uploadFile(drive: any, userId: string, fileData: any, projectId?: string) {
+  const { name, content, type, mimeType, parentFolderId } = fileData;
+
+  const fileMetadata: any = {
+    name: name
+  };
+
+  if (parentFolderId) {
+    fileMetadata.parents = [parentFolderId];
+  }
+
+  const media = {
+    mimeType: mimeType || 'application/octet-stream',
+    body: content
+  };
+
+  const response = await drive.files.create({
+    resource: fileMetadata,
+    media: media,
+    uploadType: 'multipart',
+    fields: 'id, name, webViewLink, size'
+  });
+
+  const uploadedFile = response.data;
+
+  // Add to knowledge base for text files only
+  // TEMPORARILY DISABLED - CAUSING DATABASE OVERFLOW
+  if (false && typeof content === 'string' && content.length > 10) {
+    const embedding = await generateEmbedding(content);
+
+    await supabase.from('knowledge_base').insert({
+      user_id: userId,
+      source_type: 'drive',
+      source_id: uploadedFile.id,
+      category: 'upload',
+      title: uploadedFile.name,
+      content: content.substring(0, 2000),
+      embedding: embedding,
+      importance: 0.8,
+      tags: projectId ? ['google-drive', projectId, 'uploaded'] : ['google-drive', 'uploaded'],
+      metadata: {
+        fileId: uploadedFile.id,
+        project_id: projectId,
+        webViewLink: uploadedFile.webViewLink,
+        uploaded_by: 'kimbleai'
+      }
+    });
+  }
+
+  return NextResponse.json({
+    success: true,
+    file: {
+      id: uploadedFile.id,
+      name: uploadedFile.name,
+      webLink: uploadedFile.webViewLink,
+      size: uploadedFile.size
+    }
+  });
+}
+
 async function bulkSyncFiles(drive: any, userId: string) {
   // Get recent files (last 30 days)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
