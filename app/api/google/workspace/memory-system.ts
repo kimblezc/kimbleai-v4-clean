@@ -214,6 +214,10 @@ export class WorkspaceMemorySystem {
 
     // Generate query embedding
     const queryEmbedding = await this.generateEmbedding(query);
+    if (!queryEmbedding) {
+      // Return empty results if embedding generation fails
+      return [];
+    }
 
     // Get relevant memory IDs from index
     const relevantIds = await this.getRelevantMemoryIds(userId, { types, maxAge });
