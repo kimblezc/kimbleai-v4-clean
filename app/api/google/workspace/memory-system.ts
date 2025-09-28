@@ -218,7 +218,12 @@ export class WorkspaceMemorySystem {
     const relevantIds = await this.getRelevantMemoryIds(userId, { types, maxAge });
 
     // Load and decompress memories
-    const results = [];
+    const results: Array<{
+      id: string;
+      content: string;
+      similarity: number;
+      metadata: any;
+    }> = [];
     const loadPromises = relevantIds.slice(0, 50).map(async (id) => { // Limit to 50 for performance
       try {
         const memory = await this.loadCompressedMemory(id);
