@@ -314,7 +314,7 @@ export class WorkspaceMemorySystem {
       console.error('Workspace Memory System test failed:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
   }
