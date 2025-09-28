@@ -363,7 +363,7 @@ export class WorkspaceMemorySystem {
     return data;
   }
 
-  private async generateEmbedding(text: string): Promise<number[] | null> {
+  protected async generateEmbedding(text: string): Promise<number[] | null> {
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
