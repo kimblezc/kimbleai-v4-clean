@@ -145,7 +145,7 @@ async function processTextFile(
   const result = await ragSystem.storeDocumentWithRAG(userId, {
     title: title,
     content: content,
-    type: 'document',
+    type: 'knowledge',
     tags: ['upload', 'text', ...tags]
   });
 
@@ -206,12 +206,12 @@ async function processPDFFile(
     const result = await ragSystem.storeDocumentWithRAG(userId, {
       title: title,
       content: pdfData.text,
-      type: 'pdf',
+      type: 'knowledge',
       tags: ['upload', 'pdf', ...tags]
     });
 
     return {
-      type: 'pdf',
+      type: 'knowledge',
       documentId: result.documentId,
       chunks: result.chunks.length,
       pages: pdfData.numpages,
@@ -222,14 +222,14 @@ async function processPDFFile(
   } catch (error) {
     // Fallback: store as binary
     const binaryId = await ragSystem.storeCompressedMemory(userId, buffer.toString('base64'), {
-      type: 'pdf',
+      type: 'knowledge',
       title: `${title} (PDF Binary)`,
       tags: ['upload', 'pdf', 'binary', ...tags],
       importance: importance
     });
 
     return {
-      type: 'pdf',
+      type: 'knowledge',
       documentId: binaryId,
       size: file.size,
       note: 'PDF stored as binary. Install pdf-parse for text extraction.'
@@ -248,14 +248,14 @@ async function processImageFile(
   importance: number
 ) {
   const imageId = await ragSystem.storeCompressedMemory(userId, buffer.toString('base64'), {
-    type: 'image',
+    type: 'knowledge',
     title: title,
     tags: ['upload', 'image', ...tags],
     importance: importance
   });
 
   return {
-    type: 'image',
+    type: 'knowledge',
     imageId: imageId,
     size: file.size,
     mimeType: file.type,
@@ -283,12 +283,12 @@ async function processWordFile(
     const ragResult = await ragSystem.storeDocumentWithRAG(userId, {
       title: title,
       content: result.value,
-      type: 'word',
+      type: 'knowledge',
       tags: ['upload', 'word', ...tags]
     });
 
     return {
-      type: 'word',
+      type: 'knowledge',
       documentId: ragResult.documentId,
       chunks: ragResult.chunks.length,
       size: file.size,
@@ -298,14 +298,14 @@ async function processWordFile(
   } catch (error) {
     // Fallback: store as binary
     const binaryId = await ragSystem.storeCompressedMemory(userId, buffer.toString('base64'), {
-      type: 'word',
+      type: 'knowledge',
       title: `${title} (Word Binary)`,
       tags: ['upload', 'word', 'binary', ...tags],
       importance: importance
     });
 
     return {
-      type: 'word',
+      type: 'knowledge',
       documentId: binaryId,
       size: file.size,
       note: 'Word document stored as binary. Install mammoth for text extraction.'
