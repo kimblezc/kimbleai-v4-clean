@@ -520,7 +520,7 @@ Please provide a helpful answer based on this context.`;
         .order('created_at', { ascending: false })
         .limit(10);
 
-      const recentActivity = (recentData || []).map(item => ({
+      const recentActivity = (recentData || []).map((item: any) => ({
         id: item.id,
         title: item.title,
         type: item.type,
