@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
 import { WorkspaceRAGSystem } from '../rag-system';
-import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 
