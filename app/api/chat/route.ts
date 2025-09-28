@@ -218,8 +218,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
             properties: {
               query: {
                 type: "string",
-                description: "Search query for files (keywords, file names, content)",
-                required: true
+                description: "Search query for files (keywords, file names, content)"
               },
               maxResults: {
                 type: "number",
