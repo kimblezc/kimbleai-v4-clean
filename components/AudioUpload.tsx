@@ -1,9 +1,9 @@
 // components/AudioUpload.tsx
-// Audio upload component with M4A support and Whisper transcription
+// Audio upload component with M4A support and Whisper transcription with progress tracking
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface AudioUploadProps {
   userId: string;
@@ -11,11 +11,75 @@ interface AudioUploadProps {
   onTranscription?: (transcription: any) => void;
 }
 
+interface ProgressState {
+  progress: number;
+  eta: number;
+  status: string;
+  jobId?: string;
+}
+
 export default function AudioUpload({ userId, projectId = 'general', onTranscription }: AudioUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [transcription, setTranscription] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [progressState, setProgressState] = useState<ProgressState>({
+    progress: 0,
+    eta: 0,
+    status: 'idle'
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup progress interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const pollProgress = async (jobId: string) => {
+    try {
+      const response = await fetch(`/api/audio/transcribe-progress?jobId=${jobId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setProgressState({
+          progress: data.progress,
+          eta: data.eta,
+          status: data.status,
+          jobId
+        });
+
+        if (data.status === 'completed' && data.result) {
+          setTranscription(data.result.text);
+          setUploading(false);
+
+          if (onTranscription) {
+            onTranscription(data.result);
+          }
+
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+
+          console.log('[AUDIO] Transcription successful:', data.result);
+        } else if (data.status === 'failed') {
+          setError(data.error || 'Transcription failed');
+          setUploading(false);
+
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[AUDIO] Progress poll error:', err);
+    }
+  };
 
   const handleAudioUpload = async (file: File) => {
     if (!file) return;
@@ -30,6 +94,7 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
     setUploading(true);
     setError('');
     setTranscription('');
+    setProgressState({ progress: 0, eta: 0, status: 'initializing' });
 
     try {
       const formData = new FormData();
@@ -37,7 +102,7 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
       formData.append('userId', userId);
       formData.append('projectId', projectId);
 
-      const response = await fetch('/api/audio/transcribe', {
+      const response = await fetch('/api/audio/transcribe-progress', {
         method: 'POST',
         body: formData,
       });
@@ -45,21 +110,27 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to transcribe audio');
+        throw new Error(data.error || 'Failed to start transcription');
       }
 
-      setTranscription(data.transcription.text);
-      
-      if (onTranscription) {
-        onTranscription(data.transcription);
-      }
+      // Start polling for progress
+      const jobId = data.jobId;
+      setProgressState({
+        progress: 0,
+        eta: data.estimatedDuration ? Math.round(data.estimatedDuration / 2.5) : 30,
+        status: 'starting',
+        jobId
+      });
 
-      console.log('[AUDIO] Transcription successful:', data.transcription);
+      progressIntervalRef.current = setInterval(() => {
+        pollProgress(jobId);
+      }, 1500); // Poll every 1.5 seconds
+
+      console.log(`[AUDIO] Started transcription job ${jobId} for ${file.name}`);
 
     } catch (err: any) {
       console.error('[AUDIO] Upload error:', err);
       setError(err.message || 'Failed to upload and transcribe audio');
-    } finally {
       setUploading(false);
     }
   };
@@ -122,7 +193,51 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
 
         {uploading ? (
           <div style={{ color: '#4a9eff' }}>
-            Transcribing audio...
+            <div style={{ marginBottom: '12px' }}>
+              {progressState.status === 'initializing' && 'Initializing transcription...'}
+              {progressState.status === 'preparing_file' && 'Preparing audio file...'}
+              {progressState.status === 'uploading_to_whisper' && 'Uploading to Whisper...'}
+              {progressState.status === 'transcribing' && 'Transcribing audio...'}
+              {progressState.status === 'saving_to_database' && 'Saving transcription...'}
+              {progressState.status === 'generating_embeddings' && 'Generating embeddings...'}
+              {progressState.status === 'starting' && 'Starting transcription...'}
+            </div>
+
+            {/* Progress Bar */}
+            <div style={{
+              width: '100%',
+              height: '8px',
+              backgroundColor: '#333',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              marginBottom: '8px'
+            }}>
+              <div style={{
+                width: `${progressState.progress}%`,
+                height: '100%',
+                backgroundColor: '#4a9eff',
+                borderRadius: '4px',
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+
+            {/* Progress Stats */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '12px',
+              color: '#aaa'
+            }}>
+              <span>{progressState.progress}% complete</span>
+              {progressState.eta > 0 && (
+                <span>
+                  ETA: {progressState.eta < 60
+                    ? `${progressState.eta}s`
+                    : `${Math.floor(progressState.eta / 60)}m ${progressState.eta % 60}s`
+                  }
+                </span>
+              )}
+            </div>
           </div>
         ) : (
           <div style={{ color: '#888' }}>
