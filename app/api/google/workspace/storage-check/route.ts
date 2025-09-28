@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     let writeTest = { success: false, message: '' };
     try {
       const testFile = await drive.files.create({
-        resource: {
+        requestBody: {
           name: 'kimbleai-write-test.txt'
         },
         media: {
