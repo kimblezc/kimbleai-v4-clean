@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     const ragResult = await ragSystem.storeTranscriptionEfficient(
       userId,
       audioFile.name,
-      transcriptionResult.text,
+      transcriptionResult.text || '',
       transcriptionResult.duration
     );
 
