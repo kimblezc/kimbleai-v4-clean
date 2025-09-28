@@ -79,7 +79,7 @@ export class WorkspaceMemorySystem {
   async storeCompressedMemory(
     userId: string,
     content: string,
-    metadata: Partial<CompressedMemory['metadata']>
+    metadata: Partial<CompressedMemory['metadata']> & { title?: string }
   ): Promise<string> {
     const id = `mem_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
