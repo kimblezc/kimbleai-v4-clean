@@ -34,7 +34,9 @@
       "mcp__ide__getDiagnostics",
       "WebFetch(domain:kimbleai-v4-clean-6y4qdok18-kimblezcs-projects.vercel.app)",
       "WebFetch(domain:kimbleai.com)",
-      "WebFetch(domain:www.kimbleai.com)"
+      "WebFetch(domain:www.kimbleai.com)",
+      "Bash(netlify:*)",
+      "Bash(railway login:*)"
     ],
     "deny": [],
     "ask": []

@@ -202,7 +202,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
         .single();
 
       if (tokenData?.access_token) {
-        // Initialize Google Drive client
+        // Initialize Google Drive client with automatic token refresh
         const oauth2Client = new google.auth.OAuth2(
           process.env.GOOGLE_CLIENT_ID!,
           process.env.GOOGLE_CLIENT_SECRET!,
@@ -211,6 +211,18 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
         oauth2Client.setCredentials({
           access_token: tokenData.access_token,
           refresh_token: tokenData.refresh_token
+        });
+
+        // Set up automatic token refresh
+        oauth2Client.on('tokens', async (tokens) => {
+          console.log('🔄 OAuth tokens refreshed for user:', userId);
+          if (tokens.access_token) {
+            await supabase.from('user_tokens').update({
+              access_token: tokens.access_token,
+              expires_at: tokens.expiry_date ? Math.floor(tokens.expiry_date / 1000) : null,
+              updated_at: new Date().toISOString()
+            }).eq('user_id', userId);
+          }
         });
 
         const drive = google.drive({ version: 'v3', auth: oauth2Client });
