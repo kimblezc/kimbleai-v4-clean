@@ -508,7 +508,7 @@ export class WorkspaceMemorySystem {
     }
 
     const { data } = await query;
-    return (data || []).map(item => item.id);
+    return (data || []).map((item: any) => item.id);
   }
 
   private async calculateTotalCompressedSize(ids: string[]): Promise<number> {
