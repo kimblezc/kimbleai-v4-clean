@@ -5,7 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { BackgroundIndexer } from '@/lib/background-indexer';
+import { google } from 'googleapis';
+import { WorkspaceRAGSystem } from '../google/workspace/rag-system';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,29 +35,32 @@ export async function POST(request: NextRequest) {
     let processed = false;
     let result: any = {};
 
+    // Initialize Google Workspace RAG System for Pro-level storage
+    const ragSystem = await initializeWorkspaceSystem(userId);
+
     switch (source) {
       case 'gmail':
-        result = await processGmailWebhook(data, userId);
+        result = await processGmailWebhook(data, userId, ragSystem);
         processed = true;
         break;
 
       case 'google_drive':
-        result = await processGoogleDriveWebhook(data, userId);
+        result = await processGoogleDriveWebhook(data, userId, ragSystem);
         processed = true;
         break;
 
       case 'google_calendar':
-        result = await processGoogleCalendarWebhook(data, userId);
+        result = await processGoogleCalendarWebhook(data, userId, ragSystem);
         processed = true;
         break;
 
       case 'slack':
-        result = await processSlackWebhook(data, userId);
+        result = await processSlackWebhook(data, userId, ragSystem);
         processed = true;
         break;
 
       case 'notion':
-        result = await processNotionWebhook(data, userId);
+        result = await processNotionWebhook(data, userId, ragSystem);
         processed = true;
         break;
 
@@ -97,7 +101,7 @@ export async function POST(request: NextRequest) {
 
       default:
         // Generic processor for unknown sources
-        result = await processGenericWebhook(source, data, userId);
+        result = await processGenericWebhook(source, data, userId, ragSystem);
         processed = true;
     }
 
@@ -157,11 +161,46 @@ function mapExternalUserToInternal(user_mapping: any, data: any): string | null 
   return 'zach-admin-001';
 }
 
-async function processGmailWebhook(data: any, userId: string): Promise<any> {
+// Initialize Google Workspace RAG System for Zapier Pro integration
+async function initializeWorkspaceSystem(userId: string): Promise<WorkspaceRAGSystem | null> {
   try {
-    const backgroundIndexer = BackgroundIndexer.getInstance();
+    // Get user's Google token
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('access_token, refresh_token')
+      .eq('user_id', userId)
+      .single();
 
-    // Auto-index email content
+    if (!tokenData?.access_token) {
+      console.warn('No Google token found for user:', userId);
+      return null;
+    }
+
+    // Initialize Google Drive client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+    );
+    oauth2Client.setCredentials({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token
+    });
+
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+    const ragSystem = new WorkspaceRAGSystem(drive);
+    await ragSystem.initialize(userId);
+
+    return ragSystem;
+  } catch (error) {
+    console.error('Failed to initialize workspace system:', error);
+    return null;
+  }
+}
+
+async function processGmailWebhook(data: any, userId: string, ragSystem: WorkspaceRAGSystem | null): Promise<any> {
+  try {
+    // Auto-index email content with enhanced formatting
     const emailContent = `
 Subject: ${data.subject || 'No Subject'}
 From: ${data.from || 'Unknown Sender'}
@@ -171,30 +210,51 @@ Date: ${data.date || new Date().toISOString()}
 ${data.body_plain || data.body_html || 'No content'}
     `.trim();
 
-    // Store in knowledge base
-    await supabase.from('knowledge_base').insert({
-      user_id: userId,
-      source_type: 'email',
-      source_id: data.message_id || `zapier-${Date.now()}`,
-      category: 'email',
-      title: data.subject || 'Email from Zapier',
-      content: emailContent.substring(0, 2000),
-      importance: data.importance === 'high' ? 0.9 : 0.7,
-      tags: ['zapier', 'gmail', ...(data.labels || [])],
-      metadata: {
-        from: data.from,
-        to: data.to,
-        date: data.date,
-        zapier_source: true,
-        thread_id: data.thread_id
-      }
-    });
+    if (ragSystem) {
+      // Store in Google Workspace with vector embeddings
+      const memoryId = await ragSystem.storeCompressedMemory(userId, emailContent, {
+        type: 'conversation',
+        title: `Email: ${data.subject || 'Zapier Gmail'}`,
+        tags: ['zapier', 'gmail', 'email', ...(data.labels || [])],
+        importance: data.importance === 'high' ? 0.9 : 0.7
+      });
 
-    return {
-      indexed: true,
-      content_length: emailContent.length,
-      source_id: data.message_id
-    };
+      console.log(`📧 Gmail email stored with vector embeddings: ${memoryId}`);
+
+      return {
+        indexed: true,
+        memory_id: memoryId,
+        content_length: emailContent.length,
+        source_id: data.message_id,
+        vector_search_enabled: true
+      };
+    } else {
+      // Fallback to old system if workspace unavailable
+      await supabase.from('knowledge_base').insert({
+        user_id: userId,
+        source_type: 'email',
+        source_id: data.message_id || `zapier-${Date.now()}`,
+        category: 'email',
+        title: data.subject || 'Email from Zapier',
+        content: emailContent.substring(0, 2000),
+        importance: data.importance === 'high' ? 0.9 : 0.7,
+        tags: ['zapier', 'gmail', ...(data.labels || [])],
+        metadata: {
+          from: data.from,
+          to: data.to,
+          date: data.date,
+          zapier_source: true,
+          thread_id: data.thread_id
+        }
+      });
+
+      return {
+        indexed: true,
+        content_length: emailContent.length,
+        source_id: data.message_id,
+        fallback_storage: true
+      };
+    }
   } catch (error: any) {
     console.error('Gmail webhook processing error:', error);
     return { error: error.message };
@@ -441,8 +501,8 @@ function getFileCategory(mimeType: string): string {
 
 export async function GET(request: NextRequest) {
   return NextResponse.json({
-    service: 'KimbleAI Zapier Webhook Integration',
-    version: '1.0',
+    service: 'KimbleAI Zapier Pro Webhook Integration',
+    version: '2.0',
     supported_sources: [
       'gmail',
       'google_drive',
@@ -458,11 +518,14 @@ export async function GET(request: NextRequest) {
       'hubspot'
     ],
     features: [
-      'Automatic data indexing from Zapier',
-      'Real-time webhook processing',
-      'Multi-source integration',
+      'Zapier Pro integration with unlimited tasks',
+      'Vector embeddings for semantic search',
+      'Google Workspace storage (2TB capacity)',
+      'Real-time webhook processing with RAG',
+      'Multi-source integration (12+ platforms)',
       'Intelligent content categorization',
-      'Automatic knowledge base updates'
+      'Cross-conversation memory linking',
+      'Compressed storage with auto-deduplication'
     ],
     webhook_url: `${process.env.NEXTAUTH_URL}/api/zapier/webhooks`,
     setup_instructions: {
