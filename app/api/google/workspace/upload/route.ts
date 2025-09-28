@@ -170,7 +170,7 @@ async function processAudioFile(
 ) {
   // Store raw audio file first
   const audioId = await ragSystem.storeCompressedMemory(userId, buffer.toString('base64'), {
-    type: 'audio',
+    type: 'transcription',
     title: `${title} (Audio File)`,
     tags: ['upload', 'audio', 'raw', ...tags],
     importance: importance
@@ -179,7 +179,7 @@ async function processAudioFile(
   // TODO: Add Whisper transcription here
   // For now, return placeholder
   return {
-    type: 'audio',
+    type: 'transcription',
     audioId: audioId,
     size: file.size,
     duration: 'Unknown',
