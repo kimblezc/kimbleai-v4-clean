@@ -428,13 +428,14 @@ export default function Home() {
         body: formData,
       });
 
+      // Read response as text first, then try to parse as JSON
+      const responseText = await response.text();
       let data;
       try {
-        data = await response.json();
+        data = JSON.parse(responseText);
       } catch (jsonError) {
         // Handle non-JSON responses (HTML error pages, etc.)
-        const text = await response.text();
-        throw new Error(`Server returned non-JSON response (${response.status}): ${text.substring(0, 100)}...`);
+        throw new Error(`Server returned non-JSON response (${response.status}): ${responseText.substring(0, 100)}...`);
       }
 
       if (!response.ok) {
