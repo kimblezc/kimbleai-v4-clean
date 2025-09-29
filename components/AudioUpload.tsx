@@ -91,6 +91,11 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
       return;
     }
 
+    // Log file size for large files
+    if (file.size > 20 * 1024 * 1024) {
+      console.log(`Large file uploaded: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB) - will use chunked processing`);
+    }
+
     setUploading(true);
     setError('');
     setTranscription('');
@@ -203,6 +208,10 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
           <div style={{ color: '#4a9eff' }}>
             <div style={{ marginBottom: '12px' }}>
               {progressState.status === 'initializing' && 'Initializing transcription...'}
+              {progressState.status === 'preparing_chunks' && 'Preparing file chunks for large file...'}
+              {progressState.status === 'processing_chunks' && 'Processing audio chunks...'}
+              {progressState.status.startsWith('processing_chunk_') && `Processing chunk ${progressState.status.split('_')[2]}...`}
+              {progressState.status === 'combining_results' && 'Combining chunk results...'}
               {progressState.status === 'preparing_file' && 'Preparing audio file...'}
               {progressState.status === 'uploading_to_whisper' && 'Uploading to Whisper...'}
               {progressState.status === 'transcribing' && 'Transcribing audio...'}

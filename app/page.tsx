@@ -411,12 +411,122 @@ export default function Home() {
   }, [currentProject]);
 
   // Handle audio transcription with progress tracking
+  // Handle chunked audio transcription for large files
+  const handleChunkedAudioTranscription = async (file: File) => {
+    setIsTranscribingAudio(true);
+    setAudioProgress({ progress: 0, eta: 0, status: 'preparing_chunks' });
+
+    try {
+      const chunkSize = 20 * 1024 * 1024; // 20MB chunks
+      const totalChunks = Math.ceil(file.size / chunkSize);
+      const chunks = [];
+
+      console.log(`Splitting ${file.name} into ${totalChunks} chunks of ~20MB each`);
+
+      // Split file into chunks
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
+        const chunk = file.slice(start, end);
+        chunks.push({
+          data: chunk,
+          index: i,
+          filename: `${file.name.split('.')[0]}_chunk_${i + 1}.${file.name.split('.').pop()}`
+        });
+      }
+
+      setAudioProgress({ progress: 10, eta: totalChunks * 30, status: 'processing_chunks' });
+
+      // Process chunks sequentially
+      const results = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        console.log(`Processing chunk ${i + 1}/${chunks.length}: ${chunk.filename}`);
+
+        const formData = new FormData();
+        formData.append('audio', chunk.data, chunk.filename);
+        formData.append('userId', currentUser);
+        formData.append('projectId', currentProject);
+        formData.append('chunkIndex', i.toString());
+        formData.append('totalChunks', chunks.length.toString());
+        formData.append('isChunked', 'true');
+
+        const response = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const responseText = await response.text();
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (jsonError) {
+          throw new Error(`Chunk ${i + 1} failed: Server returned non-JSON response (${response.status}): ${responseText.substring(0, 100)}...`);
+        }
+
+        if (!response.ok) {
+          throw new Error(`Chunk ${i + 1} failed: ${data.error || 'Unknown error'}`);
+        }
+
+        results.push({
+          chunk: i + 1,
+          transcription: data.transcription,
+          duration: data.duration
+        });
+
+        // Update progress
+        const progressPercent = ((i + 1) / chunks.length) * 80 + 10; // 10-90%
+        const remainingChunks = chunks.length - (i + 1);
+        const eta = remainingChunks * 30; // ~30 seconds per chunk estimate
+        setAudioProgress({ progress: progressPercent, eta: eta, status: `processing_chunk_${i + 1}` });
+      }
+
+      // Combine results
+      setAudioProgress({ progress: 95, eta: 5, status: 'combining_results' });
+
+      const combinedTranscription = results.map(r => r.transcription).join(' ');
+      const totalDuration = results.reduce((sum, r) => sum + (r.duration || 0), 0);
+
+      console.log(`Chunked transcription completed: ${results.length} chunks, ${combinedTranscription.length} characters`);
+
+      // Add success message
+      const successMessage: Message = {
+        role: 'assistant',
+        content: `🎵 **Audio Transcribed Successfully** (${totalChunks} chunks)\n\n**File:** ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)\n**Duration:** ${Math.round(totalDuration)}s\n**Chunks Processed:** ${results.length}\n\n**Transcription:**\n${combinedTranscription}`,
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, successMessage]);
+      setAudioProgress({ progress: 100, eta: 0, status: 'completed' });
+      setIsTranscribingAudio(false);
+
+    } catch (error: any) {
+      console.error('Chunked audio transcription error:', error);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: `❌ **Chunked Audio Transcription Failed**\n\nError: ${error.message}\n\nPlease try again or contact support if the issue persists.`,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      setIsTranscribingAudio(false);
+      setAudioProgress({ progress: 0, eta: 0, status: 'idle' });
+    }
+  };
+
   const handleAudioTranscription = async (file: File) => {
     setIsTranscribingAudio(true);
     setAudioProgress({ progress: 0, eta: 0, status: 'initializing' });
 
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
+
+      // Check if file needs chunking (>20MB)
+      const chunkSizeLimit = 20 * 1024 * 1024; // 20MB
+      if (file.size > chunkSizeLimit) {
+        console.log(`Large file detected: ${(file.size / 1024 / 1024).toFixed(1)}MB - will use chunked processing`);
+        await handleChunkedAudioTranscription(file);
+        return;
+      }
 
       const formData = new FormData();
       formData.append('audio', file);

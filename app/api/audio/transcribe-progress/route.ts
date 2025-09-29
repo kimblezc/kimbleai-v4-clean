@@ -83,6 +83,22 @@ export async function POST(request: NextRequest) {
     }
 
     const fileSize = audioFile.size;
+
+    // For large files (>20MB), we need chunked processing
+    const chunkSizeLimit = 20 * 1024 * 1024; // 20MB chunks for Whisper API
+    if (fileSize > chunkSizeLimit) {
+      return NextResponse.json(
+        {
+          error: 'File requires chunked processing',
+          details: `File size: ${(fileSize / 1024 / 1024).toFixed(1)}MB. Files larger than 20MB need to be processed in chunks.`,
+          suggestion: 'The system will automatically chunk this file for processing.',
+          shouldChunk: true,
+          fileSize: fileSize,
+          recommendedChunkSize: chunkSizeLimit
+        },
+        { status: 413 }
+      );
+    }
     const fileExtension = audioFile.name.split('.').pop() || 'unknown';
     const estimatedDuration = estimateAudioDuration(fileSize, fileExtension);
 
