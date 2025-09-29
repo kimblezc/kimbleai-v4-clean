@@ -152,9 +152,11 @@ async function searchFiles(drive: any, query: string, userId: string, projectId?
       }
 
       // Generate embedding and store in knowledge base
-      // TEMPORARILY DISABLED - CAUSING DATABASE OVERFLOW
-      // TODO: Add opt-in sync with size limits and user control
-      if (false && content && content.length > 10) {
+      // OPT-IN SYNC with size limits and user control
+      const enableSync = formData?.get('enableSync') === 'true';
+      const maxContentLength = 5000; // 5KB limit per file
+
+      if (enableSync && content && content.length > 10 && content.length <= maxContentLength) {
         const embedding = await generateEmbedding(content);
 
         await supabase.from('knowledge_base').upsert({
