@@ -541,183 +541,60 @@ export default function Home() {
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
-      // Hybrid approach: Get upload URL from our server, upload directly to AssemblyAI
-      console.log(`Using hybrid AssemblyAI upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      // Use working AssemblyAI endpoint that we know works
+      console.log(`Using AssemblyAI endpoint for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
 
-      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'getting_upload_url' });
+      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'starting' });
 
-      // Step 1: Get upload URL from our server (avoids CORS)
-      console.log('Getting upload URL from server...');
+      // Start transcription via existing working endpoint
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('userId', currentUser);
+      formData.append('projectId', currentProject);
 
-      const urlResponse = await fetch('/api/transcribe/upload-url', {
+      const response = await fetch('/api/transcribe/assemblyai', {
         method: 'POST',
+        body: formData,
       });
 
-      if (!urlResponse.ok) {
-        const errorData = await urlResponse.json();
-        throw new Error(`Failed to get upload URL: ${errorData.error}`);
+      // Read response as text first, then try to parse as JSON
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        // Handle non-JSON responses (HTML error pages, etc.)
+        throw new Error(`Server returned non-JSON response (${response.status}): ${responseText.substring(0, 100)}...`);
       }
 
-      const urlData = await urlResponse.json();
-      const uploadUrl = urlData.upload_url;
-      console.log('Got upload URL:', uploadUrl?.substring(0, 50) + '...');
-
-      setAudioProgress({ progress: 10, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'uploading' });
-
-      // Step 2: Upload directly to AssemblyAI using their provided URL
-      console.log('Starting upload to AssemblyAI...');
-
-      const uploadResponse = await Promise.race([
-        fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/octet-stream',
-          },
-          body: file,
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Upload timeout after 5 minutes')), 5 * 60 * 1000)
-        )
-      ]) as Response;
-
-      console.log('Upload response status:', uploadResponse.status);
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`Upload failed (${uploadResponse.status}): ${errorText}`);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start transcription');
       }
 
-      console.log('Upload successful to AssemblyAI');
-
-      setAudioProgress({ progress: 25, eta: Math.round(file.size / (1024 * 1024) * 1.5), status: 'transcribing' });
-
-      // Step 3: Start transcription via our server
-      console.log('Starting transcription request...');
-
-      const transcriptResponse = await fetch('/api/transcribe/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          audio_url: uploadUrl,
-          filename: file.name
-        }),
+      // Start polling for progress
+      const jobId = data.jobId;
+      setAudioProgress({
+        progress: 10,
+        eta: data.estimatedDuration ? Math.round(data.estimatedDuration / 2.5) : 30,
+        status: 'starting',
+        jobId
       });
 
-      console.log('Transcription request status:', transcriptResponse.status);
+      // Poll every 2 seconds
+      const pollInterval = setInterval(() => {
+        pollAudioProgress(jobId);
+      }, 2000);
 
-      if (!transcriptResponse.ok) {
-        const errorData = await transcriptResponse.json();
-        throw new Error(`Transcription request failed: ${errorData.error}`);
-      }
-
-      const transcriptData = await transcriptResponse.json();
-      const transcriptId = transcriptData.transcript_id;
-      console.log('Transcription started with ID:', transcriptId);
-
-      setAudioProgress({ progress: 35, eta: Math.round(file.size / (1024 * 1024) * 1.2), status: 'processing' });
-
-      // Step 3: Poll for completion with better progress tracking
-      let result;
-      let attempts = 0;
-      const maxAttempts = 180; // 15 minutes max for large files
-
-      while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
-
-        console.log(`Polling attempt ${attempts + 1}/${maxAttempts} for transcription ${transcriptId}`);
-
-        const statusResponse = await fetch(`/api/transcribe/status?id=${transcriptId}`);
-
-        if (!statusResponse.ok) {
-          console.error('Status check failed:', statusResponse.status);
-          throw new Error(`Status check failed: ${statusResponse.statusText}`);
-        }
-
-        result = await statusResponse.json();
-        console.log(`Status: ${result.status}${result.audio_duration ? `, Duration: ${result.audio_duration}s` : ''}`);
-
-        if (result.status === 'completed') {
-          console.log('Transcription completed successfully!');
-          break;
-        } else if (result.status === 'error') {
-          console.error('Transcription error:', result.error);
-          throw new Error(`Transcription failed: ${result.error}`);
-        }
-
-        // Update progress more frequently
-        const baseProgress = 35;
-        const progressIncrement = (attempts * 50) / maxAttempts; // 35-85%
-        const currentProgress = Math.min(baseProgress + progressIncrement, 85);
-        const eta = (maxAttempts - attempts) * 3; // 3 seconds per attempt
-
-        setAudioProgress({
-          progress: Math.round(currentProgress),
-          eta: Math.max(eta, 10),
-          status: result.status === 'processing' ? 'processing' : 'queued'
-        });
-
-        attempts++;
-      }
-
-      if (!result || result.status !== 'completed') {
-        throw new Error('Transcription timed out or failed');
-      }
-
-      setAudioProgress({ progress: 90, eta: 5, status: 'saving' });
-
-      // Step 4: Save to database
-      const saveResponse = await fetch('/api/transcribe/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser,
-          projectId: currentProject,
-          filename: file.name,
-          fileSize: file.size,
-          duration: result.audio_duration,
-          text: result.text,
-          service: 'assemblyai_direct',
-          metadata: {
-            speaker_labels: result.speaker_labels,
-            chapters: result.chapters,
-            sentiment_analysis_results: result.sentiment_analysis_results,
-            entities: result.entities,
-            iab_categories_result: result.iab_categories_result,
-            auto_highlights_result: result.auto_highlights_result,
-            summary: result.summary
-          }
-        }),
-      });
-
-      if (!saveResponse.ok) {
-        console.warn('Failed to save to database, but transcription succeeded');
-      }
-
-      setAudioProgress({ progress: 100, eta: 0, status: 'completed' });
-
-      // Build feature summary
-      const features = [];
-      if (result.speaker_labels?.length > 0) features.push(`${result.speaker_labels.length} speakers detected`);
-      if (result.chapters?.length > 0) features.push(`${result.chapters.length} chapters detected`);
-      if (result.summary) features.push('auto-generated summary');
-      if (result.sentiment_analysis_results) features.push('sentiment analysis');
-      if (result.entities?.length > 0) features.push(`${result.entities.length} entities detected`);
-
-      // Show completion message with advanced features
-      const successMessage: Message = {
-        role: 'assistant',
-        content: `## 🎵 Audio Transcription Complete\n\n**File:** ${file.name}\n**Duration:** ${Math.round(result.audio_duration || 0)} seconds\n**Service:** AssemblyAI Direct (Premium Features)\n${features.length > 0 ? `**AI Features:** ${features.join(', ')}\n` : ''}\n**Transcription:**\n${result.text}${result.summary ? `\n\n**Summary:**\n${result.summary}` : ''}`,
-        timestamp: new Date().toISOString(),
-        projectId: currentProject
+      // Clean up interval when transcription completes or fails
+      const cleanupInterval = () => {
+        clearInterval(pollInterval);
       };
 
-      setMessages(prev => [...prev, successMessage]);
+      // Store cleanup function for potential use
+      setTimeout(cleanupInterval, 10 * 60 * 1000); // 10 minute max timeout
+
       setSelectedAudio(null);
-      console.log(`[AUDIO] Direct AssemblyAI transcription completed for ${file.name}`);
+      console.log(`[AUDIO] Started AssemblyAI transcription job ${jobId} for ${file.name}`);
 
     } catch (error: any) {
       console.error('Audio transcription error:', error);
