@@ -54,7 +54,7 @@ export default function SimplePage() {
         backgroundColor: '#f9f9f9'
       }}>
         <h3>System Status: LIVE</h3>
-        <p><strong>URL:</strong> https://kimbleai-v4-clean-703u5q7uq-kimblezcs-projects.vercel.app</p>
+        <p><strong>URL:</strong> https://kimbleai.com</p>
         <p><strong>Features:</strong> AI Chat, Memory, File Upload, Auto-Reference Butler</p>
         <p><strong>Compatible:</strong> PC, Mac, iPhone, Android, Tablet</p>
       </div>
