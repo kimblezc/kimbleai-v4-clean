@@ -18,28 +18,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Just get an upload URL from AssemblyAI (no file data)
-    const response = await fetch('https://api.assemblyai.com/v2/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
-      },
-      body: '', // Empty body to get upload URL
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json(
-        { error: `Failed to get upload URL: ${errorText}` },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-
+    // AssemblyAI doesn't provide pre-signed URLs like S3
+    // Instead, we need to return their upload endpoint and auth header
+    // The frontend will upload directly to AssemblyAI with this auth
     return NextResponse.json({
       success: true,
-      upload_url: data.upload_url
+      upload_url: 'https://api.assemblyai.com/v2/upload',
+      auth_token: ASSEMBLYAI_API_KEY
     });
 
   } catch (error: any) {
