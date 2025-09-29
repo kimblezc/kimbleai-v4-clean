@@ -544,24 +544,36 @@ export default function Home() {
       // Direct browser-to-AssemblyAI upload (bypasses Vercel 25MB limit completely)
       console.log(`Using direct AssemblyAI upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
 
-      setAudioProgress({ progress: 10, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'uploading' });
+      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'uploading' });
 
-      // Step 1: Upload directly to AssemblyAI
-      const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer 9e34453814d74ca98efbbb14c69baa8d',
-          'Content-Type': 'application/octet-stream',
-        },
-        body: file,
-      });
+      // Step 1: Upload directly to AssemblyAI with timeout
+      console.log('Starting upload to AssemblyAI...');
+
+      const uploadResponse = await Promise.race([
+        fetch('https://api.assemblyai.com/v2/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer 9e34453814d74ca98efbbb14c69baa8d',
+            'Content-Type': 'application/octet-stream',
+          },
+          body: file,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Upload timeout after 5 minutes')), 5 * 60 * 1000)
+        )
+      ]) as Response;
+
+      console.log('Upload response status:', uploadResponse.status);
 
       if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed (${uploadResponse.status}): ${errorText}`);
       }
 
       const uploadData = await uploadResponse.json();
-      setAudioProgress({ progress: 30, eta: Math.round(file.size / (1024 * 1024) * 1.5), status: 'transcribing' });
+      console.log('Upload successful, got URL:', uploadData.upload_url?.substring(0, 50) + '...');
+
+      setAudioProgress({ progress: 25, eta: Math.round(file.size / (1024 * 1024) * 1.5), status: 'transcribing' });
 
       // Step 2: Start transcription with advanced features
       const transcriptRequest = {
@@ -578,6 +590,8 @@ export default function Home() {
         summary_type: 'bullets',
       };
 
+      console.log('Starting transcription request...');
+
       const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
         method: 'POST',
         headers: {
@@ -587,22 +601,28 @@ export default function Home() {
         body: JSON.stringify(transcriptRequest),
       });
 
+      console.log('Transcription request status:', transcriptResponse.status);
+
       if (!transcriptResponse.ok) {
-        throw new Error(`Transcription request failed: ${transcriptResponse.statusText}`);
+        const errorText = await transcriptResponse.text();
+        throw new Error(`Transcription request failed (${transcriptResponse.status}): ${errorText}`);
       }
 
       const transcriptData = await transcriptResponse.json();
       const transcriptId = transcriptData.id;
+      console.log('Transcription started with ID:', transcriptId);
 
-      setAudioProgress({ progress: 40, eta: Math.round(file.size / (1024 * 1024) * 1.2), status: 'processing' });
+      setAudioProgress({ progress: 35, eta: Math.round(file.size / (1024 * 1024) * 1.2), status: 'processing' });
 
-      // Step 3: Poll for completion
+      // Step 3: Poll for completion with better progress tracking
       let result;
       let attempts = 0;
-      const maxAttempts = 120; // 10 minutes max
+      const maxAttempts = 180; // 15 minutes max for large files
 
       while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+
+        console.log(`Polling attempt ${attempts + 1}/${maxAttempts} for transcription ${transcriptId}`);
 
         const statusResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
           headers: {
@@ -611,25 +631,33 @@ export default function Home() {
         });
 
         if (!statusResponse.ok) {
+          console.error('Status check failed:', statusResponse.status);
           throw new Error(`Status check failed: ${statusResponse.statusText}`);
         }
 
         result = await statusResponse.json();
+        console.log(`Status: ${result.status}${result.audio_duration ? `, Duration: ${result.audio_duration}s` : ''}`);
 
         if (result.status === 'completed') {
+          console.log('Transcription completed successfully!');
           break;
         } else if (result.status === 'error') {
-          throw new Error(result.error);
+          console.error('Transcription error:', result.error);
+          throw new Error(`Transcription failed: ${result.error}`);
         }
 
-        // Update progress
-        const baseProgress = 40;
-        const progressIncrement = (attempts * 50) / maxAttempts; // 40-90%
+        // Update progress more frequently
+        const baseProgress = 35;
+        const progressIncrement = (attempts * 50) / maxAttempts; // 35-85%
+        const currentProgress = Math.min(baseProgress + progressIncrement, 85);
+        const eta = (maxAttempts - attempts) * 3; // 3 seconds per attempt
+
         setAudioProgress({
-          progress: Math.min(baseProgress + progressIncrement, 85),
-          eta: (maxAttempts - attempts) * 5,
-          status: 'processing'
+          progress: Math.round(currentProgress),
+          eta: Math.max(eta, 10),
+          status: result.status === 'processing' ? 'processing' : 'queued'
         });
+
         attempts++;
       }
 
