@@ -541,19 +541,36 @@ export default function Home() {
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
-      // Direct browser-to-AssemblyAI upload (bypasses Vercel 25MB limit completely)
-      console.log(`Using direct AssemblyAI upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      // Hybrid approach: Get upload URL from our server, upload directly to AssemblyAI
+      console.log(`Using hybrid AssemblyAI upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
 
-      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'uploading' });
+      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'getting_upload_url' });
 
-      // Step 1: Upload directly to AssemblyAI with timeout
+      // Step 1: Get upload URL from our server (avoids CORS)
+      console.log('Getting upload URL from server...');
+
+      const urlResponse = await fetch('/api/transcribe/upload-url', {
+        method: 'POST',
+      });
+
+      if (!urlResponse.ok) {
+        const errorData = await urlResponse.json();
+        throw new Error(`Failed to get upload URL: ${errorData.error}`);
+      }
+
+      const urlData = await urlResponse.json();
+      const uploadUrl = urlData.upload_url;
+      console.log('Got upload URL:', uploadUrl?.substring(0, 50) + '...');
+
+      setAudioProgress({ progress: 10, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'uploading' });
+
+      // Step 2: Upload directly to AssemblyAI using their provided URL
       console.log('Starting upload to AssemblyAI...');
 
       const uploadResponse = await Promise.race([
-        fetch('https://api.assemblyai.com/v2/upload', {
+        fetch(uploadUrl, {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer 9e34453814d74ca98efbbb14c69baa8d',
             'Content-Type': 'application/octet-stream',
           },
           body: file,
@@ -570,46 +587,33 @@ export default function Home() {
         throw new Error(`Upload failed (${uploadResponse.status}): ${errorText}`);
       }
 
-      const uploadData = await uploadResponse.json();
-      console.log('Upload successful, got URL:', uploadData.upload_url?.substring(0, 50) + '...');
+      console.log('Upload successful to AssemblyAI');
 
       setAudioProgress({ progress: 25, eta: Math.round(file.size / (1024 * 1024) * 1.5), status: 'transcribing' });
 
-      // Step 2: Start transcription with advanced features
-      const transcriptRequest = {
-        audio_url: uploadData.upload_url,
-        speech_model: 'universal',
-        speaker_labels: true,
-        auto_chapters: true,
-        sentiment_analysis: true,
-        entity_detection: true,
-        iab_categories: true,
-        auto_highlights: true,
-        summarization: true,
-        summary_model: 'informative',
-        summary_type: 'bullets',
-      };
-
+      // Step 3: Start transcription via our server
       console.log('Starting transcription request...');
 
-      const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+      const transcriptResponse = await fetch('/api/transcribe/start', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 9e34453814d74ca98efbbb14c69baa8d',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(transcriptRequest),
+        body: JSON.stringify({
+          audio_url: uploadUrl,
+          filename: file.name
+        }),
       });
 
       console.log('Transcription request status:', transcriptResponse.status);
 
       if (!transcriptResponse.ok) {
-        const errorText = await transcriptResponse.text();
-        throw new Error(`Transcription request failed (${transcriptResponse.status}): ${errorText}`);
+        const errorData = await transcriptResponse.json();
+        throw new Error(`Transcription request failed: ${errorData.error}`);
       }
 
       const transcriptData = await transcriptResponse.json();
-      const transcriptId = transcriptData.id;
+      const transcriptId = transcriptData.transcript_id;
       console.log('Transcription started with ID:', transcriptId);
 
       setAudioProgress({ progress: 35, eta: Math.round(file.size / (1024 * 1024) * 1.2), status: 'processing' });
@@ -624,11 +628,7 @@ export default function Home() {
 
         console.log(`Polling attempt ${attempts + 1}/${maxAttempts} for transcription ${transcriptId}`);
 
-        const statusResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
-          headers: {
-            'Authorization': 'Bearer 9e34453814d74ca98efbbb14c69baa8d',
-          },
-        });
+        const statusResponse = await fetch(`/api/transcribe/status?id=${transcriptId}`);
 
         if (!statusResponse.ok) {
           console.error('Status check failed:', statusResponse.status);
