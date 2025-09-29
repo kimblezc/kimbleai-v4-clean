@@ -541,64 +541,162 @@ export default function Home() {
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
-      // For files over 4MB, use chunked processing to avoid Vercel limits
-      if (file.size > 4 * 1024 * 1024) {
-        console.log(`Large file detected (${(file.size / 1024 / 1024).toFixed(1)}MB), using chunked processing`);
-        await handleChunkedAudioTranscription(file);
-        return;
+      // Direct client-side upload to AssemblyAI (bypasses Vercel completely)
+      console.log(`Using direct client-side upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+
+      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 1.5), status: 'uploading' });
+
+      // Step 1: Upload directly to AssemblyAI
+      console.log('Uploading directly to AssemblyAI...');
+
+      const uploadResponse = await Promise.race([
+        fetch('https://api.assemblyai.com/v2/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer 9e34453814d74ca98efbbb14c69baa8d',
+            'Content-Type': 'application/octet-stream',
+          },
+          body: file,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Upload timeout after 20 minutes')), 20 * 60 * 1000)
+        )
+      ]) as Response;
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed (${uploadResponse.status}): ${errorText}`);
       }
 
-      // For smaller files, use direct AssemblyAI
-      console.log(`Using direct AssemblyAI for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      const uploadData = await uploadResponse.json();
+      const audioUrl = uploadData.upload_url;
+      console.log('Upload successful, starting transcription');
 
-      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'uploading' });
+      setAudioProgress({ progress: 30, eta: Math.round(file.size / (1024 * 1024) * 1), status: 'transcribing' });
 
-      // Upload via AssemblyAI endpoint for smaller files
-      const formData = new FormData();
-      formData.append('audio', file);
-      formData.append('userId', currentUser);
-      formData.append('projectId', currentProject);
-
-      const response = await fetch('/api/transcribe/assemblyai', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const responseText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (jsonError) {
-        throw new Error(`Server returned non-JSON response (${response.status}): ${responseText.substring(0, 100)}...`);
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to start transcription');
-      }
-
-      // Start polling for progress
-      const jobId = data.jobId;
-      setAudioProgress({
-        progress: 10,
-        eta: data.estimatedDuration ? Math.round(data.estimatedDuration / 2.5) : 30,
-        status: 'starting',
-        jobId
-      });
-
-      // Poll every 2 seconds
-      const pollInterval = setInterval(() => {
-        pollAudioProgress(jobId);
-      }, 2000);
-
-      // Clean up interval when transcription completes or fails
-      const cleanupInterval = () => {
-        clearInterval(pollInterval);
+      // Step 2: Start transcription directly with AssemblyAI
+      const transcriptRequest = {
+        audio_url: audioUrl,
+        speech_model: 'universal',
+        speaker_labels: true,
+        auto_chapters: true,
+        sentiment_analysis: true,
+        entity_detection: true,
+        iab_categories: true,
+        auto_highlights: true,
+        summarization: true,
+        summary_model: 'informative',
+        summary_type: 'bullets',
       };
 
-      setTimeout(cleanupInterval, 10 * 60 * 1000); // 10 minute max timeout
+      const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 9e34453814d74ca98efbbb14c69baa8d',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transcriptRequest),
+      });
 
+      if (!transcriptResponse.ok) {
+        const errorText = await transcriptResponse.text();
+        throw new Error(`Transcription failed (${transcriptResponse.status}): ${errorText}`);
+      }
+
+      const transcriptData = await transcriptResponse.json();
+      const transcriptId = transcriptData.id;
+      console.log('Transcription started with ID:', transcriptId);
+
+      setAudioProgress({ progress: 40, eta: Math.round(file.size / (1024 * 1024) * 0.8), status: 'processing' });
+
+      // Step 3: Poll for completion
+      let result;
+      let attempts = 0;
+      const maxAttempts = 300; // 25 minutes for very large files
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+        const statusResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+          headers: {
+            'Authorization': 'Bearer 9e34453814d74ca98efbbb14c69baa8d',
+          },
+        });
+
+        if (!statusResponse.ok) {
+          throw new Error('Status check failed');
+        }
+
+        result = await statusResponse.json();
+        console.log(`Status: ${result.status}${result.audio_duration ? `, Duration: ${result.audio_duration}s` : ''}`);
+
+        if (result.status === 'completed') {
+          break;
+        } else if (result.status === 'error') {
+          throw new Error(`Transcription failed: ${result.error}`);
+        }
+
+        // Update progress
+        const progressIncrement = (attempts * 50) / maxAttempts; // 40-90%
+        setAudioProgress({
+          progress: Math.min(40 + progressIncrement, 90),
+          eta: (maxAttempts - attempts) * 5,
+          status: result.status === 'processing' ? 'processing' : 'queued'
+        });
+        attempts++;
+      }
+
+      if (!result || result.status !== 'completed') {
+        throw new Error('Transcription timed out');
+      }
+
+      setAudioProgress({ progress: 95, eta: 5, status: 'saving' });
+
+      // Step 4: Save to our database
+      await fetch('/api/transcribe/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser,
+          projectId: currentProject,
+          filename: file.name,
+          fileSize: file.size,
+          duration: result.audio_duration,
+          text: result.text,
+          service: 'assemblyai_direct',
+          metadata: {
+            speaker_labels: result.speaker_labels,
+            chapters: result.chapters,
+            sentiment_analysis_results: result.sentiment_analysis_results,
+            entities: result.entities,
+            summary: result.summary
+          }
+        }),
+      });
+
+      setAudioProgress({ progress: 100, eta: 0, status: 'completed' });
+
+      // Build feature summary
+      const features = [];
+      if (result.speaker_labels?.length > 0) features.push(`${result.speaker_labels.length} speakers detected`);
+      if (result.chapters?.length > 0) features.push(`${result.chapters.length} chapters detected`);
+      if (result.summary) features.push('auto-generated summary');
+      if (result.sentiment_analysis_results) features.push('sentiment analysis');
+      if (result.entities?.length > 0) features.push(`${result.entities.length} entities detected`);
+
+      // Show completion message
+      const successMessage: Message = {
+        role: 'assistant',
+        content: `## 🎵 Audio Transcription Complete\n\n**File:** ${file.name}\n**Duration:** ${Math.round(result.audio_duration || 0)} seconds\n**Service:** AssemblyAI Direct (Premium Features)\n${features.length > 0 ? `**AI Features:** ${features.join(', ')}\n` : ''}\n**Transcription:**\n${result.text}${result.summary ? `\n\n**Summary:**\n${result.summary}` : ''}`,
+        timestamp: new Date().toISOString(),
+        projectId: currentProject
+      };
+
+      setMessages(prev => [...prev, successMessage]);
       setSelectedAudio(null);
-      console.log(`[AUDIO] Started AssemblyAI transcription job ${jobId} for ${file.name}`);
+      console.log(`[AUDIO] Direct client-side transcription completed for ${file.name}`);
 
     } catch (error: any) {
       console.error('Audio transcription error:', error);
