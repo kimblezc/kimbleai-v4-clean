@@ -39,6 +39,12 @@ export default function Home() {
   const [pastedImage, setPastedImage] = useState<string | null>(null);
   const [selectedAudio, setSelectedAudio] = useState<File | null>(null);
   const [isTranscribingAudio, setIsTranscribingAudio] = useState(false);
+  const [audioProgress, setAudioProgress] = useState<{
+    progress: number;
+    eta: number;
+    status: string;
+    jobId?: string;
+  }>({ progress: 0, eta: 0, status: 'idle' });
   const [deletedProjects, setDeletedProjects] = useState<Set<string>>(new Set());
   const [createdProjects, setCreatedProjects] = useState<Set<string>>(new Set());
   const [showGoogleServices, setShowGoogleServices] = useState(false);
@@ -353,22 +359,106 @@ export default function Home() {
     }
   };
 
-  // Handle audio transcription with chunking for large files
+  // Poll progress for audio transcription
+  const pollAudioProgress = React.useCallback(async (jobId: string) => {
+    try {
+      const response = await fetch(`/api/audio/transcribe-progress?jobId=${jobId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setAudioProgress({
+          progress: data.progress,
+          eta: data.eta,
+          status: data.status,
+          jobId
+        });
+
+        if (data.status === 'completed' && data.result) {
+          // Show completion message
+          const audioMessage: Message = {
+            role: 'user',
+            content: `🎵 Audio uploaded: ${data.result.filename} (${(data.result.fileSize / 1024 / 1024).toFixed(1)} MB)`,
+            timestamp: new Date().toISOString(),
+            projectId: currentProject
+          };
+
+          const transcriptionMessage: Message = {
+            role: 'assistant',
+            content: `## 🎵 Audio Transcription Complete\n\n**File:** ${data.result.filename}\n**Duration:** ${Math.round(data.result.duration || 0)} seconds\n**Language:** ${data.result.language || 'en'}\n\n### Transcription:\n${data.result.text}\n\n---\n*Transcription ID: ${data.result.id}*`,
+            timestamp: new Date().toISOString(),
+            projectId: currentProject
+          };
+
+          setMessages(prev => [...prev, audioMessage, transcriptionMessage]);
+          setIsTranscribingAudio(false);
+          setAudioProgress({ progress: 0, eta: 0, status: 'idle' });
+
+          console.log('[AUDIO] Transcription successful:', data.result);
+        } else if (data.status === 'failed') {
+          const errorMessage: Message = {
+            role: 'assistant',
+            content: `❌ **Audio Transcription Failed**\n\nError: ${data.error || 'Unknown error'}\n\nPlease try again with a different audio file or contact support if the issue persists.`,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, errorMessage]);
+          setIsTranscribingAudio(false);
+          setAudioProgress({ progress: 0, eta: 0, status: 'idle' });
+        }
+      }
+    } catch (err) {
+      console.error('[AUDIO] Progress poll error:', err);
+    }
+  }, [currentProject]);
+
+  // Handle audio transcription with progress tracking
   const handleAudioTranscription = async (file: File) => {
     setIsTranscribingAudio(true);
+    setAudioProgress({ progress: 0, eta: 0, status: 'initializing' });
+
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
-      // For large files (> 100MB), we'll implement chunked processing
-      const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB threshold
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('userId', currentUser);
+      formData.append('projectId', currentProject);
 
-      if (isLargeFile) {
-        await handleLargeAudioTranscription(file);
-      } else {
-        await handleStandardAudioTranscription(file);
+      const response = await fetch('/api/audio/transcribe-progress', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start transcription');
       }
 
+      // Start polling for progress
+      const jobId = data.jobId;
+      setAudioProgress({
+        progress: 0,
+        eta: data.estimatedDuration ? Math.round(data.estimatedDuration / 2.5) : 30,
+        status: 'starting',
+        jobId
+      });
+
+      // Poll every 2 seconds
+      const pollInterval = setInterval(() => {
+        pollAudioProgress(jobId);
+      }, 2000);
+
+      // Clean up interval when transcription completes or fails
+      const cleanupInterval = () => {
+        clearInterval(pollInterval);
+      };
+
+      // Store cleanup function for potential use
+      setTimeout(cleanupInterval, 10 * 60 * 1000); // 10 minute max timeout
+
       setSelectedAudio(null);
+      console.log(`[AUDIO] Started transcription job ${jobId} for ${file.name}`);
+
     } catch (error: any) {
       console.error('Audio transcription error:', error);
       const errorMessage: Message = {
@@ -377,120 +467,43 @@ export default function Home() {
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, errorMessage]);
-    } finally {
       setIsTranscribingAudio(false);
+      setAudioProgress({ progress: 0, eta: 0, status: 'idle' });
     }
   };
 
-  // Standard transcription for smaller files
-  const handleStandardAudioTranscription = async (file: File) => {
-    const formData = new FormData();
-    formData.append('audio', file);
-    formData.append('userId', currentUser);
-    formData.append('projectId', currentProject);
-
-    const response = await fetch('/api/transcribe', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      const audioMessage: Message = {
-        role: 'user',
-        content: `🎵 Audio uploaded: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`,
-        timestamp: new Date().toISOString(),
-        projectId: currentProject
-      };
-
-      const transcriptionMessage: Message = {
-        role: 'assistant',
-        content: `## Audio Transcription Results\n\n**File:** ${file.name}\n**Duration:** ${data.duration || 'Unknown'}\n**Size:** ${(file.size / 1024 / 1024).toFixed(1)} MB\n\n### Transcription:\n${data.transcription}\n\n---\n*Processed with OpenAI Whisper*`,
-        timestamp: new Date().toISOString(),
-        projectId: currentProject
-      };
-
-      setMessages(prev => [...prev, audioMessage, transcriptionMessage]);
-    } else {
-      throw new Error(data.error || 'Audio transcription failed');
-    }
-  };
-
-  // Large file transcription with chunking and progressive processing
-  const handleLargeAudioTranscription = async (file: File) => {
-    const chunkSize = 50 * 1024 * 1024; // 50MB chunks
-    const totalChunks = Math.ceil(file.size / chunkSize);
-
-    // Add initial message about large file processing
-    const processingMessage: Message = {
-      role: 'assistant',
-      content: `🔄 **Processing Large Audio File**\n\n**File:** ${file.name}\n**Size:** ${(file.size / 1024 / 1024).toFixed(1)} MB\n**Strategy:** Chunked processing (${totalChunks} chunks)\n\nThis may take several minutes. Processing will continue in the background...`,
-      timestamp: new Date().toISOString(),
-      projectId: currentProject
-    };
-    setMessages(prev => [...prev, processingMessage]);
-
-    // Process chunks sequentially
-    let fullTranscription = '';
-    let processedDuration = 0;
-
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * chunkSize;
-      const end = Math.min(start + chunkSize, file.size);
-      const chunk = file.slice(start, end);
-
-      // Create chunk file name
-      const chunkFileName = `${file.name.split('.')[0]}_chunk_${chunkIndex + 1}.${file.name.split('.').pop()}`;
-      const chunkFile = new File([chunk], chunkFileName, { type: file.type });
-
+  // Progress persistence - save to localStorage and restore on refresh
+  React.useEffect(() => {
+    const savedProgress = localStorage.getItem('kimbleai_audio_progress');
+    if (savedProgress) {
       try {
-        const formData = new FormData();
-        formData.append('audio', chunkFile);
-        formData.append('userId', currentUser);
-        formData.append('projectId', currentProject);
-        formData.append('chunkIndex', chunkIndex.toString());
-        formData.append('totalChunks', totalChunks.toString());
-        formData.append('isChunked', 'true');
+        const progress = JSON.parse(savedProgress);
+        if (progress.jobId && progress.status !== 'completed' && progress.status !== 'failed') {
+          setAudioProgress(progress);
+          setIsTranscribingAudio(true);
 
-        const response = await fetch('/api/transcribe', {
-          method: 'POST',
-          body: formData,
-        });
+          // Resume polling
+          const pollInterval = setInterval(() => {
+            pollAudioProgress(progress.jobId);
+          }, 2000);
 
-        const data = await response.json();
-
-        if (data.success) {
-          fullTranscription += data.transcription + ' ';
-          processedDuration += data.duration || 0;
-
-          // Update progress
-          const progressMessage: Message = {
-            role: 'assistant',
-            content: `⏳ **Progress Update:** Chunk ${chunkIndex + 1}/${totalChunks} processed (${Math.round((chunkIndex + 1) / totalChunks * 100)}%)`,
-            timestamp: new Date().toISOString(),
-            projectId: currentProject
-          };
-          setMessages(prev => [...prev, progressMessage]);
-        } else {
-          console.error(`Chunk ${chunkIndex + 1} failed:`, data.error);
-          fullTranscription += `[Chunk ${chunkIndex + 1} processing failed] `;
+          setTimeout(() => clearInterval(pollInterval), 10 * 60 * 1000);
         }
-      } catch (error) {
-        console.error(`Error processing chunk ${chunkIndex + 1}:`, error);
-        fullTranscription += `[Chunk ${chunkIndex + 1} error] `;
+      } catch (e) {
+        localStorage.removeItem('kimbleai_audio_progress');
       }
     }
+  }, [pollAudioProgress]);
 
-    // Final transcription message
-    const finalMessage: Message = {
-      role: 'assistant',
-      content: `## Complete Audio Transcription\n\n**File:** ${file.name}\n**Total Size:** ${(file.size / 1024 / 1024).toFixed(1)} MB\n**Chunks Processed:** ${totalChunks}\n**Estimated Duration:** ${Math.round(processedDuration)} seconds\n\n### Full Transcription:\n${fullTranscription.trim()}\n\n---\n*Processed with chunked Whisper transcription*`,
-      timestamp: new Date().toISOString(),
-      projectId: currentProject
-    };
-    setMessages(prev => [...prev, finalMessage]);
-  };
+  // Save progress to localStorage
+  React.useEffect(() => {
+    if (audioProgress.jobId && audioProgress.status !== 'idle') {
+      localStorage.setItem('kimbleai_audio_progress', JSON.stringify(audioProgress));
+    } else {
+      localStorage.removeItem('kimbleai_audio_progress');
+    }
+  }, [audioProgress]);
+
 
   // Handle clipboard paste for screenshots
   const handlePaste = async (event: React.ClipboardEvent) => {
@@ -1483,6 +1496,58 @@ export default function Home() {
                 style={{ display: 'none' }}
               />
             </label>
+
+            {/* Audio Transcription Progress */}
+            {isTranscribingAudio && audioProgress.status !== 'idle' && (
+              <div style={{
+                marginLeft: '8px',
+                padding: '4px 8px',
+                backgroundColor: '#1a1a1a',
+                border: '1px solid #333',
+                borderRadius: '6px',
+                fontSize: '11px',
+                color: '#4a9eff',
+                display: 'inline-block'
+              }}>
+                <div style={{ marginBottom: '2px' }}>
+                  {audioProgress.status === 'initializing' && '🔄 Initializing...'}
+                  {audioProgress.status === 'preparing_file' && '📁 Preparing file...'}
+                  {audioProgress.status === 'uploading_to_whisper' && '⬆️ Uploading...'}
+                  {audioProgress.status === 'transcribing' && '🎯 Transcribing...'}
+                  {audioProgress.status === 'saving_to_database' && '💾 Saving...'}
+                  {audioProgress.status === 'generating_embeddings' && '🧠 Generating embeddings...'}
+                  {audioProgress.status === 'starting' && '🚀 Starting...'}
+                </div>
+                {audioProgress.progress > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <div style={{
+                      width: '60px',
+                      height: '3px',
+                      backgroundColor: '#333',
+                      borderRadius: '2px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${audioProgress.progress}%`,
+                        height: '100%',
+                        backgroundColor: '#4a9eff',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '10px' }}>
+                      {audioProgress.progress}%
+                      {audioProgress.eta > 0 && ` • ${audioProgress.eta < 60
+                        ? `${audioProgress.eta}s`
+                        : `${Math.floor(audioProgress.eta / 60)}m`}`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pasted Image Preview */}
             {pastedImage && (
