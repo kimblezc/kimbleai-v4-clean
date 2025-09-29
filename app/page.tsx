@@ -362,7 +362,7 @@ export default function Home() {
   // Poll progress for audio transcription
   const pollAudioProgress = React.useCallback(async (jobId: string) => {
     try {
-      const response = await fetch(`/api/audio/transcribe-progress?jobId=${jobId}`);
+      const response = await fetch(`/api/transcribe/assemblyai?jobId=${jobId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -382,9 +382,29 @@ export default function Home() {
             projectId: currentProject
           };
 
+          // Build feature summary
+          const features = [];
+          if (data.result.speakers > 1) features.push(`${data.result.speakers} speakers identified`);
+          if (data.result.chapters > 0) features.push(`${data.result.chapters} chapters detected`);
+          if (data.result.summary) features.push('auto-generated summary');
+          if (data.result.sentiment) features.push('sentiment analysis');
+          if (data.result.entities?.length > 0) features.push(`${data.result.entities.length} entities detected`);
+
+          let content = `## 🎵 Audio Transcription Complete\n\n**File:** ${data.result.filename}\n**Duration:** ${Math.round(data.result.duration || 0)} seconds\n**Service:** AssemblyAI (Premium Features)\n`;
+
+          if (features.length > 0) {
+            content += `**AI Features:** ${features.join(', ')}\n`;
+          }
+
+          if (data.result.summary) {
+            content += `\n### 📋 Auto-Generated Summary:\n${data.result.summary}\n`;
+          }
+
+          content += `\n### 📝 Full Transcription:\n${data.result.text}\n\n---\n*Transcription ID: ${data.result.id}*`;
+
           const transcriptionMessage: Message = {
             role: 'assistant',
-            content: `## 🎵 Audio Transcription Complete\n\n**File:** ${data.result.filename}\n**Duration:** ${Math.round(data.result.duration || 0)} seconds\n**Language:** ${data.result.language || 'en'}\n\n### Transcription:\n${data.result.text}\n\n---\n*Transcription ID: ${data.result.id}*`,
+            content,
             timestamp: new Date().toISOString(),
             projectId: currentProject
           };
@@ -520,20 +540,15 @@ export default function Home() {
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
-      // Check if file needs chunking (>20MB)
-      const chunkSizeLimit = 20 * 1024 * 1024; // 20MB
-      if (file.size > chunkSizeLimit) {
-        console.log(`Large file detected: ${(file.size / 1024 / 1024).toFixed(1)}MB - will use chunked processing`);
-        await handleChunkedAudioTranscription(file);
-        return;
-      }
+      // Use AssemblyAI for all files (supports up to 5GB)
+      console.log(`Using AssemblyAI for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
 
       const formData = new FormData();
       formData.append('audio', file);
       formData.append('userId', currentUser);
       formData.append('projectId', currentProject);
 
-      const response = await fetch('/api/audio/transcribe-progress', {
+      const response = await fetch('/api/transcribe/assemblyai', {
         method: 'POST',
         body: formData,
       });
