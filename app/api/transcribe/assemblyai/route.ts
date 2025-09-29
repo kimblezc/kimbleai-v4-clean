@@ -47,18 +47,19 @@ async function uploadToAssemblyAIStream(audioFile: File): Promise<string> {
 }
 
 async function startTranscription(audioUrl: string): Promise<string> {
+  // COST-OPTIMIZED: Use minimal features to reduce costs
+  // Base transcription: $0.37/hour vs full features: $0.65+/hour
   const transcriptRequest = {
     audio_url: audioUrl,
-    speaker_labels: true,          // Speaker diarization
-    auto_chapters: true,           // Automatic chapter detection
-    sentiment_analysis: true,      // Sentiment analysis
-    entity_detection: true,        // Entity detection
-    iab_categories: true,          // Topic classification
-    content_safety_labels: true,   // Content moderation
-    auto_highlights: true,         // Key phrases
-    summarization: true,           // Auto summary
-    summary_model: 'informative',
-    summary_type: 'bullets',
+    speaker_labels: true,          // Essential: $0.04/hour - Speaker diarization
+    // auto_chapters: true,        // DISABLED: Save $0.03/hour
+    // sentiment_analysis: true,   // DISABLED: Save $0.02/hour
+    // entity_detection: true,     // DISABLED: Save $0.08/hour
+    // iab_categories: true,       // DISABLED: Save $0.15/hour
+    // content_safety_labels: true, // DISABLED: Save $0.02/hour
+    // auto_highlights: true,      // DISABLED: Save $0.03/hour
+    // summarization: true,        // DISABLED: Save $0.03/hour
+    // Cost: ~$0.41/hour instead of $0.65+/hour (37% savings)
   };
 
   const response = await fetch(`${ASSEMBLYAI_BASE_URL}/transcript`, {
@@ -92,6 +93,46 @@ async function checkTranscriptionStatus(transcriptId: string) {
   return response.json();
 }
 
+// Daily usage tracking to prevent cost overruns
+const dailyUsage = new Map<string, { hours: number, cost: number, date: string }>();
+
+async function checkDailyLimits(userId: string, estimatedHours: number): Promise<{ allowed: boolean, message?: string }> {
+  const today = new Date().toISOString().split('T')[0];
+  const userUsage = dailyUsage.get(userId) || { hours: 0, cost: 0, date: today };
+
+  // Reset if new day
+  if (userUsage.date !== today) {
+    userUsage.hours = 0;
+    userUsage.cost = 0;
+    userUsage.date = today;
+  }
+
+  const DAILY_HOUR_LIMIT = 10; // Max 10 hours per day (~$4.10 cost limit)
+  const DAILY_COST_LIMIT = 5.00; // $5 daily cost limit
+
+  const newHours = userUsage.hours + estimatedHours;
+  const newCost = userUsage.cost + (estimatedHours * 0.41); // $0.41/hour with minimal features
+
+  if (newHours > DAILY_HOUR_LIMIT) {
+    return {
+      allowed: false,
+      message: `Daily limit exceeded. You've used ${userUsage.hours.toFixed(1)}h today (limit: ${DAILY_HOUR_LIMIT}h). This file would add ${estimatedHours.toFixed(1)}h.`
+    };
+  }
+
+  if (newCost > DAILY_COST_LIMIT) {
+    return {
+      allowed: false,
+      message: `Daily cost limit exceeded. Today's cost: $${userUsage.cost.toFixed(2)} (limit: $${DAILY_COST_LIMIT}). This file would add $${(estimatedHours * 0.41).toFixed(2)}.`
+    };
+  }
+
+  // Update usage
+  dailyUsage.set(userId, { hours: newHours, cost: newCost, date: today });
+
+  return { allowed: true };
+}
+
 export async function POST(request: NextRequest) {
   const jobId = `assemblyai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -105,6 +146,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'No audio file provided' },
         { status: 400 }
+      );
+    }
+
+    // Estimate audio duration and cost
+    const fileSizeMB = audioFile.size / (1024 * 1024);
+    const estimatedHours = fileSizeMB / 30; // Rough estimate: 30MB per hour
+    const estimatedCost = estimatedHours * 0.41;
+
+    // Check daily limits BEFORE processing
+    const limitCheck = await checkDailyLimits(userId, estimatedHours);
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Daily usage limit exceeded',
+          details: limitCheck.message,
+          estimatedCost: `$${estimatedCost.toFixed(2)}`,
+          estimatedHours: `${estimatedHours.toFixed(1)}h`
+        },
+        { status: 429 }
       );
     }
 

@@ -39,7 +39,8 @@
       "Bash(railway login:*)",
       "Bash(timeout 30 npx tsc --noEmit --skipLibCheck)",
       "WebFetch(domain:kimbleai-v4-clean-q04m020l4-kimblezcs-projects.vercel.app)",
-      "WebFetch(domain:kimbleai-v4-clean-23vi42hgj-kimblezcs-projects.vercel.app)"
+      "WebFetch(domain:kimbleai-v4-clean-23vi42hgj-kimblezcs-projects.vercel.app)",
+      "Bash(netstat:*)"
     ],
     "deny": [],
     "ask": []
