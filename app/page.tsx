@@ -539,12 +539,12 @@ export default function Home() {
     setAudioProgress({ progress: 0, eta: 0, status: 'initializing' });
 
     try {
-      console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
+      console.log(`[AUDIO-PAGE] Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
       const fileSizeMB = file.size / (1024 * 1024);
 
       // Route through optimized server endpoints instead of direct browser upload
-      console.log(`Using server-side transcription for ${file.name} (${fileSizeMB.toFixed(1)}MB)`);
+      console.log(`[AUDIO-PAGE] Using server-side transcription for ${file.name} (${fileSizeMB.toFixed(1)}MB)`);
 
       const formData = new FormData();
       formData.append('audio', file);
