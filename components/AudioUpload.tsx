@@ -208,13 +208,16 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
           <div style={{ color: '#4a9eff' }}>
             <div style={{ marginBottom: '12px' }}>
               {progressState.status === 'initializing' && 'Initializing transcription...'}
+              {progressState.status === 'uploading' && 'Uploading to AssemblyAI...'}
+              {progressState.status === 'transcribing' && 'AI transcription in progress...'}
+              {progressState.status === 'processing' && 'Analyzing audio with AI features...'}
+              {progressState.status === 'saving' && 'Saving results...'}
               {progressState.status === 'preparing_chunks' && 'Preparing file chunks for large file...'}
               {progressState.status === 'processing_chunks' && 'Processing audio chunks...'}
               {progressState.status.startsWith('processing_chunk_') && `Processing chunk ${progressState.status.split('_')[2]}...`}
               {progressState.status === 'combining_results' && 'Combining chunk results...'}
               {progressState.status === 'preparing_file' && 'Preparing audio file...'}
               {progressState.status === 'uploading_to_whisper' && 'Uploading to Whisper...'}
-              {progressState.status === 'transcribing' && 'Transcribing audio...'}
               {progressState.status === 'saving_to_database' && 'Saving transcription...'}
               {progressState.status === 'generating_embeddings' && 'Generating embeddings...'}
               {progressState.status === 'starting' && 'Starting transcription...'}
