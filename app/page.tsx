@@ -541,60 +541,157 @@ export default function Home() {
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
-      // Use working AssemblyAI endpoint that we know works
-      console.log(`Using AssemblyAI endpoint for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      // Direct upload to AssemblyAI for large files (bypasses Vercel completely)
+      console.log(`Using direct AssemblyAI upload for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
 
-      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 2), status: 'starting' });
+      setAudioProgress({ progress: 5, eta: Math.round(file.size / (1024 * 1024) * 1.5), status: 'getting_auth' });
 
-      // Start transcription via existing working endpoint
-      const formData = new FormData();
-      formData.append('audio', file);
-      formData.append('userId', currentUser);
-      formData.append('projectId', currentProject);
-
-      const response = await fetch('/api/transcribe/assemblyai', {
+      // Step 1: Get auth token from our server
+      const authResponse = await fetch('/api/transcribe/upload-url', {
         method: 'POST',
-        body: formData,
       });
 
-      // Read response as text first, then try to parse as JSON
-      const responseText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (jsonError) {
-        // Handle non-JSON responses (HTML error pages, etc.)
-        throw new Error(`Server returned non-JSON response (${response.status}): ${responseText.substring(0, 100)}...`);
+      if (!authResponse.ok) {
+        const errorData = await authResponse.json();
+        throw new Error(`Failed to get auth: ${errorData.error}`);
       }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to start transcription');
+      const authData = await authResponse.json();
+      console.log('Got auth for direct upload');
+
+      setAudioProgress({ progress: 10, eta: Math.round(file.size / (1024 * 1024) * 1.5), status: 'uploading' });
+
+      // Step 2: Upload directly to AssemblyAI (bypasses Vercel payload limits)
+      const uploadResponse = await Promise.race([
+        fetch(authData.upload_url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authData.auth_token}`,
+            'Content-Type': 'application/octet-stream',
+          },
+          body: file,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Upload timeout after 10 minutes')), 10 * 60 * 1000)
+        )
+      ]) as Response;
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed (${uploadResponse.status}): ${errorText}`);
       }
 
-      // Start polling for progress
-      const jobId = data.jobId;
-      setAudioProgress({
-        progress: 10,
-        eta: data.estimatedDuration ? Math.round(data.estimatedDuration / 2.5) : 30,
-        status: 'starting',
-        jobId
+      const uploadData = await uploadResponse.json();
+      const audioUrl = uploadData.upload_url;
+      console.log('Upload successful, starting transcription');
+
+      setAudioProgress({ progress: 30, eta: Math.round(file.size / (1024 * 1024) * 1.2), status: 'transcribing' });
+
+      // Step 3: Start transcription
+      const transcriptResponse = await fetch('/api/transcribe/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audio_url: audioUrl,
+          filename: file.name
+        }),
       });
 
-      // Poll every 2 seconds
-      const pollInterval = setInterval(() => {
-        pollAudioProgress(jobId);
-      }, 2000);
+      if (!transcriptResponse.ok) {
+        const errorData = await transcriptResponse.json();
+        throw new Error(`Transcription failed: ${errorData.error}`);
+      }
 
-      // Clean up interval when transcription completes or fails
-      const cleanupInterval = () => {
-        clearInterval(pollInterval);
+      const transcriptData = await transcriptResponse.json();
+      const transcriptId = transcriptData.transcript_id;
+
+      setAudioProgress({ progress: 40, eta: Math.round(file.size / (1024 * 1024) * 1.0), status: 'processing' });
+
+      // Step 4: Poll for completion
+      let result;
+      let attempts = 0;
+      const maxAttempts = 240; // 20 minutes for very large files
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+        const statusResponse = await fetch(`/api/transcribe/status?id=${transcriptId}`);
+        if (!statusResponse.ok) {
+          throw new Error('Status check failed');
+        }
+
+        result = await statusResponse.json();
+        console.log(`Status: ${result.status}${result.audio_duration ? `, Duration: ${result.audio_duration}s` : ''}`);
+
+        if (result.status === 'completed') {
+          break;
+        } else if (result.status === 'error') {
+          throw new Error(`Transcription failed: ${result.error}`);
+        }
+
+        // Update progress
+        const progressIncrement = (attempts * 50) / maxAttempts; // 40-90%
+        setAudioProgress({
+          progress: Math.min(40 + progressIncrement, 90),
+          eta: (maxAttempts - attempts) * 5,
+          status: 'processing'
+        });
+        attempts++;
+      }
+
+      if (!result || result.status !== 'completed') {
+        throw new Error('Transcription timed out');
+      }
+
+      setAudioProgress({ progress: 95, eta: 5, status: 'saving' });
+
+      // Step 5: Save to database
+      await fetch('/api/transcribe/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser,
+          projectId: currentProject,
+          filename: file.name,
+          fileSize: file.size,
+          duration: result.audio_duration,
+          text: result.text,
+          service: 'assemblyai_direct',
+          metadata: {
+            speaker_labels: result.speaker_labels,
+            chapters: result.chapters,
+            sentiment_analysis_results: result.sentiment_analysis_results,
+            entities: result.entities,
+            summary: result.summary
+          }
+        }),
+      });
+
+      setAudioProgress({ progress: 100, eta: 0, status: 'completed' });
+
+      // Build feature summary
+      const features = [];
+      if (result.speaker_labels?.length > 0) features.push(`${result.speaker_labels.length} speakers detected`);
+      if (result.chapters?.length > 0) features.push(`${result.chapters.length} chapters detected`);
+      if (result.summary) features.push('auto-generated summary');
+      if (result.sentiment_analysis_results) features.push('sentiment analysis');
+      if (result.entities?.length > 0) features.push(`${result.entities.length} entities detected`);
+
+      // Show completion message
+      const successMessage: Message = {
+        role: 'assistant',
+        content: `## 🎵 Audio Transcription Complete\n\n**File:** ${file.name}\n**Duration:** ${Math.round(result.audio_duration || 0)} seconds\n**Service:** AssemblyAI Direct (Premium Features)\n${features.length > 0 ? `**AI Features:** ${features.join(', ')}\n` : ''}\n**Transcription:**\n${result.text}${result.summary ? `\n\n**Summary:**\n${result.summary}` : ''}`,
+        timestamp: new Date().toISOString(),
+        projectId: currentProject
       };
 
-      // Store cleanup function for potential use
-      setTimeout(cleanupInterval, 10 * 60 * 1000); // 10 minute max timeout
-
+      setMessages(prev => [...prev, successMessage]);
       setSelectedAudio(null);
-      console.log(`[AUDIO] Started AssemblyAI transcription job ${jobId} for ${file.name}`);
+      console.log(`[AUDIO] Direct AssemblyAI transcription completed for ${file.name}`);
 
     } catch (error: any) {
       console.error('Audio transcription error:', error);

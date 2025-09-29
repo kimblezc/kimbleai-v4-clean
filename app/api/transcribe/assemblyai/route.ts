@@ -23,18 +23,23 @@ const jobStore = new Map<string, {
   startTime: number;
 }>();
 
-async function uploadToAssemblyAI(audioBuffer: Buffer, filename: string): Promise<string> {
+async function uploadToAssemblyAIStream(audioFile: File): Promise<string> {
+  // Convert File to ReadableStream for streaming upload
+  const stream = audioFile.stream();
+
   const uploadResponse = await fetch(`${ASSEMBLYAI_BASE_URL}/upload`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
       'Content-Type': 'application/octet-stream',
     },
-    body: new Uint8Array(audioBuffer),
-  });
+    body: stream,
+    duplex: 'half',
+  } as any);
 
   if (!uploadResponse.ok) {
-    throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+    const errorText = await uploadResponse.text();
+    throw new Error(`Upload failed (${uploadResponse.status}): ${errorText}`);
   }
 
   const uploadData = await uploadResponse.json();
@@ -143,8 +148,8 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
     // Update: Uploading
     updateJobStatus(jobId, 10, 'uploading');
 
-    const audioBuffer = Buffer.from(await audioFile.arrayBuffer());
-    const uploadUrl = await uploadToAssemblyAI(audioBuffer, audioFile.name);
+    // Stream upload directly to AssemblyAI without loading into memory
+    const uploadUrl = await uploadToAssemblyAIStream(audioFile);
 
     // Update: Starting transcription
     updateJobStatus(jobId, 20, 'transcribing');
