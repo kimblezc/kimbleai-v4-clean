@@ -438,11 +438,11 @@ export default function Home() {
     setAudioProgress({ progress: 0, eta: 0, status: 'preparing_chunks' });
 
     try {
-      const chunkSize = 20 * 1024 * 1024; // 20MB chunks
+      const chunkSize = 4 * 1024 * 1024; // 4MB chunks (well under Vercel limits)
       const totalChunks = Math.ceil(file.size / chunkSize);
       const chunks = [];
 
-      console.log(`Splitting ${file.name} into ${totalChunks} chunks of ~20MB each`);
+      console.log(`Splitting ${file.name} into ${totalChunks} chunks of ~4MB each`);
 
       // Split file into chunks
       for (let i = 0; i < totalChunks; i++) {
@@ -541,8 +541,8 @@ export default function Home() {
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
-      // For files over 20MB, use chunked processing to avoid Vercel limits
-      if (file.size > 20 * 1024 * 1024) {
+      // For files over 4MB, use chunked processing to avoid Vercel limits
+      if (file.size > 4 * 1024 * 1024) {
         console.log(`Large file detected (${(file.size / 1024 / 1024).toFixed(1)}MB), using chunked processing`);
         await handleChunkedAudioTranscription(file);
         return;
