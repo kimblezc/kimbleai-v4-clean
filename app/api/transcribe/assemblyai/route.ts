@@ -30,7 +30,7 @@ async function uploadToAssemblyAI(audioBuffer: Buffer, filename: string): Promis
       'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
       'Content-Type': 'application/octet-stream',
     },
-    body: audioBuffer,
+    body: new Uint8Array(audioBuffer),
   });
 
   if (!uploadResponse.ok) {
