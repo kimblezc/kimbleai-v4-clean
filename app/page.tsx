@@ -362,7 +362,7 @@ export default function Home() {
   // Poll progress for audio transcription
   const pollAudioProgress = React.useCallback(async (jobId: string) => {
     try {
-      const response = await fetch(`/api/audio/transcribe-progress?jobId=${jobId}`);
+      const response = await fetch(`/api/transcribe/assemblyai?jobId=${jobId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -540,20 +540,15 @@ export default function Home() {
     try {
       console.log(`Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
-      // Check if file needs chunking (>20MB)
-      const chunkSizeLimit = 20 * 1024 * 1024; // 20MB
-      if (file.size > chunkSizeLimit) {
-        console.log(`Large file detected: ${(file.size / 1024 / 1024).toFixed(1)}MB - will use chunked processing`);
-        await handleChunkedAudioTranscription(file);
-        return;
-      }
+      // Use AssemblyAI for all files (supports up to 5GB, bypasses Vercel limits)
+      console.log(`Using AssemblyAI for ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
 
       const formData = new FormData();
       formData.append('audio', file);
       formData.append('userId', currentUser);
       formData.append('projectId', currentProject);
 
-      const response = await fetch('/api/audio/transcribe-progress', {
+      const response = await fetch('/api/transcribe/assemblyai', {
         method: 'POST',
         body: formData,
       });
