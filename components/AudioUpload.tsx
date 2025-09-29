@@ -107,7 +107,14 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
         body: formData,
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // Handle non-JSON responses (HTML error pages, etc.)
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response (${response.status}): ${text.substring(0, 100)}...`);
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to start transcription');

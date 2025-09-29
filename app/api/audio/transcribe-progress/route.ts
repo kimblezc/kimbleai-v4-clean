@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
   const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
+    console.log(`[AUDIO] Starting new transcription job ${jobId}`);
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File;
     const userId = formData.get('userId') as string;
@@ -109,9 +110,18 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[AUDIO] Transcription error:', error);
+    console.error(`[AUDIO] Transcription error for job ${jobId}:`, {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return NextResponse.json(
-      { error: 'Failed to start transcription', details: error.message },
+      {
+        error: 'Failed to start transcription',
+        details: error.message,
+        jobId: jobId,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }
@@ -231,7 +241,12 @@ async function processAudioWithProgress(
     console.log(`[AUDIO] Transcription job ${jobId} completed successfully`);
 
   } catch (error: any) {
-    console.error(`[AUDIO] Job ${jobId} failed:`, error);
+    console.error(`[AUDIO] Job ${jobId} failed:`, {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      status: error.status || 'unknown'
+    });
     const progress = progressStore.get(jobId);
     if (progress) {
       progressStore.set(jobId, {
@@ -240,7 +255,7 @@ async function processAudioWithProgress(
         eta: 0,
         status: 'failed',
         //@ts-ignore
-        error: error.message
+        error: `${error.name || 'Error'}: ${error.message}`
       });
     }
   }
