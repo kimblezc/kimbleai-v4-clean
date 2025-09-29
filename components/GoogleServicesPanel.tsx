@@ -135,9 +135,13 @@ export default function GoogleServicesPanel() {
     if (service === 'calendar') {
       return data.events?.length > 0
         ? `✓ Found ${data.events.length} event(s)`
-        : data.details?.includes('Calendar API') || data.error?.includes('Calendar API')
-          ? '⚠ Calendar API needs to be enabled in Google Cloud Console'
-          : 'No events found';
+        : data.error?.includes('Calendar API is not enabled')
+          ? '⚠ Calendar API not enabled in Google Cloud Console'
+          : data.error?.includes('Calendar API access forbidden')
+            ? '⚠ Calendar API permissions issue'
+            : data.error?.includes('authentication failed')
+              ? '⚠ Need to re-authorize with Calendar permissions'
+              : data.error || 'No events found';
     }
     return 'Unknown result';
   };

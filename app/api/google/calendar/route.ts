@@ -83,10 +83,31 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Google Calendar API error:', error);
+
+    // Provide more specific error messages
+    let errorMessage = 'Calendar operation failed';
+    let statusCode = 500;
+
+    if (error.message?.includes('Calendar API has not been used')) {
+      errorMessage = 'Calendar API is not enabled in Google Cloud Console';
+      statusCode = 503;
+    } else if (error.code === 403) {
+      errorMessage = 'Calendar API access forbidden - check Google Cloud Console permissions';
+      statusCode = 403;
+    } else if (error.code === 401) {
+      errorMessage = 'Calendar API authentication failed - user may need to re-authorize';
+      statusCode = 401;
+    } else if (error.message?.includes('insufficient authentication scopes')) {
+      errorMessage = 'Calendar API scope missing - user needs to re-authorize with Calendar permissions';
+      statusCode = 401;
+    }
+
     return NextResponse.json({
-      error: 'Calendar operation failed',
-      details: error.message
-    }, { status: 500 });
+      error: errorMessage,
+      details: error.message,
+      errorCode: error.code,
+      service: 'Google Calendar API'
+    }, { status: statusCode });
   }
 }
 
