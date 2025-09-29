@@ -702,7 +702,7 @@ MAINTAIN CONTINUITY BY:
   
   private async checkVercelStatus(): Promise<boolean> {
     try {
-      const response = await fetch('https://kimbleai-v4-clean.vercel.app/api/health');
+      const response = await fetch('https://kimbleai.com/api/health');
       return response.ok;
     } catch {
       return false;
