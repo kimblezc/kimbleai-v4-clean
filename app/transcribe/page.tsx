@@ -3,11 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
-interface DriveFolder {
-  id: string;
-  name: string;
-}
-
 interface DriveFile {
   id: string;
   name: string;
@@ -16,6 +11,7 @@ interface DriveFile {
   mimeType: string;
   modifiedTime: string;
   webViewLink: string;
+  isFolder?: boolean;
 }
 
 interface TranscriptionJob {
@@ -30,77 +26,70 @@ interface TranscriptionJob {
 
 export default function TranscribePage() {
   const { data: session } = useSession();
-  const [folders, setFolders] = useState<DriveFolder[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<string>('');
-  const [audioFiles, setAudioFiles] = useState<DriveFile[]>([]);
+  const [currentPath, setCurrentPath] = useState<{ id: string; name: string }[]>([{ id: 'root', name: 'My Drive' }]);
+  const [items, setItems] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [jobs, setJobs] = useState<Map<string, TranscriptionJob>>(new Map());
   const [error, setError] = useState<string | null>(null);
+  const [folderIdInput, setFolderIdInput] = useState('');
 
-  // Load folders
-  const loadFolders = async () => {
-    try {
-      const response = await fetch('/api/google/drive?action=folders&userId=zach');
-      const data = await response.json();
-      if (data.folders) {
-        setFolders(data.folders);
-      }
-    } catch (err: any) {
-      console.error('Failed to load folders:', err);
-    }
-  };
-
-  // Load audio files from folder or search all
-  const loadAudioFiles = async (folderId?: string) => {
+  // Load items from folder
+  const loadFolder = async (folderId?: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      let url = '/api/google/drive?action=search&userId=zach';
-
-      if (folderId) {
-        url = `/api/google/drive?action=list&userId=zach&folderId=${folderId}`;
-      }
+      const id = folderId || 'root';
+      const url = `/api/google/drive?action=list&userId=zach${id !== 'root' ? `&folderId=${id}` : ''}`;
 
       const response = await fetch(url);
       const data = await response.json();
 
-      let files = data.files || [];
+      if (data.error) {
+        setError(data.error);
+        setItems([]);
+        return;
+      }
 
-      // Filter for audio files only
-      files = files.filter((f: any) =>
-        f.mimeType && (
-          f.mimeType.includes('audio/') ||
-          f.name.toLowerCase().endsWith('.m4a') ||
-          f.name.toLowerCase().endsWith('.mp3') ||
-          f.name.toLowerCase().endsWith('.wav')
-        )
-      );
+      const allItems = data.files || [];
+      setItems(allItems);
 
-      const audioFiles = files.map((file: any) => ({
-        id: file.id,
-        name: file.name,
-        size: parseInt(file.size || '0'),
-        sizeFormatted: formatFileSize(parseInt(file.size || '0')),
-        mimeType: file.mimeType,
-        modifiedTime: file.modifiedTime,
-        webViewLink: file.webViewLink,
-      }));
-
-      setAudioFiles(audioFiles);
     } catch (err: any) {
       setError(err.message);
+      setItems([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Get shareable URL
+  // Navigate into folder
+  const openFolder = (folder: DriveFile) => {
+    setCurrentPath([...currentPath, { id: folder.id, name: folder.name }]);
+    loadFolder(folder.id);
+  };
+
+  // Navigate back
+  const goBack = () => {
+    if (currentPath.length > 1) {
+      const newPath = currentPath.slice(0, -1);
+      setCurrentPath(newPath);
+      const parentId = newPath[newPath.length - 1].id;
+      loadFolder(parentId === 'root' ? undefined : parentId);
+    }
+  };
+
+  // Go to folder by ID
+  const goToFolderId = () => {
+    if (!folderIdInput.trim()) return;
+    setCurrentPath([...currentPath, { id: folderIdInput, name: 'Custom Folder' }]);
+    loadFolder(folderIdInput);
+    setFolderIdInput('');
+  };
+
   const getShareableUrl = (fileId: string): string => {
     return `https://drive.google.com/uc?export=download&id=${fileId}`;
   };
 
-  // Start transcription
   const startTranscription = async (file: DriveFile) => {
     const newJob: TranscriptionJob = {
       jobId: `job_${Date.now()}`,
@@ -147,7 +136,6 @@ export default function TranscribePage() {
     }
   };
 
-  // Poll status
   const pollJobStatus = async (fileId: string, jobId: string) => {
     const maxAttempts = 120;
     let attempts = 0;
@@ -188,8 +176,7 @@ export default function TranscribePage() {
 
   useEffect(() => {
     if (session) {
-      loadFolders();
-      loadAudioFiles();
+      loadFolder();
     }
   }, [session]);
 
@@ -209,13 +196,24 @@ export default function TranscribePage() {
     );
   }
 
+  const audioFiles = items.filter(item =>
+    !item.isFolder && (
+      item.mimeType?.includes('audio/') ||
+      item.name.toLowerCase().endsWith('.m4a') ||
+      item.name.toLowerCase().endsWith('.mp3') ||
+      item.name.toLowerCase().endsWith('.wav')
+    )
+  );
+
+  const folders = items.filter(item => item.isFolder);
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f0f0f', color: '#fff', padding: '2rem' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Audio Transcription from Drive</h1>
-          <p style={{ color: '#9ca3af' }}>Transcribe audio files from Google Drive with speaker diarization</p>
+          <p style={{ color: '#9ca3af' }}>Browse Google Drive and transcribe audio files with speaker diarization</p>
         </div>
 
         {/* Info */}
@@ -240,19 +238,45 @@ export default function TranscribePage() {
           </div>
         </div>
 
-        {/* Folder Selector */}
-        <div style={{ marginBottom: '2rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#9ca3af' }}>
-            Select Folder (optional):
-          </label>
-          <select
-            value={selectedFolder}
-            onChange={(e) => {
-              setSelectedFolder(e.target.value);
-              loadAudioFiles(e.target.value || undefined);
-            }}
+        {/* Breadcrumb Navigation */}
+        <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+          {currentPath.length > 1 && (
+            <button
+              onClick={goBack}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#374151',
+                border: 'none',
+                borderRadius: '0.375rem',
+                color: '#fff',
+                cursor: 'pointer',
+                marginRight: '0.5rem'
+              }}
+            >
+              ← Back
+            </button>
+          )}
+          <div style={{ color: '#9ca3af' }}>
+            {currentPath.map((path, idx) => (
+              <span key={path.id}>
+                {idx > 0 && ' / '}
+                <span style={{ color: idx === currentPath.length - 1 ? '#fff' : '#9ca3af' }}>
+                  {path.name}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Jump to Folder ID */}
+        <div style={{ marginBottom: '2rem', display: 'flex', gap: '0.5rem' }}>
+          <input
+            type="text"
+            placeholder="Paste Google Drive folder ID (e.g., 1abc...xyz)"
+            value={folderIdInput}
+            onChange={(e) => setFolderIdInput(e.target.value)}
             style={{
-              width: '100%',
+              flex: 1,
               padding: '0.75rem',
               backgroundColor: '#1f2937',
               border: '1px solid #374151',
@@ -260,12 +284,22 @@ export default function TranscribePage() {
               color: '#fff',
               fontSize: '0.875rem'
             }}
+          />
+          <button
+            onClick={goToFolderId}
+            disabled={!folderIdInput.trim()}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: folderIdInput.trim() ? '#4a9eff' : '#374151',
+              border: 'none',
+              borderRadius: '0.5rem',
+              color: '#fff',
+              cursor: folderIdInput.trim() ? 'pointer' : 'not-allowed',
+              fontSize: '0.875rem'
+            }}
           >
-            <option value="">All Audio Files</option>
-            {folders.map(folder => (
-              <option key={folder.id} value={folder.id}>{folder.name}</option>
-            ))}
-          </select>
+            Go to Folder
+          </button>
         </div>
 
         {/* Error */}
@@ -275,12 +309,42 @@ export default function TranscribePage() {
           </div>
         )}
 
-        {/* Files List */}
+        {/* Folders */}
+        {folders.length > 0 && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>📁 Folders ({folders.length})</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+              {folders.map((folder) => (
+                <button
+                  key={folder.id}
+                  onClick={() => openFolder(folder)}
+                  style={{
+                    padding: '1rem',
+                    backgroundColor: 'rgba(17, 24, 39, 0.5)',
+                    border: '1px solid #374151',
+                    borderRadius: '0.5rem',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#4a9eff'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = '#374151'}
+                >
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📁</div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>{folder.name}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Audio Files */}
         <div style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)', border: '1px solid #374151', borderRadius: '0.5rem', padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: '600' }}>🎵 Audio Files ({audioFiles.length})</h3>
             <button
-              onClick={() => loadAudioFiles(selectedFolder || undefined)}
+              onClick={() => loadFolder(currentPath[currentPath.length - 1].id === 'root' ? undefined : currentPath[currentPath.length - 1].id)}
               disabled={loading}
               style={{
                 padding: '0.5rem 1rem',
@@ -297,9 +361,9 @@ export default function TranscribePage() {
           </div>
 
           {loading ? (
-            <p style={{ color: '#9ca3af' }}>Loading files from Google Drive...</p>
+            <p style={{ color: '#9ca3af' }}>Loading from Google Drive...</p>
           ) : audioFiles.length === 0 ? (
-            <p style={{ color: '#9ca3af' }}>No audio files found. Try selecting a different folder.</p>
+            <p style={{ color: '#9ca3af' }}>No audio files in this folder. Try browsing other folders or use the folder ID input above.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {audioFiles.map((file) => {
