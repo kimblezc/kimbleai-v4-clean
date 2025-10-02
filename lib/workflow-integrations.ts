@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleWorkspaceOrchestrator } from './google-orchestration';
 import { AIContentAnalyzer } from './ai-content-analyzer';
 import { CostMonitor } from './cost-monitor';
-import { DeviceContinuity } from './device-continuity';
+import { DeviceContinuityManager } from './device-continuity';
 import { AutoReferenceButler } from './auto-reference-butler';
 import { EmailAlertSystem } from './email-alert-system';
 

@@ -331,34 +331,39 @@ const AGENT_DATA: AgentActivity[] = [
     category: 'System Management',
     icon: '🔄',
     color: '#3b82f6',
-    description: 'Seamless sync across all your devices in real-time',
+    description: 'Constant seamless transition between PC, Laptop, Mobile, and kimbleai.com - pick up exactly where you left off',
     status: 'active',
     capabilities: [
-      'Real-time state sync across devices',
-      'Conflict resolution for simultaneous edits',
-      'Offline mode with automatic sync',
-      'Device fingerprinting and security',
-      'Session handoff between devices'
+      'Real-time sync: PC ↔ Laptop ↔ Mobile ↔ Web (kimbleai.com)',
+      'Instant session handoff - start on PC, continue on phone mid-conversation',
+      'Smart context preservation - chat, files, uploads, active projects',
+      'Automatic conflict resolution for simultaneous multi-device edits',
+      'Offline-first with intelligent queue sync when reconnected',
+      'Device fingerprinting with seamless auth transfer',
+      'Predictive pre-sync based on usage patterns'
     ],
     accomplishments: {
-      total: 4521,
+      total: 8247,
       recent: [
-        'Synced conversation state across 3 devices (5 min ago)',
-        'Resolved edit conflict between phone and laptop (30 min ago)',
-        'Handed off active session from desktop to mobile (1 hour ago)'
+        'PC → Laptop handoff during client call, zero interruption (2 min ago)',
+        'Mobile → Web transition with 45ms latency, preserved 3 file uploads (10 min ago)',
+        'Resolved simultaneous edits across laptop + phone + web (30 min ago)',
+        'Synced 127 state transitions across 4 devices today (ongoing)'
       ]
     },
-    currentActivity: 'Maintaining real-time sync for active sessions',
+    currentActivity: 'Monitoring 4 active devices (PC, Laptop, Mobile, Web) - maintaining <80ms sync latency',
     goals: [
-      'Achieve <100ms sync latency',
-      'Support 5+ simultaneous devices',
-      'Implement predictive pre-sync'
+      'Achieve <50ms PC↔Laptop↔Mobile↔Web sync latency',
+      'Enable instant handoff with zero user friction',
+      'Implement predictive device pre-sync (load context before user switches)',
+      'Support unlimited simultaneous devices with intelligent prioritization',
+      'Build AI-powered transition suggestions'
     ],
     metrics: {
-      requestsProcessed: 4521,
-      avgResponseTime: 130,
-      successRate: 98.9,
-      uptime: '99.8%'
+      requestsProcessed: 8247,
+      avgResponseTime: 78,
+      successRate: 99.4,
+      uptime: '99.9%'
     }
   },
   {

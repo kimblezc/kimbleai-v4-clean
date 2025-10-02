@@ -11,6 +11,7 @@ const AUTHORIZED_EMAILS = [
 // Public paths that don't require authentication
 const PUBLIC_PATHS = [
   '/api/auth',
+  '/api/sync', // Device continuity endpoints
   '/auth/signin',
   '/auth/error',
   '/auth/signout',

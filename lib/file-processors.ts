@@ -135,7 +135,8 @@ export async function processAudioFile(
   file: File,
   userId: string,
   projectId: string,
-  fileId: string
+  fileId: string,
+  driveUrl?: string
 ): Promise<{
   success: boolean;
   data?: any;
@@ -144,11 +145,10 @@ export async function processAudioFile(
   try {
     console.log(`[AUDIO] Processing ${file.name} (${file.size} bytes)`);
 
-    // Upload to Supabase Storage
+    // Use Drive URL if provided, otherwise process uploaded file
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const storagePath = `${userId}/${fileId}/${file.name}`;
-    const audioUrl = await uploadToStorage('audio-files', storagePath, buffer, file.type);
+    const audioUrl = driveUrl || null; // Files stay in Drive
 
     // Process with AssemblyAI for better transcription
     console.log('[AUDIO] Starting AssemblyAI transcription...');
@@ -246,7 +246,8 @@ export async function processImageFile(
   file: File,
   userId: string,
   projectId: string,
-  fileId: string
+  fileId: string,
+  driveUrl?: string
 ): Promise<{
   success: boolean;
   data?: any;
@@ -261,18 +262,16 @@ export async function processImageFile(
     // Extract metadata
     const imageMetadata = await sharp(buffer).metadata();
 
-    // Generate thumbnail
+    // Generate thumbnail (store in Supabase)
     const thumbnail = await sharp(buffer)
       .resize(400, 400, { fit: 'inside' })
       .jpeg({ quality: 80 })
       .toBuffer();
 
-    // Upload original and thumbnail
-    const storagePath = `${userId}/${fileId}/${file.name}`;
+    // Upload only thumbnail to Supabase, original stays in Drive
     const thumbnailPath = `${userId}/${fileId}/thumb_${file.name}`;
-
-    const imageUrl = await uploadToStorage('images', storagePath, buffer, file.type);
-    const thumbnailUrl = await uploadToStorage('images', thumbnailPath, thumbnail, 'image/jpeg');
+    const thumbnailUrl = await uploadToStorage('thumbnails', thumbnailPath, thumbnail, 'image/jpeg');
+    const imageUrl = driveUrl || null; // Original stays in Drive
 
     // Use OpenAI Vision for analysis
     console.log('[IMAGE] Analyzing with OpenAI Vision...');
@@ -366,7 +365,8 @@ export async function processPDFFile(
   file: File,
   userId: string,
   projectId: string,
-  fileId: string
+  fileId: string,
+  driveUrl?: string
 ): Promise<{
   success: boolean;
   data?: any;
@@ -390,9 +390,8 @@ export async function processPDFFile(
     const pdfData = await pdfParse(buffer);
     const textContent = pdfData.text;
 
-    // Upload to storage
-    const storagePath = `${userId}/${fileId}/${file.name}`;
-    const pdfUrl = await uploadToStorage('documents', storagePath, buffer, 'application/pdf');
+    // File stays in Drive
+    const pdfUrl = driveUrl || null;
 
     // Generate thumbnail of first page (using sharp if possible)
     let thumbnailUrl = null;
@@ -478,7 +477,8 @@ export async function processDocumentFile(
   file: File,
   userId: string,
   projectId: string,
-  fileId: string
+  fileId: string,
+  driveUrl?: string
 ): Promise<{
   success: boolean;
   data?: any;
@@ -500,9 +500,8 @@ export async function processDocumentFile(
       textContent = buffer.toString('utf-8');
     }
 
-    // Upload to storage
-    const storagePath = `${userId}/${fileId}/${file.name}`;
-    const docUrl = await uploadToStorage('documents', storagePath, buffer, file.type);
+    // File stays in Drive
+    const docUrl = driveUrl || null;
 
     // Store in database
     const { data: docRecord } = await supabase
@@ -565,7 +564,8 @@ export async function processSpreadsheetFile(
   file: File,
   userId: string,
   projectId: string,
-  fileId: string
+  fileId: string,
+  driveUrl?: string
 ): Promise<{
   success: boolean;
   data?: any;
@@ -593,9 +593,8 @@ export async function processSpreadsheetFile(
       };
     }
 
-    // Upload to storage
-    const storagePath = `${userId}/${fileId}/${file.name}`;
-    const spreadsheetUrl = await uploadToStorage('documents', storagePath, buffer, file.type);
+    // File stays in Drive
+    const spreadsheetUrl = driveUrl || null;
 
     // Create text representation for search
     const textContent = JSON.stringify(sheetsData, null, 2);
@@ -664,7 +663,8 @@ export async function processEmailFile(
   file: File,
   userId: string,
   projectId: string,
-  fileId: string
+  fileId: string,
+  driveUrl?: string
 ): Promise<{
   success: boolean;
   data?: any;
@@ -704,9 +704,8 @@ export async function processEmailFile(
       emailData.body = bodyMatch[1];
     }
 
-    // Upload to storage
-    const storagePath = `${userId}/${fileId}/${file.name}`;
-    const emailUrl = await uploadToStorage('documents', storagePath, buffer, file.type);
+    // File stays in Drive (or Gmail)
+    const emailUrl = driveUrl || null;
 
     // Store in database
     const { data: emailRecord } = await supabase
@@ -774,7 +773,8 @@ export async function processFile(
   file: File,
   userId: string,
   projectId: string,
-  fileId: string
+  fileId: string,
+  driveUrl?: string
 ): Promise<{
   success: boolean;
   data?: any;
@@ -786,37 +786,37 @@ export async function processFile(
 
   // Audio files
   if (FILE_LIMITS.audio.mimeTypes.some(t => fileType.includes(t.split('/')[1]))) {
-    const result = await processAudioFile(file, userId, projectId, fileId);
+    const result = await processAudioFile(file, userId, projectId, fileId, driveUrl);
     return { ...result, processingType: 'audio' };
   }
 
   // Image files
   if (fileType.startsWith('image/')) {
-    const result = await processImageFile(file, userId, projectId, fileId);
+    const result = await processImageFile(file, userId, projectId, fileId, driveUrl);
     return { ...result, processingType: 'image' };
   }
 
   // PDF files
   if (fileName.endsWith('.pdf')) {
-    const result = await processPDFFile(file, userId, projectId, fileId);
+    const result = await processPDFFile(file, userId, projectId, fileId, driveUrl);
     return { ...result, processingType: 'pdf' };
   }
 
   // Spreadsheet files
   if (fileName.endsWith('.csv') || fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-    const result = await processSpreadsheetFile(file, userId, projectId, fileId);
+    const result = await processSpreadsheetFile(file, userId, projectId, fileId, driveUrl);
     return { ...result, processingType: 'spreadsheet' };
   }
 
   // Email files
   if (fileName.endsWith('.eml') || fileName.endsWith('.msg')) {
-    const result = await processEmailFile(file, userId, projectId, fileId);
+    const result = await processEmailFile(file, userId, projectId, fileId, driveUrl);
     return { ...result, processingType: 'email' };
   }
 
   // Document files (must be last as it's the catch-all)
   if (fileName.endsWith('.docx') || fileName.endsWith('.txt') || fileName.endsWith('.md') || fileName.endsWith('.rtf')) {
-    const result = await processDocumentFile(file, userId, projectId, fileId);
+    const result = await processDocumentFile(file, userId, projectId, fileId, driveUrl);
     return { ...result, processingType: 'document' };
   }
 

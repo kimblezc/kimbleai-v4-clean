@@ -255,37 +255,40 @@ const dailyUsage = new Map<string, { hours: number, cost: number, date: string }
 
 async function checkDailyLimits(userId: string, estimatedHours: number): Promise<{ allowed: boolean, message?: string }> {
   const today = new Date().toISOString().split('T')[0];
-  const userUsage = dailyUsage.get(userId) || { hours: 0, cost: 0, date: today };
 
-  // Reset if new day
-  if (userUsage.date !== today) {
-    userUsage.hours = 0;
-    userUsage.cost = 0;
-    userUsage.date = today;
-  }
+  // Get actual usage from database instead of in-memory cache
+  const { data: transcriptions } = await supabase
+    .from('audio_transcriptions')
+    .select('duration')
+    .eq('user_id', userId)
+    .gte('created_at', today + 'T00:00:00Z');
 
-  const DAILY_HOUR_LIMIT = 10; // Max 10 hours per day (~$4.10 cost limit)
-  const DAILY_COST_LIMIT = 5.00; // $5 daily cost limit
+  // Calculate actual usage from database
+  const totalSeconds = (transcriptions || []).reduce((sum, t) => sum + (t.duration || 0), 0);
+  const usedHours = totalSeconds / 3600;
+  const usedCost = usedHours * 0.41;
 
-  const newHours = userUsage.hours + estimatedHours;
-  const newCost = userUsage.cost + (estimatedHours * 0.41); // $0.41/hour with minimal features
+  const DAILY_HOUR_LIMIT = 50; // Max 50 hours per day
+  const DAILY_COST_LIMIT = 25.00; // $25 daily cost limit
+
+  const newHours = usedHours + estimatedHours;
+  const newCost = usedCost + (estimatedHours * 0.41); // $0.41/hour with minimal features
+
+  console.log(`[ASSEMBLYAI] Daily usage check - Used: ${usedHours.toFixed(2)}h ($${usedCost.toFixed(2)}), New file: ${estimatedHours.toFixed(2)}h, Total would be: ${newHours.toFixed(2)}h ($${newCost.toFixed(2)})`);
 
   if (newHours > DAILY_HOUR_LIMIT) {
     return {
       allowed: false,
-      message: `Daily limit exceeded. You've used ${userUsage.hours.toFixed(1)}h today (limit: ${DAILY_HOUR_LIMIT}h). This file would add ${estimatedHours.toFixed(1)}h.`
+      message: `Daily limit exceeded. You've used ${usedHours.toFixed(1)}h today (limit: ${DAILY_HOUR_LIMIT}h). This file would add ${estimatedHours.toFixed(1)}h.`
     };
   }
 
   if (newCost > DAILY_COST_LIMIT) {
     return {
       allowed: false,
-      message: `Daily cost limit exceeded. Today's cost: $${userUsage.cost.toFixed(2)} (limit: $${DAILY_COST_LIMIT}). This file would add $${(estimatedHours * 0.41).toFixed(2)}.`
+      message: `Daily cost limit exceeded. Today's cost: $${usedCost.toFixed(2)} (limit: $${DAILY_COST_LIMIT}). This file would add $${(estimatedHours * 0.41).toFixed(2)}.`
     };
   }
-
-  // Update usage
-  dailyUsage.set(userId, { hours: newHours, cost: newCost, date: today });
 
   return { allowed: true };
 }

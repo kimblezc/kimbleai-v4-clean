@@ -13,56 +13,48 @@ interface AgentStatus {
   responseTime?: number;
   icon: string;
   color: string;
+  description?: string;
+  capabilities?: string[];
+  features?: any[];
+  metrics?: any;
 }
-
-const AGENT_DEFINITIONS: Omit<AgentStatus, 'status' | 'lastActivity' | 'tasksCompleted'>[] = [
-  // Intelligence & Analysis
-  { id: 'drive-intelligence', name: 'Drive Intelligence', category: 'Intelligence', icon: '📁', color: '#4a9eff', responseTime: 150 },
-  { id: 'audio-intelligence', name: 'Audio Intelligence', category: 'Intelligence', icon: '🎵', color: '#10a37f', responseTime: 200 },
-  { id: 'knowledge-graph', name: 'Knowledge Graph', category: 'Intelligence', icon: '🕸️', color: '#ff6b6b', responseTime: 180 },
-  { id: 'context-prediction', name: 'Context Prediction', category: 'Intelligence', icon: '🔮', color: '#a855f7', responseTime: 120 },
-  { id: 'project-context', name: 'Project Context', category: 'Intelligence', icon: '📊', color: '#f59e0b', responseTime: 160 },
-
-  // Automation & Orchestration
-  { id: 'workflow-automation', name: 'Workflow Automation', category: 'Automation', icon: '⚙️', color: '#06b6d4', responseTime: 190 },
-  { id: 'workspace-orchestrator', name: 'Workspace Orchestrator', category: 'Automation', icon: '🎯', color: '#8b5cf6', responseTime: 175 },
-
-  // System Management
-  { id: 'cost-monitor', name: 'Cost Monitor', category: 'System', icon: '💰', color: '#eab308', responseTime: 140 },
-  { id: 'device-continuity', name: 'Device Continuity', category: 'System', icon: '🔄', color: '#3b82f6', responseTime: 130 },
-  { id: 'security-perimeter', name: 'Security Perimeter', category: 'System', icon: '🛡️', color: '#ef4444', responseTime: 110 },
-
-  // New Specialized Agents
-  { id: 'file-monitor', name: 'File Monitor', category: 'Specialized', icon: '👁️', color: '#14b8a6', responseTime: 95 },
-  { id: 'audio-transfer', name: 'Audio Transfer', category: 'Specialized', icon: '📤', color: '#f97316', responseTime: 210 },
-];
 
 export default function AgentStatusDashboard() {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
+  const [summary, setSummary] = useState<any>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
-    // Initialize agents
-    const initialAgents: AgentStatus[] = AGENT_DEFINITIONS.map(def => ({
-      ...def,
-      status: 'active',
-      lastActivity: 'Just now',
-      tasksCompleted: Math.floor(Math.random() * 100)
-    }));
-    setAgents(initialAgents);
-    setLoading(false);
+    // Fetch real agent data from API
+    const fetchAgentData = async () => {
+      try {
+        const response = await fetch('/api/agents/monitor');
+        const data = await response.json();
 
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      setAgents(prev => prev.map(agent => ({
-        ...agent,
-        tasksCompleted: agent.tasksCompleted + Math.floor(Math.random() * 3),
-        status: Math.random() > 0.95 ? 'processing' : 'active',
-        lastActivity: Math.random() > 0.7 ? 'Just now' : agent.lastActivity
-      })));
-    }, 5000);
+        if (data.success) {
+          setAgents(data.agents);
+          setSummary(data.summary);
+          setLastUpdate(new Date());
+          setError(null);
+        } else {
+          setError(data.error || 'Failed to fetch agent data');
+        }
+        setLoading(false);
+      } catch (err: any) {
+        console.error('Failed to fetch agent data:', err);
+        setError(err.message || 'Failed to connect to agent monitor');
+        setLoading(false);
+      }
+    };
+
+    fetchAgentData();
+
+    // Refresh every 10 seconds for real-time updates
+    const interval = setInterval(fetchAgentData, 10000);
 
     return () => clearInterval(interval);
   }, []);
@@ -82,10 +74,77 @@ export default function AgentStatusDashboard() {
     ? agents
     : agents.filter(a => a.category.toLowerCase() === filter.toLowerCase());
 
-  const categories = ['all', ...new Set(AGENT_DEFINITIONS.map(a => a.category))];
+  const categories = ['all', ...new Set(agents.map(a => a.category))];
 
-  const totalTasks = agents.reduce((sum, a) => sum + a.tasksCompleted, 0);
-  const avgResponseTime = Math.round(agents.reduce((sum, a) => sum + (a.responseTime || 0), 0) / agents.length);
+  const totalTasks = summary?.totalTasks || agents.reduce((sum, a) => sum + a.tasksCompleted, 0);
+  const avgResponseTime = summary?.avgResponseTime || Math.round(agents.reduce((sum, a) => sum + (a.responseTime || 0), 0) / (agents.length || 1));
+  const activeAgents = agents.filter(a => a.status === 'active').length;
+
+  // Loading state
+  if (loading) {
+    return (
+      <div style={{
+        backgroundColor: '#0a0a0a',
+        borderRadius: '12px',
+        border: '1px solid #333',
+        padding: '40px',
+        textAlign: 'center',
+        marginBottom: '20px'
+      }}>
+        <div style={{
+          fontSize: '48px',
+          marginBottom: '16px',
+          animation: 'pulse 1.5s ease-in-out infinite'
+        }}>
+          🤖
+        </div>
+        <p style={{ color: '#888', margin: 0 }}>Loading agent ecosystem...</p>
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div style={{
+        backgroundColor: '#0a0a0a',
+        borderRadius: '12px',
+        border: '1px solid #ef4444',
+        padding: '40px',
+        textAlign: 'center',
+        marginBottom: '20px'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+        <p style={{ color: '#ef4444', margin: 0, marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>
+          Failed to Load Agents
+        </p>
+        <p style={{ color: '#888', margin: 0, fontSize: '13px' }}>{error}</p>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (agents.length === 0) {
+    return (
+      <div style={{
+        backgroundColor: '#0a0a0a',
+        borderRadius: '12px',
+        border: '1px solid #333',
+        padding: '40px',
+        textAlign: 'center',
+        marginBottom: '20px'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🤖</div>
+        <p style={{ color: '#888', margin: 0 }}>No agents available</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -99,28 +158,40 @@ export default function AgentStatusDashboard() {
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         marginBottom: '20px',
         paddingBottom: '16px',
-        borderBottom: '1px solid #333'
+        borderBottom: '1px solid #333',
+        flexWrap: 'wrap',
+        gap: '16px'
       }}>
-        <div>
+        <div style={{ flex: '1', minWidth: '200px' }}>
           <h2 style={{
             margin: 0,
-            fontSize: '20px',
+            fontSize: '24px',
             fontWeight: '600',
             color: '#ffffff',
-            marginBottom: '4px'
+            marginBottom: '8px'
           }}>
-            🤖 Agent Ecosystem Status
+            🤖 Agent Ecosystem
           </h2>
           <p style={{
             margin: 0,
-            fontSize: '13px',
-            color: '#888'
+            fontSize: '14px',
+            color: '#888',
+            marginBottom: '6px'
           }}>
-            {agents.length} agents • {totalTasks.toLocaleString()} tasks completed • {avgResponseTime}ms avg response
+            {agents.length} total • {activeAgents} active • {totalTasks.toLocaleString()} tasks • {avgResponseTime}ms avg
           </p>
+          {lastUpdate && (
+            <p style={{
+              margin: 0,
+              fontSize: '11px',
+              color: '#666'
+            }}>
+              Updated {lastUpdate.toLocaleTimeString()}
+            </p>
+          )}
         </div>
 
         {/* Category Filter */}
@@ -244,28 +315,104 @@ export default function AgentStatusDashboard() {
                 paddingTop: '12px',
                 borderTop: '1px solid #333',
                 fontSize: '12px',
-                color: '#aaa'
+                color: '#aaa',
+                maxHeight: '400px',
+                overflowY: 'auto'
               }}>
-                <div style={{ marginBottom: '6px' }}>
-                  <strong style={{ color: agent.color }}>Status:</strong>{' '}
-                  <span style={{ textTransform: 'capitalize' }}>{agent.status}</span>
-                </div>
-                <div style={{ marginBottom: '6px' }}>
-                  <strong style={{ color: agent.color }}>Last Activity:</strong> {agent.lastActivity}
-                </div>
-                <div style={{ marginBottom: '6px' }}>
-                  <strong style={{ color: agent.color }}>Avg Response:</strong> {agent.responseTime}ms
-                </div>
-                {agent.currentTask && (
+                {/* Description */}
+                {agent.description && (
                   <div style={{
-                    marginTop: '8px',
-                    padding: '6px',
+                    marginBottom: '12px',
+                    padding: '8px',
                     backgroundColor: '#0a0a0a',
                     borderRadius: '4px',
-                    fontSize: '11px'
+                    fontSize: '11px',
+                    lineHeight: '1.5'
+                  }}>
+                    {agent.description}
+                  </div>
+                )}
+
+                {/* Status Info */}
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{ marginBottom: '6px' }}>
+                    <strong style={{ color: agent.color }}>Status:</strong>{' '}
+                    <span style={{ textTransform: 'capitalize' }}>{agent.status}</span>
+                  </div>
+                  <div style={{ marginBottom: '6px' }}>
+                    <strong style={{ color: agent.color }}>Last Activity:</strong> {agent.lastActivity}
+                  </div>
+                  <div style={{ marginBottom: '6px' }}>
+                    <strong style={{ color: agent.color }}>Avg Response:</strong> {agent.responseTime}ms
+                  </div>
+                </div>
+
+                {/* Current Task */}
+                {agent.currentTask && (
+                  <div style={{
+                    marginTop: '10px',
+                    marginBottom: '10px',
+                    padding: '8px',
+                    backgroundColor: '#0a0a0a',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    borderLeft: `2px solid ${agent.color}`
                   }}>
                     <strong style={{ color: agent.color }}>Current Task:</strong><br />
-                    {agent.currentTask}
+                    <span style={{ color: '#ccc', marginTop: '4px', display: 'block' }}>
+                      {agent.currentTask}
+                    </span>
+                  </div>
+                )}
+
+                {/* Capabilities */}
+                {agent.capabilities && agent.capabilities.length > 0 && (
+                  <div style={{ marginTop: '12px' }}>
+                    <strong style={{ color: agent.color, marginBottom: '6px', display: 'block' }}>
+                      Capabilities:
+                    </strong>
+                    <ul style={{
+                      margin: '6px 0',
+                      paddingLeft: '20px',
+                      fontSize: '11px',
+                      lineHeight: '1.6'
+                    }}>
+                      {agent.capabilities.slice(0, 5).map((cap, idx) => (
+                        <li key={idx} style={{ marginBottom: '4px', color: '#ccc' }}>{cap}</li>
+                      ))}
+                      {agent.capabilities.length > 5 && (
+                        <li style={{ color: '#666', fontStyle: 'italic' }}>
+                          +{agent.capabilities.length - 5} more...
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Metrics */}
+                {agent.metrics && Object.keys(agent.metrics).length > 0 && (
+                  <div style={{ marginTop: '12px' }}>
+                    <strong style={{ color: agent.color, marginBottom: '6px', display: 'block' }}>
+                      Metrics:
+                    </strong>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '6px',
+                      fontSize: '11px'
+                    }}>
+                      {Object.entries(agent.metrics).slice(0, 6).map(([key, value]) => (
+                        <div key={key} style={{
+                          padding: '4px 6px',
+                          backgroundColor: '#0a0a0a',
+                          borderRadius: '3px',
+                          border: `1px solid #333`
+                        }}>
+                          <div style={{ color: '#666', fontSize: '10px' }}>{key}</div>
+                          <div style={{ color: '#fff', fontWeight: '600' }}>{String(value)}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -274,32 +421,99 @@ export default function AgentStatusDashboard() {
         ))}
       </div>
 
-      {/* Legend */}
+      {/* Empty filter state */}
+      {filteredAgents.length === 0 && (
+        <div style={{
+          padding: '40px',
+          textAlign: 'center',
+          color: '#888'
+        }}>
+          <p style={{ margin: 0 }}>No agents found in this category</p>
+        </div>
+      )}
+
+      {/* Footer with Legend and Summary */}
       <div style={{
         marginTop: '20px',
         paddingTop: '16px',
-        borderTop: '1px solid #333',
-        display: 'flex',
-        gap: '16px',
-        fontSize: '12px',
-        color: '#888'
+        borderTop: '1px solid #333'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10a37f' }} />
-          Active
+        {/* Status Legend */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '16px',
+          fontSize: '12px',
+          color: '#888',
+          marginBottom: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10a37f' }} />
+            Active
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+            Processing
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#6b7280' }} />
+            Idle
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+            Error
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#1f2937' }} />
+            Offline
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
-          Processing
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#6b7280' }} />
-          Idle
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
-          Error
-        </div>
+
+        {/* System Summary */}
+        {summary && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '12px',
+            padding: '12px',
+            backgroundColor: '#0f0f0f',
+            borderRadius: '6px',
+            border: '1px solid #222'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '20px', fontWeight: '600', color: '#10a37f' }}>
+                {summary.activeAgents || activeAgents}
+              </div>
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                Active Agents
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '20px', fontWeight: '600', color: '#4a9eff' }}>
+                {totalTasks.toLocaleString()}
+              </div>
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                Total Tasks
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '20px', fontWeight: '600', color: '#f59e0b' }}>
+                {avgResponseTime}ms
+              </div>
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                Avg Response
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '20px', fontWeight: '600', color: '#a855f7' }}>
+                {((activeAgents / agents.length) * 100).toFixed(0)}%
+              </div>
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                Uptime
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -32,6 +32,7 @@ export default function TranscribePage() {
   const [jobs, setJobs] = useState<Map<string, TranscriptionJob>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [folderIdInput, setFolderIdInput] = useState('');
+  const [dailyUsage, setDailyUsage] = useState<{ hours: number; cost: number } | null>(null);
 
   // Load items from folder
   const loadFolder = async (folderId?: string) => {
@@ -46,7 +47,11 @@ export default function TranscribePage() {
       const data = await response.json();
 
       if (data.error) {
-        setError(data.error);
+        if (data.needsAuth) {
+          setError('Not authenticated with Google. Please sign in to access Drive.');
+        } else {
+          setError(data.error);
+        }
         setItems([]);
         return;
       }
@@ -55,7 +60,7 @@ export default function TranscribePage() {
       setItems(allItems);
 
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to load Drive files');
       setItems([]);
     } finally {
       setLoading(false);
@@ -174,9 +179,28 @@ export default function TranscribePage() {
     poll();
   };
 
+  // Load daily usage stats
+  const loadDailyUsage = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/audio/transcribe?userId=zach&date=${today}`);
+      const data = await response.json();
+
+      if (data.transcriptions) {
+        const totalSeconds = data.transcriptions.reduce((sum: number, t: any) => sum + (t.duration || 0), 0);
+        const hours = totalSeconds / 3600;
+        const cost = hours * 0.41;
+        setDailyUsage({ hours, cost });
+      }
+    } catch (err) {
+      console.error('Failed to load usage:', err);
+    }
+  };
+
   useEffect(() => {
     if (session) {
       loadFolder();
+      loadDailyUsage();
     }
   }, [session]);
 
@@ -232,8 +256,12 @@ export default function TranscribePage() {
               <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>Searchable knowledge base</div>
             </div>
             <div>
-              <div style={{ color: '#60a5fa', fontWeight: '500' }}>✓ $0.41/hour</div>
-              <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>Budget enforced</div>
+              <div style={{ color: '#60a5fa', fontWeight: '500' }}>
+                {dailyUsage ? `Used: ${dailyUsage.hours.toFixed(1)}h / 50h` : '✓ $0.41/hour'}
+              </div>
+              <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                {dailyUsage ? `$${dailyUsage.cost.toFixed(2)} / $25 daily` : 'Budget enforced'}
+              </div>
             </div>
           </div>
         </div>
@@ -310,7 +338,23 @@ export default function TranscribePage() {
         {/* Error */}
         {error && (
           <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '0.5rem', padding: '1rem', marginBottom: '2rem' }}>
-            <p style={{ color: '#f87171' }}>❌ {error}</p>
+            <p style={{ color: '#f87171', marginBottom: error.includes('authenticated') ? '1rem' : '0' }}>❌ {error}</p>
+            {error.includes('authenticated') && (
+              <button
+                onClick={() => window.location.href = '/api/auth/signin?callbackUrl=/transcribe'}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#4a9eff',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Sign in with Google
+              </button>
+            )}
           </div>
         )}
 

@@ -591,7 +591,7 @@ export class DeviceContinuityManager {
         localExists: false,
         cloudExists: false,
         inSync: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -729,5 +729,271 @@ export class ContinuityCache {
     } catch (error) {
       console.warn('Failed to clear cache:', error);
     }
+  }
+}
+
+// ============================================================================
+// SUPABASE-BASED HELPER FUNCTIONS FOR API ROUTES
+// ============================================================================
+// These functions provide a simplified interface for the API endpoints
+// to interact with the Supabase database (real-time layer)
+
+/**
+ * Send heartbeat to mark device as active
+ */
+export async function sendHeartbeat(
+  deviceId: string,
+  context: any,
+  userId?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Check if device exists first
+    const { data: existing } = await supabase
+      .from('device_sessions')
+      .select('id')
+      .eq('device_id', deviceId)
+      .single();
+
+    if (existing) {
+      // Update existing session
+      const { error } = await supabase
+        .from('device_sessions')
+        .update({
+          last_heartbeat: new Date().toISOString(),
+          current_context: context,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('device_id', deviceId);
+
+      return { success: !error, error: error?.message };
+    } else {
+      // Need user_id for new session
+      if (!userId) {
+        return { success: false, error: 'User ID required for new device session' };
+      }
+
+      // Create new session (requires device_type, so this should only happen after registerDevice)
+      return { success: false, error: 'Device not registered. Please register device first.' };
+    }
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Register a new device or update existing device info
+ */
+export async function registerDevice(
+  userId: string,
+  deviceInfo: {
+    deviceId: string;
+    deviceType: string;
+    deviceName: string;
+    browserInfo?: any;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('device_sessions')
+      .upsert({
+        user_id: userId,
+        device_id: deviceInfo.deviceId,
+        device_type: deviceInfo.deviceType,
+        device_name: deviceInfo.deviceName,
+        browser_info: deviceInfo.browserInfo,
+        is_active: true,
+        last_heartbeat: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'device_id'
+      });
+
+    return { success: !error, error: error?.message };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Detect device type from user agent
+ */
+export function detectDeviceType(): string {
+  if (typeof window === 'undefined') return 'server';
+
+  const ua = navigator.userAgent.toLowerCase();
+  if (/mobile|android|iphone|ipod/.test(ua)) return 'mobile';
+  if (/ipad|tablet/.test(ua)) return 'mobile';
+  if (/mac/.test(ua)) return 'laptop';
+  return 'pc';
+}
+
+/**
+ * Generate a unique device ID using fingerprinting
+ */
+export function generateDeviceId(): string {
+  return DeviceFingerprinter.generateDeviceId();
+}
+
+/**
+ * Save a context snapshot to the database
+ */
+export async function saveContextSnapshot(
+  userId: string,
+  deviceId: string,
+  snapshot: {
+    snapshotType: string;
+    contextData: any;
+    metadata?: any;
+  }
+): Promise<{ success: boolean; snapshotId?: string; error?: string }> {
+  try {
+    // Get session_id if it exists
+    const { data: session } = await supabase
+      .from('device_sessions')
+      .select('id')
+      .eq('device_id', deviceId)
+      .single();
+
+    const { data, error } = await supabase
+      .from('context_snapshots')
+      .insert({
+        user_id: userId,
+        device_id: deviceId,
+        session_id: session?.id,
+        snapshot_type: snapshot.snapshotType,
+        context_data: snapshot.contextData,
+        metadata: snapshot.metadata || {}
+      })
+      .select('id')
+      .single();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, snapshotId: data.id };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Get the latest context snapshot from another device
+ */
+export async function getLatestContext(
+  userId: string,
+  excludeDeviceId?: string
+): Promise<{ success: boolean; context?: any; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_latest_context', {
+        p_user_id: userId,
+        p_device_id: excludeDeviceId || null
+      });
+
+    if (error) return { success: false, error: error.message };
+
+    // get_latest_context returns a single row or empty
+    const context = data && data.length > 0 ? data[0] : null;
+
+    return { success: true, context };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Get all active devices for a user
+ */
+export async function getActiveDevices(
+  userId: string
+): Promise<{ success: boolean; devices?: any[]; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('get_active_devices', {
+      p_user_id: userId
+    });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, devices: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Queue a sync operation to be sent to another device
+ */
+export async function queueSync(
+  userId: string,
+  fromDeviceId: string,
+  payload: any,
+  toDeviceId?: string
+): Promise<{ success: boolean; syncId?: string; error?: string }> {
+  try {
+    const allowedTypes = ['context', 'file', 'search', 'project', 'notification'];
+    const syncType = payload.type && allowedTypes.includes(payload.type)
+      ? payload.type
+      : 'context';
+
+    const { data, error } = await supabase
+      .from('sync_queue')
+      .insert({
+        user_id: userId,
+        from_device_id: fromDeviceId,
+        to_device_id: toDeviceId || null,
+        sync_type: syncType,
+        payload: payload,
+        status: 'pending',
+        priority: payload.priority || 0
+      })
+      .select('id')
+      .single();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, syncId: data.id };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Get pending sync operations for a device
+ */
+export async function getPendingSyncs(
+  deviceId: string
+): Promise<{ success: boolean; syncs?: any[]; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('sync_queue')
+      .select('*')
+      .or(`to_device_id.eq.${deviceId},to_device_id.is.null`)
+      .eq('status', 'pending')
+      .lte('created_at', new Date().toISOString())
+      .order('priority', { ascending: false })
+      .order('created_at', { ascending: true });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, syncs: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Mark a sync operation as completed
+ */
+export async function markSyncCompleted(
+  syncId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('sync_queue')
+      .update({
+        status: 'synced',
+        synced_at: new Date().toISOString()
+      })
+      .eq('id', syncId);
+
+    return { success: !error, error: error?.message };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
 }

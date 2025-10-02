@@ -93,26 +93,32 @@ export default function DeviceContinuityStatus({
         deviceInfo: deviceInfo
       };
 
-      const response = await fetch('/api/agents/continuity', {
+      // Send heartbeat with current context
+      const response = await fetch('/api/sync/heartbeat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'sync_state',
           deviceId: currentDeviceId,
           userId: userId,
-          state: currentState
+          currentContext: {
+            activeProject: currentState.activeProject,
+            chatContext: currentState.chatContext,
+            uiState: currentState.uiState,
+            fileUploads: currentState.fileUploads
+          },
+          deviceInfo: currentState.deviceInfo
         })
       });
 
       const result = await response.json();
 
-      if (result.success) {
+      if (result.success || response.ok) {
         setSyncStatus(prev => ({
           ...prev,
           lastSync: Date.now(),
           isPending: false,
           error: undefined,
-          conflicts: result.conflicts || []
+          conflicts: [] // Conflicts handled separately
         }));
 
         // Cache successful sync
@@ -147,21 +153,23 @@ export default function DeviceContinuityStatus({
         return;
       }
 
-      const response = await fetch('/api/agents/continuity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'get_active_devices',
-          userId: userId
-        })
+      const response = await fetch(`/api/sync/devices?userId=${encodeURIComponent(userId)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        const devicesWithCurrent = result.devices.map((device: DeviceInfo) => ({
-          ...device,
-          isCurrentDevice: device.deviceId === currentDeviceId
+      if (result.success && result.devices) {
+        // Transform device data to match expected format
+        const devicesWithCurrent = result.devices.map((device: any) => ({
+          deviceId: device.device_id,
+          platform: device.device_name || device.device_type || 'Unknown',
+          lastActive: new Date(device.last_heartbeat).getTime(),
+          isCurrentDevice: device.device_id === currentDeviceId,
+          activeProject: device.current_context?.activeProject,
+          status: device.seconds_since_heartbeat < 120 ? 'active' :
+                  device.seconds_since_heartbeat < 1800 ? 'idle' : 'stale'
         }));
 
         setDevices(devicesWithCurrent);
@@ -189,23 +197,20 @@ export default function DeviceContinuityStatus({
     if (!currentDeviceId) return;
 
     try {
-      const response = await fetch('/api/agents/continuity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'get_sync_status',
-          deviceId: currentDeviceId,
-          userId: userId
-        })
+      const response = await fetch(`/api/sync/heartbeat?deviceId=${encodeURIComponent(currentDeviceId)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
 
-      const result = await response.json();
+      if (response.ok) {
+        const result = await response.json();
+        const lastHeartbeat = result.lastHeartbeat ?
+          new Date(result.lastHeartbeat).getTime() : Date.now();
 
-      if (result.success) {
         setSyncStatus(prev => ({
           ...prev,
-          lastSync: result.status.lastSync,
-          isOnline: true
+          lastSync: lastHeartbeat,
+          isOnline: result.isActive !== false
         }));
       }
 
@@ -219,13 +224,17 @@ export default function DeviceContinuityStatus({
     if (!currentDeviceId || targetDeviceId === currentDeviceId) return;
 
     try {
-      const response = await fetch('/api/agents/continuity', {
+      // Queue a transfer sync package
+      const response = await fetch('/api/sync/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'transfer_session',
           userId: userId,
-          syncData: {
+          fromDeviceId: currentDeviceId,
+          toDeviceId: targetDeviceId,
+          payload: {
+            type: 'context',
+            transferredAt: new Date().toISOString(),
             fromDevice: currentDeviceId,
             toDevice: targetDeviceId
           }
@@ -255,19 +264,15 @@ export default function DeviceContinuityStatus({
 
   const handleCleanupStale = async () => {
     try {
-      const response = await fetch('/api/agents/continuity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'cleanup_stale_sessions',
-          userId: userId
-        })
+      // Call database cleanup function via Supabase
+      // For now, just refetch active devices
+      const response = await fetch(`/api/sync/devices?userId=${encodeURIComponent(userId)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        showNotification(`Cleaned up ${result.cleaned} stale sessions`, 'success');
+      if (response.ok) {
+        showNotification('Refreshed device list', 'success');
         fetchActiveDevices();
       }
 

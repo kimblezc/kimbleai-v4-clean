@@ -103,16 +103,28 @@ export async function GET(request: NextRequest) {
     const folderId = searchParams.get('folderId');
     const pageToken = searchParams.get('pageToken');
 
+    console.log(`[DRIVE-API] GET request - action: ${action}, userId: ${userId}, folderId: ${folderId}`);
+
     // Get user's Google token
-    const { data: tokenData } = await supabase
+    const { data: tokenData, error: tokenError } = await supabase
       .from('user_tokens')
       .select('access_token, refresh_token')
       .eq('user_id', userId)
       .single();
 
-    if (!tokenData?.access_token) {
+    if (tokenError) {
+      console.error('[DRIVE-API] Token fetch error:', tokenError);
       return NextResponse.json({
-        error: 'User not authenticated with Google'
+        error: 'Failed to fetch authentication tokens',
+        details: tokenError.message
+      }, { status: 500 });
+    }
+
+    if (!tokenData?.access_token) {
+      console.error('[DRIVE-API] No access token found for user:', userId);
+      return NextResponse.json({
+        error: 'User not authenticated with Google. Please sign in again.',
+        needsAuth: true
       }, { status: 401 });
     }
 

@@ -71,7 +71,11 @@
       "Bash(npx prisma generate:*)",
       "Bash(npm remove:*)",
       "Bash(git ls-tree:*)",
-      "WebFetch(domain:kimbleai-v4-clean-1svzzi87u-kimblezcs-projects.vercel.app)"
+      "WebFetch(domain:kimbleai-v4-clean-1svzzi87u-kimblezcs-projects.vercel.app)",
+      "WebFetch(domain:kimbleai-v4-clean-awpt97j6g-kimblezcs-projects.vercel.app)",
+      "Bash(git log:*)",
+      "Bash(grep:*)",
+      "Bash(git rev-list:*)"
     ],
     "deny": [],
     "ask": []
