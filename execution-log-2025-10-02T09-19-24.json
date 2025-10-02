@@ -1,0 +1,521 @@
+{
+  "startTime": "2025-10-02T09:19:18.802Z",
+  "agents": [
+    {
+      "name": "Drive Intelligence",
+      "category": "Intelligence & Analysis",
+      "endpoint": "/api/agents/drive-intelligence",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get Drive status",
+          "timestamp": "2025-10-02T09:19:18.808Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 526,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        },
+        {
+          "method": "POST",
+          "description": "Analyze Drive structure",
+          "timestamp": "2025-10-02T09:19:19.441Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 184,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:18.808Z",
+      "endTime": "2025-10-02T09:19:19.738Z",
+      "totalTests": 2,
+      "successfulTests": 2,
+      "authenticated": 0,
+      "avgResponseTime": 355
+    },
+    {
+      "name": "Audio Intelligence",
+      "category": "Intelligence & Analysis",
+      "endpoint": "/api/agents/audio-intelligence",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get capabilities",
+          "timestamp": "2025-10-02T09:19:19.739Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 187,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        },
+        {
+          "method": "GET",
+          "description": "Get user sessions",
+          "timestamp": "2025-10-02T09:19:20.035Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 167,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:19.738Z",
+      "endTime": "2025-10-02T09:19:20.316Z",
+      "totalTests": 2,
+      "successfulTests": 2,
+      "authenticated": 0,
+      "avgResponseTime": 177
+    },
+    {
+      "name": "Knowledge Graph",
+      "category": "Intelligence & Analysis",
+      "endpoint": "/api/agents/knowledge-graph",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get graph statistics",
+          "timestamp": "2025-10-02T09:19:20.316Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 142,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        },
+        {
+          "method": "POST",
+          "description": "Initialize knowledge graph",
+          "timestamp": "2025-10-02T09:19:20.564Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 146,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:20.316Z",
+      "endTime": "2025-10-02T09:19:20.813Z",
+      "totalTests": 2,
+      "successfulTests": 2,
+      "authenticated": 0,
+      "avgResponseTime": 144
+    },
+    {
+      "name": "Context Prediction",
+      "category": "Intelligence & Analysis",
+      "endpoint": "/api/agents/context-prediction",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get system status",
+          "timestamp": "2025-10-02T09:19:20.813Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 165,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        },
+        {
+          "method": "GET",
+          "description": "Get model performance",
+          "timestamp": "2025-10-02T09:19:21.093Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 155,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:20.813Z",
+      "endTime": "2025-10-02T09:19:21.354Z",
+      "totalTests": 2,
+      "successfulTests": 2,
+      "authenticated": 0,
+      "avgResponseTime": 160
+    },
+    {
+      "name": "Project Context",
+      "category": "Intelligence & Analysis",
+      "endpoint": "/api/agents/project-context",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get agent status",
+          "timestamp": "2025-10-02T09:19:21.354Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 145,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        },
+        {
+          "method": "POST",
+          "description": "Get user projects",
+          "timestamp": "2025-10-02T09:19:21.603Z",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "responseTime": 154,
+          "success": true,
+          "authenticated": false,
+          "response": {
+            "error": "Authentication required",
+            "message": "This endpoint requires authentication.",
+            "loginUrl": "/api/auth/signin"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:21.354Z",
+      "endTime": "2025-10-02T09:19:21.870Z",
+      "totalTests": 2,
+      "successfulTests": 2,
+      "authenticated": 0,
+      "avgResponseTime": 150
+    },
+    {
+      "name": "Workflow Automation",
+      "category": "Automation & Orchestration",
+      "endpoint": "/api/agents/workflow-automation",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get user workflows",
+          "timestamp": "2025-10-02T09:19:21.870Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 164,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:22.033Z"
+          }
+        },
+        {
+          "method": "POST",
+          "description": "Get templates",
+          "timestamp": "2025-10-02T09:19:22.136Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 158,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:22.293Z"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:21.870Z",
+      "endTime": "2025-10-02T09:19:22.397Z",
+      "totalTests": 2,
+      "successfulTests": 0,
+      "authenticated": 2,
+      "avgResponseTime": 161
+    },
+    {
+      "name": "Workspace Orchestrator",
+      "category": "Automation & Orchestration",
+      "endpoint": "/api/agents/workspace-orchestrator",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get orchestrator status",
+          "timestamp": "2025-10-02T09:19:22.398Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 142,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:22.540Z"
+          }
+        },
+        {
+          "method": "POST",
+          "description": "Analyze patterns",
+          "timestamp": "2025-10-02T09:19:22.645Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 151,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:22.795Z"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:22.398Z",
+      "endTime": "2025-10-02T09:19:22.909Z",
+      "totalTests": 2,
+      "successfulTests": 0,
+      "authenticated": 2,
+      "avgResponseTime": 147
+    },
+    {
+      "name": "Cost Monitor",
+      "category": "System Management",
+      "endpoint": "/api/agents/cost-monitor",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get daily costs",
+          "timestamp": "2025-10-02T09:19:22.909Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 153,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:23.061Z"
+          }
+        },
+        {
+          "method": "GET",
+          "description": "Get weekly costs",
+          "timestamp": "2025-10-02T09:19:23.173Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 155,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:23.327Z"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:22.909Z",
+      "endTime": "2025-10-02T09:19:23.436Z",
+      "totalTests": 2,
+      "successfulTests": 0,
+      "authenticated": 2,
+      "avgResponseTime": 154
+    },
+    {
+      "name": "Device Continuity",
+      "category": "System Management",
+      "endpoint": "/api/agents/continuity",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get device state",
+          "timestamp": "2025-10-02T09:19:23.436Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 150,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:23.585Z"
+          }
+        },
+        {
+          "method": "POST",
+          "description": "Get active devices",
+          "timestamp": "2025-10-02T09:19:23.699Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 142,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:23.839Z"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:23.436Z",
+      "endTime": "2025-10-02T09:19:23.947Z",
+      "totalTests": 2,
+      "successfulTests": 0,
+      "authenticated": 2,
+      "avgResponseTime": 146
+    },
+    {
+      "name": "Security Perimeter",
+      "category": "System Management",
+      "endpoint": "/api/agents/security-perimeter",
+      "tests": [
+        {
+          "method": "GET",
+          "description": "Get security status",
+          "timestamp": "2025-10-02T09:19:23.947Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 167,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:24.113Z"
+          }
+        },
+        {
+          "method": "GET",
+          "description": "Get security config",
+          "timestamp": "2025-10-02T09:19:24.229Z",
+          "status": 429,
+          "statusText": "Too Many Requests",
+          "responseTime": 160,
+          "success": false,
+          "authenticated": true,
+          "response": {
+            "error": "Security violation detected",
+            "message": "Your request has been blocked due to security concerns.",
+            "riskScore": 0.8,
+            "threats": [
+              "SUSPICIOUS_USER_AGENT",
+              "UNUSUAL_BROWSER",
+              "RATE_LIMIT_EXCEEDED"
+            ],
+            "timestamp": "2025-10-02T09:19:24.388Z"
+          }
+        }
+      ],
+      "startTime": "2025-10-02T09:19:23.947Z",
+      "endTime": "2025-10-02T09:19:24.505Z",
+      "totalTests": 2,
+      "successfulTests": 0,
+      "authenticated": 2,
+      "avgResponseTime": 164
+    }
+  ],
+  "summary": {
+    "totalAgents": 10,
+    "totalTests": 20,
+    "successfulTests": 10,
+    "authenticatedTests": 10,
+    "avgResponseTime": 176,
+    "byCategory": {
+      "Intelligence & Analysis": {
+        "agents": 5,
+        "tests": 10,
+        "successful": 10
+      },
+      "Automation & Orchestration": {
+        "agents": 2,
+        "tests": 4,
+        "successful": 0
+      },
+      "System Management": {
+        "agents": 3,
+        "tests": 6,
+        "successful": 0
+      }
+    },
+    "executionTime": 5704
+  },
+  "endTime": "2025-10-02T09:19:24.505Z"
+}

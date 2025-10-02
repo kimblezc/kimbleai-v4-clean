@@ -93,9 +93,272 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action') || 'list';
+    const userId = searchParams.get('userId') || 'zach';
+    const query = searchParams.get('q') || '';
+    const fileId = searchParams.get('fileId');
+    const folderId = searchParams.get('folderId');
+    const pageToken = searchParams.get('pageToken');
+
+    // Get user's Google token
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('access_token, refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    if (!tokenData?.access_token) {
+      return NextResponse.json({
+        error: 'User not authenticated with Google'
+      }, { status: 401 });
+    }
+
+    // Initialize Google Drive client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+    );
+    oauth2Client.setCredentials({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token
+    });
+
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    switch (action) {
+      case 'list':
+        return await listFiles(drive, folderId, pageToken);
+
+      case 'get':
+        if (!fileId) {
+          return NextResponse.json({ error: 'fileId is required' }, { status: 400 });
+        }
+        return await getFileDetails(drive, fileId);
+
+      case 'download':
+        if (!fileId) {
+          return NextResponse.json({ error: 'fileId is required' }, { status: 400 });
+        }
+        return await downloadFile(drive, fileId);
+
+      case 'search':
+        return await searchDriveFiles(drive, query);
+
+      case 'folders':
+        return await listFolders(drive);
+
+      default:
+        return NextResponse.json({
+          service: 'Google Drive API',
+          endpoints: {
+            'GET ?action=list': 'List files in Drive',
+            'GET ?action=list&folderId=xxx': 'List files in specific folder',
+            'GET ?action=get&fileId=xxx': 'Get file details',
+            'GET ?action=download&fileId=xxx': 'Download file content',
+            'GET ?action=search&q=xxx': 'Search Drive files',
+            'GET ?action=folders': 'List all folders',
+            'POST': 'Import file to knowledge base or upload file'
+          }
+        });
+    }
+
+  } catch (error: any) {
+    console.error('Drive GET error:', error);
+    return NextResponse.json({
+      error: 'Failed to access Drive',
+      details: error.message
+    }, { status: 500 });
+  }
+}
+
+async function listFiles(drive: any, folderId?: string | null, pageToken?: string | null) {
+  const query = folderId
+    ? `'${folderId}' in parents and trashed=false`
+    : `'root' in parents and trashed=false`;
+
+  const params: any = {
+    q: query,
+    fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size, createdTime, iconLink, thumbnailLink, webViewLink, parents, owners)',
+    pageSize: 50,
+    orderBy: 'modifiedTime desc'
+  };
+
+  if (pageToken) {
+    params.pageToken = pageToken;
+  }
+
+  const response = await drive.files.list(params);
+
+  const files = (response.data.files || []).map((file: any) => ({
+    id: file.id,
+    name: file.name,
+    mimeType: file.mimeType,
+    modifiedTime: file.modifiedTime,
+    size: file.size,
+    iconLink: file.iconLink,
+    thumbnailLink: file.thumbnailLink,
+    webViewLink: file.webViewLink,
+    isFolder: file.mimeType === 'application/vnd.google-apps.folder',
+    parents: file.parents,
+    owner: file.owners?.[0]?.displayName || 'Unknown'
+  }));
+
+  return NextResponse.json({
+    success: true,
+    files,
+    nextPageToken: response.data.nextPageToken,
+    total: files.length
+  });
+}
+
+async function getFileDetails(drive: any, fileId: string) {
+  const response = await drive.files.get({
+    fileId,
+    fields: 'id, name, mimeType, description, size, createdTime, modifiedTime, webViewLink, iconLink, thumbnailLink, parents, owners, sharingUser, shared, permissions'
+  });
+
+  const file = response.data;
+
+  return NextResponse.json({
+    success: true,
+    file: {
+      id: file.id,
+      name: file.name,
+      mimeType: file.mimeType,
+      description: file.description,
+      size: file.size,
+      createdTime: file.createdTime,
+      modifiedTime: file.modifiedTime,
+      webViewLink: file.webViewLink,
+      iconLink: file.iconLink,
+      thumbnailLink: file.thumbnailLink,
+      parents: file.parents,
+      owner: file.owners?.[0]?.displayName || 'Unknown',
+      shared: file.shared,
+      isFolder: file.mimeType === 'application/vnd.google-apps.folder'
+    }
+  });
+}
+
+async function downloadFile(drive: any, fileId: string) {
+  const metadata = await drive.files.get({
+    fileId,
+    fields: 'mimeType, name'
+  });
+
+  const mimeType = metadata.data.mimeType;
+  let content = '';
+
+  try {
+    if (mimeType === 'application/vnd.google-apps.document') {
+      const response = await drive.files.export({
+        fileId,
+        mimeType: 'text/plain'
+      });
+      content = response.data as string;
+    } else if (mimeType === 'application/vnd.google-apps.spreadsheet') {
+      const response = await drive.files.export({
+        fileId,
+        mimeType: 'text/csv'
+      });
+      content = response.data as string;
+    } else if (mimeType === 'application/vnd.google-apps.presentation') {
+      const response = await drive.files.export({
+        fileId,
+        mimeType: 'text/plain'
+      });
+      content = response.data as string;
+    } else if (mimeType?.startsWith('text/') || mimeType === 'application/json') {
+      const response = await drive.files.get({
+        fileId,
+        alt: 'media'
+      });
+      content = response.data as string;
+    } else {
+      return NextResponse.json({
+        error: 'File type not supported for download',
+        mimeType
+      }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      content,
+      fileName: metadata.data.name,
+      mimeType
+    });
+  } catch (error: any) {
+    return NextResponse.json({
+      error: 'Failed to download file',
+      details: error.message
+    }, { status: 500 });
+  }
+}
+
+async function searchDriveFiles(drive: any, query: string) {
+  const escapedQuery = query ? query.replace(/'/g, "\\'") : '';
+  const searchQuery = escapedQuery
+    ? `name contains '${escapedQuery}' or fullText contains '${escapedQuery}'`
+    : '';
+
+  const response = await drive.files.list({
+    q: searchQuery + (searchQuery ? ' and ' : '') + 'trashed=false',
+    fields: 'files(id, name, mimeType, modifiedTime, size, iconLink, thumbnailLink, webViewLink)',
+    pageSize: 30,
+    orderBy: 'modifiedTime desc'
+  });
+
+  const files = (response.data.files || []).map((file: any) => ({
+    id: file.id,
+    name: file.name,
+    mimeType: file.mimeType,
+    modifiedTime: file.modifiedTime,
+    size: file.size,
+    iconLink: file.iconLink,
+    thumbnailLink: file.thumbnailLink,
+    webViewLink: file.webViewLink,
+    isFolder: file.mimeType === 'application/vnd.google-apps.folder'
+  }));
+
+  return NextResponse.json({
+    success: true,
+    files,
+    query,
+    total: files.length
+  });
+}
+
+async function listFolders(drive: any) {
+  const response = await drive.files.list({
+    q: "mimeType='application/vnd.google-apps.folder' and trashed=false",
+    fields: 'files(id, name, parents, modifiedTime)',
+    pageSize: 100,
+    orderBy: 'name'
+  });
+
+  const folders = (response.data.files || []).map((folder: any) => ({
+    id: folder.id,
+    name: folder.name,
+    parents: folder.parents,
+    modifiedTime: folder.modifiedTime
+  }));
+
+  return NextResponse.json({
+    success: true,
+    folders,
+    total: folders.length
+  });
+}
+
 async function searchFiles(drive: any, query: string, userId: string, projectId?: string) {
   // Enhanced search with better file type support
-  const searchQuery = query ? `fullText contains '${query}' or name contains '${query}'` : '';
+  // SECURITY FIX: Escape single quotes to prevent injection attacks
+  const escapedQuery = query ? query.replace(/'/g, "\\'") : '';
+  const searchQuery = escapedQuery ? `fullText contains '${escapedQuery}' or name contains '${escapedQuery}'` : '';
 
   const response = await drive.files.list({
     q: searchQuery,
@@ -152,8 +415,8 @@ async function searchFiles(drive: any, query: string, userId: string, projectId?
       }
 
       // Generate embedding and store in knowledge base
-      // OPT-IN SYNC with size limits and user control
-      const enableSync = formData?.get('enableSync') === 'true';
+      // OPT-IN SYNC with size limits and user control - DISABLED
+      const enableSync = false; // Disabled pending opt-in implementation
       const maxContentLength = 5000; // 5KB limit per file
 
       if (enableSync && content && content.length > 10 && content.length <= maxContentLength) {
@@ -215,7 +478,9 @@ async function searchFiles(drive: any, query: string, userId: string, projectId?
 
 async function syncProjectFiles(drive: any, userId: string, projectId: string) {
   // Search for files related to the project
-  const projectQuery = `name contains '${projectId}' or fullText contains '${projectId}'`;
+  // SECURITY FIX: Escape single quotes to prevent injection attacks
+  const escapedProjectId = projectId.replace(/'/g, "\\'");
+  const projectQuery = `name contains '${escapedProjectId}' or fullText contains '${escapedProjectId}'`;
 
   const response = await drive.files.list({
     q: projectQuery,

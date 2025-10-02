@@ -1,0 +1,66 @@
+==========================================
+POST-REBOOT CONTEXT RESTORATION PROMPT
+==========================================
+
+Copy and paste this ENTIRE message to Claude Code after rebooting:
+
+---
+
+I just rebooted. Read SESSION_COMPLETE_TRANSCRIPTION_FIX.md in D:\OneDrive\Documents\kimbleai-v4-clean folder for full context.
+
+Quick summary of what was accomplished before reboot:
+
+1. **TRANSCRIPTION SYSTEM NOW WORKING** - Fixed critical bug preventing audio transcription
+   - Bug: Hidden newline character in API key environment variable
+   - Fix: Removed \n, deployed secure credential flow
+   - Status: FULLY DEPLOYED to production (https://kimbleai-v4-clean-i1k2r5my0-kimblezcs-projects.vercel.app)
+
+2. **Files Modified:**
+   - app/page.tsx (secure API key flow, dynamic timeout, 3 retries)
+   - app/api/transcribe/upload-url/route.ts (provides credentials)
+   - Fixed 9 TypeScript build errors
+   - Created 9 audit/documentation files
+
+3. **Test Results:**
+   - Successfully transcribed Recording (31).m4a (109MB file)
+   - Transcript ID: 7c12cd3d-c2f0-427a-85a1-bd2041c7d03e
+   - 9,952 words, 77 minutes
+   - Saved to: transcript-result.json
+
+4. **Current System State:**
+   - All changes DEPLOYED to production ✅
+   - Changes NOT yet committed to git ⚠️
+   - AssemblyAI API key: 9e34453814d74ca98efbbb14c69baa8d (working)
+
+5. **Immediate Next Steps:**
+   - Test transcription on live site with a small file
+   - Commit changes to git
+   - Review HIDDEN_CHARACTER_BUGS_AUDIT.md
+   - Decide on next priority (cost monitoring, performance, or Zapier)
+
+6. **Where We Left Off:**
+   - User requested comprehensive log before mandatory reboot
+   - All session details documented in SESSION_COMPLETE_TRANSCRIPTION_FIX.md
+   - Ready to continue with next priority after verification
+
+Please read SESSION_COMPLETE_TRANSCRIPTION_FIX.md and confirm:
+1. Production transcription is working
+2. What I should focus on next
+
+---
+
+ALTERNATIVE SHORTER PROMPT (if you want to jump straight to work):
+
+---
+
+I just rebooted. Transcription system was fully fixed and deployed before reboot. Read SESSION_COMPLETE_TRANSCRIPTION_FIX.md for details.
+
+What should I work on next?
+A) Test production transcription and commit changes
+B) Deploy cost monitoring system
+C) Deploy performance optimizations
+D) Fix environment variable bugs across codebase
+E) Something else
+
+---
+

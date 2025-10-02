@@ -1,0 +1,300 @@
+###############################################################################
+# KIMBLEAI V4 - API TESTING FILE
+# Use REST Client extension in VS Code or run with curl
+###############################################################################
+
+### Variables
+@baseUrl = http://localhost:3000
+@userId = zach-admin-001
+@projectId = general
+
+###############################################################################
+# TEST 1: SEMANTIC SEARCH (NEW)
+###############################################################################
+
+### Simple search query
+GET {{baseUrl}}/api/search/semantic?q=meeting&userId={{userId}}&limit=10
+
+### Search with filters
+GET {{baseUrl}}/api/search/semantic?q=document&userId={{userId}}&type=file&threshold=0.8&limit=5
+
+### Search in specific project
+GET {{baseUrl}}/api/search/semantic?q=notes&userId={{userId}}&projectId={{projectId}}
+
+### Advanced POST search
+POST {{baseUrl}}/api/search/semantic
+Content-Type: application/json
+
+{
+  "query": "important discussion",
+  "filters": {
+    "userId": "{{userId}}",
+    "contentTypes": ["message", "transcript"],
+    "startDate": "2025-01-01",
+    "limit": 20,
+    "threshold": 0.7
+  }
+}
+
+###############################################################################
+# TEST 2: RAG SEARCH (EXISTING - VERIFY STILL WORKS)
+###############################################################################
+
+### Hybrid search (vector + keyword)
+POST {{baseUrl}}/api/knowledge/search
+Content-Type: application/json
+
+{
+  "query": "project meeting notes",
+  "userId": "{{userId}}",
+  "searchType": "hybrid",
+  "limit": 10
+}
+
+### Vector search only
+POST {{baseUrl}}/api/knowledge/search
+Content-Type: application/json
+
+{
+  "query": "ai discussion",
+  "userId": "{{userId}}",
+  "searchType": "vector",
+  "limit": 5
+}
+
+### Keyword search only
+POST {{baseUrl}}/api/knowledge/search
+Content-Type: application/json
+
+{
+  "query": "budget",
+  "userId": "{{userId}}",
+  "searchType": "keyword",
+  "limit": 10
+}
+
+### Get recent searches
+GET {{baseUrl}}/api/knowledge/search?action=recent_searches&userId={{userId}}
+
+### Get search stats
+GET {{baseUrl}}/api/knowledge/search?action=stats&userId={{userId}}
+
+###############################################################################
+# TEST 3: FILE UPLOAD & MANAGEMENT
+###############################################################################
+
+### List uploaded files
+GET {{baseUrl}}/api/files?userId=zach&limit=20
+
+### List with filters
+GET {{baseUrl}}/api/files?userId=zach&category=audio&status=completed
+
+### Search files
+GET {{baseUrl}}/api/files?userId=zach&search=meeting
+
+### Upload a file (replace with actual file)
+POST {{baseUrl}}/api/files/upload
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+This is a test file for kimbleai.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="userId"
+
+zach
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="projectId"
+
+general
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Get file details
+GET {{baseUrl}}/api/files/file_abc123
+
+### Download file
+GET {{baseUrl}}/api/files/file_abc123/download
+
+### Delete file
+DELETE {{baseUrl}}/api/files/file_abc123
+
+###############################################################################
+# TEST 4: GOOGLE DRIVE INTEGRATION
+###############################################################################
+
+### Search Google Drive
+POST {{baseUrl}}/api/google/drive
+Content-Type: application/json
+
+{
+  "action": "search",
+  "query": "meeting notes",
+  "userId": "zach"
+}
+
+### List Drive files
+GET {{baseUrl}}/api/google/drive?action=list&userId=zach&maxResults=10
+
+### Get file content
+POST {{baseUrl}}/api/google/drive
+Content-Type: application/json
+
+{
+  "action": "get_file_content",
+  "fileData": {
+    "fileId": "your-drive-file-id"
+  },
+  "userId": "zach"
+}
+
+### Sync project files
+POST {{baseUrl}}/api/google/drive
+Content-Type: application/json
+
+{
+  "action": "sync_project_files",
+  "userId": "zach",
+  "projectId": "general"
+}
+
+###############################################################################
+# TEST 5: GMAIL INTEGRATION
+###############################################################################
+
+### List inbox
+GET {{baseUrl}}/api/google/gmail?action=list&userId=zach&maxResults=10
+
+### Search emails
+POST {{baseUrl}}/api/google/gmail
+Content-Type: application/json
+
+{
+  "action": "search",
+  "query": "invoice",
+  "userId": "zach",
+  "maxResults": 20
+}
+
+### Import email to knowledge base
+POST {{baseUrl}}/api/google/gmail
+Content-Type: application/json
+
+{
+  "action": "import_to_knowledge",
+  "emailData": {
+    "messageId": "your-message-id"
+  },
+  "userId": "zach",
+  "projectId": "general"
+}
+
+###############################################################################
+# TEST 6: GOOGLE CALENDAR INTEGRATION
+###############################################################################
+
+### List upcoming events
+POST {{baseUrl}}/api/google/calendar
+Content-Type: application/json
+
+{
+  "action": "list_events",
+  "userId": "zach",
+  "timeRange": {
+    "start": "2025-10-01T00:00:00Z",
+    "end": "2025-10-31T23:59:59Z"
+  }
+}
+
+### Create calendar event
+POST {{baseUrl}}/api/google/calendar
+Content-Type: application/json
+
+{
+  "action": "create_event",
+  "userId": "zach",
+  "eventData": {
+    "summary": "Team Meeting",
+    "description": "Discuss Q4 goals",
+    "start": "2025-10-15T10:00:00Z",
+    "end": "2025-10-15T11:00:00Z"
+  }
+}
+
+###############################################################################
+# TEST 7: CHAT / CONVERSATION API
+###############################################################################
+
+### Send chat message
+POST {{baseUrl}}/api/chat
+Content-Type: application/json
+
+{
+  "message": "What are my recent meeting notes?",
+  "userId": "{{userId}}",
+  "conversationId": "conv_123",
+  "projectId": "{{projectId}}"
+}
+
+### List conversations
+GET {{baseUrl}}/api/conversations?userId={{userId}}&limit=20
+
+###############################################################################
+# TEST 8: AUDIO TRANSCRIPTION
+###############################################################################
+
+### Upload audio for transcription
+POST {{baseUrl}}/api/audio/transcribe
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="meeting.m4a"
+Content-Type: audio/m4a
+
+[Binary audio data]
+------WebKitFormBoundary
+Content-Disposition: form-data; name="userId"
+
+zach
+------WebKitFormBoundary--
+
+### Check transcription status
+GET {{baseUrl}}/api/audio/transcribe-progress?fileId=trans_abc123
+
+### Get transcription usage
+GET {{baseUrl}}/api/transcribe/usage?userId={{userId}}
+
+###############################################################################
+# TEST 9: HEALTH & PERFORMANCE
+###############################################################################
+
+### Performance stats
+GET {{baseUrl}}/api/performance
+
+### Cost tracking
+GET {{baseUrl}}/api/costs?userId={{userId}}
+
+### Dashboard stats
+GET {{baseUrl}}/api/dashboard/stats?userId={{userId}}
+
+###############################################################################
+# CURL COMMANDS (Copy-paste to terminal)
+###############################################################################
+
+# Test semantic search
+# curl "http://localhost:3000/api/search/semantic?q=test&userId=zach-admin-001&limit=10"
+
+# Test file listing
+# curl "http://localhost:3000/api/files?userId=zach&limit=10"
+
+# Test RAG search
+# curl -X POST http://localhost:3000/api/knowledge/search \
+#   -H "Content-Type: application/json" \
+#   -d '{"query":"test","userId":"zach-admin-001","searchType":"hybrid","limit":10}'
+
+# Upload file
+# curl -X POST http://localhost:3000/api/files/upload \
+#   -F "file=@test.txt" \
+#   -F "userId=zach" \
+#   -F "projectId=general"

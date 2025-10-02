@@ -122,14 +122,14 @@ async function analyzeDataFlow(drive: any, userId: string) {
 
   // Calculate metrics
   const totalFiles = files.length;
-  const totalSize = files.reduce((sum, file) => sum + parseInt(file.size || '0'), 0);
+  const totalSize = files.reduce((sum: number, file: any) => sum + parseInt(file.size || '0'), 0);
   const averageFileSize = totalSize / totalFiles;
 
   // Identify large files that could benefit from compression
-  const largeFiles = files.filter(file => parseInt(file.size || '0') > 10 * 1024 * 1024); // >10MB
+  const largeFiles = files.filter((file: any) => parseInt(file.size || '0') > 10 * 1024 * 1024); // >10MB
 
   // Check for files that might cause Vercel issues
-  const problematicFiles = files.filter(file => {
+  const problematicFiles = files.filter((file: any) => {
     const size = parseInt(file.size || '0');
     return size > 25 * 1024 * 1024; // >25MB (Vercel limit)
   });

@@ -6,6 +6,9 @@ import { AutoReferenceButler } from '@/lib/auto-reference-butler';
 import { ModelSelector, TaskContext } from '@/lib/model-selector';
 import { google } from 'googleapis';
 import { WorkspaceRAGSystem } from '@/app/api/google/workspace/rag-system';
+import { zapierClient } from '@/lib/zapier-client';
+import { embeddingCache } from '@/lib/embedding-cache';
+import { costMonitor } from '@/lib/cost-monitor';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,14 +19,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!
 });
 
+// PERFORMANCE OPTIMIZED: Use embedding cache instead of direct API calls
 async function generateEmbedding(text: string): Promise<number[] | null> {
   try {
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text,
-      dimensions: 1536
-    });
-    return response.data[0].embedding;
+    // Use cache for significant performance improvement
+    return await embeddingCache.getEmbedding(text);
   } catch (error) {
     console.error('Embedding generation error:', error);
     return null;
@@ -48,7 +48,11 @@ export async function GET() {
     functions: [
       'get_recent_emails',
       'get_emails_from_date_range',
-      'search_google_drive'
+      'search_google_drive',
+      'search_files',
+      'get_uploaded_files',
+      'organize_files',
+      'get_file_details'
     ],
     lastUpdated: new Date().toISOString()
   });
@@ -85,10 +89,22 @@ export async function POST(request: NextRequest) {
 
     if (userError || !userData) {
       console.error('User fetch error:', userError);
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'User not found',
-        details: userError?.message 
+        details: userError?.message
       }, { status: 404 });
+    }
+
+    // COST MONITORING: Check budget limits BEFORE making API calls
+    const budgetCheck = await costMonitor.enforceApiCallBudget(userData.id, '/api/chat');
+    if (!budgetCheck.allowed) {
+      console.error(`[CostMonitor] API call blocked for user ${userData.id}: ${budgetCheck.reason}`);
+      return NextResponse.json({
+        error: 'Daily spending limit reached',
+        details: budgetCheck.reason,
+        action: 'Please try again tomorrow or contact support to increase your limit.',
+        costMonitoringActive: true
+      }, { status: 429 });
     }
 
     // 🤖 AUTO-REFERENCE BUTLER: Automatically gather ALL relevant context
@@ -132,12 +148,27 @@ You automatically reference ALL relevant data from:
 - Project data & task information
 
 🔧 **FUNCTION CALLING CAPABILITIES**
-You have active access to Gmail and Google Drive functions:
+You have active access to Gmail, Google Drive, and File Management functions:
+
+**Gmail Functions:**
 - get_recent_emails: Retrieve recent emails from Gmail
 - get_emails_from_date_range: Get emails from specific time periods (last 30 days, etc.)
+
+**Google Drive Functions:**
 - search_google_drive: Search Drive for files, documents, and content
-- Use these functions when users ask for emails, files, or recent data
-- ALWAYS call these functions when users request Gmail or Drive information
+
+**File Management Functions:**
+- search_files: Search across ALL uploaded files (audio, PDFs, images, emails, documents, spreadsheets) by content or filename
+- get_uploaded_files: List recently uploaded files with optional filters
+- organize_files: Organize files into projects or add tags
+- get_file_details: Get detailed information about a specific file including transcriptions, analysis, or content
+
+**When to use File Management functions:**
+- User asks about "my files", "uploaded files", "my PDFs", "my audio recordings", etc.
+- User wants to find content in previously uploaded documents
+- User asks to organize or categorize files
+- User wants details about a specific file (transcription, content, analysis)
+- ALWAYS call these functions when users ask about their uploaded content
 
 **User**: ${userData.name} (${userData.email})
 **Role**: ${userData.role} ${userData.role === 'admin' ? '(Full System Access)' : '(Standard User)'}
@@ -184,7 +215,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     const selectedModel = ModelSelector.selectModel(taskContext);
     console.log(`[MODEL] ${ModelSelector.getModelExplanation(selectedModel, taskContext)}`);
 
-    // Define function tools for Gmail and Drive access
+    // Define function tools for Gmail, Drive, and File Management
     const tools = [
       {
         type: "function" as const,
@@ -251,6 +282,112 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
             }
           }
         }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "search_files",
+          description: "Search across all uploaded files by content, name, or type. Searches audio transcriptions, PDFs, documents, images, emails, and spreadsheets.",
+          parameters: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description: "Search query for file names or content"
+              },
+              file_type: {
+                type: "string",
+                description: "Filter by file type: audio, image, pdf, document, spreadsheet, email, or 'all'",
+                enum: ["audio", "image", "pdf", "document", "spreadsheet", "email", "all"],
+                default: "all"
+              },
+              project_id: {
+                type: "string",
+                description: "Optional project ID to filter files",
+                default: ""
+              },
+              max_results: {
+                type: "number",
+                description: "Maximum number of files to return (default: 10)",
+                default: 10
+              }
+            },
+            required: ["query"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_uploaded_files",
+          description: "Get a list of recently uploaded files with optional filters",
+          parameters: {
+            type: "object",
+            properties: {
+              category: {
+                type: "string",
+                description: "Filter by category: audio, image, pdf, document, spreadsheet, email",
+                default: ""
+              },
+              project_id: {
+                type: "string",
+                description: "Filter by project ID",
+                default: ""
+              },
+              limit: {
+                type: "number",
+                description: "Number of files to return (default: 20)",
+                default: 20
+              }
+            }
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "organize_files",
+          description: "Organize files by moving them to a project or adding tags",
+          parameters: {
+            type: "object",
+            properties: {
+              file_ids: {
+                type: "array",
+                items: { type: "string" },
+                description: "Array of file IDs to organize"
+              },
+              project_id: {
+                type: "string",
+                description: "Project ID to move files to",
+                default: ""
+              },
+              tags: {
+                type: "array",
+                items: { type: "string" },
+                description: "Tags to add to the files",
+                default: []
+              }
+            },
+            required: ["file_ids"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_file_details",
+          description: "Get detailed information about a specific file including its content, transcription, or analysis",
+          parameters: {
+            type: "object",
+            properties: {
+              file_id: {
+                type: "string",
+                description: "The ID of the file to retrieve"
+              }
+            },
+            required: ["file_id"]
+          }
+        }
       }
     ];
 
@@ -278,6 +415,28 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     const completion = await openai.chat.completions.create(modelParams);
 
     let aiResponse = completion.choices[0].message.content || 'I apologize, but I could not generate a response.';
+
+    // COST TRACKING: Track OpenAI API call
+    const inputTokens = completion.usage?.prompt_tokens || 0;
+    const outputTokens = completion.usage?.completion_tokens || 0;
+    const cost = costMonitor.calculateCost(selectedModel.model, inputTokens, outputTokens);
+
+    await costMonitor.trackAPICall({
+      user_id: userData.id,
+      model: selectedModel.model,
+      endpoint: '/api/chat',
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cost_usd: cost,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        conversation_id: conversationId,
+        reasoning_level: selectedModel.reasoningLevel || 'none',
+        has_function_calls: false,
+      },
+    });
+
+    console.log(`[CostMonitor] Tracked chat API call: ${selectedModel.model} - $${cost.toFixed(4)} (${inputTokens} in + ${outputTokens} out)`);
 
     // Handle function calls if the AI wants to call Gmail/Drive functions
     const toolCalls = completion.choices[0].message.tool_calls;
@@ -316,10 +475,47 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
                 break;
 
               case 'search_google_drive':
+                // SECURITY FIX: Sanitize query before passing to Drive API
+                const sanitizedQuery = functionArgs.query ? functionArgs.query.replace(/'/g, "\\'") : '';
                 functionResult = await callDriveAPI('search', {
                   userId,
-                  query: functionArgs.query,
+                  query: sanitizedQuery,
                   maxResults: functionArgs.maxResults || 5
+                });
+                break;
+
+              case 'search_files':
+                functionResult = await searchUploadedFiles({
+                  userId: userData.id,
+                  query: functionArgs.query,
+                  fileType: functionArgs.file_type || 'all',
+                  projectId: functionArgs.project_id,
+                  maxResults: functionArgs.max_results || 10
+                });
+                break;
+
+              case 'get_uploaded_files':
+                functionResult = await getUploadedFiles({
+                  userId: userData.id,
+                  category: functionArgs.category,
+                  projectId: functionArgs.project_id,
+                  limit: functionArgs.limit || 20
+                });
+                break;
+
+              case 'organize_files':
+                functionResult = await organizeFiles({
+                  userId: userData.id,
+                  fileIds: functionArgs.file_ids,
+                  projectId: functionArgs.project_id,
+                  tags: functionArgs.tags || []
+                });
+                break;
+
+              case 'get_file_details':
+                functionResult = await getFileDetails({
+                  userId: userData.id,
+                  fileId: functionArgs.file_id
                 });
                 break;
 
@@ -357,6 +553,29 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
 
         const followUpCompletion = await openai.chat.completions.create(followUpParams);
         aiResponse = followUpCompletion.choices[0].message.content || aiResponse;
+
+        // COST TRACKING: Track follow-up API call
+        const followUpInputTokens = followUpCompletion.usage?.prompt_tokens || 0;
+        const followUpOutputTokens = followUpCompletion.usage?.completion_tokens || 0;
+        const followUpCost = costMonitor.calculateCost(selectedModel.model, followUpInputTokens, followUpOutputTokens);
+
+        await costMonitor.trackAPICall({
+          user_id: userData.id,
+          model: selectedModel.model,
+          endpoint: '/api/chat',
+          input_tokens: followUpInputTokens,
+          output_tokens: followUpOutputTokens,
+          cost_usd: followUpCost,
+          timestamp: new Date().toISOString(),
+          metadata: {
+            conversation_id: conversationId,
+            reasoning_level: selectedModel.reasoningLevel || 'none',
+            has_function_calls: true,
+            function_count: toolCalls.length,
+          },
+        });
+
+        console.log(`[CostMonitor] Tracked follow-up API call: $${followUpCost.toFixed(4)}`);
         console.log(`✅ Function calls completed, final response generated`);
       }
     }
@@ -516,6 +735,24 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       }
       console.log(`Extracted ${facts.length} facts to knowledge base`);
     }
+
+    // ZAPIER INTEGRATION: Send conversation saved webhook (async, non-blocking)
+    zapierClient.sendConversationSaved(
+      userId,
+      conversationId,
+      [
+        { role: 'user', content: userMessage, timestamp: new Date().toISOString() },
+        { role: 'assistant', content: aiResponse, timestamp: new Date().toISOString() }
+      ],
+      {
+        storageLocation: driveStorageSuccessful ? 'google-drive' : 'supabase-fallback',
+        knowledgeItemsFound: autoContext.relevantKnowledge.length,
+        factsExtracted: facts.length,
+        modelUsed: selectedModel.model
+      }
+    ).catch(error => {
+      console.error('[Zapier] Failed to send conversation saved webhook:', error);
+    });
 
     return NextResponse.json({
       response: aiResponse,
@@ -748,6 +985,7 @@ async function callDriveAPI(action: string, params: any) {
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
     if (action === 'search') {
+      // SECURITY FIX: Query is already sanitized in the caller function
       const response = await drive.files.list({
         q: `name contains '${params.query}' or fullText contains '${params.query}'`,
         fields: 'files(id, name, mimeType, size, modifiedTime, webViewLink)',
@@ -770,6 +1008,268 @@ async function callDriveAPI(action: string, params: any) {
 
   } catch (error: any) {
     console.error('Drive API call failed:', error);
+    return { error: error.message };
+  }
+}
+
+// Helper function to search uploaded files
+async function searchUploadedFiles(params: {
+  userId: string;
+  query: string;
+  fileType: string;
+  projectId?: string;
+  maxResults: number;
+}) {
+  try {
+    const { userId, query, fileType, projectId, maxResults } = params;
+
+    // Search in knowledge base for file content
+    const embedding = await generateEmbedding(query);
+
+    let knowledgeQuery = supabase
+      .from('knowledge_base')
+      .select('*, uploaded_files!inner(*)')
+      .eq('user_id', userId)
+      .limit(maxResults);
+
+    // Filter by file type if specified
+    if (fileType && fileType !== 'all') {
+      knowledgeQuery = knowledgeQuery.eq('uploaded_files.category', fileType);
+    }
+
+    // Filter by project if specified
+    if (projectId) {
+      knowledgeQuery = knowledgeQuery.eq('uploaded_files.project_id', projectId);
+    }
+
+    // Text search in title and content
+    if (query) {
+      knowledgeQuery = knowledgeQuery.or(`title.ilike.%${query}%,content.ilike.%${query}%`);
+    }
+
+    const { data: results } = await knowledgeQuery;
+
+    // Also search uploaded_files table directly
+    let filesQuery = supabase
+      .from('uploaded_files')
+      .select('*')
+      .eq('user_id', userId)
+      .ilike('filename', `%${query}%`)
+      .limit(maxResults);
+
+    if (fileType && fileType !== 'all') {
+      filesQuery = filesQuery.eq('category', fileType);
+    }
+
+    if (projectId) {
+      filesQuery = filesQuery.eq('project_id', projectId);
+    }
+
+    const { data: files } = await filesQuery;
+
+    // Combine and format results
+    const combinedResults = [
+      ...(files || []).map((file: any) => ({
+        fileId: file.id,
+        filename: file.filename,
+        type: file.category,
+        size: file.file_size,
+        uploadedAt: file.created_at,
+        projectId: file.project_id,
+        status: file.status,
+        preview: file.processing_result?.contentPreview || file.processing_result?.transcription?.substring(0, 200)
+      }))
+    ];
+
+    return {
+      success: true,
+      query,
+      resultsCount: combinedResults.length,
+      files: combinedResults
+    };
+
+  } catch (error: any) {
+    console.error('File search error:', error);
+    return { error: error.message };
+  }
+}
+
+// Helper function to get uploaded files
+async function getUploadedFiles(params: {
+  userId: string;
+  category?: string;
+  projectId?: string;
+  limit: number;
+}) {
+  try {
+    const { userId, category, projectId, limit } = params;
+
+    let query = supabase
+      .from('uploaded_files')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (projectId) {
+      query = query.eq('project_id', projectId);
+    }
+
+    const { data: files, error } = await query;
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    const formattedFiles = (files || []).map((file: any) => ({
+      fileId: file.id,
+      filename: file.filename,
+      type: file.category,
+      size: file.file_size,
+      uploadedAt: file.created_at,
+      projectId: file.project_id,
+      status: file.status,
+      metadata: file.metadata
+    }));
+
+    return {
+      success: true,
+      count: formattedFiles.length,
+      files: formattedFiles
+    };
+
+  } catch (error: any) {
+    console.error('Get files error:', error);
+    return { error: error.message };
+  }
+}
+
+// Helper function to organize files
+async function organizeFiles(params: {
+  userId: string;
+  fileIds: string[];
+  projectId?: string;
+  tags: string[];
+}) {
+  try {
+    const { userId, fileIds, projectId, tags } = params;
+
+    const updates: any = {};
+    if (projectId) {
+      updates.project_id = projectId;
+    }
+
+    // Update metadata to include tags
+    if (tags.length > 0) {
+      updates.metadata = supabase.rpc('jsonb_set', {
+        target: 'metadata',
+        path: '{tags}',
+        new_value: JSON.stringify(tags)
+      });
+    }
+
+    // Update files
+    const { data, error } = await supabase
+      .from('uploaded_files')
+      .update(updates)
+      .eq('user_id', userId)
+      .in('id', fileIds)
+      .select();
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return {
+      success: true,
+      message: `Successfully organized ${fileIds.length} file(s)`,
+      updatedFiles: data?.length || 0
+    };
+
+  } catch (error: any) {
+    console.error('Organize files error:', error);
+    return { error: error.message };
+  }
+}
+
+// Helper function to get file details
+async function getFileDetails(params: {
+  userId: string;
+  fileId: string;
+}) {
+  try {
+    const { userId, fileId } = params;
+
+    // Get file record
+    const { data: file, error: fileError } = await supabase
+      .from('uploaded_files')
+      .select('*')
+      .eq('id', fileId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fileError || !file) {
+      return { error: 'File not found' };
+    }
+
+    // Get additional details based on file type
+    let additionalData = null;
+
+    switch (file.category) {
+      case 'audio':
+        const { data: audioData } = await supabase
+          .from('audio_transcriptions')
+          .select('*')
+          .eq('file_id', fileId)
+          .single();
+        additionalData = audioData;
+        break;
+
+      case 'image':
+        const { data: imageData } = await supabase
+          .from('processed_images')
+          .select('*')
+          .eq('file_id', fileId)
+          .single();
+        additionalData = imageData;
+        break;
+
+      case 'pdf':
+      case 'document':
+      case 'spreadsheet':
+      case 'email':
+        const { data: docData } = await supabase
+          .from('processed_documents')
+          .select('*')
+          .eq('file_id', fileId)
+          .single();
+        additionalData = docData;
+        break;
+    }
+
+    return {
+      success: true,
+      file: {
+        id: file.id,
+        filename: file.filename,
+        type: file.category,
+        size: file.file_size,
+        uploadedAt: file.created_at,
+        processedAt: file.processed_at,
+        status: file.status,
+        projectId: file.project_id,
+        metadata: file.metadata,
+        processingResult: file.processing_result,
+        ...additionalData
+      }
+    };
+
+  } catch (error: any) {
+    console.error('Get file details error:', error);
     return { error: error.message };
   }
 }

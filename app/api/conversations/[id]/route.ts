@@ -25,17 +25,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Delete messages first
+    // SECURITY FIX: Delete messages with user_id check to prevent unauthorized deletion
     const { error: messagesError } = await supabase
       .from('messages')
       .delete()
-      .eq('conversation_id', conversationId);
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userData.id);
 
     if (messagesError) {
       console.error('Error deleting messages:', messagesError);
     }
 
-    // Delete conversation
+    // Delete conversation (with user_id verification)
     const { error: conversationError } = await supabase
       .from('conversations')
       .delete()

@@ -1,8 +1,12 @@
 // app/api/transcribe/assemblyai/route.ts
-// AssemblyAI transcription with advanced features
+// AssemblyAI transcription with advanced features and auto-tagging
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { AudioAutoTagger, TranscriptAnalysis } from '@/lib/audio-auto-tagger';
+import { BackgroundIndexer } from '@/lib/background-indexer';
+import { zapierClient } from '@/lib/zapier-client';
+import { costMonitor } from '@/lib/cost-monitor';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,8 +28,9 @@ const jobStore = new Map<string, {
 }>();
 
 async function uploadToAssemblyAIStream(audioFile: File): Promise<string> {
-  // Convert File to ReadableStream for streaming upload
-  const stream = audioFile.stream();
+  // Convert File to ArrayBuffer for upload (Vercel-compatible)
+  const arrayBuffer = await audioFile.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
 
   const uploadResponse = await fetch(`${ASSEMBLYAI_BASE_URL}/upload`, {
     method: 'POST',
@@ -33,9 +38,8 @@ async function uploadToAssemblyAIStream(audioFile: File): Promise<string> {
       'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
       'Content-Type': 'application/octet-stream',
     },
-    body: stream,
-    duplex: 'half',
-  } as any);
+    body: buffer,
+  });
 
   if (!uploadResponse.ok) {
     const errorText = await uploadResponse.text();
@@ -93,6 +97,159 @@ async function checkTranscriptionStatus(transcriptId: string) {
   return response.json();
 }
 
+// Auto-tagging helper function
+async function performAutoTagging(
+  transcriptionId: string,
+  text: string,
+  utterances: any[],
+  metadata: any,
+  userId: string,
+  projectId: string
+): Promise<TranscriptAnalysis> {
+  try {
+    console.log(`[AutoTagging] Analyzing transcription ${transcriptionId}`);
+
+    // Perform auto-tagging analysis
+    const analysis = AudioAutoTagger.analyzeTranscript(text, utterances, metadata);
+
+    console.log(`[AutoTagging] Analysis complete:`, {
+      tags: analysis.tags.length,
+      actionItems: analysis.actionItems.length,
+      topics: analysis.keyTopics.length,
+      category: analysis.projectCategory,
+      importance: analysis.importanceScore
+    });
+
+    // Generate embedding and store in knowledge base (async)
+    storeTranscriptInKnowledgeBase(
+      transcriptionId,
+      userId,
+      projectId,
+      text,
+      analysis
+    ).catch(error => {
+      console.error('[AutoTagging] Failed to store in knowledge base:', error);
+    });
+
+    // Trigger BackgroundIndexer for embedding generation (async)
+    const indexer = BackgroundIndexer.getInstance();
+    indexer.indexMessage(
+      transcriptionId,
+      transcriptionId, // Using transcription ID as conversation ID
+      userId,
+      'user', // Audio transcriptions are user content
+      text,
+      projectId
+    ).catch(error => {
+      console.error('[AutoTagging] Background indexing failed:', error);
+    });
+
+    return analysis;
+  } catch (error: any) {
+    console.error('[AutoTagging] Analysis failed:', error);
+    throw error;
+  }
+}
+
+// Store transcription in knowledge base with vector embeddings
+async function storeTranscriptInKnowledgeBase(
+  transcriptionId: string,
+  userId: string,
+  projectId: string,
+  text: string,
+  analysis: TranscriptAnalysis
+): Promise<void> {
+  try {
+    // Generate embedding from transcription text
+    const embedding = await generateEmbedding(text, userId);
+
+    if (!embedding) {
+      console.warn('[AutoTagging] Failed to generate embedding');
+      return;
+    }
+
+    // Store in knowledge base
+    const { error } = await supabase
+      .from('knowledge_base')
+      .insert({
+        user_id: userId,
+        source_type: 'audio_transcription',
+        source_id: transcriptionId,
+        category: 'audio',
+        title: `Audio Transcription - ${analysis.projectCategory}`,
+        content: text.substring(0, 8000), // Limit content size
+        embedding: embedding,
+        importance: analysis.importanceScore,
+        tags: analysis.tags,
+        metadata: {
+          project_id: projectId,
+          project_category: analysis.projectCategory,
+          action_items: analysis.actionItems,
+          key_topics: analysis.keyTopics,
+          sentiment: analysis.sentiment,
+          speaker_insights: analysis.speakerInsights,
+          extracted_entities: analysis.extractedEntities,
+          auto_tagged: true,
+          indexed_at: new Date().toISOString()
+        }
+      });
+
+    if (error) {
+      console.error('[AutoTagging] Failed to store in knowledge base:', error);
+    } else {
+      console.log(`[AutoTagging] Stored transcription ${transcriptionId} in knowledge base`);
+    }
+  } catch (error) {
+    console.error('[AutoTagging] Knowledge base storage error:', error);
+  }
+}
+
+// Helper function to generate embeddings
+async function generateEmbedding(text: string, userId?: string): Promise<number[] | null> {
+  try {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text.substring(0, 8000),
+        dimensions: 1536
+      })
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+
+    // COST TRACKING: Track embedding generation
+    if (userId && data.usage) {
+      const embeddingCost = costMonitor.calculateCost('text-embedding-3-small', data.usage.total_tokens || 0, 0);
+      await costMonitor.trackAPICall({
+        user_id: userId,
+        model: 'text-embedding-3-small',
+        endpoint: '/api/transcribe/assemblyai/embedding',
+        input_tokens: data.usage.total_tokens || 0,
+        output_tokens: 0,
+        cost_usd: embeddingCost,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          text_length: text.length,
+          purpose: 'transcription_knowledge_base'
+        },
+      });
+      console.log(`[CostMonitor] Tracked embedding: $${embeddingCost.toFixed(6)}`);
+    }
+
+    return data.data[0].embedding;
+  } catch (error) {
+    console.error('[AutoTagging] Embedding generation failed:', error);
+    return null;
+  }
+}
+
 // Daily usage tracking to prevent cost overruns
 const dailyUsage = new Map<string, { hours: number, cost: number, date: string }>();
 
@@ -133,11 +290,104 @@ async function checkDailyLimits(userId: string, estimatedHours: number): Promise
   return { allowed: true };
 }
 
+// Force route to be dynamic and increase timeout
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
   const jobId = `assemblyai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    const formData = await request.formData();
+    // Verify API key is configured
+    if (!ASSEMBLYAI_API_KEY) {
+      console.error('[ASSEMBLYAI] API key not configured');
+      return NextResponse.json(
+        { error: 'AssemblyAI API key not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    const contentType = request.headers.get('content-type');
+
+    // Check if this is a direct URL submission (for large files uploaded client-side)
+    if (contentType?.includes('application/json')) {
+      const body = await request.json();
+      const { audioUrl, userId, projectId, filename, fileSize } = body;
+
+      if (!audioUrl) {
+        return NextResponse.json(
+          { error: 'No audio URL provided' },
+          { status: 400 }
+        );
+      }
+
+      console.log(`[ASSEMBLYAI] Starting transcription for pre-uploaded file: ${filename}, size: ${(fileSize / 1024 / 1024).toFixed(2)}MB`);
+
+      // Estimate audio duration and cost
+      const fileSizeMB = fileSize / (1024 * 1024);
+      const estimatedHours = fileSizeMB / 30; // Rough estimate: 30MB per hour
+      const estimatedCost = estimatedHours * 0.41;
+
+      // COST MONITORING: Check budget limits BEFORE processing
+      const budgetCheck = await costMonitor.enforceApiCallBudget(userId, '/api/transcribe/assemblyai');
+      if (!budgetCheck.allowed) {
+        console.error(`[CostMonitor] Transcription blocked for user ${userId}: ${budgetCheck.reason}`);
+        return NextResponse.json({
+          error: 'Daily spending limit reached',
+          details: budgetCheck.reason,
+          action: 'Please try again tomorrow or contact support to increase your limit.',
+          costMonitoringActive: true
+        }, { status: 429 });
+      }
+
+      // Check daily limits (legacy check - will be replaced by cost monitor)
+      const limitCheck = await checkDailyLimits(userId, estimatedHours);
+      if (!limitCheck.allowed) {
+        return NextResponse.json(
+          {
+            error: 'Daily usage limit exceeded',
+            details: limitCheck.message,
+            estimatedCost: `$${estimatedCost.toFixed(2)}`,
+            estimatedHours: `${estimatedHours.toFixed(1)}h`
+          },
+          { status: 429 }
+        );
+      }
+
+      console.log(`[ASSEMBLYAI] Starting job ${jobId}`);
+
+      // Initialize job tracking
+      jobStore.set(jobId, {
+        status: 'starting',
+        progress: 25,
+        eta: Math.round(fileSizeMB * 0.5 * 60), // ~30 sec per MB
+        startTime: Date.now()
+      });
+
+      // Process in background with pre-uploaded URL
+      processAssemblyAIFromUrl(audioUrl, filename, fileSize, userId, projectId || 'general', jobId);
+
+      return NextResponse.json({
+        success: true,
+        jobId,
+        service: 'AssemblyAI',
+        features: ['speaker_diarization']
+      });
+    }
+
+    // Legacy: Handle small files uploaded through the API route (not recommended for >4MB)
+    let formData;
+    try {
+      formData = await request.formData();
+    } catch (parseError: any) {
+      console.error('[ASSEMBLYAI] Failed to parse formData:', parseError);
+      return NextResponse.json(
+        { error: 'Failed to parse audio file. File may be too large or corrupted. For files over 4MB, the system should use direct upload.' },
+        { status: 400 }
+      );
+    }
+
     const audioFile = formData.get('audio') as File;
     const userId = formData.get('userId') as string;
     const projectId = formData.get('projectId') as string || 'general';
@@ -149,8 +399,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Estimate audio duration and cost
+    console.log(`[ASSEMBLYAI] Received file via upload: ${audioFile.name}, size: ${(audioFile.size / 1024 / 1024).toFixed(2)}MB, type: ${audioFile.type}`);
+
     const fileSizeMB = audioFile.size / (1024 * 1024);
+
+    // Estimate audio duration and cost
     const estimatedHours = fileSizeMB / 30; // Rough estimate: 30MB per hour
     const estimatedCost = estimatedHours * 0.41;
 
@@ -196,10 +449,225 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error(`[ASSEMBLYAI] Job ${jobId} failed:`, error);
+
+    // Provide helpful error messages
+    let errorMessage = 'Failed to start AssemblyAI transcription';
+    let details = error.message;
+
+    if (error.message?.includes('fetch')) {
+      errorMessage = 'Network error while connecting to transcription service';
+      details = 'Please check your internet connection and try again. If the problem persists, the file may be too large or in an unsupported format.';
+    } else if (error.message?.includes('413') || error.message?.includes('too large')) {
+      errorMessage = 'File too large';
+      details = 'Please use a smaller audio file (under 50MB) or compress your audio.';
+    }
+
     return NextResponse.json(
-      { error: 'Failed to start AssemblyAI transcription', details: error.message },
+      { error: errorMessage, details },
       { status: 500 }
     );
+  }
+}
+
+// New function for pre-uploaded URLs (bypasses Vercel upload limits)
+async function processAssemblyAIFromUrl(audioUrl: string, filename: string, fileSize: number, userId: string, projectId: string, jobId: string) {
+  try {
+    // Update: Starting transcription (skip upload since it's already done)
+    updateJobStatus(jobId, 30, 'starting_transcription');
+
+    const transcriptId = await startTranscription(audioUrl);
+
+    // Store AssemblyAI ID for status tracking
+    const job = jobStore.get(jobId);
+    if (job) {
+      job.assemblyai_id = transcriptId;
+      jobStore.set(jobId, job);
+    }
+
+    // Poll for completion
+    let result;
+    let attempts = 0;
+    const maxAttempts = 720; // 1 hour max (5 sec intervals)
+
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+      result = await checkTranscriptionStatus(transcriptId);
+
+      if (result.status === 'completed') {
+        break;
+      } else if (result.status === 'error') {
+        throw new Error(result.error);
+      }
+
+      // Update progress based on status
+      let progress = 30;
+      if (result.status === 'processing' || result.status === 'queued') {
+        progress = 30 + (attempts * 60) / maxAttempts; // 30-90%
+      }
+
+      updateJobStatus(jobId, Math.min(progress, 90), result.status);
+      attempts++;
+    }
+
+    if (!result || result.status !== 'completed') {
+      throw new Error('Transcription timed out or failed');
+    }
+
+    // Perform auto-tagging analysis
+    updateJobStatus(jobId, 92, 'analyzing');
+    let autoTagAnalysis: TranscriptAnalysis | undefined;
+
+    try {
+      autoTagAnalysis = await performAutoTagging(
+        result.id || jobId, // Use AssemblyAI ID or fallback to jobId
+        result.text,
+        result.utterances || [],
+        {
+          speaker_labels: result.speaker_labels,
+          words: result.words
+        },
+        userId,
+        projectId
+      );
+      console.log(`[ASSEMBLYAI] Auto-tagging complete for ${jobId}`);
+    } catch (tagError: any) {
+      console.error('[ASSEMBLYAI] Auto-tagging failed:', tagError);
+      // Continue even if auto-tagging fails
+    }
+
+    // Save to database with enhanced metadata
+    updateJobStatus(jobId, 95, 'saving');
+
+    const { data: transcriptionData, error: saveError } = await supabase
+      .from('audio_transcriptions')
+      .insert({
+        user_id: userId,
+        project_id: autoTagAnalysis?.projectCategory || projectId,
+        filename: filename,
+        file_size: fileSize,
+        duration: result.audio_duration,
+        text: result.text,
+        service: 'assemblyai',
+        metadata: {
+          speaker_labels: result.speaker_labels,
+          utterances: result.utterances,
+          words: result.words,
+          // Auto-tagging results
+          auto_tags: autoTagAnalysis?.tags || [],
+          action_items: autoTagAnalysis?.actionItems || [],
+          key_topics: autoTagAnalysis?.keyTopics || [],
+          speaker_insights: autoTagAnalysis?.speakerInsights,
+          sentiment: autoTagAnalysis?.sentiment,
+          importance_score: autoTagAnalysis?.importanceScore,
+          extracted_entities: autoTagAnalysis?.extractedEntities,
+          auto_tagged_at: new Date().toISOString()
+        }
+      })
+      .select()
+      .single();
+
+    if (saveError) {
+      console.error('[ASSEMBLYAI] Database save error:', saveError);
+    }
+
+    // Complete
+    const finalJob = jobStore.get(jobId);
+    if (finalJob) {
+      jobStore.set(jobId, {
+        ...finalJob,
+        status: 'completed',
+        progress: 100,
+        eta: 0,
+        result: {
+          text: result.text,
+          duration: result.audio_duration,
+          speakers: result.utterances?.length || 0,
+          filename: filename,
+          fileSize: fileSize,
+          id: transcriptionData?.id
+        }
+      });
+    }
+
+    // COST TRACKING: Track AssemblyAI transcription cost
+    const audioDurationHours = (result.audio_duration || 0) / 3600; // Convert seconds to hours
+    const transcriptionCost = audioDurationHours * 0.41; // $0.41/hour with minimal features
+
+    await costMonitor.trackAPICall({
+      user_id: userId,
+      model: 'assemblyai-transcription',
+      endpoint: '/api/transcribe/assemblyai',
+      input_tokens: 0, // Not token-based
+      output_tokens: 0,
+      cost_usd: transcriptionCost,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        filename: filename,
+        fileSize: fileSize,
+        duration_seconds: result.audio_duration,
+        duration_hours: audioDurationHours,
+        speakers: result.utterances?.length || 0,
+        project_id: projectId,
+        job_id: jobId,
+      },
+    });
+
+    console.log(`[CostMonitor] Tracked AssemblyAI transcription: $${transcriptionCost.toFixed(4)} (${audioDurationHours.toFixed(2)}h)`);
+    console.log(`[ASSEMBLYAI] Job ${jobId} completed successfully`);
+
+    // ZAPIER INTEGRATION: Send transcription complete webhook (async, non-blocking)
+    if (autoTagAnalysis) {
+      const hasUrgentTag = zapierClient.detectUrgentTag(result.text, autoTagAnalysis.tags);
+
+      zapierClient.sendTranscriptionComplete(
+        userId,
+        result.id || jobId,
+        result.text,
+        autoTagAnalysis.actionItems,
+        autoTagAnalysis.tags,
+        {
+          filename,
+          fileSize,
+          duration: result.audio_duration,
+          speakers: result.utterances?.length || 0,
+          projectCategory: autoTagAnalysis.projectCategory,
+          importanceScore: autoTagAnalysis.importanceScore,
+          hasUrgentTag
+        }
+      ).catch(error => {
+        console.error('[Zapier] Failed to send transcription complete webhook:', error);
+      });
+
+      // Send urgent notification if detected
+      if (hasUrgentTag) {
+        zapierClient.sendUrgentNotification(
+          userId,
+          'Urgent Transcription Detected',
+          `Transcription contains urgent items: ${autoTagAnalysis.actionItems.slice(0, 3).join(', ')}`,
+          'transcription',
+          {
+            transcriptionId: result.id || jobId,
+            filename
+          }
+        ).catch(error => {
+          console.error('[Zapier] Failed to send urgent notification:', error);
+        });
+      }
+    }
+
+  } catch (error: any) {
+    console.error(`[ASSEMBLYAI] Job ${jobId} failed:`, error);
+    const job = jobStore.get(jobId);
+    if (job) {
+      jobStore.set(jobId, {
+        ...job,
+        status: 'failed',
+        progress: 0,
+        eta: 0,
+        error: error.message
+      });
+    }
   }
 }
 
@@ -255,14 +723,38 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
       throw new Error('Transcription timed out or failed');
     }
 
-    // Save to database
+    // Perform auto-tagging analysis
+    updateJobStatus(jobId, 87, 'analyzing');
+    let autoTagAnalysis: TranscriptAnalysis | undefined;
+
+    try {
+      autoTagAnalysis = await performAutoTagging(
+        result.id || jobId,
+        result.text,
+        result.utterances || [],
+        {
+          speaker_labels: result.speaker_labels,
+          chapters: result.chapters,
+          sentiment_analysis_results: result.sentiment_analysis_results,
+          entities: result.entities
+        },
+        userId,
+        projectId
+      );
+      console.log(`[ASSEMBLYAI] Auto-tagging complete for ${jobId}`);
+    } catch (tagError: any) {
+      console.error('[ASSEMBLYAI] Auto-tagging failed:', tagError);
+      // Continue even if auto-tagging fails
+    }
+
+    // Save to database with enhanced metadata
     updateJobStatus(jobId, 90, 'saving');
 
     const { data: transcriptionData, error: saveError } = await supabase
       .from('audio_transcriptions')
       .insert({
         user_id: userId,
-        project_id: projectId,
+        project_id: autoTagAnalysis?.projectCategory || projectId,
         filename: audioFile.name,
         file_size: audioFile.size,
         duration: result.audio_duration,
@@ -275,7 +767,16 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
           entities: result.entities,
           iab_categories_result: result.iab_categories_result,
           auto_highlights_result: result.auto_highlights_result,
-          summary: result.summary
+          summary: result.summary,
+          // Auto-tagging results
+          auto_tags: autoTagAnalysis?.tags || [],
+          action_items: autoTagAnalysis?.actionItems || [],
+          key_topics: autoTagAnalysis?.keyTopics || [],
+          speaker_insights: autoTagAnalysis?.speakerInsights,
+          sentiment: autoTagAnalysis?.sentiment,
+          importance_score: autoTagAnalysis?.importanceScore,
+          extracted_entities: autoTagAnalysis?.extractedEntities,
+          auto_tagged_at: new Date().toISOString()
         }
       })
       .select()
@@ -307,7 +808,71 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
       });
     }
 
+    // COST TRACKING: Track AssemblyAI transcription cost
+    const audioDurationHours = (result.audio_duration || 0) / 3600; // Convert seconds to hours
+    const transcriptionCost = audioDurationHours * 0.41; // $0.41/hour with minimal features
+
+    await costMonitor.trackAPICall({
+      user_id: userId,
+      model: 'assemblyai-transcription',
+      endpoint: '/api/transcribe/assemblyai',
+      input_tokens: 0, // Not token-based
+      output_tokens: 0,
+      cost_usd: transcriptionCost,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        filename: audioFile.name,
+        fileSize: audioFile.size,
+        duration_seconds: result.audio_duration,
+        duration_hours: audioDurationHours,
+        speakers: result.speaker_labels?.length || 0,
+        project_id: projectId,
+        job_id: jobId,
+      },
+    });
+
+    console.log(`[CostMonitor] Tracked AssemblyAI transcription: $${transcriptionCost.toFixed(4)} (${audioDurationHours.toFixed(2)}h)`);
     console.log(`[ASSEMBLYAI] Job ${jobId} completed successfully`);
+
+    // ZAPIER INTEGRATION: Send transcription complete webhook (async, non-blocking)
+    if (autoTagAnalysis) {
+      const hasUrgentTag = zapierClient.detectUrgentTag(result.text, autoTagAnalysis.tags);
+
+      zapierClient.sendTranscriptionComplete(
+        userId,
+        result.id || jobId,
+        result.text,
+        autoTagAnalysis.actionItems,
+        autoTagAnalysis.tags,
+        {
+          filename: audioFile.name,
+          fileSize: audioFile.size,
+          duration: result.audio_duration,
+          speakers: result.speaker_labels?.length || 0,
+          projectCategory: autoTagAnalysis.projectCategory,
+          importanceScore: autoTagAnalysis.importanceScore,
+          hasUrgentTag
+        }
+      ).catch(error => {
+        console.error('[Zapier] Failed to send transcription complete webhook:', error);
+      });
+
+      // Send urgent notification if detected
+      if (hasUrgentTag) {
+        zapierClient.sendUrgentNotification(
+          userId,
+          'Urgent Transcription Detected',
+          `Transcription contains urgent items: ${autoTagAnalysis.actionItems.slice(0, 3).join(', ')}`,
+          'transcription',
+          {
+            transcriptionId: result.id || jobId,
+            filename: audioFile.name
+          }
+        ).catch(error => {
+          console.error('[Zapier] Failed to send urgent notification:', error);
+        });
+      }
+    }
 
   } catch (error: any) {
     console.error(`[ASSEMBLYAI] Job ${jobId} failed:`, error);

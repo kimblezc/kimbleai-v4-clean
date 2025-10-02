@@ -93,6 +93,212 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action') || 'list';
+    const userId = searchParams.get('userId') || 'zach';
+    const query = searchParams.get('q') || '';
+    const maxResults = parseInt(searchParams.get('maxResults') || '20');
+    const messageId = searchParams.get('messageId');
+    const labelId = searchParams.get('labelId');
+
+    // Get user's Google token
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('access_token, refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    if (!tokenData?.access_token) {
+      return NextResponse.json({
+        error: 'User not authenticated with Google'
+      }, { status: 401 });
+    }
+
+    // Initialize Gmail client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+    );
+    oauth2Client.setCredentials({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token
+    });
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    switch (action) {
+      case 'list':
+        return await listEmails(gmail, userId, maxResults, labelId);
+
+      case 'get':
+        if (!messageId) {
+          return NextResponse.json({ error: 'messageId is required' }, { status: 400 });
+        }
+        return await getEmail(gmail, messageId);
+
+      case 'search':
+        return await searchEmails(gmail, query, userId, maxResults);
+
+      case 'labels':
+        return await getLabels(gmail);
+
+      default:
+        return NextResponse.json({
+          service: 'Gmail API',
+          endpoints: {
+            'GET ?action=list': 'List inbox messages',
+            'GET ?action=get&messageId=xxx': 'Get single message with full details',
+            'GET ?action=search&q=xxx': 'Search emails',
+            'GET ?action=labels': 'Get all labels',
+            'POST': 'Import email to knowledge base or send email'
+          }
+        });
+    }
+
+  } catch (error: any) {
+    console.error('Gmail GET error:', error);
+    return NextResponse.json({
+      error: 'Failed to access Gmail',
+      details: error.message
+    }, { status: 500 });
+  }
+}
+
+async function listEmails(gmail: any, userId: string, maxResults: number, labelId?: string | null) {
+  const listParams: any = {
+    userId: 'me',
+    maxResults,
+    labelIds: labelId ? [labelId] : ['INBOX']
+  };
+
+  const response = await gmail.users.messages.list(listParams);
+  const messages = response.data.messages || [];
+
+  const emailList = [];
+  for (const message of messages.slice(0, maxResults)) {
+    try {
+      const fullMessage = await gmail.users.messages.get({
+        userId: 'me',
+        id: message.id,
+        format: 'metadata',
+        metadataHeaders: ['Subject', 'From', 'To', 'Date']
+      });
+
+      const headers = fullMessage.data.payload?.headers || [];
+      const subject = headers.find((h: any) => h.name === 'Subject')?.value || 'No subject';
+      const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown';
+      const date = headers.find((h: any) => h.name === 'Date')?.value || '';
+
+      emailList.push({
+        id: message.id,
+        threadId: message.threadId,
+        subject,
+        from,
+        date,
+        snippet: fullMessage.data.snippet || '',
+        labels: fullMessage.data.labelIds || [],
+        unread: fullMessage.data.labelIds?.includes('UNREAD')
+      });
+    } catch (err) {
+      console.error(`Error fetching message ${message.id}:`, err);
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    messages: emailList,
+    total: messages.length
+  });
+}
+
+async function getEmail(gmail: any, messageId: string) {
+  const fullMessage = await gmail.users.messages.get({
+    userId: 'me',
+    id: messageId
+  });
+
+  const headers = fullMessage.data.payload?.headers || [];
+  const subject = headers.find((h: any) => h.name === 'Subject')?.value || 'No subject';
+  const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown';
+  const to = headers.find((h: any) => h.name === 'To')?.value || '';
+  const date = headers.find((h: any) => h.name === 'Date')?.value || '';
+  const cc = headers.find((h: any) => h.name === 'Cc')?.value || '';
+
+  // Extract body
+  let body = '';
+  let attachments: any[] = [];
+
+  const extractBody = (payload: any): string => {
+    if (payload.parts) {
+      for (const part of payload.parts) {
+        if (part.mimeType === 'text/plain' && part.body?.data) {
+          return Buffer.from(part.body.data, 'base64').toString('utf-8');
+        } else if (part.mimeType === 'text/html' && part.body?.data && !body) {
+          const htmlContent = Buffer.from(part.body.data, 'base64').toString('utf-8');
+          return htmlContent.replace(/<[^>]*>/g, '');
+        } else if (part.parts) {
+          const nestedBody = extractBody(part);
+          if (nestedBody) return nestedBody;
+        }
+
+        if (part.filename && part.filename.length > 0) {
+          attachments.push({
+            filename: part.filename,
+            mimeType: part.mimeType,
+            size: part.body?.size || 0,
+            attachmentId: part.body?.attachmentId
+          });
+        }
+      }
+    } else if (payload.body?.data) {
+      return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+    }
+    return '';
+  };
+
+  body = extractBody(fullMessage.data.payload);
+
+  return NextResponse.json({
+    success: true,
+    email: {
+      id: messageId,
+      threadId: fullMessage.data.threadId,
+      subject,
+      from,
+      to,
+      cc,
+      date,
+      body,
+      snippet: fullMessage.data.snippet || '',
+      attachments,
+      labels: fullMessage.data.labelIds || [],
+      unread: fullMessage.data.labelIds?.includes('UNREAD')
+    }
+  });
+}
+
+async function getLabels(gmail: any) {
+  const response = await gmail.users.labels.list({
+    userId: 'me'
+  });
+
+  const labels = response.data.labels || [];
+
+  return NextResponse.json({
+    success: true,
+    labels: labels.map((label: any) => ({
+      id: label.id,
+      name: label.name,
+      type: label.type,
+      messagesTotal: label.messagesTotal,
+      messagesUnread: label.messagesUnread
+    }))
+  });
+}
+
 async function searchEmails(gmail: any, query: string, userId: string, maxResults: number, projectId?: string) {
   // Search Gmail
   const response = await gmail.users.messages.list({

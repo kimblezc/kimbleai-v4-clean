@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
+import { generateEmbedding } from '@/lib/embeddings';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -58,7 +59,21 @@ export async function POST(request: NextRequest) {
 
     console.log('[AUDIO] Transcription completed');
 
-    // Store transcription in database
+    // Generate embedding for semantic search
+    let embedding: number[] | null = null;
+    if (transcription.text) {
+      console.log('[AUDIO] Generating embedding for search...');
+      try {
+        embedding = await generateEmbedding(
+          `Transcription: ${audioFile.name}\n\n${transcription.text.substring(0, 8000)}`
+        );
+      } catch (embeddingError) {
+        console.error('[AUDIO] Embedding generation failed:', embeddingError);
+        // Continue even if embedding fails
+      }
+    }
+
+    // Store transcription in database with embedding
     const { data: storedTranscription, error: dbError } = await supabase
       .from('audio_transcriptions')
       .insert({
@@ -70,6 +85,7 @@ export async function POST(request: NextRequest) {
         text: transcription.text,
         segments: transcription.segments, // Store word-level timestamps
         language: transcription.language,
+        embedding: embedding, // Store embedding for semantic search
         created_at: new Date().toISOString()
       })
       .select()
@@ -77,32 +93,13 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('[AUDIO] Database error:', dbError);
-      // Continue even if database storage fails
+      return NextResponse.json(
+        { error: 'Failed to store transcription', details: dbError.message },
+        { status: 500 }
+      );
     }
 
-    // Generate embeddings for RAG system
-    if (transcription.text) {
-      console.log('[AUDIO] Generating embeddings for RAG...');
-      const embedding = await openai.embeddings.create({
-        model: 'text-embedding-ada-002',
-        input: transcription.text
-      });
-
-      // Store in vector database
-      await supabase
-        .from('memory_vectors')
-        .insert({
-          user_id: userId,
-          content: transcription.text,
-          embedding: embedding.data[0].embedding,
-          metadata: {
-            type: 'audio_transcription',
-            filename: audioFile.name,
-            project_id: projectId,
-            duration: transcription.duration
-          }
-        });
-    }
+    console.log('[AUDIO] Transcription stored successfully with embedding');
 
     return NextResponse.json({
       success: true,
