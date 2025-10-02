@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { SearchInput } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function SearchPage() {
+function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams?.get('q') || '');
@@ -104,5 +104,13 @@ export default function SearchPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<DashboardLayout><div className="p-6 text-center">Loading...</div></DashboardLayout>}>
+      <SearchContent />
+    </Suspense>
   );
 }
