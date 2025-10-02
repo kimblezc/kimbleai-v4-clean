@@ -1576,6 +1576,28 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Agent Status Link */}
+        <button
+          onClick={() => window.location.href = '/agents/status'}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            backgroundColor: '#0a0a0a',
+            border: '1px solid #333',
+            borderRadius: '6px',
+            color: '#4a9eff',
+            fontSize: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '12px'
+          }}
+        >
+          <span>Agent Status</span>
+          <span>→</span>
+        </button>
+
       </div>
 
       {/* Main Content Area */}
