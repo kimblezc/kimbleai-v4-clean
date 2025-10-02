@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { Button } from '../../components/ui/Button';
+
+interface DriveFolder {
+  id: string;
+  name: string;
+}
 
 interface DriveFile {
   id: string;
@@ -21,41 +24,70 @@ interface TranscriptionJob {
   fileName: string;
   status: 'queued' | 'processing' | 'completed' | 'error';
   progress: number;
-  cost?: string;
   result?: any;
   error?: string;
 }
 
 export default function TranscribePage() {
   const { data: session } = useSession();
+  const [folders, setFolders] = useState<DriveFolder[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [audioFiles, setAudioFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [jobs, setJobs] = useState<Map<string, TranscriptionJob>>(new Map());
   const [error, setError] = useState<string | null>(null);
 
-  // Load audio files from Google Drive
-  const loadAudioFiles = async () => {
+  // Load folders
+  const loadFolders = async () => {
+    try {
+      const response = await fetch('/api/google/drive?action=folders&userId=zach');
+      const data = await response.json();
+      if (data.folders) {
+        setFolders(data.folders);
+      }
+    } catch (err: any) {
+      console.error('Failed to load folders:', err);
+    }
+  };
+
+  // Load audio files from folder or search all
+  const loadAudioFiles = async (folderId?: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/google/drive?action=search&q=mimeType contains \'audio/\'');
+      let url = '/api/google/drive?action=search&userId=zach';
+
+      if (folderId) {
+        url = `/api/google/drive?action=list&userId=zach&folderId=${folderId}`;
+      }
+
+      const response = await fetch(url);
       const data = await response.json();
 
-      if (data.files) {
-        const audioFiles = data.files.map((file: any) => ({
-          id: file.id,
-          name: file.name,
-          size: parseInt(file.size || '0'),
-          sizeFormatted: formatFileSize(parseInt(file.size || '0')),
-          mimeType: file.mimeType,
-          modifiedTime: file.modifiedTime,
-          webViewLink: file.webViewLink,
-        }));
-        setAudioFiles(audioFiles);
-      } else {
-        setError(data.error || 'Failed to load files');
-      }
+      let files = data.files || [];
+
+      // Filter for audio files only
+      files = files.filter((f: any) =>
+        f.mimeType && (
+          f.mimeType.includes('audio/') ||
+          f.name.toLowerCase().endsWith('.m4a') ||
+          f.name.toLowerCase().endsWith('.mp3') ||
+          f.name.toLowerCase().endsWith('.wav')
+        )
+      );
+
+      const audioFiles = files.map((file: any) => ({
+        id: file.id,
+        name: file.name,
+        size: parseInt(file.size || '0'),
+        sizeFormatted: formatFileSize(parseInt(file.size || '0')),
+        mimeType: file.mimeType,
+        modifiedTime: file.modifiedTime,
+        webViewLink: file.webViewLink,
+      }));
+
+      setAudioFiles(audioFiles);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -63,18 +95,15 @@ export default function TranscribePage() {
     }
   };
 
-  // Create shareable download URL for Drive file
+  // Get shareable URL
   const getShareableUrl = (fileId: string): string => {
     return `https://drive.google.com/uc?export=download&id=${fileId}`;
   };
 
   // Start transcription
   const startTranscription = async (file: DriveFile) => {
-    const jobId = `job_${Date.now()}`;
-
-    // Add to jobs map
     const newJob: TranscriptionJob = {
-      jobId,
+      jobId: `job_${Date.now()}`,
       fileId: file.id,
       fileName: file.name,
       status: 'queued',
@@ -85,22 +114,13 @@ export default function TranscribePage() {
     setError(null);
 
     try {
-      // Get shareable URL
       const audioUrl = getShareableUrl(file.id);
 
-      // Estimate cost
-      const fileSizeMB = file.size / (1024 * 1024);
-      const estimatedHours = fileSizeMB / 30; // ~30MB per hour
-      const estimatedCost = estimatedHours * 0.41;
-
-      console.log(`Starting transcription: ${file.name}, ${fileSizeMB.toFixed(2)}MB, ~${estimatedHours.toFixed(2)}h, ~$${estimatedCost.toFixed(2)}`);
-
-      // Submit to AssemblyAI
       const response = await fetch('/api/transcribe/assemblyai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          audioUrl: audioUrl,
+          audioUrl,
           userId: 'zach',
           projectId: 'general',
           filename: file.name,
@@ -114,13 +134,10 @@ export default function TranscribePage() {
         throw new Error(data.error);
       }
 
-      // Update job with AssemblyAI job ID
-      newJob.jobId = data.jobId || jobId;
+      newJob.jobId = data.jobId || newJob.jobId;
       newJob.status = 'processing';
       setJobs(new Map(jobs.set(file.id, newJob)));
-
-      // Start polling for status
-      pollJobStatus(file.id, data.jobId || jobId);
+      pollJobStatus(file.id, data.jobId || newJob.jobId);
 
     } catch (err: any) {
       newJob.status = 'error';
@@ -130,9 +147,9 @@ export default function TranscribePage() {
     }
   };
 
-  // Poll job status
+  // Poll status
   const pollJobStatus = async (fileId: string, jobId: string) => {
-    const maxAttempts = 120; // 10 minutes max (5 second intervals)
+    const maxAttempts = 120;
     let attempts = 0;
 
     const poll = async () => {
@@ -150,24 +167,15 @@ export default function TranscribePage() {
 
         setJobs(new Map(jobs.set(fileId, job)));
 
-        if (data.status === 'completed') {
-          console.log(`Transcription completed: ${job.fileName}`);
-          return;
-        } else if (data.status === 'error') {
-          console.error(`Transcription failed: ${data.error}`);
+        if (data.status === 'completed' || data.status === 'error') {
           return;
         }
 
         attempts++;
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000);
-        } else {
-          job.status = 'error';
-          job.error = 'Timeout - transcription took too long';
-          setJobs(new Map(jobs.set(fileId, job)));
         }
       } catch (error) {
-        console.error('Poll error:', error);
         attempts++;
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000);
@@ -180,77 +188,120 @@ export default function TranscribePage() {
 
   useEffect(() => {
     if (session) {
+      loadFolders();
       loadAudioFiles();
     }
   }, [session]);
 
   if (!session) {
     return (
-      <DashboardLayout>
-        <div className="p-6 text-center">
-          <h2 className="text-xl text-white">Please sign in to access transcription</h2>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f0f0f', color: '#fff' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Please sign in to access transcription</h2>
+          <button
+            onClick={() => window.location.href = '/api/auth/signin'}
+            style={{ padding: '0.75rem 1.5rem', backgroundColor: '#4a9eff', color: '#fff', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
+          >
+            Sign In
+          </button>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f0f0f', color: '#fff', padding: '2rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Audio Transcription from Drive</h1>
-            <p className="text-gray-400">
-              Transcribe audio files from Google Drive with speaker diarization
-            </p>
-          </div>
-          <Button onClick={loadAudioFiles} variant="secondary" disabled={loading}>
-            {loading ? 'Loading...' : '🔄 Refresh'}
-          </Button>
+        <div style={{ marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Audio Transcription from Drive</h1>
+          <p style={{ color: '#9ca3af' }}>Transcribe audio files from Google Drive with speaker diarization</p>
         </div>
 
         {/* Info */}
-        <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+        <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '0.5rem', padding: '1rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', fontSize: '0.875rem' }}>
             <div>
-              <span className="text-blue-300 font-medium">✓ Multi-GB files supported</span>
-              <p className="text-gray-400 text-xs mt-1">No file size limit</p>
+              <div style={{ color: '#60a5fa', fontWeight: '500' }}>✓ Multi-GB files</div>
+              <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>No size limit</div>
             </div>
             <div>
-              <span className="text-blue-300 font-medium">✓ Speaker diarization</span>
-              <p className="text-gray-400 text-xs mt-1">Identifies who said what</p>
+              <div style={{ color: '#60a5fa', fontWeight: '500' }}>✓ Speaker diarization</div>
+              <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>Who said what</div>
             </div>
             <div>
-              <span className="text-blue-300 font-medium">✓ Auto-integrated</span>
-              <p className="text-gray-400 text-xs mt-1">Searchable in knowledge base</p>
+              <div style={{ color: '#60a5fa', fontWeight: '500' }}>✓ Auto-integrated</div>
+              <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>Searchable knowledge base</div>
             </div>
             <div>
-              <span className="text-blue-300 font-medium">✓ Cost: $0.41/hour</span>
-              <p className="text-gray-400 text-xs mt-1">Budget enforced automatically</p>
+              <div style={{ color: '#60a5fa', fontWeight: '500' }}>✓ $0.41/hour</div>
+              <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>Budget enforced</div>
             </div>
           </div>
+        </div>
+
+        {/* Folder Selector */}
+        <div style={{ marginBottom: '2rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#9ca3af' }}>
+            Select Folder (optional):
+          </label>
+          <select
+            value={selectedFolder}
+            onChange={(e) => {
+              setSelectedFolder(e.target.value);
+              loadAudioFiles(e.target.value || undefined);
+            }}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: '#1f2937',
+              border: '1px solid #374151',
+              borderRadius: '0.5rem',
+              color: '#fff',
+              fontSize: '0.875rem'
+            }}
+          >
+            <option value="">All Audio Files</option>
+            {folders.map(folder => (
+              <option key={folder.id} value={folder.id}>{folder.name}</option>
+            ))}
+          </select>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
-            <p className="text-red-300">❌ {error}</p>
+          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '0.5rem', padding: '1rem', marginBottom: '2rem' }}>
+            <p style={{ color: '#f87171' }}>❌ {error}</p>
           </div>
         )}
 
         {/* Files List */}
-        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            🎵 Audio Files in Google Drive ({audioFiles.length})
-          </h3>
+        <div style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)', border: '1px solid #374151', borderRadius: '0.5rem', padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: '600' }}>🎵 Audio Files ({audioFiles.length})</h3>
+            <button
+              onClick={() => loadAudioFiles(selectedFolder || undefined)}
+              disabled={loading}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#374151',
+                border: '1px solid #4b5563',
+                borderRadius: '0.375rem',
+                color: '#fff',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem'
+              }}
+            >
+              {loading ? 'Loading...' : '🔄 Refresh'}
+            </button>
+          </div>
 
           {loading ? (
-            <p className="text-gray-400">Loading from Google Drive...</p>
+            <p style={{ color: '#9ca3af' }}>Loading files from Google Drive...</p>
           ) : audioFiles.length === 0 ? (
-            <p className="text-gray-400">No audio files found in your Google Drive</p>
+            <p style={{ color: '#9ca3af' }}>No audio files found. Try selecting a different folder.</p>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {audioFiles.map((file) => {
                 const job = jobs.get(file.id);
                 const isProcessing = job && (job.status === 'queued' || job.status === 'processing');
@@ -260,71 +311,86 @@ export default function TranscribePage() {
                 return (
                   <div
                     key={file.id}
-                    className={`bg-black/40 rounded-lg p-4 border ${
-                      isCompleted ? 'border-green-700' : isError ? 'border-red-700' : 'border-gray-700'
-                    }`}
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                      borderRadius: '0.5rem',
+                      padding: '1rem',
+                      border: `1px solid ${isCompleted ? '#10b981' : isError ? '#ef4444' : '#374151'}`
+                    }}
                   >
-                    <div className="flex items-start justify-between">
-                      {/* File Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-2xl">🎵</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                          <span style={{ fontSize: '1.5rem' }}>🎵</span>
                           <div>
-                            <h4 className="text-white font-medium">{file.name}</h4>
-                            <p className="text-sm text-gray-400">
+                            <h4 style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{file.name}</h4>
+                            <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>
                               {file.sizeFormatted} • {new Date(file.modifiedTime).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
 
-                        {/* Job Status */}
                         {job && (
-                          <div className="ml-11 mt-2">
+                          <div style={{ marginLeft: '2.75rem', marginTop: '0.5rem' }}>
                             {isProcessing && (
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-48 bg-gray-700 rounded-full h-2">
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <div style={{ width: '12rem', backgroundColor: '#374151', borderRadius: '9999px', height: '0.5rem' }}>
                                     <div
-                                      className="bg-blue-500 h-2 rounded-full transition-all"
-                                      style={{ width: `${job.progress}%` }}
+                                      style={{
+                                        backgroundColor: '#3b82f6',
+                                        height: '0.5rem',
+                                        borderRadius: '9999px',
+                                        transition: 'width 0.3s',
+                                        width: `${job.progress}%`
+                                      }}
                                     />
                                   </div>
-                                  <span className="text-xs text-gray-400">{job.progress}%</span>
+                                  <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{job.progress}%</span>
                                 </div>
-                                <p className="text-xs text-blue-400">⏳ {job.status === 'queued' ? 'Queued...' : 'Transcribing...'}</p>
+                                <p style={{ fontSize: '0.75rem', color: '#60a5fa' }}>
+                                  ⏳ {job.status === 'queued' ? 'Queued...' : 'Transcribing...'}
+                                </p>
                               </div>
                             )}
                             {isCompleted && (
-                              <div className="text-sm text-green-400">
-                                ✅ Transcription complete • Auto-added to knowledge base
+                              <div style={{ fontSize: '0.875rem', color: '#34d399' }}>
+                                ✅ Complete • Added to knowledge base
                               </div>
                             )}
                             {isError && (
-                              <div className="text-sm text-red-400">
-                                ❌ Error: {job.error}
+                              <div style={{ fontSize: '0.875rem', color: '#f87171' }}>
+                                ❌ {job.error}
                               </div>
                             )}
                           </div>
                         )}
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-3">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <a
                           href={file.webViewLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-sm"
+                          style={{ color: '#60a5fa', fontSize: '0.875rem', textDecoration: 'none' }}
                         >
                           View
                         </a>
-                        <Button
+                        <button
                           onClick={() => startTranscription(file)}
                           disabled={isProcessing}
-                          size="sm"
+                          style={{
+                            padding: '0.5rem 1rem',
+                            backgroundColor: isProcessing ? '#374151' : '#10b981',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            color: '#fff',
+                            cursor: isProcessing ? 'not-allowed' : 'pointer',
+                            fontSize: '0.875rem'
+                          }}
                         >
                           {isProcessing ? '⏳ Processing...' : isCompleted ? '🔄 Re-transcribe' : '🎤 Transcribe'}
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -334,7 +400,7 @@ export default function TranscribePage() {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 
