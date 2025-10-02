@@ -49,6 +49,7 @@ export default function Home() {
   const [deletedProjects, setDeletedProjects] = useState<Set<string>>(new Set());
   const [createdProjects, setCreatedProjects] = useState<Set<string>>(new Set());
   const [showGoogleServices, setShowGoogleServices] = useState(false);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['general']));
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -542,59 +543,301 @@ export default function Home() {
       console.log(`[AUDIO-PAGE] Starting transcription for file: ${file.name} (${file.size} bytes)`);
 
       const fileSizeMB = file.size / (1024 * 1024);
+      const fileSizeGB = fileSizeMB / 1024;
 
-      // Route through optimized server endpoints instead of direct browser upload
-      console.log(`[AUDIO-PAGE] Using server-side transcription for ${file.name} (${fileSizeMB.toFixed(1)}MB)`);
+      // For large files (>4MB), upload directly to AssemblyAI from browser
+      // This bypasses Vercel's 4.5MB body limit
+      console.log(`[AUDIO-PAGE] Using direct browser upload for ${file.name} (${fileSizeMB.toFixed(1)}MB)`);
 
-      const formData = new FormData();
-      formData.append('audio', file);
-      formData.append('userId', currentUser);
-      formData.append('projectId', currentProject);
+      // Step 1: Upload file directly to AssemblyAI from browser
+      setAudioProgress({ progress: 5, eta: Math.round(fileSizeMB * 2), status: 'uploading_to_assemblyai' });
 
-      const response = await fetch('/api/transcribe/assemblyai', {
-        method: 'POST',
-        body: formData,
+      const arrayBuffer = await file.arrayBuffer();
+
+      setAudioProgress({ progress: 10, eta: Math.round(fileSizeMB * 2), status: 'uploading_to_assemblyai' });
+
+      // Retry logic for large file uploads (handles network timeouts)
+      let uploadUrl: string | null = null;
+      let lastError: Error | null = null;
+      const maxRetries = 3;
+
+      // Calculate dynamic timeout based on file size
+      // Assume minimum speed of 200 KB/s (very slow connection)
+      // Add 5 minute buffer for network overhead
+      const minSpeedKBps = 200; // 200 KB/s = very slow connection
+      const fileSizeKB = fileSizeMB * 1024;
+      const estimatedUploadSeconds = Math.ceil(fileSizeKB / minSpeedKBps);
+      const timeoutSeconds = Math.max(300, estimatedUploadSeconds + 300); // At least 5 min, or upload time + 5 min buffer
+      const timeoutMs = timeoutSeconds * 1000;
+
+      console.log(`[AUDIO-PAGE] Upload timeout set to ${Math.round(timeoutSeconds / 60)} minutes for ${fileSizeMB.toFixed(1)}MB file`);
+
+      // Get secure upload credentials from backend (never expose API key in frontend)
+      console.log('[AUDIO-PAGE] Getting secure upload credentials...');
+      console.log('[AUDIO-PAGE] File details:', {
+        name: file.name,
+        size: `${fileSizeMB.toFixed(2)}MB`,
+        type: file.type
       });
 
-      console.log(`[AUDIO-CLIENT] Response status: ${response.status}`, response.headers.get('content-type'));
+      const credentialsResponse = await fetch('/api/transcribe/upload-url', {
+        method: 'POST',
+      });
 
-      const responseText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (jsonError) {
-        throw new Error(`Server returned non-JSON response (${response.status}): ${responseText.substring(0, 100)}...`);
+      if (!credentialsResponse.ok) {
+        const errorText = await credentialsResponse.text();
+        console.error('[AUDIO-PAGE] Failed to get credentials:', errorText);
+        throw new Error(`Failed to get upload credentials (HTTP ${credentialsResponse.status}). Please check API key configuration.`);
       }
 
-      if (!response.ok) {
+      const credentialsData = await credentialsResponse.json();
+      console.log('[AUDIO-PAGE] Credentials response:', credentialsData);
+
+      // Check if we should use Whisper fallback
+      if (credentialsData.fallback === 'whisper') {
+        console.log('[AUDIO-PAGE] AssemblyAI unavailable, using Whisper fallback');
+        console.log('[AUDIO-PAGE] Reason:', credentialsData.message);
+
+        // Show user a warning about the fallback
+        const fallbackMessage: Message = {
+          role: 'assistant',
+          content: `ℹ️ **Transcription Service Notice**\n\n${credentialsData.message}\n\n**File:** ${file.name} (${fileSizeMB.toFixed(1)}MB)\n\nStarting Whisper transcription...`,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, fallbackMessage]);
+
+        // Use Whisper API directly (25MB limit)
+        if (fileSizeMB > 24) {
+          throw new Error(
+            `File too large for Whisper API (${fileSizeMB.toFixed(1)}MB). Whisper supports up to 25MB files.\n\n` +
+            `To enable large file support:\n` +
+            `1. Enable billing on your AssemblyAI account\n` +
+            `2. Visit: ${credentialsData.troubleshooting?.step1 || 'https://www.assemblyai.com/app/account'}`
+          );
+        }
+
+        // Call Whisper API via our backend
+        setAudioProgress({ progress: 10, eta: Math.round(fileSizeMB * 2), status: 'uploading_to_whisper' });
+
+        const formData = new FormData();
+        formData.append('audio', file);
+        formData.append('userId', currentUser);
+        formData.append('projectId', currentProject);
+
+        const whisperResponse = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!whisperResponse.ok) {
+          const errorData = await whisperResponse.json();
+          throw new Error(errorData.error || 'Whisper transcription failed');
+        }
+
+        const whisperData = await whisperResponse.json();
+
+        // Show success message
+        const successMessage: Message = {
+          role: 'assistant',
+          content: `✅ **Transcription Complete (Whisper API)**\n\n**File:** ${file.name} (${fileSizeMB.toFixed(1)}MB)\n**Duration:** ${Math.round(whisperData.duration || 0)}s\n**Characters:** ${whisperData.transcription.length}\n\n### Transcription:\n${whisperData.transcription}`,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, successMessage]);
+        setIsTranscribingAudio(false);
+        setAudioProgress({ progress: 100, eta: 0, status: 'completed' });
+
+        return; // Exit early, don't continue with AssemblyAI flow
+      }
+
+      // AssemblyAI is available - continue with normal flow
+      const { upload_url: assemblyAIUploadUrl, auth_token } = credentialsData;
+      console.log('[AUDIO-PAGE] Upload credentials received');
+      console.log('[AUDIO-PAGE] Upload URL:', assemblyAIUploadUrl);
+      console.log('[AUDIO-PAGE] Auth token length:', auth_token?.length || 0);
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`[AUDIO-PAGE] Upload attempt ${attempt}/${maxRetries} for ${file.name}`);
+
+          // Use AbortController with dynamic timeout based on file size
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+            console.log(`[AUDIO-PAGE] Upload timed out after ${Math.round(timeoutSeconds / 60)} minutes`);
+            controller.abort();
+          }, timeoutMs);
+
+          const uploadResponse = await fetch(assemblyAIUploadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': auth_token,
+              'Content-Type': 'application/octet-stream',
+            },
+            body: arrayBuffer,
+            signal: controller.signal,
+            // @ts-ignore - keepalive helps with HTTP/2 issues
+            keepalive: false, // Disable keepalive for large uploads
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            console.error('[AUDIO-PAGE] Upload failed with status:', uploadResponse.status);
+            console.error('[AUDIO-PAGE] Error response:', errorText);
+
+            // Check for specific AssemblyAI errors
+            if (uploadResponse.status === 401 && errorText.includes('Invalid API key')) {
+              throw new Error(
+                `AssemblyAI API Key Error: The upload endpoint requires a billing-enabled account. ` +
+                `This is an AssemblyAI account limitation, not a code issue. ` +
+                `The API key works for reading data but not for uploading files. ` +
+                `Please check your AssemblyAI account billing status at https://www.assemblyai.com/app/account`
+              );
+            }
+
+            throw new Error(`Upload failed (HTTP ${uploadResponse.status}): ${errorText}`);
+          }
+
+          const uploadData = await uploadResponse.json();
+          uploadUrl = uploadData.upload_url;
+
+          console.log(`[AUDIO-PAGE] Upload successful on attempt ${attempt}: ${uploadUrl}`);
+          break; // Success - exit retry loop
+
+        } catch (error: any) {
+          lastError = error;
+          console.error(`[AUDIO-PAGE] Upload attempt ${attempt} failed:`, error.message);
+          console.error('[AUDIO-PAGE] Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack?.split('\n')[0]
+          });
+
+          // Check if it's a network error that's worth retrying
+          const isRetryable =
+            error.name === 'AbortError' ||
+            error.message?.includes('fetch') ||
+            error.message?.includes('network') ||
+            error.message?.includes('ERR_HTTP2') ||
+            error.message?.includes('PING_FAILED') ||
+            error.message?.includes('timeout');
+
+          if (!isRetryable || attempt === maxRetries) {
+            // Don't retry or max retries reached
+            console.error(`[AUDIO-PAGE] Upload failed after ${attempt} attempt(s), not retrying`);
+            break;
+          }
+
+          // Exponential backoff: wait 2^attempt seconds before retry
+          const waitTime = Math.pow(2, attempt) * 1000;
+          console.log(`[AUDIO-PAGE] Retrying upload in ${waitTime/1000} seconds...`);
+          setAudioProgress({
+            progress: 10 + (attempt * 2),
+            eta: Math.round(fileSizeMB * 2),
+            status: 'uploading_to_assemblyai'
+          });
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+
+      // Check if upload succeeded
+      if (!uploadUrl) {
+        throw new Error(
+          `Upload failed after ${maxRetries} attempts. ` +
+          `${lastError?.message || 'Unknown error'}. ` +
+          `This can happen with large files on slow connections. ` +
+          `Try: 1) Compress the audio file, 2) Use a faster internet connection, or 3) Upload when network is stable.`
+        );
+      }
+
+      console.log(`[AUDIO-PAGE] File uploaded to AssemblyAI: ${uploadUrl}`);
+
+      // Step 2: Start transcription with the uploaded URL
+      setAudioProgress({ progress: 20, eta: Math.round(fileSizeMB * 1.5), status: 'starting_transcription' });
+
+      const startResponse = await fetch('/api/transcribe/assemblyai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audioUrl: uploadUrl,
+          userId: currentUser,
+          projectId: currentProject,
+          filename: file.name,
+          fileSize: file.size
+        }),
+      });
+
+      const data = await startResponse.json();
+
+      if (!startResponse.ok) {
         throw new Error(data.error || 'Failed to start transcription');
       }
 
-      // Start polling for progress using the server endpoint
+      // Start polling for progress
       const jobId = data.jobId;
-      const estimatedMinutes = Math.max(2, Math.round(fileSizeMB * 1.5)); // ~1.5 min per MB
+      const estimatedMinutes = Math.max(5, Math.round(fileSizeMB * 0.5)); // ~30 sec per MB for transcription
       setAudioProgress({
-        progress: 0,
+        progress: 25,
         eta: estimatedMinutes * 60,
-        status: 'starting',
+        status: 'transcribing',
         jobId
       });
 
       // Poll using the existing pollAudioProgress function
       const pollInterval = setInterval(() => {
         pollAudioProgress(jobId);
-      }, 3000); // Poll every 3 seconds
+      }, 5000); // Poll every 5 seconds
 
-      // Store interval for cleanup
-      setTimeout(() => clearInterval(pollInterval), 25 * 60 * 1000); // 25 minute timeout
+      // Store interval for cleanup (longer timeout for big files)
+      setTimeout(() => clearInterval(pollInterval), 60 * 60 * 1000); // 1 hour timeout
 
-      console.log(`[AUDIO] Started server-side transcription job ${jobId} for ${file.name} (ETA: ~${estimatedMinutes}min)`);
+      console.log(`[AUDIO] Started transcription job ${jobId} for ${file.name} (ETA: ~${estimatedMinutes}min)`);
 
     } catch (error: any) {
-      console.error('Audio transcription error:', error);
+      console.error('[AUDIO-PAGE] Audio transcription error:', error);
+      console.error('[AUDIO-PAGE] Full error object:', {
+        name: error.name,
+        message: error.message,
+        cause: error.cause,
+        stack: error.stack
+      });
+
+      // Provide detailed, actionable error messages
+      let errorContent = `❌ **Audio Transcription Failed**\n\n`;
+
+      if (error.message?.includes('billing-enabled account')) {
+        errorContent += `**Root Cause:** AssemblyAI Account Limitation\n\n`;
+        errorContent += `Your AssemblyAI API key works for reading data but not for uploading files. This indicates:\n\n`;
+        errorContent += `1. The account may be in a trial or free tier that doesn't allow uploads\n`;
+        errorContent += `2. Billing may need to be enabled on the AssemblyAI account\n`;
+        errorContent += `3. The API key may have read-only permissions\n\n`;
+        errorContent += `**Solution:**\n`;
+        errorContent += `1. Visit https://www.assemblyai.com/app/account\n`;
+        errorContent += `2. Check your billing status and enable billing if needed\n`;
+        errorContent += `3. Verify your API key has full permissions\n\n`;
+        errorContent += `**Note:** This key successfully transcribed files before (including a 109MB file), so the account permissions may have changed.`;
+      } else if (error.message?.includes('timeout') || error.message?.includes('AbortError')) {
+        errorContent += `**Root Cause:** Upload Timeout\n\n`;
+        errorContent += `The file took too long to upload. This can happen with:\n`;
+        errorContent += `- Very large files on slow internet connections\n`;
+        errorContent += `- Network instability\n\n`;
+        errorContent += `**Solutions:**\n`;
+        errorContent += `1. Compress the audio file to reduce size\n`;
+        errorContent += `2. Use a faster/more stable internet connection\n`;
+        errorContent += `3. Try uploading during off-peak hours\n`;
+        errorContent += `4. Split long recordings into smaller chunks`;
+      } else {
+        errorContent += `**Error Details:**\n${error.message}\n\n`;
+        errorContent += `**Troubleshooting:**\n`;
+        errorContent += `1. Check your internet connection\n`;
+        errorContent += `2. Verify the file is a valid audio format (M4A, MP3, WAV, etc.)\n`;
+        errorContent += `3. Try a smaller file first to test the system\n`;
+        errorContent += `4. Check browser console for detailed error logs`;
+      }
+
       const errorMessage: Message = {
         role: 'assistant',
-        content: `❌ **Audio Transcription Failed**\n\nError: ${error.message}\n\nPlease try again with a different audio file or contact support if the issue persists.`,
+        content: errorContent,
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -844,17 +1087,6 @@ export default function Home() {
       backgroundColor: '#0f0f0f',
       color: '#ffffff'
     }}>
-      {/* EMERGENCY OAUTH TEST - TOP OF PAGE */}
-      <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 9999, background: 'red', padding: '10px' }}>
-        {status === 'loading' && <div>Auth Loading...</div>}
-        {!session && status !== 'loading' && (
-          <button onClick={() => signIn('google')} style={{ padding: '10px', backgroundColor: 'blue', color: 'white' }}>
-            EMERGENCY OAUTH TEST
-          </button>
-        )}
-        {session && <div style={{ color: 'white' }}>SIGNED IN: {session.user?.email}</div>}
-      </div>
-
       {/* Sidebar */}
       <div style={{
         width: '260px',
@@ -990,58 +1222,63 @@ export default function Home() {
           + New Chat
         </button>
 
-        {/* Conversation History */}
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{
-            fontSize: '12px',
-            fontWeight: '600',
-            color: '#aaa',
-            marginBottom: '8px',
-            textTransform: 'uppercase'
-          }}>
-            Recent Conversations
-          </h3>
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            {conversationHistory.slice(0, 5).map((conv) => (
-              <div
-                key={conv.id}
-                onClick={() => {
-                  setCurrentConversationId(conv.id);
-                  setCurrentProject(conv.project);
-                  // Load conversation messages here
-                }}
-                style={{
-                  padding: '8px',
-                  backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
-                  borderRadius: '4px',
-                  marginBottom: '4px',
-                  cursor: 'pointer',
-                  borderLeft: `3px solid ${conv.project === 'client-work' ? '#4a9eff' : conv.project === 'personal' ? '#10a37f' : '#666'}`,
-                  paddingLeft: '8px'
-                }}
-              >
-                <div style={{
-                  fontSize: '12px',
-                  color: '#ccc',
-                  fontWeight: '500',
-                  marginBottom: '2px',
-                  lineHeight: '1.2'
-                }}>
-                  {conv.title}
-                </div>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '10px',
-                  color: '#666'
-                }}>
-                  <span>{conv.messageCount} messages</span>
-                  <span>{conv.lastMessage}</span>
-                </div>
-              </div>
-            ))}
+        {/* Unassigned Conversations */}
+        {conversationHistory.filter(conv => !conv.project || conv.project === 'general').length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#aaa',
+              marginBottom: '8px',
+              textTransform: 'uppercase'
+            }}>
+              Unassigned Chats
+            </h3>
+            <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+              {conversationHistory
+                .filter(conv => !conv.project || conv.project === 'general')
+                .slice(0, 5)
+                .map((conv) => (
+                  <div
+                    key={conv.id}
+                    onClick={() => {
+                      setCurrentConversationId(conv.id);
+                      setCurrentProject(conv.project || 'general');
+                      loadConversation(conv.id);
+                    }}
+                    style={{
+                      padding: '6px 8px',
+                      backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
+                      borderRadius: '4px',
+                      marginBottom: '4px',
+                      cursor: 'pointer',
+                      borderLeft: '3px solid #666',
+                      paddingLeft: '8px'
+                    }}
+                  >
+                    <div style={{
+                      fontSize: '11px',
+                      color: '#ccc',
+                      fontWeight: '500',
+                      marginBottom: '2px',
+                      lineHeight: '1.2',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {conv.title}
+                    </div>
+                    <div style={{
+                      fontSize: '9px',
+                      color: '#666'
+                    }}>
+                      {conv.messageCount} msgs
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Projects Section */}
         <div style={{ flex: 1 }}>
@@ -1106,88 +1343,169 @@ export default function Home() {
           </div>
 
           <div style={{
-            maxHeight: '300px',
+            maxHeight: '400px',
             overflowY: 'auto',
             overflowX: 'hidden',
             scrollbarWidth: 'thin',
             scrollbarColor: '#666 #2a2a2a'
           }}>
-            {projects.map((project) => (
-              <div
-                key={project.id}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: currentProject === project.id ? '#2a2a2a' : '#1a1a1a',
-                borderRadius: '6px',
-                marginBottom: '8px',
-                fontSize: '14px',
-                color: currentProject === project.id ? '#fff' : '#ccc',
-                border: currentProject === project.id ? '1px solid #4a9eff' : '1px solid transparent',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                position: 'relative'
-              }}
-            >
-              <div
-                onClick={() => {
-                  handleProjectChange(project.id);
-                  setMessages([]); // Clear current messages
-                  setCurrentConversationId(null);
-                  setConversationTitle('');
-                }}
-                style={{
-                  flex: 1,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <span>{project.name}</span>
-                <span style={{
-                  fontSize: '11px',
-                  color: '#666',
-                  backgroundColor: '#333',
-                  padding: '2px 6px',
-                  borderRadius: '10px'
-                }}>
-                  {project.conversations}
-                </span>
-              </div>
+            {projects.map((project) => {
+              const isExpanded = expandedProjects.has(project.id);
+              const projectConversations = conversationHistory.filter(
+                conv => (conv.project || 'general') === project.id
+              );
 
-              {/* Delete button - only show for non-general projects */}
-              {project.id !== 'general' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteProject(project.id);
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#666',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    marginLeft: '8px',
-                    padding: '4px',
-                    borderRadius: '4px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#ff4444';
-                    e.currentTarget.style.backgroundColor = '#2a1a1a';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#666';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title={`Delete ${project.name} project`}
-                >
-                  🗑️
-                </button>
-              )}
-              </div>
-            ))}
+              return (
+                <div key={project.id} style={{ marginBottom: '8px' }}>
+                  {/* Project Header */}
+                  <div
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: currentProject === project.id ? '#2a2a2a' : '#1a1a1a',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      color: currentProject === project.id ? '#fff' : '#ccc',
+                      border: currentProject === project.id ? '1px solid #4a9eff' : '1px solid transparent',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                      {/* Expand/Collapse toggle */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedProjects(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(project.id)) {
+                              newSet.delete(project.id);
+                            } else {
+                              newSet.add(project.id);
+                            }
+                            return newSet;
+                          });
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#888',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                          padding: '2px'
+                        }}
+                      >
+                        {isExpanded ? '▼' : '▶'}
+                      </button>
+
+                      <div
+                        onClick={() => {
+                          handleProjectChange(project.id);
+                          setMessages([]);
+                          setCurrentConversationId(null);
+                          setConversationTitle('');
+                        }}
+                        style={{
+                          flex: 1,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <span style={{ fontWeight: '500' }}>{project.name}</span>
+                        <span style={{
+                          fontSize: '10px',
+                          color: '#666',
+                          backgroundColor: '#333',
+                          padding: '2px 6px',
+                          borderRadius: '10px'
+                        }}>
+                          {project.conversations}
+                        </span>
+                      </div>
+
+                      {/* Delete button */}
+                      {project.id !== 'general' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteProject(project.id);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#666',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            padding: '4px',
+                            borderRadius: '4px'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#ff4444';
+                            e.currentTarget.style.backgroundColor = '#2a1a1a';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#666';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                          title={`Delete ${project.name} project`}
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Nested Conversations */}
+                  {isExpanded && projectConversations.length > 0 && (
+                    <div style={{
+                      marginTop: '4px',
+                      marginLeft: '20px',
+                      borderLeft: '2px solid #333',
+                      paddingLeft: '8px'
+                    }}>
+                      {projectConversations.slice(0, 10).map((conv) => (
+                        <div
+                          key={conv.id}
+                          onClick={() => {
+                            setCurrentConversationId(conv.id);
+                            setCurrentProject(conv.project || 'general');
+                            loadConversation(conv.id);
+                          }}
+                          style={{
+                            padding: '6px 8px',
+                            backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
+                            borderRadius: '4px',
+                            marginBottom: '3px',
+                            cursor: 'pointer',
+                            borderLeft: currentConversationId === conv.id ? '2px solid #4a9eff' : '2px solid transparent'
+                          }}
+                        >
+                          <div style={{
+                            fontSize: '11px',
+                            color: currentConversationId === conv.id ? '#fff' : '#aaa',
+                            fontWeight: currentConversationId === conv.id ? '500' : '400',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {conv.title}
+                          </div>
+                          <div style={{
+                            fontSize: '9px',
+                            color: '#666',
+                            marginTop: '2px'
+                          }}>
+                            {conv.messageCount} msgs • {conv.lastMessage}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Current Project Info */}
@@ -1215,119 +1533,49 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Google Authentication */}
+        {/* Google Workspace - Minimal Status */}
         <div style={{
-          marginBottom: '20px',
-          padding: '10px'
+          padding: '10px 12px',
+          backgroundColor: '#0a0a0a',
+          borderRadius: '6px',
+          border: '1px solid #333',
+          marginBottom: '12px'
         }}>
-          <div style={{ color: '#888', fontSize: '10px', marginBottom: '5px' }}>
-            Google Account Status
+          <div style={{
+            fontSize: '11px',
+            color: '#888',
+            marginBottom: '6px',
+            fontWeight: '500'
+          }}>
+            Google Workspace
           </div>
-          {status === 'loading' ? (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
             <div style={{
-              padding: '12px',
-              backgroundColor: '#2a2a2a',
-              borderRadius: '8px',
               fontSize: '12px',
-              color: '#888',
-              textAlign: 'center'
+              color: session ? '#4ade80' : '#666'
             }}>
-              Loading auth...
+              {session ? '✓ Connected' : '○ Not Connected'}
             </div>
-          ) : session ? (
-            <div style={{
-              padding: '12px',
-              backgroundColor: '#1a4a1a',
-              borderRadius: '8px',
-              fontSize: '12px',
-              color: '#4ade80'
-            }}>
-              <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                ✅ Google Connected
-              </div>
-              <div style={{ marginBottom: '8px', fontSize: '11px' }}>
-                {session.user?.email}
-              </div>
-              <button
-                onClick={() => signOut()}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: '#ef4444',
-                  border: 'none',
-                  borderRadius: '4px',
-                  color: 'white',
-                  fontSize: '11px',
-                  cursor: 'pointer'
-                }}
-              >
-                Disconnect
-              </button>
-            </div>
-          ) : (
             <button
-              onClick={() => signIn('google')}
+              onClick={() => setShowGoogleServices(!showGoogleServices)}
               style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#4285f4',
+                background: 'none',
                 border: 'none',
-                borderRadius: '8px',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: '600',
+                color: '#888',
                 cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
+                fontSize: '11px',
+                padding: '2px 6px'
               }}
             >
-              🔗 Connect Google
+              {showGoogleServices ? '◀' : '▶'}
             </button>
-          )}
+          </div>
         </div>
 
-        {/* Google Services Toggle */}
-        <div style={{ marginBottom: '20px' }}>
-          <button
-            onClick={() => setShowGoogleServices(!showGoogleServices)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: showGoogleServices ? '#4ade80' : '#2a2a2a',
-              border: '1px solid #444',
-              borderRadius: '6px',
-              color: '#ffffff',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'all 0.2s',
-              opacity: session ? 1 : 0.6
-            }}
-          >
-            {showGoogleServices ? '📱 Hide Google Services' : '🔗 Show Google Services'}
-          </button>
-          {!session && (
-            <div style={{ fontSize: '10px', color: '#666', marginTop: '4px', textAlign: 'center' }}>
-              Sign in to enable
-            </div>
-          )}
-        </div>
-
-        {/* System Status */}
-        <div style={{
-          marginTop: 'auto',
-          padding: '12px',
-          backgroundColor: '#1a1a1a',
-          borderRadius: '8px',
-          fontSize: '12px',
-          color: '#888'
-        }}>
-          <div>KimbleAI v4</div>
-          <div>Status: Online</div>
-          <div>Memory: Active</div>
-          {session && <div>Google: Connected ✅</div>}
-        </div>
       </div>
 
       {/* Main Content Area */}
@@ -1357,6 +1605,72 @@ export default function Home() {
           backgroundColor: '#171717'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* System Status - Top Right */}
+            <div style={{
+              position: 'absolute',
+              top: '16px',
+              right: '24px',
+              display: 'flex',
+              gap: '12px',
+              fontSize: '11px',
+              color: '#888',
+              fontWeight: '500',
+              alignItems: 'center'
+            }}>
+              <span>KimbleAI v4</span>
+              <span>•</span>
+              <span style={{ color: '#4ade80' }}>Online</span>
+              <span>•</span>
+              <span>Memory: Active</span>
+              <span>•</span>
+              {status === 'loading' ? (
+                <span style={{ color: '#888' }}>Auth...</span>
+              ) : session ? (
+                <>
+                  <span style={{ color: '#4ade80' }}>Google ✅</span>
+                  <button
+                    onClick={() => signOut()}
+                    style={{
+                      padding: '4px 8px',
+                      backgroundColor: 'transparent',
+                      border: '1px solid #444',
+                      borderRadius: '4px',
+                      color: '#888',
+                      fontSize: '10px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#ef4444';
+                      e.currentTarget.style.color = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#444';
+                      e.currentTarget.style.color = '#888';
+                    }}
+                  >
+                    Disconnect
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => signIn('google')}
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: '#4285f4',
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: 'white',
+                    fontSize: '10px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Connect
+                </button>
+              )}
+            </div>
             <div>
               {conversationTitle ? (
                 <div>
@@ -1642,11 +1956,16 @@ export default function Home() {
               }}>
                 <div style={{ marginBottom: '2px' }}>
                   {audioProgress.status === 'initializing' && '🔄 Initializing...'}
-                  {audioProgress.status === 'preparing_file' && '📁 Preparing file...'}
+                  {audioProgress.status === 'preparing_file' && '📁 Preparing...'}
+                  {audioProgress.status === 'uploading_to_assemblyai' && '⬆️ Uploading (large files take time)...'}
+                  {audioProgress.status === 'starting_transcription' && '🚀 Starting transcription...'}
                   {audioProgress.status === 'uploading_to_whisper' && '⬆️ Uploading...'}
                   {audioProgress.status === 'transcribing' && '🎯 Transcribing...'}
+                  {audioProgress.status === 'queued' && '⏳ Queued...'}
+                  {audioProgress.status === 'processing' && '⚙️ Processing...'}
+                  {audioProgress.status === 'saving' && '💾 Saving...'}
                   {audioProgress.status === 'saving_to_database' && '💾 Saving...'}
-                  {audioProgress.status === 'generating_embeddings' && '🧠 Generating embeddings...'}
+                  {audioProgress.status === 'generating_embeddings' && '🧠 Embedding...'}
                   {audioProgress.status === 'starting' && '🚀 Starting...'}
                 </div>
                 {audioProgress.progress > 0 && (
@@ -1673,7 +1992,9 @@ export default function Home() {
                       {audioProgress.progress}%
                       {audioProgress.eta > 0 && ` • ${audioProgress.eta < 60
                         ? `${audioProgress.eta}s`
-                        : `${Math.floor(audioProgress.eta / 60)}m`}`}
+                        : audioProgress.eta < 3600
+                          ? `${Math.floor(audioProgress.eta / 60)}m`
+                          : `${Math.floor(audioProgress.eta / 3600)}h${Math.floor((audioProgress.eta % 3600) / 60)}m`}`}
                     </span>
                   </div>
                 )}
