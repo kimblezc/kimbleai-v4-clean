@@ -1578,7 +1578,7 @@ export default function Home() {
 
         {/* Audio Transcription Link */}
         <button
-          onClick={() => window.location.href = '/audio/transcribe'}
+          onClick={() => window.location.href = '/transcribe'}
           style={{
             width: '100%',
             padding: '10px 12px',
@@ -1594,7 +1594,7 @@ export default function Home() {
             marginBottom: '8px'
           }}
         >
-          <span>🎤 Transcribe Audio</span>
+          <span>🎤 Transcribe from Drive</span>
           <span>→</span>
         </button>
 
