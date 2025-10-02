@@ -269,37 +269,42 @@ export default function TranscribePage() {
         </div>
 
         {/* Jump to Folder ID */}
-        <div style={{ marginBottom: '2rem', display: 'flex', gap: '0.5rem' }}>
-          <input
-            type="text"
-            placeholder="Paste Google Drive folder ID (e.g., 1abc...xyz)"
-            value={folderIdInput}
-            onChange={(e) => setFolderIdInput(e.target.value)}
-            style={{
-              flex: 1,
-              padding: '0.75rem',
-              backgroundColor: '#1f2937',
-              border: '1px solid #374151',
-              borderRadius: '0.5rem',
-              color: '#fff',
-              fontSize: '0.875rem'
-            }}
-          />
-          <button
-            onClick={goToFolderId}
-            disabled={!folderIdInput.trim()}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: folderIdInput.trim() ? '#4a9eff' : '#374151',
-              border: 'none',
-              borderRadius: '0.5rem',
-              color: '#fff',
-              cursor: folderIdInput.trim() ? 'pointer' : 'not-allowed',
-              fontSize: '0.875rem'
-            }}
-          >
-            Go to Folder
-          </button>
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ marginBottom: '0.5rem', fontSize: '0.875rem', color: '#9ca3af' }}>
+            💡 To jump to a folder: Open it in Drive, copy the ID from the URL (after <code style={{ backgroundColor: '#1f2937', padding: '0.125rem 0.25rem', borderRadius: '0.25rem' }}>/folders/</code>)
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              type="text"
+              placeholder="Paste Google Drive folder ID (e.g., 1abc...xyz)"
+              value={folderIdInput}
+              onChange={(e) => setFolderIdInput(e.target.value)}
+              style={{
+                flex: 1,
+                padding: '0.75rem',
+                backgroundColor: '#1f2937',
+                border: '1px solid #374151',
+                borderRadius: '0.5rem',
+                color: '#fff',
+                fontSize: '0.875rem'
+              }}
+            />
+            <button
+              onClick={goToFolderId}
+              disabled={!folderIdInput.trim()}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: folderIdInput.trim() ? '#4a9eff' : '#374151',
+                border: 'none',
+                borderRadius: '0.5rem',
+                color: '#fff',
+                cursor: folderIdInput.trim() ? 'pointer' : 'not-allowed',
+                fontSize: '0.875rem'
+              }}
+            >
+              Go to Folder
+            </button>
+          </div>
         </div>
 
         {/* Error */}
