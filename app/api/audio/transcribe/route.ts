@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { generateEmbedding } from '@/lib/embeddings';
+import { trackAPICall, enforceApiCallBudget, calculateCost } from '@/lib/cost-monitor';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -48,16 +49,52 @@ export async function POST(request: NextRequest) {
       type: audioFile.type,
     });
 
+    // Check budget before transcribing
+    console.log('[AUDIO] Checking cost limits before transcription...');
+    const budgetCheck = await enforceApiCallBudget(userId, '/api/audio/transcribe');
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        { error: budgetCheck.reason || 'Service paused due to budget limits. Please check your cost monitor dashboard.' },
+        { status: 429 }
+      );
+    }
+
     // Transcribe using Whisper
     console.log('[AUDIO] Starting Whisper transcription...');
+    const transcriptionStartTime = Date.now();
     const transcription = await openai.audio.transcriptions.create({
       file: file,
       model: 'whisper-1',
       language: 'en', // Optional: specify language
       response_format: 'verbose_json', // Get timestamps
     });
+    const transcriptionDuration = Date.now() - transcriptionStartTime;
 
     console.log('[AUDIO] Transcription completed');
+
+    // Record transcription cost
+    const audioDurationMinutes = transcription.duration / 60;
+    const transcriptionCost = audioDurationMinutes * 0.006; // $0.006 per minute
+    console.log(`[AUDIO] Recording cost: ${audioDurationMinutes.toFixed(2)} minutes = $${transcriptionCost.toFixed(4)}`);
+
+    await trackAPICall({
+      user_id: userId,
+      model: 'whisper-1',
+      endpoint: '/api/audio/transcribe',
+      input_tokens: 0,
+      output_tokens: 0,
+      cost_usd: transcriptionCost,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        filename: audioFile.name,
+        fileSize: audioFile.size,
+        audioDuration: transcription.duration,
+        audioDurationMinutes: audioDurationMinutes,
+        language: transcription.language,
+        processingTime: transcriptionDuration,
+        textLength: transcription.text.length,
+      }
+    });
 
     // Generate embedding for semantic search
     let embedding: number[] | null = null;
