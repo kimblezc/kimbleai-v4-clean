@@ -1576,6 +1576,28 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Audio Transcription Link */}
+        <button
+          onClick={() => window.location.href = '/audio/transcribe'}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            backgroundColor: '#0a0a0a',
+            border: '1px solid #333',
+            borderRadius: '6px',
+            color: '#10b981',
+            fontSize: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '8px'
+          }}
+        >
+          <span>🎤 Transcribe Audio</span>
+          <span>→</span>
+        </button>
+
         {/* Agent Status Link */}
         <button
           onClick={() => window.location.href = '/agents/status'}
