@@ -50,7 +50,7 @@ export default function DriveIntelligencePage() {
   const loadDriveFiles = async (folderId: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/google/drive?folderId=${folderId}`);
+      const response = await fetch(`/api/google/drive?folderId=${folderId}&pageSize=1000`);
       const data = await response.json();
 
       if (data.success && data.files) {
@@ -297,66 +297,83 @@ export default function DriveIntelligencePage() {
               <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>
                 Files ({files.length})
               </h2>
-              {selectedFiles.size > 0 && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => createTask('analyze', currentFolder)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#4a9eff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🔍 Analyze
-                  </button>
-                  <button
-                    onClick={() => createTask('organize', currentFolder)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#10a37f',
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    📋 Organize
-                  </button>
-                  <button
-                    onClick={() => createTask('cleanup', currentFolder)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#f59e0b',
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🧹 Cleanup
-                  </button>
-                  <button
-                    onClick={() => createTask('index', currentFolder)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#8b5cf6',
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🔎 Index for Search
-                  </button>
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {selectedFiles.size > 0 && (
+                  <>
+                    <button
+                      onClick={() => createTask('analyze', currentFolder)}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#4a9eff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🔍 Analyze Folder
+                    </button>
+                    <button
+                      onClick={() => createTask('organize', currentFolder)}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#10a37f',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📋 Organize
+                    </button>
+                    <button
+                      onClick={() => createTask('cleanup', currentFolder)}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#f59e0b',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🧹 Cleanup
+                    </button>
+                    <button
+                      onClick={() => createTask('index', currentFolder)}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#8b5cf6',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🔎 Index Folder
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => createTask('index', 'root')}
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: '#ef4444',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  🌍 Scan Entire Drive
+                </button>
+              </div>
             </div>
 
             {files.length === 0 ? (

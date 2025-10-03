@@ -7,9 +7,79 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+async function indexFolder(
+  drive: any,
+  folderId: string,
+  recursive: boolean = false
+): Promise<{ indexed: number; scanned: number; folders: number }> {
+  let stats = { indexed: 0, scanned: 0, folders: 0 };
+
+  // List all files in the current folder
+  let pageToken: string | undefined = undefined;
+
+  do {
+    const response = await drive.files.list({
+      q: `'${folderId}' in parents and trashed=false`,
+      fields: 'nextPageToken, files(id, name, mimeType, size, modifiedTime, webViewLink)',
+      pageSize: 1000,
+      pageToken
+    });
+
+    const files = response.data.files || [];
+    stats.scanned += files.length;
+
+    for (const file of files) {
+      // If it's a folder and we're doing recursive scan
+      if (file.mimeType === 'application/vnd.google-apps.folder') {
+        stats.folders++;
+
+        if (recursive) {
+          // Recursively index this folder
+          const subStats = await indexFolder(drive, file.id!, true);
+          stats.indexed += subStats.indexed;
+          stats.scanned += subStats.scanned;
+          stats.folders += subStats.folders;
+        }
+        continue;
+      }
+
+      // Index the file into knowledge base
+      const { error } = await supabase
+        .from('knowledge_base')
+        .upsert({
+          title: file.name,
+          content: `Google Drive file: ${file.name} (${file.mimeType})`,
+          source_type: 'google_drive',
+          source_id: file.id,
+          metadata: {
+            mimeType: file.mimeType,
+            size: file.size,
+            modifiedTime: file.modifiedTime,
+            webViewLink: file.webViewLink,
+            folderId: folderId
+          },
+          user_id: 'zach',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'source_id'
+        });
+
+      if (!error) {
+        stats.indexed++;
+      }
+    }
+
+    pageToken = response.data.nextPageToken || undefined;
+  } while (pageToken);
+
+  return stats;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { folderId } = await request.json();
+    const isEntireDrive = folderId === 'root';
 
     // Get user's Google tokens
     const { data: tokenData } = await supabase
@@ -39,53 +109,20 @@ export async function POST(request: NextRequest) {
 
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
-    // List all files in the folder
-    const response = await drive.files.list({
-      q: `'${folderId}' in parents and trashed=false`,
-      fields: 'files(id, name, mimeType, size, modifiedTime, webViewLink)',
-      pageSize: 1000
-    });
+    // Index the folder (recursively if entire drive)
+    const stats = await indexFolder(drive, folderId, isEntireDrive);
 
-    const files = response.data.files || [];
-    let indexed = 0;
-
-    // Index each file into knowledge base
-    for (const file of files) {
-      // Skip folders
-      if (file.mimeType === 'application/vnd.google-apps.folder') continue;
-
-      // Create knowledge base entry
-      const { error } = await supabase
-        .from('knowledge_base')
-        .upsert({
-          title: file.name,
-          content: `Google Drive file: ${file.name} (${file.mimeType})`,
-          source_type: 'google_drive',
-          source_id: file.id,
-          metadata: {
-            mimeType: file.mimeType,
-            size: file.size,
-            modifiedTime: file.modifiedTime,
-            webViewLink: file.webViewLink,
-            folderId: folderId
-          },
-          user_id: 'zach',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'source_id'
-        });
-
-      if (!error) {
-        indexed++;
-      }
-    }
+    const message = isEntireDrive
+      ? `Scanned entire Drive: ${stats.indexed} files indexed, ${stats.scanned} files scanned, ${stats.folders} folders explored`
+      : `Indexed ${stats.indexed} files from folder (${stats.scanned} files scanned)`;
 
     return NextResponse.json({
       success: true,
-      message: `Indexed ${indexed} files into knowledge base for semantic search`,
-      indexed,
-      total: files.length
+      message,
+      indexed: stats.indexed,
+      scanned: stats.scanned,
+      folders: stats.folders,
+      isEntireDrive
     });
 
   } catch (error: any) {
