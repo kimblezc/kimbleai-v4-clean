@@ -1657,10 +1657,32 @@ export default function Home() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '12px'
+            marginBottom: '8px'
           }}
         >
           <span>🔄 Device Sync</span>
+          <span>→</span>
+        </button>
+
+        {/* Drive Intelligence Link */}
+        <button
+          onClick={() => window.location.href = '/drive'}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            backgroundColor: '#0a0a0a',
+            border: '1px solid #333',
+            borderRadius: '6px',
+            color: '#4a9eff',
+            fontSize: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '12px'
+          }}
+        >
+          <span>📁 Drive Intelligence</span>
           <span>→</span>
         </button>
 
