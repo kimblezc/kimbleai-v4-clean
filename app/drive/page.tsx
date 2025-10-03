@@ -103,7 +103,7 @@ export default function DriveIntelligencePage() {
   };
 
   const executeTask = async (taskId: string, type: AgentTask['type'], target: string) => {
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: 'running' } : t));
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'running' } : t));
 
     try {
       let result = '';
@@ -123,14 +123,14 @@ export default function DriveIntelligencePage() {
           break;
       }
 
-      setTasks(tasks.map(t => t.id === taskId ? {
+      setTasks(prev => prev.map(t => t.id === taskId ? {
         ...t,
         status: 'completed',
         result,
         completedAt: new Date().toISOString()
       } : t));
     } catch (error: any) {
-      setTasks(tasks.map(t => t.id === taskId ? {
+      setTasks(prev => prev.map(t => t.id === taskId ? {
         ...t,
         status: 'failed',
         result: error.message,
@@ -161,14 +161,29 @@ export default function DriveIntelligencePage() {
   };
 
   const indexFiles = async (folderId: string): Promise<string> => {
-    // Call Drive Intelligence agent to index for search
-    const response = await fetch('/api/google/drive/index', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folderId })
-    });
-    const data = await response.json();
-    return data.message || `Indexed files for semantic search`;
+    try {
+      // Call Drive Intelligence agent to index for search
+      const response = await fetch('/api/google/drive/index', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderId })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Indexing failed');
+      }
+
+      return data.message || `Indexed ${data.indexed || 0} files for semantic search`;
+    } catch (error: any) {
+      console.error('Index error:', error);
+      throw error;
+    }
   };
 
   const getFileIcon = (mimeType: string) => {
@@ -478,6 +493,7 @@ export default function DriveIntelligencePage() {
                     }}>
                       <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>
                         {task.type.charAt(0).toUpperCase() + task.type.slice(1)}
+                        {task.target === 'root' && ' - Entire Drive'}
                       </span>
                       <span style={{
                         fontSize: '11px',
@@ -495,10 +511,28 @@ export default function DriveIntelligencePage() {
                         {task.status}
                       </span>
                     </div>
+
+                    {task.status === 'running' && (
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#f59e0b',
+                        marginTop: '8px',
+                        padding: '8px',
+                        backgroundColor: '#050505',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <span>⏳</span>
+                        <span>Processing... This may take several minutes for large drives.</span>
+                      </div>
+                    )}
+
                     {task.result && (
                       <div style={{
                         fontSize: '12px',
-                        color: '#888',
+                        color: task.status === 'failed' ? '#ef4444' : '#888',
                         marginTop: '8px',
                         padding: '8px',
                         backgroundColor: '#050505',
