@@ -28,7 +28,7 @@ export default function CostsPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/costs?userId=zach');
+      const response = await fetch('/api/costs?action=summary&userId=zach');
       const data = await response.json();
 
       if (data.error) {
