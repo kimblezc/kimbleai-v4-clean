@@ -116,7 +116,17 @@ export default function TranscribePage() {
         })
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`HTTP ${response.status}: ${text || 'Request failed'}`);
+      }
+
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new Error('Server returned empty response');
+      }
+
+      const data = JSON.parse(text);
 
       if (data.error) {
         throw new Error(data.error);
@@ -147,7 +157,17 @@ export default function TranscribePage() {
     const poll = async () => {
       try {
         const response = await fetch(`/api/transcribe/status?jobId=${jobId}`);
-        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          throw new Error('Empty response from status endpoint');
+        }
+
+        const data = JSON.parse(text);
 
         const job = jobs.get(fileId);
         if (!job) return;

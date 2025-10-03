@@ -14,10 +14,16 @@ const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY!;
 const ASSEMBLYAI_BASE_URL = 'https://api.assemblyai.com/v2';
 
 export async function POST(request: NextRequest) {
+  console.log('[DRIVE-ASSEMBLYAI] Request received');
+
   try {
-    const { fileId, fileName, userId = 'zach', projectId = 'general' } = await request.json();
+    const body = await request.json();
+    console.log('[DRIVE-ASSEMBLYAI] Request body:', JSON.stringify(body));
+
+    const { fileId, fileName, userId = 'zach', projectId = 'general' } = body;
 
     if (!fileId) {
+      console.error('[DRIVE-ASSEMBLYAI] No fileId provided');
       return NextResponse.json({ error: 'No Google Drive fileId provided' }, { status: 400 });
     }
 
@@ -134,9 +140,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[DRIVE-ASSEMBLYAI] Error:', error);
+    console.error('[DRIVE-ASSEMBLYAI] Stack:', error.stack);
     return NextResponse.json({
+      success: false,
       error: 'Transcription failed',
-      details: error.message
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 });
   }
 }
