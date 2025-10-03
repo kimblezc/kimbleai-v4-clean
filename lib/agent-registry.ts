@@ -549,7 +549,51 @@ export class AgentRegistry {
       healthCheck: async () => this.checkAudioTransfer()
     });
 
-    // 13. Agent Optimizer (Meta-Agent)
+    // 13. Cleanup Agent
+    this.registerAgent({
+      id: 'cleanup-agent',
+      name: 'Cleanup Agent',
+      category: AgentCategory.SYSTEM,
+      icon: '🧹',
+      color: '#06b6d4',
+      description: 'Manages cleanup across git, Vercel, local storage, and Google Drive - removes large files, cleans caches, optimizes storage',
+      capabilities: [
+        'Git repository cleanup (remove large files from history)',
+        'Vercel deployment optimization',
+        'Local storage management',
+        'Google Drive file organization',
+        'Cache clearing and optimization',
+        'Temporary file removal',
+        'Build artifact cleanup',
+        'Database cleanup and optimization'
+      ],
+      apiEndpoints: [
+        '/api/cleanup/git',
+        '/api/cleanup/storage',
+        '/api/cleanup/cache'
+      ],
+      databaseTables: [
+        'cleanup_logs',
+        'storage_analytics'
+      ],
+      implementationFiles: {
+        services: ['lib/cleanup-agent.ts'],
+        apis: ['app/api/cleanup/route.ts'],
+        components: [],
+        schemas: []
+      },
+      features: [
+        { name: 'Git Cleanup', status: 'planned', description: 'Remove large files from git history' },
+        { name: 'Storage Optimization', status: 'planned', description: 'Clean up local and cloud storage' },
+        { name: 'Cache Management', status: 'planned', description: 'Clear and optimize caches' },
+        { name: 'Drive Organization', status: 'planned', description: 'Organize and clean Google Drive' },
+        { name: 'Automated Cleanup', status: 'planned', description: 'Schedule regular cleanup tasks' }
+      ],
+      integrations: ['Git', 'Vercel', 'Google Drive', 'File System'],
+      healthCheck: async () => this.checkCleanupAgent()
+    });
+
+    // 14. Agent Optimizer (Meta-Agent)
     this.registerAgent({
       id: 'agent-optimizer',
       name: 'Agent Optimizer',
@@ -848,6 +892,19 @@ export class AgentRegistry {
       errors: [],
       metrics: {
         avgResponseTime: 210
+      }
+    };
+  }
+
+  private async checkCleanupAgent(): Promise<AgentHealth> {
+    return {
+      status: AgentStatus.IDLE,
+      lastActivity: 'Ready to clean',
+      tasksCompleted: 0,
+      currentTask: 'Awaiting cleanup requests',
+      errors: [],
+      metrics: {
+        avgResponseTime: 100
       }
     };
   }

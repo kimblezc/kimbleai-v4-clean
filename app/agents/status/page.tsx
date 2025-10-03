@@ -105,6 +105,13 @@ const AGENT_GOALS: Record<string, string[]> = {
     'Reduce quick reference time to <15 seconds',
     'Implement resume capability for failed uploads'
   ],
+  'cleanup-agent': [
+    'Automate git repository cleanup and optimization',
+    'Maintain storage usage below 80% capacity',
+    'Implement scheduled cleanup tasks',
+    'Reduce deployment size by 50%',
+    'Organize and deduplicate cloud storage'
+  ],
   'agent-optimizer': [
     'Achieve 99.9% agent uptime across all systems',
     'Reduce agent error rate to <0.1%',
