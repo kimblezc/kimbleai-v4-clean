@@ -13,6 +13,8 @@ const PUBLIC_PATHS = [
   '/api/auth',
   '/api/sync', // Device continuity endpoints
   '/api/costs', // Cost monitoring endpoints
+  '/api/google', // Google Drive/Workspace endpoints (use userId for auth)
+  '/api/transcribe', // Transcription endpoints (use userId for auth)
   '/api/health', // Health check endpoint (for monitoring)
   '/api/status', // Status endpoint (for monitoring)
   '/auth/signin',
