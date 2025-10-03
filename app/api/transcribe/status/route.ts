@@ -8,11 +8,11 @@ const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY!;
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const transcriptId = searchParams.get('id');
+    const transcriptId = searchParams.get('jobId') || searchParams.get('id');
 
     if (!transcriptId) {
       return NextResponse.json(
-        { error: 'Transcript ID is required' },
+        { error: 'Transcript ID is required (use ?jobId=xxx or ?id=xxx)' },
         { status: 400 }
       );
     }
