@@ -128,6 +128,7 @@ export default function AgentStatusPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AgentActivity | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   // Fetch real agent data from API
   useEffect(() => {
@@ -158,10 +159,12 @@ export default function AgentStatusPage() {
 
     fetchAgentData();
 
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(fetchAgentData, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    // Auto-refresh every 60 seconds (only if autoRefresh is enabled)
+    if (autoRefresh) {
+      const interval = setInterval(fetchAgentData, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh]);
 
   // Helper to generate accomplishment text based on real data
   const getAccomplishments = (agent: AgentActivity): string[] => {
@@ -308,22 +311,42 @@ export default function AgentStatusPage() {
         </button>
 
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{
-            fontSize: '36px',
-            fontWeight: '700',
-            margin: 0,
-            marginBottom: '8px'
-          }}>
-            🤖 Agent Ecosystem Status
-          </h1>
-          <p style={{
-            fontSize: '16px',
-            color: '#888',
-            margin: 0,
-            marginBottom: '16px'
-          }}>
-            Real-time monitoring of all {agents.length} intelligent agents - showing actual database metrics
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+            <div>
+              <h1 style={{
+                fontSize: '36px',
+                fontWeight: '700',
+                margin: 0,
+                marginBottom: '8px'
+              }}>
+                🤖 Agent Ecosystem Status
+              </h1>
+              <p style={{
+                fontSize: '16px',
+                color: '#888',
+                margin: 0
+              }}>
+                Real-time monitoring of all {agents.length} intelligent agents - showing actual database metrics
+              </p>
+            </div>
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: autoRefresh ? '#10a37f' : '#2a2a2a',
+                border: '1px solid #444',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              {autoRefresh ? '⏸️ Pause Refresh' : '▶️ Resume Refresh'}
+            </button>
+          </div>
 
           {/* System Stats */}
           <div style={{
