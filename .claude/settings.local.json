@@ -75,7 +75,11 @@
       "WebFetch(domain:kimbleai-v4-clean-awpt97j6g-kimblezcs-projects.vercel.app)",
       "Bash(git log:*)",
       "Bash(grep:*)",
-      "Bash(git rev-list:*)"
+      "Bash(git rev-list:*)",
+      "WebFetch(domain:kimbleai-v4-clean-gjad3vigq-kimblezcs-projects.vercel.app)",
+      "Bash(echo:*)",
+      "Bash(__NEW_LINE__ cat create-semantic-search-function.sql)",
+      "Bash(timeout 15 npm run build)"
     ],
     "deny": [],
     "ask": []

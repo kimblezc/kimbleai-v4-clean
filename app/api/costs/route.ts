@@ -36,33 +36,47 @@ export async function GET(request: NextRequest) {
           costMonitor.getUsageAnalytics(startDate, endDate, userId),
         ]);
 
+        // Get recent API calls
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        const { data: recentCalls } = await supabase
+          .from('api_cost_tracking')
+          .select('*')
+          .eq('user_id', userId || 'zach')
+          .order('timestamp', { ascending: false })
+          .limit(20);
+
         return NextResponse.json({
-          status: budgetStatus.allowed ? 'healthy' : 'over-budget',
-          budget: {
-            monthly: {
-              spent: budgetStatus.currentSpend.monthly,
-              limit: budgetStatus.limits.monthly,
-              percentUsed: budgetStatus.percentUsed.monthly,
-              remaining: budgetStatus.limits.monthly - budgetStatus.currentSpend.monthly,
-            },
-            daily: {
-              spent: budgetStatus.currentSpend.daily,
-              limit: budgetStatus.limits.daily,
-              percentUsed: budgetStatus.percentUsed.daily,
-            },
-            hourly: {
-              spent: budgetStatus.currentSpend.hourly,
-              limit: budgetStatus.limits.hourly,
-            },
+          hourly: {
+            used: budgetStatus.currentSpend.hourly,
+            limit: budgetStatus.limits.hourly,
+            percentage: (budgetStatus.currentSpend.hourly / budgetStatus.limits.hourly) * 100
           },
-          analytics: {
-            totalCost: analytics.totalCost,
-            totalCalls: analytics.totalCalls,
-            dailyAverage: analytics.dailyAverage,
-            projectedMonthly: analytics.projectedMonthly,
+          daily: {
+            used: budgetStatus.currentSpend.daily,
+            limit: budgetStatus.limits.daily,
+            percentage: budgetStatus.percentUsed.daily
           },
-          alerts: budgetStatus.reason ? [budgetStatus.reason] : [],
-          hardStopEnabled: costMonitor.BUDGET_LIMITS.HARD_STOP_AT_LIMIT,
+          monthly: {
+            used: budgetStatus.currentSpend.monthly,
+            limit: budgetStatus.limits.monthly,
+            percentage: budgetStatus.percentUsed.monthly
+          },
+          recentCalls: (recentCalls || []).map(call => ({
+            id: call.id,
+            timestamp: call.timestamp,
+            model: call.model,
+            endpoint: call.endpoint,
+            cost: call.cost_usd,
+            tokens: {
+              input: call.input_tokens || 0,
+              output: call.output_tokens || 0
+            }
+          }))
         });
       }
 

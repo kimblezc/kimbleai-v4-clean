@@ -104,6 +104,13 @@ const AGENT_GOALS: Record<string, string[]> = {
     'Support 5GB file limit',
     'Reduce quick reference time to <15 seconds',
     'Implement resume capability for failed uploads'
+  ],
+  'agent-optimizer': [
+    'Achieve 99.9% agent uptime across all systems',
+    'Reduce agent error rate to <0.1%',
+    'Implement predictive failure prevention',
+    'Auto-optimize agent performance in real-time',
+    'Build self-healing capabilities for all agents'
   ]
 };
 

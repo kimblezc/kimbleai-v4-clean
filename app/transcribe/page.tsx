@@ -91,10 +91,6 @@ export default function TranscribePage() {
     setFolderIdInput('');
   };
 
-  const getShareableUrl = (fileId: string): string => {
-    return `https://drive.google.com/uc?export=download&id=${fileId}`;
-  };
-
   const startTranscription = async (file: DriveFile) => {
     const newJob: TranscriptionJob = {
       jobId: `job_${Date.now()}`,
@@ -108,17 +104,15 @@ export default function TranscribePage() {
     setError(null);
 
     try {
-      const audioUrl = getShareableUrl(file.id);
-
-      const response = await fetch('/api/transcribe/assemblyai', {
+      // Use Drive-AssemblyAI endpoint: Downloads from Drive → Uploads to AssemblyAI
+      const response = await fetch('/api/transcribe/drive-assemblyai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          audioUrl,
+          fileId: file.id,
+          fileName: file.name,
           userId: 'zach',
-          projectId: 'general',
-          filename: file.name,
-          fileSize: file.size,
+          projectId: 'general'
         })
       });
 
@@ -128,10 +122,15 @@ export default function TranscribePage() {
         throw new Error(data.error);
       }
 
-      newJob.jobId = data.jobId || newJob.jobId;
-      newJob.status = 'processing';
-      setJobs(new Map(jobs.set(file.id, newJob)));
-      pollJobStatus(file.id, data.jobId || newJob.jobId);
+      if (data.success && data.jobId) {
+        newJob.jobId = data.jobId;
+        newJob.status = 'processing';
+        setJobs(new Map(jobs.set(file.id, newJob)));
+        // Start polling for completion
+        pollJobStatus(file.id, data.jobId);
+      } else {
+        throw new Error('Failed to start transcription');
+      }
 
     } catch (err: any) {
       newJob.status = 'error';

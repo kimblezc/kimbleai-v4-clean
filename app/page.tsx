@@ -1613,10 +1613,54 @@ export default function Home() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '12px'
+            marginBottom: '8px'
           }}
         >
           <span>Agent Status</span>
+          <span>→</span>
+        </button>
+
+        {/* Cost Monitoring Link */}
+        <button
+          onClick={() => window.location.href = '/costs'}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            backgroundColor: '#0a0a0a',
+            border: '1px solid #333',
+            borderRadius: '6px',
+            color: '#4a9eff',
+            fontSize: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '8px'
+          }}
+        >
+          <span>💰 Cost Monitor</span>
+          <span>→</span>
+        </button>
+
+        {/* Device Continuity Link */}
+        <button
+          onClick={() => window.location.href = '/devices'}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            backgroundColor: '#0a0a0a',
+            border: '1px solid #333',
+            borderRadius: '6px',
+            color: '#10b981',
+            fontSize: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '12px'
+          }}
+        >
+          <span>🔄 Device Sync</span>
           <span>→</span>
         </button>
 
