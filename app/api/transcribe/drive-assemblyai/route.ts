@@ -13,6 +13,18 @@ const supabase = createClient(
 const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY!;
 const ASSEMBLYAI_BASE_URL = 'https://api.assemblyai.com/v2';
 
+// Handle CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   console.log('[DRIVE-ASSEMBLYAI] Request received');
 
@@ -136,6 +148,10 @@ export async function POST(request: NextRequest) {
       success: true,
       jobId: jobId,
       message: 'Transcription started. Use /api/transcribe/status to check progress.'
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
     });
 
   } catch (error: any) {
@@ -146,6 +162,11 @@ export async function POST(request: NextRequest) {
       error: 'Transcription failed',
       details: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, { status: 500 });
+    }, {
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   }
 }
