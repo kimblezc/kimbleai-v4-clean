@@ -78,3 +78,6 @@ client_secret*.json
 # Documentation with potential secrets (clean versions are OK)
 *_WITH_SECRETS*.md
 *CRITICAL_EXPORT*.md
+*.m4a
+*.mp3
+*.wav

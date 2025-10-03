@@ -907,9 +907,11 @@ export async function getActiveDevices(
   userId: string
 ): Promise<{ success: boolean; devices?: any[]; error?: string }> {
   try {
-    const { data, error } = await supabase.rpc('get_active_devices', {
-      p_user_id: userId
-    });
+    const { data, error } = await supabase
+      .from('device_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_heartbeat', { ascending: false });
 
     if (error) return { success: false, error: error.message };
     return { success: true, devices: data || [] };
