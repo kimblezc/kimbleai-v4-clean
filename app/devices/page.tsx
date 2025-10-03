@@ -46,15 +46,17 @@ export default function DevicesPage() {
   const loadDeviceStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/sync/devices');
+      // Use default userId 'zach'
+      const response = await fetch('/api/sync/devices?userId=zach');
       const data = await response.json();
 
       if (data.success) {
+        const devices = data.devices || [];
         setStats({
-          totalSessions: data.devices.length,
-          activeSessions: data.devices.filter((d: DeviceSession) => d.is_active).length,
-          currentDevice: data.currentDevice || null,
-          devices: data.devices
+          totalSessions: devices.length,
+          activeSessions: devices.filter((d: DeviceSession) => d.is_active).length,
+          currentDevice: devices.length > 0 ? (devices[0].device_name || devices[0].device_type) : null,
+          devices: devices
         });
         setError(null);
       } else {
