@@ -162,24 +162,44 @@ export default function DriveIntelligencePage() {
 
   const indexFiles = async (folderId: string): Promise<string> => {
     try {
-      // Call Drive Intelligence agent to index for search
-      const response = await fetch('/api/google/drive/index', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderId })
-      });
+      let totalIndexed = 0;
+      let totalScanned = 0;
+      let pageToken: string | undefined = undefined;
+      let hasMore = true;
+      let batchCount = 0;
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Process in batches to avoid timeout
+      while (hasMore) {
+        batchCount++;
+        const response = await fetch('/api/google/drive/index-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderId, pageToken })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Indexing failed');
+        }
+
+        totalIndexed = data.totalIndexed || totalIndexed;
+        totalScanned += data.scanned || 0;
+        hasMore = data.hasMore || false;
+        pageToken = data.nextPageToken;
+
+        // Update the task with progress
+        if (hasMore) {
+          // Optional: Could update UI here with progress
+          console.log(`Batch ${batchCount}: ${totalIndexed} files indexed so far...`);
+        }
       }
 
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Indexing failed');
-      }
-
-      return data.message || `Indexed ${data.indexed || 0} files for semantic search`;
+      return `Scanned entire Drive: ${totalIndexed} files indexed, ${totalScanned} files scanned across ${batchCount} batches`;
     } catch (error: any) {
       console.error('Index error:', error);
       throw error;
