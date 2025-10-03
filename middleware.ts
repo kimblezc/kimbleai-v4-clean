@@ -12,6 +12,7 @@ const AUTHORIZED_EMAILS = [
 const PUBLIC_PATHS = [
   '/api/auth',
   '/api/sync', // Device continuity endpoints
+  '/api/costs', // Cost monitoring endpoints
   '/api/health', // Health check endpoint (for monitoring)
   '/api/status', // Status endpoint (for monitoring)
   '/auth/signin',
