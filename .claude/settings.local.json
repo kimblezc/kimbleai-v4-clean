@@ -80,7 +80,15 @@
       "Bash(echo:*)",
       "Bash(__NEW_LINE__ cat create-semantic-search-function.sql)",
       "Bash(timeout 15 npm run build)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "WebFetch(domain:kimbleai-v4-clean-mr3gajkls-kimblezcs-projects.vercel.app)",
+      "WebFetch(domain:kimbleai-v4-clean-422yjw90j-kimblezcs-projects.vercel.app)",
+      "Bash(timeout 300 npx tsx scripts/test-transcription.ts)",
+      "Bash(timeout 180 npx tsx scripts/simple-transcription-test.ts)",
+      "Bash(chmod:*)",
+      "Bash(printf \"y\\n\")",
+      "Bash(printf:*)",
+      "WebFetch(domain:www.assemblyai.com)"
     ],
     "deny": [],
     "ask": []

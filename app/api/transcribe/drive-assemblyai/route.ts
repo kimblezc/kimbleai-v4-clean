@@ -19,9 +19,22 @@ export async function OPTIONS(request: NextRequest) {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
+  });
+}
+
+// Handle GET requests for testing
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    endpoint: 'AssemblyAI Drive Transcription',
+    method: 'POST',
+    status: 'ready',
+    apiKeyConfigured: !!ASSEMBLYAI_API_KEY,
+    apiKeyLength: ASSEMBLYAI_API_KEY?.length || 0,
+    apiKeyPreview: ASSEMBLYAI_API_KEY ? ASSEMBLYAI_API_KEY.substring(0, 8) + '...' : 'NOT SET',
+    timestamp: new Date().toISOString()
   });
 }
 
@@ -88,6 +101,11 @@ export async function POST(request: NextRequest) {
 
     // Upload to AssemblyAI
     console.log('[DRIVE-ASSEMBLYAI] Uploading to AssemblyAI...');
+    console.log('[DRIVE-ASSEMBLYAI] API Key length:', ASSEMBLYAI_API_KEY?.length);
+    console.log('[DRIVE-ASSEMBLYAI] API Key preview:', ASSEMBLYAI_API_KEY?.substring(0, 8) + '...');
+    console.log('[DRIVE-ASSEMBLYAI] Has leading space:', ASSEMBLYAI_API_KEY !== ASSEMBLYAI_API_KEY?.trimStart());
+    console.log('[DRIVE-ASSEMBLYAI] Has trailing space:', ASSEMBLYAI_API_KEY !== ASSEMBLYAI_API_KEY?.trimEnd());
+
     const uploadResponse = await fetch(`${ASSEMBLYAI_BASE_URL}/upload`, {
       method: 'POST',
       headers: {
@@ -97,8 +115,12 @@ export async function POST(request: NextRequest) {
       body: audioBuffer,
     });
 
+    console.log('[DRIVE-ASSEMBLYAI] Upload response status:', uploadResponse.status);
+
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
+      console.error('[DRIVE-ASSEMBLYAI] Upload failed:', errorText);
+      console.error('[DRIVE-ASSEMBLYAI] Response headers:', JSON.stringify([...uploadResponse.headers.entries()]));
       throw new Error(`AssemblyAI upload failed: ${errorText}`);
     }
 

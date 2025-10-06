@@ -17,6 +17,7 @@ const PUBLIC_PATHS = [
   '/api/transcribe', // Transcription endpoints (use userId for auth)
   '/api/health', // Health check endpoint (for monitoring)
   '/api/status', // Status endpoint (for monitoring)
+  '/api/test-assemblyai', // TEMPORARY: AssemblyAI diagnostics
   '/auth/signin',
   '/auth/error',
   '/auth/signout',
