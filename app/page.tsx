@@ -233,6 +233,72 @@ export default function Home() {
     loadConversations(projectId);
   };
 
+  // Handle export with selected project
+  const handleExportWithProject = async (projectId: string) => {
+    if (!pendingTranscriptionId) return;
+
+    try {
+      const response = await fetch('/api/transcribe/save-to-drive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcriptionId: pendingTranscriptionId,
+          category: projectId,
+          multiFormat: true  // Export all 4 formats
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Save failed');
+
+      // Show success message with all exported files
+      let message = `✅ ${data.message}\n\n`;
+      if (data.files && data.files.length > 0) {
+        message += 'Files created:\n';
+        data.files.forEach((file: any) => {
+          message += `• ${file.format}: ${file.webViewLink}\n`;
+        });
+      }
+
+      alert(message);
+
+      // Close modal and reset
+      setShowProjectSelector(false);
+      setPendingTranscriptionId(null);
+    } catch (error: any) {
+      console.error('Save to Drive failed:', error);
+      alert('Failed to save to Google Drive: ' + error.message);
+    }
+  };
+
+  // Create new project
+  const handleCreateProject = () => {
+    const projectId = newProjectName.trim().toLowerCase().replace(/\s+/g, '-');
+
+    if (!projectId) {
+      alert('Please enter a project name');
+      return;
+    }
+
+    if (projects.some(p => p.id === projectId)) {
+      alert('A project with this name already exists');
+      return;
+    }
+
+    // Add to created projects
+    setCreatedProjects(prev => new Set([...prev, projectId]));
+
+    // Reload projects
+    loadConversations();
+
+    // Clear input
+    setNewProjectName('');
+
+    // Automatically select the new project and export
+    handleExportWithProject(projectId);
+  };
+
   // Persist deleted projects to localStorage
   React.useEffect(() => {
     const savedDeletedProjects = localStorage.getItem(`kimbleai_deleted_projects_${currentUser}`);
@@ -2484,6 +2550,183 @@ export default function Home() {
             </div>
           )}
         </div>
+        </div>
+      )}
+
+      {/* Project Selector Modal for Export */}
+      {showProjectSelector && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => {
+            setShowProjectSelector(false);
+            setPendingTranscriptionId(null);
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1e1e1e',
+              border: '1px solid #333',
+              borderRadius: '8px',
+              padding: '24px',
+              maxWidth: '500px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 16px 0', color: '#fff' }}>
+              📁 Select Project for Export
+            </h3>
+            <p style={{ margin: '0 0 16px 0', color: '#aaa', fontSize: '14px' }}>
+              Choose a project to organize your transcription files in Google Drive.
+              Files will be saved to: <code>kimbleai-transcriptions/[project]/</code>
+            </p>
+
+            {/* Existing Projects */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ color: '#aaa', fontSize: '12px', marginBottom: '8px', textTransform: 'uppercase' }}>
+                Existing Projects
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflow: 'auto' }}>
+                {projects.filter(p => !deletedProjects.has(p.id)).length === 0 ? (
+                  <div style={{ color: '#666', fontSize: '14px', padding: '16px', textAlign: 'center' }}>
+                    No projects yet. Create one below!
+                  </div>
+                ) : (
+                  projects
+                    .filter(p => !deletedProjects.has(p.id))
+                    .map((project) => (
+                      <button
+                        key={project.id}
+                        onClick={() => handleExportWithProject(project.id)}
+                        style={{
+                          padding: '12px 16px',
+                          backgroundColor: '#2a2a2a',
+                          border: '1px solid #444',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#333';
+                          e.currentTarget.style.borderColor = '#0ea5e9';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#2a2a2a';
+                          e.currentTarget.style.borderColor = '#444';
+                        }}
+                      >
+                        <div style={{ fontWeight: 500 }}>{project.name}</div>
+                        {project.conversations > 0 && (
+                          <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                            {project.conversations} conversation{project.conversations !== 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </button>
+                    ))
+                )}
+              </div>
+            </div>
+
+            {/* Create New Project */}
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #333' }}>
+              <div style={{ color: '#aaa', fontSize: '12px', marginBottom: '8px', textTransform: 'uppercase' }}>
+                Create New Project
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateProject();
+                    }
+                  }}
+                  placeholder="Project name..."
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    backgroundColor: '#2a2a2a',
+                    border: '1px solid #444',
+                    borderRadius: '4px',
+                    color: '#fff',
+                    fontSize: '14px',
+                  }}
+                />
+                <button
+                  onClick={handleCreateProject}
+                  disabled={!newProjectName.trim()}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: newProjectName.trim() ? '#0ea5e9' : '#333',
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: '#fff',
+                    cursor: newProjectName.trim() ? 'pointer' : 'not-allowed',
+                    fontWeight: 500,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (newProjectName.trim()) {
+                      e.currentTarget.style.backgroundColor = '#0284c7';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (newProjectName.trim()) {
+                      e.currentTarget.style.backgroundColor = '#0ea5e9';
+                    }
+                  }}
+                >
+                  Create & Export
+                </button>
+              </div>
+            </div>
+
+            {/* Cancel Button */}
+            <button
+              onClick={() => {
+                setShowProjectSelector(false);
+                setPendingTranscriptionId(null);
+                setNewProjectName('');
+              }}
+              style={{
+                marginTop: '16px',
+                width: '100%',
+                padding: '10px',
+                backgroundColor: 'transparent',
+                border: '1px solid #444',
+                borderRadius: '4px',
+                color: '#aaa',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#666';
+                e.currentTarget.style.color = '#fff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#444';
+                e.currentTarget.style.color = '#aaa';
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>
