@@ -95,7 +95,11 @@
       "WebFetch(domain:kimbleai-v4-clean-lj901t79t-kimblezcs-projects.vercel.app)",
       "Bash(tee:*)",
       "Bash(timeout 60 npx tsx scripts/test-all-agents.ts)",
-      "WebFetch(domain:drive.google.com)"
+      "WebFetch(domain:drive.google.com)",
+      "Bash(git filter-repo:*)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \"git rm --cached --ignore-unmatch ''''Recording (31).m4a''''\" --prune-empty --tag-name-filter cat -- --all)",
+      "Bash(export FILTER_BRANCH_SQUELCH_WARNING=1)",
+      "Bash(git filter-branch:*)"
     ],
     "deny": [],
     "ask": []
