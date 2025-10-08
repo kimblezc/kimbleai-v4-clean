@@ -207,13 +207,19 @@ export async function POST(request: NextRequest) {
 function formatTimeAgo(dateString: string): string {
   const now = new Date();
   const date = new Date(dateString);
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+  const diffInMs = now.getTime() - date.getTime();
 
-  if (diffInHours < 1) return 'Just now';
-  if (diffInHours < 24) return `${diffInHours} hours ago`;
-  if (diffInHours < 48) return '1 day ago';
-  if (diffInHours < 168) return `${Math.floor(diffInHours / 24)} days ago`;
-  return `${Math.floor(diffInHours / 168)} weeks ago`;
+  const seconds = Math.floor(diffInMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+
+  if (seconds < 60) return seconds === 1 ? '1 second ago' : `${seconds} seconds ago`;
+  if (minutes < 60) return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+  if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+  if (days < 7) return days === 1 ? '1 day ago' : `${days} days ago`;
+  return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
 }
 
 function autoDetectProject(content: string): string {
