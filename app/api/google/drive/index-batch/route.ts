@@ -103,7 +103,6 @@ export async function POST(request: NextRequest) {
               parents: file.parents,
               folderId: folderId
             },
-            user_id: 'zach',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });

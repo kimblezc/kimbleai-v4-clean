@@ -138,7 +138,6 @@ export async function GET(request: NextRequest) {
                     mimeType: testFile.mimeType,
                     test: true
                   },
-                  user_id: 'zach',
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
                 })
