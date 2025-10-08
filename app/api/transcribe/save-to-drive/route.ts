@@ -330,6 +330,30 @@ export async function POST(request: NextRequest) {
 
       console.log(`[SAVE-TO-DRIVE] Uploaded ${uploadedFiles.length} files`);
 
+      // Log export to history
+      try {
+        await supabase.from('export_logs').insert({
+          user_id: userId,
+          export_type: 'single',
+          transcription_count: 1,
+          success_count: 1,
+          error_count: 0,
+          category: category,
+          transcription_ids: [transcriptionId],
+          results: uploadedFiles.map(f => ({
+            format: f.format,
+            fileId: f.id,
+            fileName: f.name,
+            webViewLink: `https://drive.google.com/file/d/${f.id}/view`
+          })),
+          errors: null,
+          created_at: new Date().toISOString()
+        });
+      } catch (logError) {
+        console.error('[SAVE-TO-DRIVE] Error logging export:', logError);
+        // Continue even if logging fails
+      }
+
       return NextResponse.json({
         success: true,
         files: uploadedFiles.map(f => ({

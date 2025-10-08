@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
             try {
               const { data: insertResult, error: insertError } = await supabase
                 .from('knowledge_base')
-                .upsert({
+                .insert({
                   title: `[TEST] ${testFile.name}`,
                   content: `Test file from Drive Intelligence debug: ${testFile.name}`,
                   source_type: 'google_drive',
@@ -141,8 +141,6 @@ export async function GET(request: NextRequest) {
                   user_id: 'zach',
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
-                }, {
-                  onConflict: 'source_id'
                 })
                 .select();
 

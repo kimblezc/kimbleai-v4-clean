@@ -78,31 +78,41 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Index the file
-      const { error } = await supabase
+      // Check if file already exists
+      const { data: existing } = await supabase
         .from('knowledge_base')
-        .upsert({
-          title: file.name,
-          content: `Google Drive file: ${file.name} (${file.mimeType})`,
-          source_type: 'google_drive',
-          source_id: file.id,
-          metadata: {
-            mimeType: file.mimeType,
-            size: file.size,
-            modifiedTime: file.modifiedTime,
-            webViewLink: file.webViewLink,
-            parents: file.parents,
-            folderId: folderId
-          },
-          user_id: 'zach',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'source_id'
-        });
+        .select('id')
+        .eq('source_id', file.id)
+        .eq('source_type', 'google_drive')
+        .single();
 
-      if (!error) {
-        indexed++;
+      if (!existing) {
+        // Index the file (doesn't exist yet)
+        const { error } = await supabase
+          .from('knowledge_base')
+          .insert({
+            title: file.name,
+            content: `Google Drive file: ${file.name} (${file.mimeType})`,
+            source_type: 'google_drive',
+            source_id: file.id,
+            metadata: {
+              mimeType: file.mimeType,
+              size: file.size,
+              modifiedTime: file.modifiedTime,
+              webViewLink: file.webViewLink,
+              parents: file.parents,
+              folderId: folderId
+            },
+            user_id: 'zach',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (!error) {
+          indexed++;
+        } else {
+          console.error(`[Drive Index] Error indexing file ${file.name}:`, error);
+        }
       }
     }
 
