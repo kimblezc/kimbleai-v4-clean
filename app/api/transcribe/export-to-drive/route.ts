@@ -29,25 +29,12 @@ export async function POST(request: NextRequest) {
 
     console.log('[EXPORT-TO-DRIVE] Looking for transcription:', transcriptionId);
 
-    // Fetch transcription from database - try by ID first
-    let { data: transcription, error } = await supabase
+    // Fetch transcription from database by ID
+    const { data: transcription, error } = await supabase
       .from('audio_transcriptions')
       .select('*')
       .eq('id', transcriptionId)
       .single();
-
-    // If not found by database ID, try by AssemblyAI ID
-    if (error) {
-      console.log('[EXPORT-TO-DRIVE] Not found by ID, trying AssemblyAI ID');
-      const result = await supabase
-        .from('audio_transcriptions')
-        .select('*')
-        .eq('metadata->>assemblyai_id', transcriptionId)
-        .single();
-
-      transcription = result.data;
-      error = result.error;
-    }
 
     if (error || !transcription) {
       console.error('[EXPORT-TO-DRIVE] Transcription not found:', error);
