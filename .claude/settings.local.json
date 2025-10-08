@@ -93,7 +93,9 @@
       "WebFetch(domain:kimbleai-v4-clean-7fdpuf6w4-kimblezcs-projects.vercel.app)",
       "WebFetch(domain:kimbleai-v4-clean-6cpi03rl0-kimblezcs-projects.vercel.app)",
       "WebFetch(domain:kimbleai-v4-clean-lj901t79t-kimblezcs-projects.vercel.app)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(timeout 60 npx tsx scripts/test-all-agents.ts)",
+      "WebFetch(domain:drive.google.com)"
     ],
     "deny": [],
     "ask": []
