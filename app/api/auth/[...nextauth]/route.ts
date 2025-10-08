@@ -137,6 +137,7 @@ const handler = NextAuth({
         }
       }
 
+      // Initial sign in - store tokens
       if (account) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
@@ -159,8 +160,52 @@ const handler = NextAuth({
             last_verified: new Date().toISOString()
           });
 
-          // Log successful token storage
           console.log(`✅ Token stored securely for user: ${userId}`);
+        }
+      }
+
+      // Check if token needs refresh (expires in less than 5 minutes)
+      const now = Date.now() / 1000;
+      const expiresAt = token.expiresAt as number;
+
+      if (expiresAt && now > expiresAt - 300 && token.refreshToken) {
+        console.log('🔄 Refreshing expired Google token...');
+
+        try {
+          const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: process.env.GOOGLE_CLIENT_ID!,
+              client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+              grant_type: 'refresh_token',
+              refresh_token: token.refreshToken as string
+            })
+          });
+
+          if (refreshResponse.ok) {
+            const refreshedTokens = await refreshResponse.json();
+
+            token.accessToken = refreshedTokens.access_token;
+            token.expiresAt = Math.floor(Date.now() / 1000) + refreshedTokens.expires_in;
+
+            // Update in Supabase
+            if (token.email) {
+              const userId = token.email === 'zach.kimble@gmail.com' ? 'zach' : 'rebecca';
+
+              await supabase.from('user_tokens').update({
+                access_token: refreshedTokens.access_token,
+                expires_at: token.expiresAt,
+                updated_at: new Date().toISOString()
+              }).eq('user_id', userId);
+
+              console.log(`✅ Token refreshed for user: ${userId}`);
+            }
+          } else {
+            console.error('❌ Token refresh failed');
+          }
+        } catch (error) {
+          console.error('❌ Error refreshing token:', error);
         }
       }
 

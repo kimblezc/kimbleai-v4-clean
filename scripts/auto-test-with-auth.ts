@@ -67,17 +67,17 @@ async function uploadAndTranscribe(): Promise<string | null> {
   const uploadData = await uploadResponse.json() as any;
   console.log(`✅ Uploaded: ${uploadData.upload_url}`);
 
-  // Start transcription
+  // Start transcription directly with AssemblyAI
   console.log('🎙️  Starting transcription...');
-  const transcribeResponse = await fetch(`${API_BASE}/api/transcribe/assemblyai`, {
+  const transcribeResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
     method: 'POST',
-    headers: authHeaders,
+    headers: {
+      'authorization': creds.auth_token,
+      'content-type': 'application/json'
+    },
     body: JSON.stringify({
-      audioUrl: uploadData.upload_url,
-      userId: USER_ID,
-      projectId: PROJECT_ID,
-      filename,
-      fileSize
+      audio_url: uploadData.upload_url,
+      speaker_labels: true
     })
   });
 
@@ -89,52 +89,59 @@ async function uploadAndTranscribe(): Promise<string | null> {
   }
 
   const transcribeData = await transcribeResponse.json() as any;
-  console.log(`✅ Job started: ${transcribeData.jobId}`);
+  console.log(`✅ Transcript ID: ${transcribeData.id}`);
 
-  return transcribeData.jobId;
+  return transcribeData.id;
 }
 
-async function pollTranscription(jobId: string): Promise<any | null> {
+async function pollTranscription(transcriptId: string): Promise<any | null> {
   console.log('\n╔═══════════════════════════════════════════╗');
   console.log('║   STEP 2: Waiting for completion          ║');
   console.log('╚═══════════════════════════════════════════╝\n');
 
   const maxAttempts = 120; // 10 minutes
   const pollInterval = 5000; // 5 seconds
+  const ASSEMBLYAI_API_KEY = 'b33ccce950894067b89588381d61cddb';
 
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise(resolve => setTimeout(resolve, pollInterval));
 
-    const statusResponse = await fetch(`${API_BASE}/api/transcribe/assemblyai?jobId=${jobId}`, {
-      headers: { 'Cookie': `__Secure-next-auth.session-token=${SESSION_COOKIE}` }
+    // Poll AssemblyAI directly
+    const statusResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+      headers: { 'authorization': ASSEMBLYAI_API_KEY }
     });
 
     if (!statusResponse.ok) {
       if (i % 6 === 0) {
-        console.log(`⏳ Polling... ${Math.floor(i * pollInterval / 1000)}s elapsed (status check failed, will retry)`);
+        console.log(`⏳ Polling... ${Math.floor(i * pollInterval / 1000)}s elapsed (API check failed, will retry)`);
       }
       continue;
     }
 
-    const status = await statusResponse.json() as any;
+    const result = await statusResponse.json() as any;
 
-    if (status.result) {
+    if (result.status === 'completed') {
       console.log('\n✅ Transcription complete!');
-      console.log(`📝 Text: ${status.result.text.substring(0, 100)}...`);
-      console.log(`⏱️  Duration: ${status.result.duration}s`);
-      console.log(`👥 Speakers: ${status.result.speakers}`);
-      console.log(`🆔 ID: ${status.result.id}`);
-      return status.result;
+      console.log(`📝 Text: ${result.text.substring(0, 100)}...`);
+      console.log(`⏱️  Duration: ${result.audio_duration}s`);
+      console.log(`👥 Utterances: ${result.utterances?.length || 0}`);
+      console.log(`🆔 ID: ${result.id}`);
+      return {
+        id: result.id,
+        text: result.text,
+        duration: result.audio_duration,
+        speakers: result.utterances?.length || 0
+      };
     }
 
-    if (status.error) {
-      console.error(`❌ Transcription failed: ${status.error}`);
+    if (result.status === 'error') {
+      console.error(`❌ Transcription failed: ${result.error}`);
       return null;
     }
 
     // Progress indicator
     if (i % 6 === 0) {
-      console.log(`⏳ Waiting... ${Math.floor(i * pollInterval / 1000)}s elapsed`);
+      console.log(`⏳ Status: ${result.status}... ${Math.floor(i * pollInterval / 1000)}s elapsed`);
     }
   }
 
@@ -184,14 +191,14 @@ async function main() {
 
   try {
     // Step 1: Upload and start transcription
-    const jobId = await uploadAndTranscribe();
-    if (!jobId) {
+    const transcriptId = await uploadAndTranscribe();
+    if (!transcriptId) {
       console.error('\n❌ Upload/transcription failed');
       process.exit(1);
     }
 
     // Step 2: Wait for transcription to complete
-    const result = await pollTranscription(jobId);
+    const result = await pollTranscription(transcriptId);
     if (!result || !result.id) {
       console.error('\n❌ Transcription did not complete');
       process.exit(1);

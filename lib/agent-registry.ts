@@ -214,43 +214,7 @@ export class AgentRegistry {
       healthCheck: async () => this.checkKnowledgeGraph()
     });
 
-    // 4. Context Prediction Agent
-    this.registerAgent({
-      id: 'context-prediction',
-      name: 'Context Prediction',
-      category: AgentCategory.INTELLIGENCE,
-      icon: '🔮',
-      color: '#a855f7',
-      description: 'Predicts user needs based on patterns and context',
-      capabilities: [
-        'Pattern recognition',
-        'Intent classification',
-        'Predictive suggestions',
-        'Proactive preparation',
-        'Behavioral analysis'
-      ],
-      apiEndpoints: [],
-      databaseTables: [
-        'user_interactions',
-        'behavior_patterns',
-        'predictions'
-      ],
-      implementationFiles: {
-        services: ['lib/context-prediction.ts', 'lib/pattern-recognition.ts', 'lib/behavioral-analysis.ts'],
-        apis: [],
-        components: ['components/agents/PredictionDashboard.tsx'],
-        schemas: []
-      },
-      features: [
-        { name: 'Pattern Learning', status: 'implemented', description: 'Learn from user behavior' },
-        { name: 'Intent Prediction', status: 'implemented', description: 'Predict user intentions' },
-        { name: 'Proactive Actions', status: 'partial', description: 'Suggest next actions' }
-      ],
-      integrations: ['Agent Integration Service'],
-      healthCheck: async () => this.checkContextPrediction()
-    });
-
-    // 5. Project Context Agent
+    // 4. Project Context Agent
     this.registerAgent({
       id: 'project-context',
       name: 'Project Context',
@@ -289,14 +253,14 @@ export class AgentRegistry {
       healthCheck: async () => this.checkProjectContext()
     });
 
-    // 6. Workflow Automation Agent
+    // 6. Workflow Automation Agent (Future Feature)
     this.registerAgent({
       id: 'workflow-automation',
       name: 'Workflow Automation',
       category: AgentCategory.AUTOMATION,
       icon: '⚙️',
       color: '#06b6d4',
-      description: 'Creates and executes automated workflows based on user patterns',
+      description: 'Creates and executes automated workflows based on user patterns (Planned for future release)',
       capabilities: [
         'Workflow creation',
         'Pattern-based automation',
@@ -308,58 +272,24 @@ export class AgentRegistry {
       databaseTables: [
         'workflows',
         'workflow_executions',
-        'workflow_templates',
-        'user_behavior_patterns',
-        'automation_suggestions'
+        'workflow_templates'
       ],
       implementationFiles: {
-        services: ['lib/workflow-automation.ts', 'lib/automation-engine.ts', 'lib/pattern-recognition.ts'],
+        services: [],
         apis: [],
-        components: ['components/agents/WorkflowDesigner.tsx', 'components/agents/WorkflowConfigInterface.tsx'],
+        components: [],
         schemas: ['database/workflow_automation_schema.sql']
       },
       features: [
-        { name: 'Workflow Engine', status: 'implemented', description: 'Execute complex workflows' },
-        { name: 'Pattern Detection', status: 'implemented', description: 'Identify automation opportunities' },
-        { name: 'Auto Suggestions', status: 'implemented', description: 'Suggest workflow automations' }
+        { name: 'Workflow Engine', status: 'planned', description: 'Execute complex workflows' },
+        { name: 'Pattern Detection', status: 'planned', description: 'Identify automation opportunities' },
+        { name: 'Auto Suggestions', status: 'planned', description: 'Suggest workflow automations' }
       ],
       integrations: ['Google Workspace', 'Pattern Recognition'],
       healthCheck: async () => this.checkWorkflowAutomation()
     });
 
-    // 7. Workspace Orchestrator Agent
-    this.registerAgent({
-      id: 'workspace-orchestrator',
-      name: 'Workspace Orchestrator',
-      category: AgentCategory.AUTOMATION,
-      icon: '🎯',
-      color: '#8b5cf6',
-      description: 'Coordinates multi-agent workflows and optimizes workspace operations',
-      capabilities: [
-        'Agent coordination',
-        'Resource allocation',
-        'Task distribution',
-        'Performance optimization',
-        'State management'
-      ],
-      apiEndpoints: [],
-      databaseTables: [],
-      implementationFiles: {
-        services: ['lib/google-orchestration.ts', 'lib/workspace-integration.ts'],
-        apis: [],
-        components: ['components/agents/WorkspaceOrchestratorDashboard.tsx'],
-        schemas: []
-      },
-      features: [
-        { name: 'Multi-Agent Coordination', status: 'implemented', description: 'Orchestrate agent collaboration' },
-        { name: 'Resource Management', status: 'partial', description: 'Optimize resource usage' },
-        { name: 'Workflow Optimization', status: 'partial', description: 'Improve workspace efficiency' }
-      ],
-      integrations: ['All Agents', 'Google Workspace'],
-      healthCheck: async () => this.checkWorkspaceOrchestrator()
-    });
-
-    // 8. Cost Monitor Agent
+    // 7. Cost Monitor Agent
     this.registerAgent({
       id: 'cost-monitor',
       name: 'Cost Monitor',
@@ -397,7 +327,7 @@ export class AgentRegistry {
       healthCheck: async () => this.checkCostMonitor()
     });
 
-    // 9. Device Continuity Agent
+    // 8. Device Continuity Agent
     this.registerAgent({
       id: 'device-continuity',
       name: 'Device Continuity',
@@ -439,124 +369,14 @@ export class AgentRegistry {
       healthCheck: async () => this.checkDeviceContinuity()
     });
 
-    // 10. Security Perimeter Agent
-    this.registerAgent({
-      id: 'security-perimeter',
-      name: 'Security Perimeter',
-      category: AgentCategory.SYSTEM,
-      icon: '🛡️',
-      color: '#ef4444',
-      description: 'Monitors security threats, enforces access control, and protects the system',
-      capabilities: [
-        'Threat detection',
-        'Rate limiting',
-        'Access control',
-        'DDoS protection',
-        'Security analytics'
-      ],
-      apiEndpoints: [],
-      databaseTables: [
-        'security_events',
-        'threat_logs',
-        'rate_limit_records'
-      ],
-      implementationFiles: {
-        services: ['lib/security-perimeter.ts'],
-        apis: [],
-        components: ['components/agents/SecurityDashboard.tsx'],
-        schemas: []
-      },
-      features: [
-        { name: 'Threat Detection', status: 'implemented', description: 'Identify security threats' },
-        { name: 'Rate Limiting', status: 'implemented', description: 'Prevent API abuse' },
-        { name: 'Access Control', status: 'implemented', description: 'Manage permissions' }
-      ],
-      integrations: ['Middleware', 'All APIs'],
-      healthCheck: async () => this.checkSecurityPerimeter()
-    });
-
-    // 11. File Monitor Agent
-    this.registerAgent({
-      id: 'file-monitor',
-      name: 'File Monitor',
-      category: AgentCategory.SPECIALIZED,
-      icon: '👁️',
-      color: '#14b8a6',
-      description: 'Watches directories for file changes and triggers automated actions',
-      capabilities: [
-        'Real-time file monitoring',
-        'Change detection',
-        'Auto-processing',
-        'Event triggers',
-        'Action automation'
-      ],
-      apiEndpoints: [],
-      databaseTables: [
-        'file_watches',
-        'file_changes',
-        'monitored_files'
-      ],
-      implementationFiles: {
-        services: ['lib/file-monitor.ts'],
-        apis: [],
-        components: [],
-        schemas: []
-      },
-      features: [
-        { name: 'Directory Watching', status: 'implemented', description: 'Monitor file system changes' },
-        { name: 'Auto Actions', status: 'implemented', description: 'Trigger actions on changes' },
-        { name: 'Change Tracking', status: 'implemented', description: 'Log all file changes' }
-      ],
-      integrations: ['Audio Intelligence', 'Workflow Automation'],
-      healthCheck: async () => this.checkFileMonitor()
-    });
-
-    // 12. Audio Transfer Agent
-    this.registerAgent({
-      id: 'audio-transfer',
-      name: 'Audio Transfer',
-      category: AgentCategory.SPECIALIZED,
-      icon: '📤',
-      color: '#f97316',
-      description: 'Manages audio file uploads, transfers, and Drive integration',
-      capabilities: [
-        'Audio file upload',
-        'Drive sync',
-        'Format conversion',
-        'Batch processing',
-        'Progress tracking'
-      ],
-      apiEndpoints: [
-        '/api/audio/transcribe-from-drive',
-        '/api/google/workspace/upload'
-      ],
-      databaseTables: [
-        'audio_uploads',
-        'transfer_queue'
-      ],
-      implementationFiles: {
-        services: [],
-        apis: ['app/api/audio/transcribe-from-drive/route.ts', 'app/api/google/workspace/upload/route.ts'],
-        components: [],
-        schemas: []
-      },
-      features: [
-        { name: 'Upload Management', status: 'implemented', description: 'Handle audio uploads' },
-        { name: 'Drive Integration', status: 'implemented', description: 'Sync with Google Drive' },
-        { name: 'Auto Transcription', status: 'implemented', description: 'Trigger transcription' }
-      ],
-      integrations: ['Audio Intelligence', 'Drive Intelligence'],
-      healthCheck: async () => this.checkAudioTransfer()
-    });
-
-    // 13. Cleanup Agent
+    // 9. Cleanup Agent (On-Demand Tool)
     this.registerAgent({
       id: 'cleanup-agent',
       name: 'Cleanup Agent',
       category: AgentCategory.SYSTEM,
       icon: '🧹',
       color: '#06b6d4',
-      description: 'Manages cleanup across git, Vercel, local storage, and Google Drive - removes large files, cleans caches, optimizes storage',
+      description: 'On-demand cleanup tool for git, storage, and caches - Available when you need it',
       capabilities: [
         'Git repository cleanup (remove large files from history)',
         'Vercel deployment optimization',
@@ -593,7 +413,7 @@ export class AgentRegistry {
       healthCheck: async () => this.checkCleanupAgent()
     });
 
-    // 14. Agent Optimizer (Meta-Agent)
+    // 10. Agent Optimizer (Meta-Agent)
     this.registerAgent({
       id: 'agent-optimizer',
       name: 'Agent Optimizer',
@@ -752,18 +572,6 @@ export class AgentRegistry {
     }
   }
 
-  private async checkContextPrediction(): Promise<AgentHealth> {
-    return {
-      status: AgentStatus.ACTIVE,
-      lastActivity: 'Just now',
-      tasksCompleted: 0,
-      errors: [],
-      metrics: {
-        avgResponseTime: 120
-      }
-    };
-  }
-
   private async checkProjectContext(): Promise<AgentHealth> {
     try {
       const { count, error } = await supabase
@@ -812,18 +620,6 @@ export class AgentRegistry {
         metrics: {}
       };
     }
-  }
-
-  private async checkWorkspaceOrchestrator(): Promise<AgentHealth> {
-    return {
-      status: AgentStatus.ACTIVE,
-      lastActivity: 'Just now',
-      tasksCompleted: 0,
-      errors: [],
-      metrics: {
-        avgResponseTime: 175
-      }
-    };
   }
 
   private async checkCostMonitor(): Promise<AgentHealth> {
@@ -880,48 +676,12 @@ export class AgentRegistry {
     }
   }
 
-  private async checkSecurityPerimeter(): Promise<AgentHealth> {
-    return {
-      status: AgentStatus.ACTIVE,
-      lastActivity: 'Just now',
-      tasksCompleted: 0,
-      errors: [],
-      metrics: {
-        avgResponseTime: 110
-      }
-    };
-  }
-
-  private async checkFileMonitor(): Promise<AgentHealth> {
-    return {
-      status: AgentStatus.ACTIVE,
-      lastActivity: 'Just now',
-      tasksCompleted: 0,
-      errors: [],
-      metrics: {
-        avgResponseTime: 95
-      }
-    };
-  }
-
-  private async checkAudioTransfer(): Promise<AgentHealth> {
-    return {
-      status: AgentStatus.ACTIVE,
-      lastActivity: 'Just now',
-      tasksCompleted: 0,
-      errors: [],
-      metrics: {
-        avgResponseTime: 210
-      }
-    };
-  }
-
   private async checkCleanupAgent(): Promise<AgentHealth> {
     return {
       status: AgentStatus.IDLE,
-      lastActivity: 'Ready to clean',
+      lastActivity: 'Available on demand',
       tasksCompleted: 0,
-      currentTask: 'Awaiting cleanup requests',
+      currentTask: 'Ready for cleanup tasks - Call /api/cleanup when needed',
       errors: [],
       metrics: {
         avgResponseTime: 100
