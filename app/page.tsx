@@ -33,7 +33,7 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<'zach' | 'rebecca'>('zach');
-  const [currentProject, setCurrentProject] = useState('general');
+  const [currentProject, setCurrentProject] = useState('');
   const [projects, setProjects] = useState<any[]>([]);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [showTags, setShowTags] = useState(false);
@@ -58,7 +58,7 @@ export default function Home() {
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const completedJobsRef = React.useRef<Set<string>>(new Set());
   const [showGoogleServices, setShowGoogleServices] = useState(false);
-  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['general']));
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -72,8 +72,10 @@ export default function Home() {
         // Update projects based on actual conversation data
         const projectCounts: Record<string, number> = {};
         data.conversations.forEach((conv: any) => {
-          const project = conv.project || 'general';
-          projectCounts[project] = (projectCounts[project] || 0) + 1;
+          const project = conv.project || '';
+          if (project) { // Only count conversations with assigned projects
+            projectCounts[project] = (projectCounts[project] || 0) + 1;
+          }
         });
 
         // Create dynamic project list
@@ -110,7 +112,7 @@ export default function Home() {
 
         // Filter conversations by project if specified
         const filteredConversations = projectId
-          ? data.conversations.filter((conv: any) => (conv.project || 'general') === projectId)
+          ? data.conversations.filter((conv: any) => conv.project === projectId)
           : data.conversations;
 
         setConversationHistory(filteredConversations.slice(0, 10));
@@ -136,7 +138,6 @@ export default function Home() {
   // Helper function to format project names
   const formatProjectName = (id: string): string => {
     const nameMap: Record<string, string> = {
-      general: 'General',
       development: 'Development',
       business: 'Business',
       automotive: 'Automotive',
@@ -284,14 +285,7 @@ export default function Home() {
   // Delete project function - completely removes project with persistent storage
   const deleteProject = async (projectId: string) => {
     const projectName = formatProjectName(projectId);
-    const confirmMessage = projectId === 'general'
-      ? `Cannot delete the General project.`
-      : `Are you sure you want to DELETE "${projectName}" project?\n\nThis will:\n- Remove the project completely\n- Move all conversations to General\n- This action cannot be undone\n\nProceed?`;
-
-    if (projectId === 'general') {
-      alert('Cannot delete the General project.');
-      return;
-    }
+    const confirmMessage = `Are you sure you want to DELETE "${projectName}" project?\n\nThis will:\n- Remove the project completely\n- Move all conversations to unassigned\n- This action cannot be undone\n\nProceed?`;
 
     if (!confirm(confirmMessage)) {
       return;
@@ -318,15 +312,16 @@ export default function Home() {
           return newSet;
         });
 
-        // Switch to general if deleting current project
+        // Switch to first available project if deleting current project
         if (currentProject === projectId) {
-          setCurrentProject('general');
+          const remainingProjects = projects.filter(p => p.id !== projectId);
+          setCurrentProject(remainingProjects.length > 0 ? remainingProjects[0].id : '');
         }
 
         // Reload conversations to get updated data from server
         setTimeout(() => loadConversations(), 200);
 
-        alert(`Project "${projectName}" deleted successfully!\n${data.conversationsMoved} conversations moved to General.`);
+        alert(`Project "${projectName}" deleted successfully!\n${data.conversationsMoved} conversations moved to unassigned.`);
       } else {
         throw new Error(data.error || 'Failed to delete project');
       }
@@ -1263,6 +1258,9 @@ export default function Home() {
       };
 
       setMessages([...newMessages, assistantMessage]);
+
+      // Auto-refresh conversations to show the newly saved chat
+      setTimeout(() => loadConversations(currentProject), 1000);
     } catch (error) {
       console.error('Chat error:', error);
       const errorMessage: Message = {
@@ -1474,8 +1472,8 @@ export default function Home() {
           + New Chat
         </button>
 
-        {/* Unassigned Conversations */}
-        {conversationHistory.filter(conv => !conv.project || conv.project === 'general').length > 0 && (
+        {/* Recent Conversations */}
+        {conversationHistory.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
             <h3 style={{
               fontSize: '12px',
@@ -1484,18 +1482,17 @@ export default function Home() {
               marginBottom: '8px',
               textTransform: 'uppercase'
             }}>
-              Unassigned Chats
+              Recent Chats
             </h3>
             <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
               {conversationHistory
-                .filter(conv => !conv.project || conv.project === 'general')
-                .slice(0, 5)
+                .slice(0, 10)
                 .map((conv) => (
                   <div
                     key={conv.id}
                     onClick={() => {
                       setCurrentConversationId(conv.id);
-                      setCurrentProject(conv.project || 'general');
+                      setCurrentProject(conv.project || '');
                       loadConversation(conv.id);
                     }}
                     style={{
@@ -1504,7 +1501,7 @@ export default function Home() {
                       borderRadius: '4px',
                       marginBottom: '4px',
                       cursor: 'pointer',
-                      borderLeft: '3px solid #666',
+                      borderLeft: `3px solid ${conv.project ? '#4a9eff' : '#666'}`,
                       paddingLeft: '8px'
                     }}
                   >
@@ -1524,7 +1521,7 @@ export default function Home() {
                       fontSize: '9px',
                       color: '#666'
                     }}>
-                      {conv.messageCount} msgs
+                      {conv.messageCount} msgs{conv.project ? ` • ${formatProjectName(conv.project)}` : ''}
                     </div>
                   </div>
                 ))}
@@ -1604,7 +1601,7 @@ export default function Home() {
             {projects.map((project) => {
               const isExpanded = expandedProjects.has(project.id);
               const projectConversations = conversationHistory.filter(
-                conv => (conv.project || 'general') === project.id
+                conv => conv.project === project.id
               );
 
               return (
@@ -1678,8 +1675,7 @@ export default function Home() {
                       </div>
 
                       {/* Delete button */}
-                      {project.id !== 'general' && (
-                        <button
+                      <button
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteProject(project.id);
@@ -1705,7 +1701,6 @@ export default function Home() {
                         >
                           🗑️
                         </button>
-                      )}
                     </div>
                   </div>
 
@@ -1780,7 +1775,7 @@ export default function Home() {
               color: '#4a9eff',
               fontWeight: '600'
             }}>
-              {projects.find(p => p.id === currentProject)?.name || 'General'}
+              {projects.find(p => p.id === currentProject)?.name || 'No Project'}
             </div>
           </div>
         </div>
@@ -2049,7 +2044,7 @@ export default function Home() {
                     fontSize: '12px',
                     color: '#888'
                   }}>
-                    Project: {projects.find(p => p.id === currentProject)?.name || 'General'}
+                    Project: {projects.find(p => p.id === currentProject)?.name || 'No Project'}
                   </p>
                 </div>
               ) : (

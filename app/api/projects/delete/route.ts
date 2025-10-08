@@ -16,12 +16,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    if (projectId === 'general') {
-      return NextResponse.json({
-        error: 'Cannot delete the General project'
-      }, { status: 400 });
-    }
-
     // Get user data
     const { data: userData } = await supabase
       .from('users')
@@ -58,14 +52,14 @@ export async function POST(request: NextRequest) {
       const lastMessage = conv.messages?.[0]; // Latest message
       const projectFromTitle = autoDetectProject(conv.title || '');
       const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
-      const detectedProject = projectFromTitle || projectFromContent || 'general';
+      const detectedProject = projectFromTitle || projectFromContent || '';
       return detectedProject === projectId;
     }) || [];
 
     console.log(`Found ${conversationsToUpdate.length} conversations to update for project: ${projectId}`);
 
-    // Since we don't have metadata column, we'll rename conversation titles to move them to general
-    // Remove project-specific keywords from titles so they'll be classified as general
+    // Since we don't have metadata column, we'll rename conversation titles to make them unassigned
+    // Remove project-specific keywords from titles so they won't be auto-classified
     const updatePromises = conversationsToUpdate.map(conv => {
       // Remove project-specific keywords from title
       let newTitle = conv.title || '';
@@ -83,10 +77,10 @@ export async function POST(request: NextRequest) {
       // Remove gaming keywords
       newTitle = newTitle.replace(/dnd|d&d|campaign|dungeon|dragon|character|gaming|rpg|dice|adventure/gi, '');
 
-      // Clean up extra spaces and add moved indicator
+      // Clean up extra spaces and add unassigned indicator
       newTitle = newTitle.replace(/\s+/g, ' ').trim();
       if (!newTitle) newTitle = 'Conversation';
-      newTitle = `[General] ${newTitle}`;
+      newTitle = `[Unassigned] ${newTitle}`;
 
       return supabase
         .from('conversations')
@@ -127,7 +121,7 @@ export async function POST(request: NextRequest) {
       success: true,
       projectId,
       conversationsMoved: conversationsToUpdate.length,
-      message: `Project "${projectId}" deleted successfully. ${conversationsToUpdate.length} conversations moved to General.`
+      message: `Project "${projectId}" deleted successfully. ${conversationsToUpdate.length} conversations now unassigned.`
     });
 
   } catch (error: any) {

@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       const autoDetected = projectFromTitle || projectFromContent;
 
       // Only use auto-detected project if it hasn't been deleted
-      const detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : 'general';
+      const detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : '';
 
       return {
         id: conv.id,
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
       conversation: {
         id: conversation.id,
         title: conversation.title,
-        project: autoDetectProject(conversation.title || '') || 'general',
+        project: autoDetectProject(conversation.title || '') || '',
         messages: formattedMessages
       }
     });
