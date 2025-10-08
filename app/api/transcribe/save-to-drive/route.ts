@@ -45,17 +45,57 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch transcription from database
-    const { data: transcription, error } = await supabase
+    let { data: transcription, error } = await supabase
       .from('audio_transcriptions')
       .select('*')
       .eq('id', transcriptionId)
       .single();
 
+    // If not found in database, try fetching from AssemblyAI directly
     if (error || !transcription) {
-      return NextResponse.json(
-        { error: 'Transcription not found' },
-        { status: 404 }
-      );
+      console.log('[SAVE-TO-DRIVE] Not found in database, trying AssemblyAI API');
+
+      try {
+        const assemblyResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptionId}`, {
+          headers: {
+            'authorization': process.env.ASSEMBLYAI_API_KEY!
+          }
+        });
+
+        if (assemblyResponse.ok) {
+          const assemblyData = await assemblyResponse.json();
+
+          // Create a temporary transcription object from AssemblyAI data
+          transcription = {
+            id: transcriptionId,
+            filename: 'transcription.m4a',  // Default filename
+            duration: assemblyData.audio_duration,
+            text: assemblyData.text,
+            created_at: new Date(assemblyData.created).toISOString(),
+            project_id: 'general',
+            metadata: {
+              utterances: assemblyData.utterances || [],
+              words: assemblyData.words || [],
+              speaker_labels: assemblyData.speaker_labels,
+              auto_tags: [],
+              action_items: []
+            }
+          };
+
+          console.log('[SAVE-TO-DRIVE] Retrieved from AssemblyAI');
+        } else {
+          return NextResponse.json(
+            { error: 'Transcription not found in database or AssemblyAI' },
+            { status: 404 }
+          );
+        }
+      } catch (fetchError: any) {
+        console.error('[SAVE-TO-DRIVE] Error fetching from AssemblyAI:', fetchError);
+        return NextResponse.json(
+          { error: 'Transcription not found', details: fetchError.message },
+          { status: 404 }
+        );
+      }
     }
 
     // Format content
