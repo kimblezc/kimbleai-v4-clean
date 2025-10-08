@@ -18,6 +18,13 @@ interface Message {
     costMultiplier: number;
     explanation: string;
   };
+  metadata?: {
+    transcriptionId?: string;
+    googleDriveFileId?: string;
+    type?: string;
+    filename?: string;
+    [key: string]: any;
+  };
 }
 
 export default function Home() {
@@ -48,6 +55,8 @@ export default function Home() {
   }>({ progress: 0, eta: 0, status: 'idle' });
   const [deletedProjects, setDeletedProjects] = useState<Set<string>>(new Set());
   const [createdProjects, setCreatedProjects] = useState<Set<string>>(new Set());
+  const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const completedJobsRef = React.useRef<Set<string>>(new Set());
   const [showGoogleServices, setShowGoogleServices] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['general']));
 
@@ -179,6 +188,55 @@ export default function Home() {
       localStorage.setItem(`kimbleai_project_${currentUser}`, currentProject);
     }
   }, [currentProject, currentUser]);
+
+  // Setup global functions for transcription export
+  React.useEffect(() => {
+    (window as any).downloadTranscription = async (transcriptionId: string, format: string) => {
+      try {
+        const response = await fetch('/api/transcribe/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcriptionId, format })
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `transcript_${transcriptionId}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (error) {
+        console.error('Download failed:', error);
+        alert('Failed to download transcription');
+      }
+    };
+
+    (window as any).saveToDrive = async (transcriptionId: string) => {
+      try {
+        const category = prompt('Enter category folder name (optional):');
+
+        const response = await fetch('/api/transcribe/save-to-drive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcriptionId, category: category || null })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || 'Save failed');
+
+        alert(data.message + '\n\nView: ' + data.webViewLink);
+      } catch (error: any) {
+        console.error('Save to Drive failed:', error);
+        alert('Failed to save to Google Drive: ' + error.message);
+      }
+    };
+  }, []);
 
   // Load conversations when project changes
   const handleProjectChange = (projectId: string) => {
@@ -364,6 +422,12 @@ export default function Home() {
   // Poll progress for audio transcription
   const pollAudioProgress = React.useCallback(async (jobId: string) => {
     try {
+      // Prevent duplicate processing
+      if (completedJobsRef.current.has(jobId)) {
+        console.log('[AUDIO] Job already completed, skipping:', jobId);
+        return;
+      }
+
       const response = await fetch(`/api/transcribe/assemblyai?jobId=${jobId}`);
       const data = await response.json();
 
@@ -376,6 +440,14 @@ export default function Home() {
         });
 
         if (data.status === 'completed' && data.result) {
+          // Mark as completed to prevent duplicates
+          completedJobsRef.current.add(jobId);
+
+          // Clear polling interval
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
           // Show completion message
           const audioMessage: Message = {
             role: 'user',
@@ -402,21 +474,67 @@ export default function Home() {
             content += `\n### 📋 Auto-Generated Summary:\n${data.result.summary}\n`;
           }
 
-          content += `\n### 📝 Full Transcription:\n${data.result.text}\n\n---\n*Transcription ID: ${data.result.id}*`;
+          // Format transcription with speakers and timestamps
+          content += `\n### 📝 Full Transcription:\n\n`;
+
+          // Check if we have utterances (speaker diarization)
+          if (data.result.utterances && data.result.utterances.length > 0) {
+            // Group by speaker for better readability
+            data.result.utterances.forEach((utterance: any) => {
+              const startTime = Math.floor(utterance.start / 1000); // Convert ms to seconds
+              const minutes = Math.floor(startTime / 60);
+              const seconds = startTime % 60;
+              const timestamp = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+              content += `**[${timestamp}] Speaker ${utterance.speaker}:** ${utterance.text}\n\n`;
+            });
+          } else {
+            // Fallback to plain text if no utterances
+            content += `${data.result.text}\n\n`;
+          }
 
           const transcriptionMessage: Message = {
             role: 'assistant',
             content,
             timestamp: new Date().toISOString(),
-            projectId: currentProject
+            projectId: currentProject,
+            metadata: {
+              transcriptionId: data.result.id,
+              googleDriveFileId: data.result.googleDriveFileId,
+              type: 'transcription',
+              filename: data.result.filename
+            }
           };
 
-          setMessages(prev => [...prev, audioMessage, transcriptionMessage]);
+          // Add export button message immediately after
+          const exportMessage: Message = {
+            role: 'assistant',
+            content: `📤 **Ready to export!** Click below to save all formats to Google Drive:\n\n🔵 Reply with "export" to save to: **kimbleai-transcriptions/${currentProject}/${data.result.filename.replace(/\.[^/.]+$/, '')}/**`,
+            timestamp: new Date().toISOString(),
+            projectId: currentProject,
+            metadata: {
+              transcriptionId: data.result.id,
+              googleDriveFileId: data.result.googleDriveFileId,
+              type: 'export-prompt',
+              filename: data.result.filename
+            }
+          };
+
+          setMessages(prev => [...prev, audioMessage, transcriptionMessage, exportMessage]);
           setIsTranscribingAudio(false);
           setAudioProgress({ progress: 0, eta: 0, status: 'idle' });
 
           console.log('[AUDIO] Transcription successful:', data.result);
         } else if (data.status === 'failed') {
+          // Mark as completed to prevent duplicates
+          completedJobsRef.current.add(jobId);
+
+          // Clear polling interval
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+
           const errorMessage: Message = {
             role: 'assistant',
             content: `❌ **Audio Transcription Failed**\n\nError: ${data.error || 'Unknown error'}\n\nPlease try again with a different audio file or contact support if the issue persists.`,
@@ -783,13 +901,23 @@ export default function Home() {
         jobId
       });
 
+      // Clear any existing polling interval
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+
       // Poll using the existing pollAudioProgress function
-      const pollInterval = setInterval(() => {
+      pollingIntervalRef.current = setInterval(() => {
         pollAudioProgress(jobId);
       }, 5000); // Poll every 5 seconds
 
       // Store interval for cleanup (longer timeout for big files)
-      setTimeout(() => clearInterval(pollInterval), 60 * 60 * 1000); // 1 hour timeout
+      setTimeout(() => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      }, 4 * 60 * 60 * 1000); // 4 hour timeout - supports large audio files
 
       console.log(`[AUDIO] Started transcription job ${jobId} for ${file.name} (ETA: ~${estimatedMinutes}min)`);
 
@@ -956,6 +1084,130 @@ export default function Home() {
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
+
+    // Handle simple "export" command
+    if (input.trim().toLowerCase() === 'export') {
+      // Find the most recent export-prompt message with metadata
+      const exportPromptMessage = [...messages].reverse().find(
+        m => m.metadata?.type === 'export-prompt' && m.metadata?.transcriptionId
+      );
+
+      if (!exportPromptMessage) {
+        const errorMsg: Message = {
+          role: 'assistant',
+          content: '❌ No transcription found to export. Please transcribe an audio file first.',
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        setInput('');
+        return;
+      }
+
+      const transcriptionId = exportPromptMessage.metadata.transcriptionId;
+      const googleDriveFileId = exportPromptMessage.metadata.googleDriveFileId || null;
+
+      setInput('');
+      setLoading(true);
+
+      try {
+        const response = await fetch('/api/transcribe/save-to-drive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcriptionId, googleDriveFileId })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Export failed');
+        }
+
+        let content = `✅ **Exported to Google Drive!**\n\n`;
+        content += `📁 **Folder:** [Open Folder](${data.folderUrl})\n`;
+        content += `📍 **Location:** ${data.message}\n\n`;
+        content += `**Files created:**\n`;
+        data.files.forEach((file: any) => {
+          content += `- [${file.name}](${file.url})\n`;
+        });
+
+        const successMsg: Message = {
+          role: 'assistant',
+          content,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, successMsg]);
+      } catch (error: any) {
+        const errorMsg: Message = {
+          role: 'assistant',
+          content: `❌ **Export failed:** ${error.message}\n\nPlease try again or check your Google Drive connection.`,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, errorMsg]);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Handle export command
+    if (input.startsWith('/export-all')) {
+      const parts = input.trim().split(' ');
+      const transcriptionId = parts[1];
+      const googleDriveFileId = parts[2] || null;
+
+      if (!transcriptionId) {
+        const errorMsg: Message = {
+          role: 'assistant',
+          content: '❌ Please provide a transcription ID. Example: `/export-all 123`',
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        setInput('');
+        return;
+      }
+
+      setInput('');
+      setLoading(true);
+
+      try {
+        const response = await fetch('/api/transcribe/save-to-drive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcriptionId, googleDriveFileId })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Export failed');
+        }
+
+        let content = `✅ **Exported to Google Drive!**\n\n`;
+        content += `📁 **Folder:** [Open Folder](${data.folderUrl})\n`;
+        content += `📍 **Location:** ${data.message}\n\n`;
+        content += `**Files created:**\n`;
+        data.files.forEach((file: any) => {
+          content += `- [${file.name}](${file.url})\n`;
+        });
+
+        const successMsg: Message = {
+          role: 'assistant',
+          content,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, successMsg]);
+      } catch (error: any) {
+        const errorMsg: Message = {
+          role: 'assistant',
+          content: `❌ **Export failed:** ${error.message}\n\nPlease try again or check your Google Drive connection.`,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, errorMsg]);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     const userMessage: Message = {
       role: 'user',
@@ -2062,7 +2314,9 @@ export default function Home() {
                 borderRadius: '6px',
                 fontSize: '11px',
                 color: '#4a9eff',
-                display: 'inline-block'
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
               }}>
                 <div style={{ marginBottom: '2px' }}>
                   {audioProgress.status === 'initializing' && '🔄 Initializing...'}
@@ -2108,6 +2362,24 @@ export default function Home() {
                     </span>
                   </div>
                 )}
+                <button
+                  onClick={() => {
+                    setIsTranscribingAudio(false);
+                    setAudioProgress({ progress: 0, eta: 0, status: 'idle' });
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#666',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    padding: '0 4px',
+                    lineHeight: '1'
+                  }}
+                  title="Cancel transcription"
+                >
+                  ✕
+                </button>
               </div>
             )}
 
