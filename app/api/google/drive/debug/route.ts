@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
                 .insert({
                   title: `[TEST] ${testFile.name}`,
                   content: `Test file from Drive Intelligence debug: ${testFile.name}`,
-                  source_type: 'google_drive',
+                  source_type: 'drive',
                   source_id: `test-${testFile.id}`,
                   metadata: {
                     mimeType: testFile.mimeType,
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
     const { count: existingCount, error: countError } = await supabase
       .from('knowledge_base')
       .select('*', { count: 'exact', head: true })
-      .eq('source_type', 'google_drive');
+      .eq('source_type', 'drive');
 
     if (countError) {
       results.steps[results.steps.length - 1].status = 'failed';

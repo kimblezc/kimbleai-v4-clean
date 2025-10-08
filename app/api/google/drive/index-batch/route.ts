@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         .from('knowledge_base')
         .select('id')
         .eq('source_id', file.id)
-        .eq('source_type', 'google_drive')
+        .eq('source_type', 'drive')
         .single();
 
       if (!existing) {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
           .insert({
             title: file.name,
             content: `Google Drive file: ${file.name} (${file.mimeType})`,
-            source_type: 'google_drive',
+            source_type: 'drive',
             source_id: file.id,
             metadata: {
               mimeType: file.mimeType,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     const { count: totalIndexed } = await supabase
       .from('knowledge_base')
       .select('*', { count: 'exact', head: true })
-      .eq('source_type', 'google_drive');
+      .eq('source_type', 'drive');
 
     const message = hasMore
       ? `Batch complete: ${indexed} files indexed in this batch (${totalIndexed || 0} total). Continue scanning...`
