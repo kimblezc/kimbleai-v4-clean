@@ -403,6 +403,9 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     // GPT-5 models require temperature = 1 (default), GPT-4 can use 0.7
     if (!selectedModel.model.startsWith('gpt-5')) {
       modelParams.temperature = selectedModel.temperature || 0.7;
+    } else {
+      // Always set temperature for GPT-5 to ensure consistent behavior
+      modelParams.temperature = 1;
     }
 
     // Add GPT-5 specific parameters if applicable
@@ -411,8 +414,37 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       console.log(`[MODEL] Using reasoning effort: ${selectedModel.reasoningLevel}`);
     }
 
-    // Get AI response with GPT-5 models (direct call - no fallback)
-    const completion = await openai.chat.completions.create(modelParams);
+    // Get AI response with improved error handling
+    let completion;
+    try {
+      console.log(`[OpenAI] Calling API with model: ${selectedModel.model}`);
+      completion = await openai.chat.completions.create(modelParams);
+
+      // Validate response structure
+      if (!completion || !completion.choices || completion.choices.length === 0) {
+        console.error('[OpenAI] Invalid response structure:', completion);
+        throw new Error('Invalid response structure from OpenAI API');
+      }
+
+      // Log if content is null/empty
+      if (!completion.choices[0].message.content) {
+        console.warn('[OpenAI] Received null/empty content from API');
+        console.warn('[OpenAI] Tool calls present:', !!completion.choices[0].message.tool_calls);
+        console.warn('[OpenAI] Full message:', JSON.stringify(completion.choices[0].message));
+      }
+    } catch (apiError: any) {
+      console.error('[OpenAI] API call failed:', apiError);
+      console.error('[OpenAI] Model:', selectedModel.model);
+      console.error('[OpenAI] Error details:', apiError.message);
+      console.error('[OpenAI] Error code:', apiError.code);
+
+      return NextResponse.json({
+        error: 'AI service temporarily unavailable',
+        details: `Failed to get response from AI model: ${apiError.message}`,
+        model: selectedModel.model,
+        errorCode: apiError.code
+      }, { status: 503 });
+    }
 
     let aiResponse = completion.choices[0].message.content || 'I apologize, but I could not generate a response.';
 
