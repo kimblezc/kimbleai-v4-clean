@@ -43,12 +43,17 @@ export async function POST(request: NextRequest) {
 
     try {
       // Try a tiny test upload to verify the key has upload permissions
-      const testData = Buffer.alloc(10, 'test');
+      // Create a minimal valid audio buffer (1 second of silence, 44.1kHz, 16-bit, mono)
+      const sampleRate = 44100;
+      const duration = 1;
+      const numSamples = sampleRate * duration;
+      const testData = Buffer.alloc(numSamples * 2); // 16-bit = 2 bytes per sample
+
       const testUpload = await fetch('https://api.assemblyai.com/v2/upload', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${trimmedKey}`,
-          'Content-Type': 'application/octet-stream',
+          'authorization': trimmedKey,
+          'content-type': 'application/octet-stream',
         },
         body: testData,
       });
@@ -84,7 +89,7 @@ export async function POST(request: NextRequest) {
         success: true,
         provider: 'assemblyai',
         upload_url: 'https://api.assemblyai.com/v2/upload',
-        auth_token: `Bearer ${trimmedKey}`,
+        auth_token: trimmedKey,
         features: ['speaker_diarization', 'unlimited_file_size']
       };
 

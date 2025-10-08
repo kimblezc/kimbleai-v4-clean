@@ -109,8 +109,8 @@ export async function POST(request: NextRequest) {
     const uploadResponse = await fetch(`${ASSEMBLYAI_BASE_URL}/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
-        'Content-Type': 'application/octet-stream',
+        'authorization': ASSEMBLYAI_API_KEY!,
+        'content-type': 'application/octet-stream',
       },
       body: audioBuffer,
     });
@@ -133,8 +133,8 @@ export async function POST(request: NextRequest) {
     const transcriptResponse = await fetch(`${ASSEMBLYAI_BASE_URL}/transcript`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
-        'Content-Type': 'application/json',
+        'authorization': ASSEMBLYAI_API_KEY!,
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
         audio_url: audioUrl,

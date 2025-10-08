@@ -88,7 +88,12 @@
       "Bash(chmod:*)",
       "Bash(printf \"y\\n\")",
       "Bash(printf:*)",
-      "WebFetch(domain:www.assemblyai.com)"
+      "WebFetch(domain:www.assemblyai.com)",
+      "Bash(timeout 30 npx tsx scripts/test-new-key.ts)",
+      "WebFetch(domain:kimbleai-v4-clean-7fdpuf6w4-kimblezcs-projects.vercel.app)",
+      "WebFetch(domain:kimbleai-v4-clean-6cpi03rl0-kimblezcs-projects.vercel.app)",
+      "WebFetch(domain:kimbleai-v4-clean-lj901t79t-kimblezcs-projects.vercel.app)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

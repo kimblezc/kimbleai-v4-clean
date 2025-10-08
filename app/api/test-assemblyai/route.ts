@@ -16,7 +16,7 @@ export async function GET() {
   try {
     const listResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'authorization': apiKey,
       },
     });
     test2Result = {
@@ -35,8 +35,8 @@ export async function GET() {
     const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/octet-stream',
+        'authorization': apiKey,
+        'content-type': 'application/octet-stream',
       },
       body: testBuffer,
     });

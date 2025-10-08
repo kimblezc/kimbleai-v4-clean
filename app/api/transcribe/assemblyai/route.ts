@@ -35,8 +35,8 @@ async function uploadToAssemblyAIStream(audioFile: File): Promise<string> {
   const uploadResponse = await fetch(`${ASSEMBLYAI_BASE_URL}/upload`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
-      'Content-Type': 'application/octet-stream',
+      'authorization': ASSEMBLYAI_API_KEY,
+      'content-type': 'application/octet-stream',
     },
     body: buffer,
   });
@@ -69,8 +69,8 @@ async function startTranscription(audioUrl: string): Promise<string> {
   const response = await fetch(`${ASSEMBLYAI_BASE_URL}/transcript`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
-      'Content-Type': 'application/json',
+      'authorization': ASSEMBLYAI_API_KEY,
+      'content-type': 'application/json',
     },
     body: JSON.stringify(transcriptRequest),
   });
@@ -86,7 +86,7 @@ async function startTranscription(audioUrl: string): Promise<string> {
 async function checkTranscriptionStatus(transcriptId: string) {
   const response = await fetch(`${ASSEMBLYAI_BASE_URL}/transcript/${transcriptId}`, {
     headers: {
-      'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
+      'authorization': ASSEMBLYAI_API_KEY,
     },
   });
 
@@ -490,7 +490,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
     // Poll for completion
     let result;
     let attempts = 0;
-    const maxAttempts = 720; // 1 hour max (5 sec intervals)
+    const maxAttempts = 2880; // 4 hours max (5 sec intervals) - supports up to ~8 hour audio files
 
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
@@ -553,6 +553,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
         text: result.text,
         service: 'assemblyai',
         metadata: {
+          assemblyai_id: result.id,
           speaker_labels: result.speaker_labels,
           utterances: result.utterances,
           words: result.words,
@@ -570,13 +571,35 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
       .select()
       .single();
 
+    let dbId = transcriptionData?.id || null;
+
     if (saveError) {
       console.error('[ASSEMBLYAI] Database save error:', saveError);
+      console.error('[ASSEMBLYAI] Error details:', JSON.stringify(saveError));
+
+      // If database save failed, try to look up existing transcription by AssemblyAI ID
+      const { data: existingTranscription } = await supabase
+        .from('audio_transcriptions')
+        .select('id')
+        .eq('metadata->>assemblyai_id', result.id)
+        .single();
+
+      if (existingTranscription) {
+        dbId = existingTranscription.id;
+        console.log('[ASSEMBLYAI] Found existing transcription with ID:', dbId);
+      }
+    } else {
+      console.log('[ASSEMBLYAI] Saved to database with ID:', dbId);
     }
 
     // Complete
     const finalJob = jobStore.get(jobId);
     if (finalJob) {
+      // Use database ID if available, otherwise use AssemblyAI ID
+      const resultId = dbId || result.id;
+      console.log('[ASSEMBLYAI] Setting result with ID:', resultId, '(dbId:', dbId, ', assemblyaiId:', result.id, ')');
+      console.log('[ASSEMBLYAI] Utterances count:', result.utterances?.length || 0);
+
       jobStore.set(jobId, {
         ...finalJob,
         status: 'completed',
@@ -586,11 +609,19 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
           text: result.text,
           duration: result.audio_duration,
           speakers: result.utterances?.length || 0,
+          utterances: result.utterances || [],
+          words: result.words || [],
           filename: filename,
           fileSize: fileSize,
-          id: transcriptionData?.id
+          id: resultId,
+          assemblyaiId: result.id
         }
       });
+      console.log('[ASSEMBLYAI] Job completed, result:', JSON.stringify({
+        id: dbId,
+        utterancesCount: result.utterances?.length || 0,
+        duration: result.audio_duration
+      }));
     }
 
     // COST TRACKING: Track AssemblyAI transcription cost
@@ -801,6 +832,8 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
           text: result.text,
           duration: result.audio_duration,
           speakers: result.speaker_labels?.length || 0,
+          utterances: result.utterances || [],
+          words: result.words || [],
           chapters: result.chapters?.length || 0,
           summary: result.summary,
           sentiment: result.sentiment_analysis_results,

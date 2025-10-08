@@ -11,7 +11,7 @@ const testEndpoint = () => {
     const options = {
       hostname: 'www.kimbleai.com',
       port: 443,
-      path: '/api/transcribe/export-to-drive',
+      path: '/api/transcribe/save-to-drive',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

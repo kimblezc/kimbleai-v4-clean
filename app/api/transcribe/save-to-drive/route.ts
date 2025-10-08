@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
             filename: 'transcription.m4a',  // Default filename
             duration: assemblyData.audio_duration,
             text: assemblyData.text,
-            created_at: new Date(assemblyData.created).toISOString(),
+            created_at: new Date().toISOString(),  // Use current time if created is invalid
             project_id: 'general',
             metadata: {
               utterances: assemblyData.utterances || [],
