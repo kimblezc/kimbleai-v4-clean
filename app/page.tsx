@@ -59,6 +59,9 @@ export default function Home() {
   const completedJobsRef = React.useRef<Set<string>>(new Set());
   const [showGoogleServices, setShowGoogleServices] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [pendingTranscriptionId, setPendingTranscriptionId] = useState<string | null>(null);
+  const [newProjectName, setNewProjectName] = useState('');
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -218,24 +221,9 @@ export default function Home() {
     };
 
     (window as any).saveToDrive = async (transcriptionId: string) => {
-      try {
-        const category = prompt('Enter category folder name (optional):');
-
-        const response = await fetch('/api/transcribe/save-to-drive', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcriptionId, category: category || null })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) throw new Error(data.error || 'Save failed');
-
-        alert(data.message + '\n\nView: ' + data.webViewLink);
-      } catch (error: any) {
-        console.error('Save to Drive failed:', error);
-        alert('Failed to save to Google Drive: ' + error.message);
-      }
+      // Open project selector modal
+      setPendingTranscriptionId(transcriptionId);
+      setShowProjectSelector(true);
     };
   }, []);
 
