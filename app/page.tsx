@@ -72,11 +72,7 @@ export default function Home() {
   const [pendingTranscriptionId, setPendingTranscriptionId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
 
-  // Deep Research & Agent Mode states
-  const [chatMode, setChatMode] = useState<'normal' | 'deep-research' | 'agent'>('normal');
-  const [selectedAgent, setSelectedAgent] = useState<string>('');
-  const [researchProgress, setResearchProgress] = useState<any[]>([]);
-  const [isResearching, setIsResearching] = useState(false);
+  // Removed: Deep Research & Agent Mode (non-functional, will rebuild properly)
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -1362,94 +1358,6 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // DEEP RESEARCH MODE
-      if (chatMode === 'deep-research') {
-        setIsResearching(true);
-        setResearchProgress([]);
-
-        const eventSource = new EventSource(
-          `/api/deep-research?query=${encodeURIComponent(input)}&userId=${currentUser}&streaming=true`
-        );
-
-        eventSource.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-
-            if (data.type === 'progress') {
-              setResearchProgress(prev => [...prev, data.progress]);
-            } else if (data.type === 'complete') {
-              const reportMessage: Message = {
-                role: 'assistant',
-                content: data.report,
-                timestamp: new Date().toISOString(),
-                metadata: { mode: 'deep-research', sources: data.sources }
-              };
-              setMessages([...newMessages, reportMessage]);
-              setIsResearching(false);
-              setResearchProgress([]);
-              eventSource.close();
-              setTimeout(() => loadConversations(currentProject), 1000);
-            } else if (data.type === 'error') {
-              const errorMessage: Message = {
-                role: 'assistant',
-                content: `❌ Research failed: ${data.error}`,
-                timestamp: new Date().toISOString()
-              };
-              setMessages([...newMessages, errorMessage]);
-              setIsResearching(false);
-              setResearchProgress([]);
-              eventSource.close();
-            }
-          } catch (err) {
-            console.error('Parse error:', err);
-          }
-        };
-
-        eventSource.onerror = () => {
-          setIsResearching(false);
-          setResearchProgress([]);
-          eventSource.close();
-          const errorMessage: Message = {
-            role: 'assistant',
-            content: '❌ Research connection failed. Please try again.',
-            timestamp: new Date().toISOString()
-          };
-          setMessages([...newMessages, errorMessage]);
-        };
-
-        setLoading(false);
-        return;
-      }
-
-      // AGENT MODE
-      if (chatMode === 'agent' && selectedAgent) {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: newMessages,
-            userId: currentUser,
-            conversationId: currentConversationId || `conv_${Date.now()}`,
-            mode: 'agent',
-            agent: selectedAgent
-          })
-        });
-
-        const data = await response.json();
-
-        const agentMessage: Message = {
-          role: 'assistant',
-          content: data.response || 'Agent processing complete.',
-          timestamp: new Date().toISOString(),
-          metadata: { mode: 'agent', agent: selectedAgent }
-        };
-
-        setMessages([...newMessages, agentMessage]);
-        setLoading(false);
-        setTimeout(() => loadConversations(currentProject), 1000);
-        return;
-      }
-
       // NORMAL CHAT MODE
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -2540,111 +2448,6 @@ export default function Home() {
           }}
           onPaste={handlePaste}
         >
-          {/* Chat Mode Selector */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            marginBottom: '16px'
-          }}>
-            <select
-              value={chatMode}
-              onChange={(e) => {
-                setChatMode(e.target.value as 'normal' | 'deep-research' | 'agent');
-                if (e.target.value !== 'agent') setSelectedAgent('');
-              }}
-              style={{
-                flex: 1,
-                padding: '12px',
-                borderRadius: '8px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#ccc',
-                fontSize: '14px',
-                cursor: 'pointer',
-                outline: 'none'
-              }}
-            >
-              <option value="normal">💬 Normal Chat</option>
-              <option value="deep-research">🔬 Deep Research</option>
-              <option value="agent">🤖 Agent Mode</option>
-            </select>
-
-            {chatMode === 'agent' && (
-              <select
-                value={selectedAgent}
-                onChange={(e) => setSelectedAgent(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: '8px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#ccc',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                <option value="">Select Agent...</option>
-                <option value="drive-intelligence">📁 Drive Intelligence</option>
-                <option value="audio-intelligence">🎵 Audio Intelligence</option>
-                <option value="knowledge-graph">🕸️ Knowledge Graph</option>
-                <option value="project-context">📊 Project Context</option>
-                <option value="cost-monitor">💰 Cost Monitor</option>
-              </select>
-            )}
-          </div>
-
-          {/* Research Progress Display */}
-          {chatMode === 'deep-research' && isResearching && researchProgress.length > 0 && (
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#1a1a1a',
-              borderRadius: '12px',
-              border: '1px solid #4a9eff',
-              marginBottom: '16px',
-              maxHeight: '300px',
-              overflowY: 'auto'
-            }}>
-              <div style={{
-                fontWeight: '600',
-                marginBottom: '12px',
-                color: '#4a9eff',
-                fontSize: '15px'
-              }}>
-                🔬 Deep Research in Progress
-              </div>
-              {researchProgress.map((step, i) => (
-                <div key={i} style={{
-                  padding: '10px',
-                  marginBottom: '6px',
-                  backgroundColor: step.status === 'error' ? '#3a1a1a' : '#2a2a2a',
-                  borderRadius: '6px',
-                  borderLeft: `4px solid ${
-                    step.status === 'complete' ? '#10a37f' :
-                    step.status === 'error' ? '#ef4444' :
-                    '#4a9eff'
-                  }`,
-                  color: '#ccc',
-                  fontSize: '13px'
-                }}>
-                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                    {step.status === 'complete' ? '✓' :
-                     step.status === 'error' ? '✗' : '⏳'} {step.step}
-                  </div>
-                  {step.details && (
-                    <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                      {step.details}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-                    {new Date(step.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
           <div style={{
             display: 'flex',
             gap: '12px',
