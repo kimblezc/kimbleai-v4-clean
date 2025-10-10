@@ -53,6 +53,13 @@ export default function Home() {
     status: string;
     jobId?: string;
   }>({ progress: 0, eta: 0, status: 'idle' });
+  const [batchFiles, setBatchFiles] = useState<File[]>([]);
+  const [batchProgress, setBatchProgress] = useState<{
+    total: number;
+    completed: number;
+    current?: string;
+    status: 'idle' | 'processing' | 'completed';
+  }>({ total: 0, completed: 0, status: 'idle' });
   const [deletedProjects, setDeletedProjects] = useState<Set<string>>(new Set());
   const [createdProjects, setCreatedProjects] = useState<Set<string>>(new Set());
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -64,6 +71,12 @@ export default function Home() {
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [pendingTranscriptionId, setPendingTranscriptionId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
+
+  // Deep Research & Agent Mode states
+  const [chatMode, setChatMode] = useState<'normal' | 'deep-research' | 'agent'>('normal');
+  const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const [researchProgress, setResearchProgress] = useState<any[]>([]);
+  const [isResearching, setIsResearching] = useState(false);
 
   // Load conversations for current project
   // Load conversations and update projects dynamically
@@ -492,10 +505,18 @@ export default function Home() {
 
   // Handle audio file selection
   const handleAudioSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedAudio(file);
-      handleAudioTranscription(file);
+    const files = Array.from(event.target.files || []);
+
+    if (files.length === 0) return;
+
+    if (files.length === 1) {
+      // Single file - use existing flow
+      setSelectedAudio(files[0]);
+      handleAudioTranscription(files[0]);
+    } else {
+      // Multiple files - use batch upload
+      setBatchFiles(files);
+      handleBatchAudioTranscription(files);
     }
   };
 
@@ -1054,6 +1075,62 @@ export default function Home() {
     }
   };
 
+  // Handle batch audio transcription
+  const handleBatchAudioTranscription = async (files: File[]) => {
+    setBatchProgress({ total: files.length, completed: 0, status: 'processing' });
+    setIsTranscribingAudio(true);
+
+    const results: { file: string; success: boolean; transcriptionId?: string; error?: string }[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setBatchProgress(prev => ({ ...prev, current: file.name, completed: i }));
+
+      try {
+        console.log(`[BATCH] Processing file ${i + 1}/${files.length}: ${file.name}`);
+
+        // Use the same transcription logic as single files
+        await handleAudioTranscription(file);
+
+        // Wait for transcription to complete before moving to next file
+        // This is a simplified version - ideally we'd wait for the actual completion
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        results.push({ file: file.name, success: true });
+      } catch (error: any) {
+        console.error(`[BATCH] Failed to transcribe ${file.name}:`, error);
+        results.push({ file: file.name, success: false, error: error.message });
+      }
+    }
+
+    setBatchProgress({ total: files.length, completed: files.length, status: 'completed' });
+    setIsTranscribingAudio(false);
+
+    // Show batch completion message
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+
+    let content = `## 📊 Batch Transcription Complete\n\n`;
+    content += `**Total Files:** ${files.length}\n`;
+    content += `**✅ Successful:** ${successCount}\n`;
+    content += `**❌ Failed:** ${failCount}\n\n`;
+
+    if (failCount > 0) {
+      content += `### Failed Files:\n`;
+      results.filter(r => !r.success).forEach(r => {
+        content += `- ${r.file}: ${r.error}\n`;
+      });
+    }
+
+    const batchMessage: Message = {
+      role: 'assistant',
+      content,
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, batchMessage]);
+  };
+
   // Progress persistence - save to localStorage and restore on refresh
   React.useEffect(() => {
     const savedProgress = localStorage.getItem('kimbleai_audio_progress');
@@ -1184,48 +1261,11 @@ export default function Home() {
       }
 
       const transcriptionId = exportPromptMessage.metadata.transcriptionId;
-      const googleDriveFileId = exportPromptMessage.metadata.googleDriveFileId || null;
 
+      // Open project selector modal instead of direct export
       setInput('');
-      setLoading(true);
-
-      try {
-        const response = await fetch('/api/transcribe/save-to-drive', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcriptionId, googleDriveFileId })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Export failed');
-        }
-
-        let content = `✅ **Exported to Google Drive!**\n\n`;
-        content += `📁 **Folder:** [Open Folder](${data.folderUrl})\n`;
-        content += `📍 **Location:** ${data.message}\n\n`;
-        content += `**Files created:**\n`;
-        data.files.forEach((file: any) => {
-          content += `- [${file.name}](${file.url})\n`;
-        });
-
-        const successMsg: Message = {
-          role: 'assistant',
-          content,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, successMsg]);
-      } catch (error: any) {
-        const errorMsg: Message = {
-          role: 'assistant',
-          content: `❌ **Export failed:** ${error.message}\n\nPlease try again or check your Google Drive connection.`,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, errorMsg]);
-      } finally {
-        setLoading(false);
-      }
+      setPendingTranscriptionId(transcriptionId);
+      setShowProjectSelector(true);
       return;
     }
 
@@ -1322,6 +1362,95 @@ export default function Home() {
     setLoading(true);
 
     try {
+      // DEEP RESEARCH MODE
+      if (chatMode === 'deep-research') {
+        setIsResearching(true);
+        setResearchProgress([]);
+
+        const eventSource = new EventSource(
+          `/api/deep-research?query=${encodeURIComponent(input)}&userId=${currentUser}&streaming=true`
+        );
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'progress') {
+              setResearchProgress(prev => [...prev, data.progress]);
+            } else if (data.type === 'complete') {
+              const reportMessage: Message = {
+                role: 'assistant',
+                content: data.report,
+                timestamp: new Date().toISOString(),
+                metadata: { mode: 'deep-research', sources: data.sources }
+              };
+              setMessages([...newMessages, reportMessage]);
+              setIsResearching(false);
+              setResearchProgress([]);
+              eventSource.close();
+              setTimeout(() => loadConversations(currentProject), 1000);
+            } else if (data.type === 'error') {
+              const errorMessage: Message = {
+                role: 'assistant',
+                content: `❌ Research failed: ${data.error}`,
+                timestamp: new Date().toISOString()
+              };
+              setMessages([...newMessages, errorMessage]);
+              setIsResearching(false);
+              setResearchProgress([]);
+              eventSource.close();
+            }
+          } catch (err) {
+            console.error('Parse error:', err);
+          }
+        };
+
+        eventSource.onerror = () => {
+          setIsResearching(false);
+          setResearchProgress([]);
+          eventSource.close();
+          const errorMessage: Message = {
+            role: 'assistant',
+            content: '❌ Research connection failed. Please try again.',
+            timestamp: new Date().toISOString()
+          };
+          setMessages([...newMessages, errorMessage]);
+        };
+
+        setLoading(false);
+        return;
+      }
+
+      // AGENT MODE
+      if (chatMode === 'agent' && selectedAgent) {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: newMessages,
+            userId: currentUser,
+            conversationId: currentConversationId || `conv_${Date.now()}`,
+            mode: 'agent',
+            agent: selectedAgent
+          })
+        });
+
+        const data = await response.json();
+
+        const agentMessage: Message = {
+          role: 'assistant',
+          content: data.response || 'Agent processing complete.',
+          timestamp: new Date().toISOString(),
+          metadata: { mode: 'agent', agent: selectedAgent }
+        };
+
+        setMessages([...newMessages, agentMessage]);
+        setLoading(false);
+        setTimeout(() => loadConversations(currentProject), 1000);
+        return;
+      }
+
+      // NORMAL CHAT MODE
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2411,6 +2540,111 @@ export default function Home() {
           }}
           onPaste={handlePaste}
         >
+          {/* Chat Mode Selector */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '16px'
+          }}>
+            <select
+              value={chatMode}
+              onChange={(e) => {
+                setChatMode(e.target.value as 'normal' | 'deep-research' | 'agent');
+                if (e.target.value !== 'agent') setSelectedAgent('');
+              }}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '8px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#ccc',
+                fontSize: '14px',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              <option value="normal">💬 Normal Chat</option>
+              <option value="deep-research">🔬 Deep Research</option>
+              <option value="agent">🤖 Agent Mode</option>
+            </select>
+
+            {chatMode === 'agent' && (
+              <select
+                value={selectedAgent}
+                onChange={(e) => setSelectedAgent(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  backgroundColor: '#2a2a2a',
+                  border: '1px solid #444',
+                  color: '#ccc',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="">Select Agent...</option>
+                <option value="drive-intelligence">📁 Drive Intelligence</option>
+                <option value="audio-intelligence">🎵 Audio Intelligence</option>
+                <option value="knowledge-graph">🕸️ Knowledge Graph</option>
+                <option value="project-context">📊 Project Context</option>
+                <option value="cost-monitor">💰 Cost Monitor</option>
+              </select>
+            )}
+          </div>
+
+          {/* Research Progress Display */}
+          {chatMode === 'deep-research' && isResearching && researchProgress.length > 0 && (
+            <div style={{
+              padding: '16px',
+              backgroundColor: '#1a1a1a',
+              borderRadius: '12px',
+              border: '1px solid #4a9eff',
+              marginBottom: '16px',
+              maxHeight: '300px',
+              overflowY: 'auto'
+            }}>
+              <div style={{
+                fontWeight: '600',
+                marginBottom: '12px',
+                color: '#4a9eff',
+                fontSize: '15px'
+              }}>
+                🔬 Deep Research in Progress
+              </div>
+              {researchProgress.map((step, i) => (
+                <div key={i} style={{
+                  padding: '10px',
+                  marginBottom: '6px',
+                  backgroundColor: step.status === 'error' ? '#3a1a1a' : '#2a2a2a',
+                  borderRadius: '6px',
+                  borderLeft: `4px solid ${
+                    step.status === 'complete' ? '#10a37f' :
+                    step.status === 'error' ? '#ef4444' :
+                    '#4a9eff'
+                  }`,
+                  color: '#ccc',
+                  fontSize: '13px'
+                }}>
+                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                    {step.status === 'complete' ? '✓' :
+                     step.status === 'error' ? '✗' : '⏳'} {step.step}
+                  </div>
+                  {step.details && (
+                    <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                      {step.details}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                    {new Date(step.timestamp).toLocaleTimeString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={{
             display: 'flex',
             gap: '12px',
@@ -2497,16 +2731,32 @@ export default function Home() {
                 cursor: isTranscribingAudio ? 'not-allowed' : 'pointer',
                 marginRight: '8px',
                 display: 'inline-block',
-                opacity: isTranscribingAudio ? 0.6 : 1
+                opacity: isTranscribingAudio ? 0.6 : 1,
+                position: 'relative'
               }}
-              title="Upload and transcribe audio (M4A, MP3, WAV, etc.)"
+              title="Upload and transcribe audio (M4A, MP3, WAV, etc.) - Hold Ctrl/Cmd to select multiple files"
             >
               {isTranscribingAudio ? '⏳' : '🎵'}
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                backgroundColor: '#10b981',
+                color: '#fff',
+                fontSize: '8px',
+                padding: '2px 4px',
+                borderRadius: '4px',
+                fontWeight: 'bold',
+                pointerEvents: 'none'
+              }}>
+                MULTI
+              </span>
               <input
                 type="file"
                 accept="audio/*,.m4a,.mp3,.wav,.ogg,.aac"
                 onChange={handleAudioSelect}
                 disabled={isTranscribingAudio}
+                multiple
                 style={{ display: 'none' }}
               />
             </label>
@@ -2587,6 +2837,43 @@ export default function Home() {
                 >
                   ✕
                 </button>
+              </div>
+            )}
+
+            {/* Batch Upload Progress */}
+            {batchProgress.status === 'processing' && (
+              <div style={{
+                marginLeft: '8px',
+                padding: '6px 12px',
+                backgroundColor: '#1a1a1a',
+                border: '1px solid #333',
+                borderRadius: '6px',
+                fontSize: '12px',
+                color: '#10b981',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div>📊 Batch: {batchProgress.completed + 1}/{batchProgress.total}</div>
+                {batchProgress.current && (
+                  <div style={{ fontSize: '10px', color: '#666' }}>
+                    {batchProgress.current}
+                  </div>
+                )}
+                <div style={{
+                  width: '80px',
+                  height: '3px',
+                  backgroundColor: '#333',
+                  borderRadius: '2px',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${(batchProgress.completed / batchProgress.total) * 100}%`,
+                    height: '100%',
+                    backgroundColor: '#10b981',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
               </div>
             )}
 

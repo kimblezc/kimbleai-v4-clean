@@ -99,7 +99,14 @@
       "Bash(git filter-repo:*)",
       "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \"git rm --cached --ignore-unmatch ''''Recording (31).m4a''''\" --prune-empty --tag-name-filter cat -- --all)",
       "Bash(export FILTER_BRANCH_SQUELCH_WARNING=1)",
-      "Bash(git filter-branch:*)"
+      "Bash(git filter-branch:*)",
+      "Bash(timeout 30 npm run build)",
+      "Bash(git checkout:*)",
+      "Bash(timeout:*)",
+      "Bash(SKIP_STARTUP_DELAY=1 npx tsx scripts/test-gpt5-fix.ts)",
+      "WebFetch(domain:support.google.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:venturebeat.com)"
     ],
     "deny": [],
     "ask": []

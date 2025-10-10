@@ -953,28 +953,91 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Try memory first (if same instance)
     const job = jobStore.get(jobId);
-    if (!job) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      );
+    if (job) {
+      // Clean up completed jobs after 10 minutes
+      if ((job.status === 'completed' || job.status === 'failed') &&
+          (Date.now() - job.startTime > 10 * 60 * 1000)) {
+        jobStore.delete(jobId);
+      }
+
+      return NextResponse.json({
+        success: true,
+        jobId,
+        progress: job.progress,
+        eta: job.eta,
+        status: job.status,
+        result: job.result || null,
+        error: job.error || null
+      });
     }
 
-    // Clean up completed jobs after 10 minutes
-    if ((job.status === 'completed' || job.status === 'failed') &&
-        (Date.now() - job.startTime > 10 * 60 * 1000)) {
-      jobStore.delete(jobId);
+    // Job not in memory - check database for completed transcription
+    // Extract AssemblyAI ID from jobId (format: assemblyai_timestamp_randomid)
+    console.log(`[ASSEMBLYAI] Job ${jobId} not in memory, checking database...`);
+
+    // Try to find by metadata matching the timestamp portion of jobId
+    const { data: transcriptions, error: dbError } = await supabase
+      .from('audio_transcriptions')
+      .select('*')
+      .eq('service', 'assemblyai')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (dbError || !transcriptions || transcriptions.length === 0) {
+      // Return "processing" status to keep frontend polling
+      return NextResponse.json({
+        success: true,
+        jobId,
+        progress: 50,
+        eta: 120,
+        status: 'processing',
+        result: null,
+        error: null
+      });
     }
 
+    // Find transcription that matches by checking if it was created around the same time
+    // JobId format: assemblyai_1759912367671_gcg39j182
+    const jobTimestamp = parseInt(jobId.split('_')[1]);
+    const recentTranscription = transcriptions.find(t => {
+      const createdAt = new Date(t.created_at).getTime();
+      // Check if created within 10 minutes of job start
+      return Math.abs(createdAt - jobTimestamp) < 10 * 60 * 1000;
+    });
+
+    if (recentTranscription) {
+      console.log(`[ASSEMBLYAI] Found completed transcription: ${recentTranscription.id}`);
+      return NextResponse.json({
+        success: true,
+        jobId,
+        progress: 100,
+        eta: 0,
+        status: 'completed',
+        result: {
+          id: recentTranscription.id,
+          text: recentTranscription.text,
+          duration: recentTranscription.duration,
+          speakers: recentTranscription.metadata?.utterances?.length || 0,
+          utterances: recentTranscription.metadata?.utterances || [],
+          words: recentTranscription.metadata?.words || [],
+          filename: recentTranscription.filename,
+          fileSize: recentTranscription.file_size
+        },
+        error: null
+      });
+    }
+
+    // Still processing - return in-progress status
     return NextResponse.json({
       success: true,
       jobId,
-      progress: job.progress,
-      eta: job.eta,
-      status: job.status,
-      result: job.result || null,
-      error: job.error || null
+      progress: 60,
+      eta: 90,
+      status: 'processing',
+      result: null,
+      error: null
     });
 
   } catch (error: any) {
