@@ -10,13 +10,30 @@ interface D20DiceProps {
 
 export default function D20Dice({ size = 64, className = '', spinning = true }: D20DiceProps) {
   return (
-    <div className={`inline-block ${className}`} style={{ width: size, height: size }}>
+    <div
+      className={`inline-block ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes d20-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          .d20-spinning {
+            animation: d20-spin 3s linear infinite;
+          }
+        `
+      }} />
+
       <svg
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
-        className={spinning ? 'animate-spin-slow' : ''}
+        className={spinning ? 'd20-spinning' : ''}
         style={{
           filter: 'drop-shadow(0 0 8px rgba(74, 158, 255, 0.5))',
+          width: '100%',
+          height: '100%',
         }}
       >
         {/* D20 Icosahedron wireframe */}
@@ -56,26 +73,11 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
           fontSize="20"
           fontWeight="bold"
           fill="#4a9eff"
-          className="font-mono"
+          style={{ fontFamily: 'monospace' }}
         >
           20
         </text>
       </svg>
-
-      <style jsx>{`
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .animate-spin-slow {
-          animation: spin-slow 3s linear infinite;
-        }
-      `}</style>
     </div>
   );
 }
