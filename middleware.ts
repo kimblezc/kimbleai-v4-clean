@@ -54,6 +54,12 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isPublicPath) {
+    // Don't run any middleware logic for public paths
+    return NextResponse.next();
+  }
+
+  // Special handling: Allow signin.html
+  if (path === '/signin.html') {
     return NextResponse.next();
   }
 

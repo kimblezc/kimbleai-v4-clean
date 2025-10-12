@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import NotificationManager from './notification-manager';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -372,6 +373,21 @@ export async function checkBudgetLimits(userId?: string): Promise<BudgetStatus> 
       await sendBudgetAlert('critical', 90, status, userId);
     } else if (percentUsed.monthly >= 100 && BUDGET_LIMITS.ALERT_AT_100_PERCENT) {
       await sendBudgetAlert('emergency', 100, status, userId);
+    }
+
+    // Send in-app notifications for budget alerts
+    if (userId && percentUsed.monthly >= 50) {
+      await NotificationManager.notifyBudgetAlert(
+        userId,
+        Math.round(percentUsed.monthly),
+        'monthly',
+        {
+          cost: status.currentSpend.monthly,
+          limit: status.limits.monthly,
+          projectedMonthly: status.projectedMonthly,
+          daysIntoMonth: status.daysIntoMonth,
+        }
+      );
     }
 
     return status;

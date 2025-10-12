@@ -1,13 +1,12 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { signIn } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-
-function SignInContent() {
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get('callbackUrl') || '/';
-  const error = searchParams?.get('error');
+export default function SignInPage({
+  searchParams,
+}: {
+  searchParams: { callbackUrl?: string; error?: string };
+}) {
+  const callbackUrl = searchParams?.callbackUrl || '/';
+  const error = searchParams?.error;
 
   return (
     <div style={{
@@ -94,8 +93,8 @@ function SignInContent() {
           </div>
         </div>
 
-        <button
-          onClick={() => signIn('google', { callbackUrl })}
+        <a
+          href={`/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`}
           style={{
             width: '100%',
             padding: '14px',
@@ -110,15 +109,8 @@ function SignInContent() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '12px',
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.02)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 255, 255, 0.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = 'none';
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            textDecoration: 'none'
           }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24">
@@ -128,7 +120,7 @@ function SignInContent() {
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
           Sign in with Google
-        </button>
+        </a>
 
         <div style={{
           marginTop: '24px',
@@ -145,13 +137,5 @@ function SignInContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function SignIn() {
-  return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f0f0f', color: '#fff' }}>Loading...</div>}>
-      <SignInContent />
-    </Suspense>
   );
 }

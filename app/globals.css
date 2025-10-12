@@ -1,3 +1,386 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Mobile-First Responsive Design */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-gray-950 text-white;
+  }
+}
+
+@layer utilities {
+  /* Touch-friendly button sizing */
+  .btn-touch {
+    min-height: 44px;
+    min-width: 44px;
+    @apply px-4 py-3;
+  }
+
+  /* Mobile-safe padding */
+  .safe-padding {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-padding-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Scrollable areas */
+  .scroll-mobile {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+}
+
+/* Mobile Breakpoints (Tailwind default: 640px) */
+@media (max-width: 640px) {
+  /* Stack chat interface vertically */
+  .chat-container {
+    @apply flex flex-col h-screen;
+  }
+
+  /* Hide sidebar on mobile, show as overlay */
+  .sidebar {
+    @apply fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300;
+  }
+
+  .sidebar.closed {
+    @apply -translate-x-full;
+  }
+
+  /* Mobile bottom navigation */
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-40;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Floating action button */
+  .fab {
+    @apply fixed bottom-20 right-4 w-14 h-14 rounded-full shadow-lg z-40;
+    @apply flex items-center justify-center;
+    @apply bg-blue-600 hover:bg-blue-700 text-white;
+  }
+
+  /* Mobile-friendly inputs */
+  input, textarea, select {
+    @apply text-base; /* Prevents zoom on iOS */
+    min-height: 44px;
+  }
+
+  /* Mobile message bubbles */
+  .message {
+    @apply px-3 py-2 text-sm;
+  }
+
+  /* Hide scroll indicators on mobile */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mobile-friendly modals */
+  .modal {
+    @apply fixed inset-0 z-50;
+    @apply flex items-end sm:items-center justify-center;
+  }
+
+  .modal-content {
+    @apply w-full max-h-[90vh] rounded-t-xl sm:rounded-xl;
+    @apply overflow-auto;
+  }
+
+  /* Swipe indicators */
+  .swipe-indicator {
+    @apply w-12 h-1 bg-gray-600 rounded-full mx-auto my-2;
+  }
+
+  /* Mobile table responsiveness */
+  table {
+    @apply block overflow-x-auto;
+  }
+
+  /* Compact headers */
+  h1 {
+    @apply text-xl;
+  }
+
+  h2 {
+    @apply text-lg;
+  }
+
+  /* Touch-friendly cards */
+  .card {
+    @apply p-3;
+  }
+}
+
+/* Tablet Breakpoints (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Side-by-side layout */
+  .chat-container {
+    @apply grid grid-cols-[300px_1fr];
+  }
+
+  /* Adjusted sidebar */
+  .sidebar {
+    @apply w-300;
+  }
+
+  /* Larger touch targets */
+  .btn-touch {
+    min-height: 40px;
+    @apply px-4 py-2;
+  }
+
+  /* Two-column layouts */
+  .grid-responsive {
+    @apply grid grid-cols-2 gap-4;
+  }
+}
+
+/* Desktop Breakpoints (1025px+) */
+@media (min-width: 1025px) {
+  /* Full desktop layout */
+  .chat-container {
+    @apply grid grid-cols-[320px_1fr_320px];
+  }
+
+  /* Wider sidebar */
+  .sidebar {
+    @apply w-320;
+  }
+
+  /* Standard button sizing */
+  .btn-touch {
+    @apply px-4 py-2;
+  }
+
+  /* Three-column layouts */
+  .grid-responsive {
+    @apply grid grid-cols-3 gap-6;
+  }
+
+  /* Show hover states */
+  .hover-desktop:hover {
+    @apply bg-gray-800;
+  }
+}
+
+/* PWA-specific styles */
+@media all and (display-mode: standalone) {
+  /* When running as PWA */
+  body {
+    user-select: none; /* Prevent text selection in app mode */
+  }
+
+  /* Adjust for notch/safe areas */
+  .app-container {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-width: 640px) and (orientation: landscape) {
+  .mobile-nav {
+    @apply h-12; /* Shorter nav in landscape */
+  }
+
+  .fab {
+    @apply bottom-14 right-2 w-12 h-12; /* Smaller FAB */
+  }
+}
+
+/* High DPI / Retina displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Crisper borders */
+  .border {
+    border-width: 0.5px;
+  }
+}
+
+/* Dark mode (always on for KimbleAI) */
+:root {
+  color-scheme: dark;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-blue-500;
+}
+
+/* Custom scrollbar (webkit browsers) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-700 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-600;
+}
+
+/* Loading states */
+.skeleton {
+  @apply bg-gray-800 animate-pulse rounded;
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glass morphism effects */
+.glass {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Gradient backgrounds */
+.gradient-blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
+}
+
+/* Mobile-specific animations */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Touch pinch-zoom for images */
+.touch-pinch-zoom {
+  touch-action: pan-x pan-y pinch-zoom;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Pull to refresh loading */
+@keyframes pull-refresh {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.pull-refresh-spinner {
+  animation: pull-refresh 1s linear infinite;
+}
+
+/* Mobile-optimized cards */
+@media (max-width: 640px) {
+  .card-mobile {
+    @apply rounded-none border-x-0;
+  }
+
+  /* Stack forms vertically on mobile */
+  form {
+    @apply space-y-3;
+  }
+
+  /* Full-width buttons on mobile */
+  .btn-mobile-full {
+    @apply w-full;
+  }
+
+  /* Compact spacing on mobile */
+  .space-mobile-compact > * + * {
+    margin-top: 0.5rem !important;
+  }
+}
+
+/* Prevent zoom on double-tap */
+* {
+  touch-action: manipulation;
+}
+
+/* Improve tap highlight */
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .safe-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Landscape optimizations for mobile */
+@media (max-width: 640px) and (orientation: landscape) {
+  /* Reduce header height in landscape */
+  header {
+    @apply py-2;
+  }
+
+  /* Adjust modal height in landscape */
+  .modal-content {
+    @apply max-h-[85vh];
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .border {
+    border-width: 2px;
+  }
+
+  button, a {
+    outline: 2px solid transparent;
+  }
+
+  button:focus, a:focus {
+    outline-color: currentColor;
+  }
+}

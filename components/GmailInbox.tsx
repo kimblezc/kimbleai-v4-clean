@@ -47,6 +47,8 @@ export function GmailInbox() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importing, setImporting] = useState<string | null>(null);
+  const [downloadingAttachment, setDownloadingAttachment] = useState<string | null>(null);
+  const [processingAttachments, setProcessingAttachments] = useState<string | null>(null);
 
   const userId = session?.user?.email?.includes('zach') ? 'zach' : 'rebecca';
 
@@ -157,6 +159,68 @@ export function GmailInbox() {
     }
   };
 
+  const downloadAttachment = async (attachment: any, messageId: string) => {
+    const attachmentKey = `${messageId}-${attachment.attachmentId}`;
+    setDownloadingAttachment(attachmentKey);
+    try {
+      const params = new URLSearchParams({
+        userId,
+        messageId,
+        attachmentId: attachment.attachmentId || '',
+        filename: attachment.filename,
+        mimeType: attachment.mimeType
+      });
+
+      const response = await fetch(`/api/google/gmail/attachments?${params}`);
+
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      // Create download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+    } catch (err: any) {
+      alert('Error downloading attachment: ' + err.message);
+    } finally {
+      setDownloadingAttachment(null);
+    }
+  };
+
+  const processAttachments = async (email: EmailDetails) => {
+    setProcessingAttachments(email.id);
+    try {
+      const response = await fetch('/api/google/gmail/attachments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          messageId: email.id,
+          processAll: true
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(`Processed ${data.attachmentsProcessed} attachment(s) successfully! Files have been indexed and added to your knowledge base.`);
+      } else {
+        alert('Failed to process attachments: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err: any) {
+      alert('Error processing attachments: ' + err.message);
+    } finally {
+      setProcessingAttachments(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -197,9 +261,9 @@ export function GmailInbox() {
   }
 
   return (
-    <div className="flex h-full gap-4">
-      {/* Sidebar with Labels */}
-      <div className="w-48 flex-shrink-0">
+    <div className="flex flex-col md:flex-row h-full gap-4">
+      {/* Sidebar with Labels - Hidden on mobile, shown in dropdown */}
+      <div className="hidden md:block w-48 flex-shrink-0">
         <Card className="h-full">
           <h3 className="text-sm font-semibold text-white mb-3">Labels</h3>
           <div className="space-y-1">
@@ -222,6 +286,23 @@ export function GmailInbox() {
               </button>
             ))}
           </div>
+        </Card>
+      </div>
+
+      {/* Mobile Label Selector */}
+      <div className="md:hidden">
+        <Card>
+          <select
+            value={selectedLabel}
+            onChange={(e) => setSelectedLabel(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {labels.filter(l => l.type === 'system' || l.type === 'user').map((label) => (
+              <option key={label.id} value={label.id}>
+                {label.name} {label.messagesUnread ? `(${label.messagesUnread})` : ''}
+              </option>
+            ))}
+          </select>
         </Card>
       </div>
 
@@ -291,16 +372,29 @@ export function GmailInbox() {
         </Card>
       </div>
 
-      {/* Email Detail Panel */}
+      {/* Email Detail Panel - Full screen on mobile */}
       {selectedEmail && (
-        <div className="w-96 flex-shrink-0">
-          <Card className="h-full overflow-auto">
+        <div className="fixed md:relative inset-0 md:inset-auto md:w-96 flex-shrink-0 z-40 md:z-auto">
+          <Card className="h-full overflow-auto rounded-none md:rounded-lg">
             <div className="space-y-4">
+              {/* Mobile header with back button */}
+              <div className="flex justify-between items-start md:hidden mb-2 pb-2 border-b border-gray-800">
+                <button
+                  onClick={() => setSelectedEmail(null)}
+                  className="flex items-center gap-2 text-gray-400 hover:text-white"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+              </div>
+
               <div className="flex justify-between items-start">
                 <h3 className="text-lg font-semibold text-white pr-4">{selectedEmail.subject}</h3>
                 <button
                   onClick={() => setSelectedEmail(null)}
-                  className="text-gray-400 hover:text-white"
+                  className="hidden md:block text-gray-400 hover:text-white"
                 >
                   ✕
                 </button>
@@ -329,16 +423,40 @@ export function GmailInbox() {
 
               {selectedEmail.attachments.length > 0 && (
                 <div>
-                  <div className="text-sm text-gray-500 mb-2">Attachments:</div>
+                  <div className="text-sm text-gray-500 mb-2 flex justify-between items-center">
+                    <span>Attachments ({selectedEmail.attachments.length}):</span>
+                    <button
+                      onClick={() => processAttachments(selectedEmail)}
+                      disabled={processingAttachments === selectedEmail.id}
+                      className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded disabled:opacity-50"
+                    >
+                      {processingAttachments === selectedEmail.id ? 'Processing...' : 'Process All'}
+                    </button>
+                  </div>
                   <div className="space-y-1">
-                    {selectedEmail.attachments.map((att, idx) => (
-                      <div
-                        key={idx}
-                        className="text-sm text-blue-400 bg-gray-800 px-2 py-1 rounded"
-                      >
-                        {att.filename} ({Math.round((att.size || 0) / 1024)}KB)
-                      </div>
-                    ))}
+                    {selectedEmail.attachments.map((att, idx) => {
+                      const attachmentKey = `${selectedEmail.id}-${att.attachmentId}`;
+                      return (
+                        <div
+                          key={idx}
+                          className="text-sm bg-gray-800 px-3 py-2 rounded flex justify-between items-center group"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-blue-400 truncate">{att.filename}</span>
+                            <span className="text-gray-500 text-xs whitespace-nowrap">
+                              ({Math.round((att.size || 0) / 1024)}KB)
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => downloadAttachment(att, selectedEmail.id)}
+                            disabled={downloadingAttachment === attachmentKey}
+                            className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {downloadingAttachment === attachmentKey ? 'Downloading...' : 'Download'}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

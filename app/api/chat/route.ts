@@ -388,6 +388,99 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
             required: ["file_id"]
           }
         }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "send_email",
+          description: "Send an email via Gmail. Use this when the user wants to send, compose, or email someone.",
+          parameters: {
+            type: "object",
+            properties: {
+              to: {
+                type: "string",
+                description: "Recipient email address"
+              },
+              subject: {
+                type: "string",
+                description: "Email subject line"
+              },
+              body: {
+                type: "string",
+                description: "Email body content (plain text)"
+              },
+              replyToMessageId: {
+                type: "string",
+                description: "Optional: Gmail message ID to reply to (for threading)",
+                default: ""
+              }
+            },
+            required: ["to", "subject", "body"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_calendar_event",
+          description: "Create a new Google Calendar event with automatic Google Meet link",
+          parameters: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "Event title/summary"
+              },
+              description: {
+                type: "string",
+                description: "Event description or agenda",
+                default: ""
+              },
+              start: {
+                type: "string",
+                description: "Start date-time in ISO 8601 format (e.g., '2025-01-13T14:00:00-05:00')"
+              },
+              end: {
+                type: "string",
+                description: "End date-time in ISO 8601 format"
+              },
+              attendees: {
+                type: "array",
+                items: { type: "string" },
+                description: "Array of attendee email addresses",
+                default: []
+              },
+              location: {
+                type: "string",
+                description: "Event location",
+                default: ""
+              }
+            },
+            required: ["title", "start", "end"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_calendar_events",
+          description: "Get upcoming calendar events from Google Calendar",
+          parameters: {
+            type: "object",
+            properties: {
+              days_ahead: {
+                type: "number",
+                description: "Number of days to look ahead (default: 7)",
+                default: 7
+              },
+              max_results: {
+                type: "number",
+                description: "Maximum number of events to return (default: 20)",
+                default: 20
+              }
+            }
+          }
+        }
       }
     ];
 
@@ -548,6 +641,40 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
                 functionResult = await getFileDetails({
                   userId: userData.id,
                   fileId: functionArgs.file_id
+                });
+                break;
+
+              case 'send_email':
+                functionResult = await callGmailAPI('send_email', {
+                  userId,
+                  to: functionArgs.to,
+                  subject: functionArgs.subject,
+                  body: functionArgs.body,
+                  replyToMessageId: functionArgs.replyToMessageId
+                });
+                break;
+
+              case 'create_calendar_event':
+                functionResult = await callCalendarAPI('create_event', {
+                  userId,
+                  title: functionArgs.title,
+                  description: functionArgs.description,
+                  start: functionArgs.start,
+                  end: functionArgs.end,
+                  attendees: functionArgs.attendees,
+                  location: functionArgs.location
+                });
+                break;
+
+              case 'get_calendar_events':
+                const daysAhead = functionArgs.days_ahead || 7;
+                const startDate = new Date();
+                const endDate = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000);
+                functionResult = await callCalendarAPI('get_events', {
+                  userId,
+                  start: startDate.toISOString(),
+                  end: endDate.toISOString(),
+                  maxResults: functionArgs.max_results || 20
                 });
                 break;
 
@@ -979,6 +1106,42 @@ async function callGmailAPI(action: string, params: any) {
       return { success: true, messages };
     }
 
+    if (action === 'send_email') {
+      const { to, subject, body, replyToMessageId } = params;
+
+      // Create email in RFC 2822 format
+      const email = [
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        '',
+        body
+      ].join('\r\n');
+
+      // Encode to base64url
+      const encodedEmail = Buffer.from(email).toString('base64url');
+
+      const requestBody: any = {
+        raw: encodedEmail
+      };
+
+      // If replying, add threadId
+      if (replyToMessageId) {
+        requestBody.threadId = replyToMessageId;
+      }
+
+      const response = await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: requestBody
+      });
+
+      return {
+        success: true,
+        messageId: response.data.id,
+        threadId: response.data.threadId,
+        message: 'Email sent successfully'
+      };
+    }
+
     return { error: `Unknown Gmail action: ${action}` };
 
   } catch (error: any) {
@@ -1040,6 +1203,127 @@ async function callDriveAPI(action: string, params: any) {
 
   } catch (error: any) {
     console.error('Drive API call failed:', error);
+    return { error: error.message };
+  }
+}
+
+// Helper function to call Google Calendar API directly
+async function callCalendarAPI(action: string, params: any) {
+  try {
+    const { userId } = params;
+
+    // Get user's Google token
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('access_token, refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    if (!tokenData?.access_token) {
+      return { error: 'User not authenticated with Google' };
+    }
+
+    // Initialize Calendar client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+    );
+    oauth2Client.setCredentials({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    if (action === 'get_events') {
+      const { start, end, maxResults } = params;
+
+      const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: start,
+        timeMax: end,
+        maxResults: maxResults || 20,
+        singleEvents: true,
+        orderBy: 'startTime'
+      });
+
+      const events = (response.data.items || []).map((event: any) => ({
+        id: event.id,
+        title: event.summary || 'No Title',
+        description: event.description || '',
+        start: event.start?.dateTime || event.start?.date,
+        end: event.end?.dateTime || event.end?.date,
+        location: event.location || '',
+        attendees: event.attendees?.map((a: any) => ({
+          email: a.email,
+          name: a.displayName,
+          status: a.responseStatus
+        })) || [],
+        htmlLink: event.htmlLink,
+        meetingLink: event.conferenceData?.entryPoints?.[0]?.uri
+      }));
+
+      return { success: true, events };
+    }
+
+    if (action === 'create_event') {
+      const { title, description, start, end, attendees, location } = params;
+
+      const event = {
+        summary: title,
+        description: description || '',
+        start: {
+          dateTime: start,
+          timeZone: 'America/New_York'
+        },
+        end: {
+          dateTime: end,
+          timeZone: 'America/New_York'
+        },
+        location: location || '',
+        attendees: attendees?.map((email: string) => ({ email })) || [],
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'popup', minutes: 15 },
+            { method: 'email', minutes: 60 }
+          ]
+        },
+        conferenceData: {
+          createRequest: {
+            requestId: `meeting-${Date.now()}`,
+            conferenceSolutionKey: { type: 'hangoutsMeet' }
+          }
+        }
+      };
+
+      const response = await calendar.events.insert({
+        calendarId: 'primary',
+        resource: event,
+        conferenceDataVersion: 1
+      });
+
+      const createdEvent = response.data;
+
+      return {
+        success: true,
+        event: {
+          id: createdEvent.id,
+          title: createdEvent.summary,
+          start: createdEvent.start?.dateTime,
+          end: createdEvent.end?.dateTime,
+          htmlLink: createdEvent.htmlLink,
+          meetingLink: createdEvent.conferenceData?.entryPoints?.[0]?.uri
+        },
+        message: 'Calendar event created successfully'
+      };
+    }
+
+    return { error: `Unknown Calendar action: ${action}` };
+
+  } catch (error: any) {
+    console.error('Calendar API call failed:', error);
     return { error: error.message };
   }
 }

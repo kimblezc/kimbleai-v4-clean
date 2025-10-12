@@ -72,6 +72,13 @@ export default function Home() {
   const [pendingTranscriptionId, setPendingTranscriptionId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
 
+  // Redirect to sign-in if not authenticated
+  React.useEffect(() => {
+    if (status === 'unauthenticated') {
+      window.location.href = '/auth/signin';
+    }
+  }, [status]);
+
   // Removed: Deep Research & Agent Mode (non-functional, will rebuild properly)
 
   // Load conversations for current project
@@ -1450,6 +1457,38 @@ export default function Home() {
 
     setSearchResults(results.slice(0, 10)); // Limit to 10 results
   };
+
+  // Show loading screen while checking authentication
+  if (status === 'loading' || status === 'unauthenticated') {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        backgroundColor: '#0f0f0f',
+        color: '#ffffff',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontSize: '28px',
+            fontWeight: '700',
+            marginBottom: '16px',
+            background: 'linear-gradient(135deg, #4a9eff 0%, #00d4aa 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            KimbleAI
+          </div>
+          <div style={{ fontSize: '14px', color: '#888' }}>
+            {status === 'loading' ? 'Loading...' : 'Redirecting to sign in...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
