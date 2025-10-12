@@ -9,6 +9,16 @@ interface D20DiceProps {
 }
 
 export default function D20Dice({ size = 64, className = '', spinning = true }: D20DiceProps) {
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <div style={{ width: size, height: size }} className={`inline-block ${className}`} />;
+  }
+
   return (
     <div
       className={`inline-block ${className}`}
