@@ -5,6 +5,8 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { SearchInput } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { useSearchParams, useRouter } from 'next/navigation';
+import LoadingScreen from '../../components/LoadingScreen';
+import D20Dice from '../../components/D20Dice';
 
 function SearchContent() {
   const router = useRouter();
@@ -59,9 +61,11 @@ function SearchContent() {
           />
 
           {loading && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
-              <p className="text-gray-400">Searching...</p>
+            <div className="py-12">
+              <div className="flex flex-col items-center gap-4">
+                <D20Dice size={64} spinning={true} />
+                <p className="text-gray-400">Searching...</p>
+              </div>
             </div>
           )}
 
@@ -109,7 +113,11 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<DashboardLayout><div className="p-6 text-center">Loading...</div></DashboardLayout>}>
+    <Suspense fallback={
+      <DashboardLayout>
+        <LoadingScreen message="Loading search..." />
+      </DashboardLayout>
+    }>
       <SearchContent />
     </Suspense>
   );

@@ -6,6 +6,7 @@ import { FileCard } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { SearchInput, Select } from '../../components/ui/Input';
 import { useRouter } from 'next/navigation';
+import LoadingScreen from '../../components/LoadingScreen';
 
 export default function FilesPage() {
   const router = useRouter();
@@ -42,12 +43,7 @@ export default function FilesPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
-            <p className="text-gray-400">Loading files...</p>
-          </div>
-        </div>
+        <LoadingScreen message="Loading files..." />
       </DashboardLayout>
     );
   }

@@ -5,6 +5,7 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { StatCard, ProjectCard } from '../../components/ui/Card';
 import { Button, ButtonGroup } from '../../components/ui/Button';
 import { useRouter } from 'next/navigation';
+import LoadingScreen from '../../components/LoadingScreen';
 
 interface DashboardStats {
   totalProjects: number;
@@ -87,12 +88,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
-            <p className="text-gray-400">Loading dashboard...</p>
-          </div>
-        </div>
+        <LoadingScreen message="Loading dashboard..." />
       </DashboardLayout>
     );
   }

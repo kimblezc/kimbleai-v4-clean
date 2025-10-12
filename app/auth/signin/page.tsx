@@ -1,4 +1,7 @@
+'use client';
+
 import { redirect } from 'next/navigation';
+import D20Dice from '../../../components/D20Dice';
 
 export default function SignInPage({
   searchParams,
@@ -28,6 +31,13 @@ export default function SignInPage({
         textAlign: 'center'
       }}>
         <div style={{ marginBottom: '32px' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '16px'
+          }}>
+            <D20Dice size={64} spinning={true} />
+          </div>
           <h1 style={{
             fontSize: '28px',
             fontWeight: '700',

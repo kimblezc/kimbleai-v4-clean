@@ -5,6 +5,8 @@ import React, { useState } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import FormattedMessage from '../components/FormattedMessage';
 import GoogleServicesPanel from '../components/GoogleServicesPanel';
+import LoadingScreen from '../components/LoadingScreen';
+import D20Dice from '../components/D20Dice';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -1461,32 +1463,10 @@ export default function Home() {
   // Show loading screen while checking authentication
   if (status === 'loading' || status === 'unauthenticated') {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#0f0f0f',
-        color: '#ffffff',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            fontSize: '28px',
-            fontWeight: '700',
-            marginBottom: '16px',
-            background: 'linear-gradient(135deg, #4a9eff 0%, #00d4aa 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            KimbleAI
-          </div>
-          <div style={{ fontSize: '14px', color: '#888' }}>
-            {status === 'loading' ? 'Loading...' : 'Redirecting to sign in...'}
-          </div>
-        </div>
-      </div>
+      <LoadingScreen
+        message={status === 'loading' ? 'Loading KimbleAI...' : 'Redirecting to sign in...'}
+        fullScreen={true}
+      />
     );
   }
 
@@ -2281,6 +2261,27 @@ export default function Home() {
           backgroundColor: '#171717'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Logo - Top Left */}
+            <div style={{
+              position: 'absolute',
+              top: '16px',
+              left: '284px',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center'
+            }}>
+              <D20Dice size={32} spinning={true} />
+              <span style={{
+                fontSize: '16px',
+                fontWeight: '700',
+                background: 'linear-gradient(135deg, #4a9eff 0%, #00d4aa 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                KimbleAI
+              </span>
+            </div>
             {/* System Status - Top Right */}
             <div style={{
               position: 'absolute',
