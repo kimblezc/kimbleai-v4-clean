@@ -110,7 +110,8 @@
       "Bash(npm --version)",
       "Bash(npx next build:*)",
       "WebFetch(domain:kimbleai-v4-clean-rgekqq35a-kimblezcs-projects.vercel.app)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(where psql)"
     ],
     "deny": [],
     "ask": []
