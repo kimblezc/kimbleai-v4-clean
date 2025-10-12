@@ -16,7 +16,32 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
   }, []);
 
   if (!isMounted) {
-    return <div style={{ width: size, height: size }} className={`inline-block ${className}`} />;
+    // Show static D20 placeholder during SSR
+    return (
+      <div style={{ width: size, height: size }} className={`inline-block ${className}`}>
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', filter: 'drop-shadow(0 0 8px rgba(74, 158, 255, 0.5))' }}>
+          <g stroke="#4a9eff" strokeWidth="1.5" fill="none">
+            <path d="M50,10 L30,30 L70,30 Z" fill="rgba(74, 158, 255, 0.1)" />
+            <path d="M50,10 L30,30 L20,50" />
+            <path d="M50,10 L70,30 L80,50" />
+            <path d="M20,50 L30,30 L50,40 Z" fill="rgba(74, 158, 255, 0.05)" />
+            <path d="M30,30 L70,30 L50,40 Z" fill="rgba(74, 158, 255, 0.08)" />
+            <path d="M70,30 L80,50 L50,40 Z" fill="rgba(74, 158, 255, 0.05)" />
+            <path d="M80,50 L70,70 L50,60 Z" fill="rgba(74, 158, 255, 0.05)" />
+            <path d="M70,70 L30,70 L50,60 Z" fill="rgba(74, 158, 255, 0.08)" />
+            <path d="M30,70 L20,50 L50,60 Z" fill="rgba(74, 158, 255, 0.05)" />
+            <path d="M20,50 L50,40 L50,60" />
+            <path d="M50,40 L80,50 L50,60" />
+            <path d="M50,90 L30,70 L70,70 Z" fill="rgba(74, 158, 255, 0.1)" />
+            <path d="M50,90 L30,70 L20,50" />
+            <path d="M50,90 L70,70 L80,50" />
+            <path d="M30,30 L30,70" />
+            <path d="M70,30 L70,70" />
+          </g>
+          <text x="50" y="55" textAnchor="middle" fontSize="20" fontWeight="bold" fill="#4a9eff" style={{ fontFamily: 'monospace' }}>20</text>
+        </svg>
+      </div>
+    );
   }
 
   return (
