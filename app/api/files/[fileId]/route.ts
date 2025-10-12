@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UnifiedFileSystem } from '@/lib/unified-file-system';
 
+// Force dynamic rendering to avoid build-time static analysis issues
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/files/[fileId]
  * Get a specific file by ID

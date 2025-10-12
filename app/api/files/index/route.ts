@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FileAutoIndexPipeline } from '@/lib/file-auto-index';
 import { RAGSearchSystem } from '@/lib/rag-search';
 
+// Force dynamic rendering to avoid build-time static analysis issues
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/files/index
  * Manually trigger indexing for specific files or all unprocessed files

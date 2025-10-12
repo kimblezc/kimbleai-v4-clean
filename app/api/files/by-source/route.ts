@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UnifiedFileSystem, FileSource } from '@/lib/unified-file-system';
 import { createClient } from '@supabase/supabase-js';
 
+// Force dynamic rendering to avoid build-time static analysis issues
+export const dynamic = 'force-dynamic';
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!

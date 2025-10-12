@@ -1,7 +1,7 @@
 // lib/file-content-extractor.ts
 // Comprehensive file content extractor using officeparser and other libraries
 
-import officeParser from 'officeparser';
+// NOTE: officeparser is dynamically imported to avoid build-time errors
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
 import * as XLSX from 'xlsx';
@@ -191,6 +191,7 @@ async function extractDOCX(
     // Try officeparser for metadata
     let metadata: any = {};
     try {
+      const officeParser = (await import('officeparser')).default;
       const officeData = await officeParser.parseOfficeAsync(buffer);
       metadata = {
         ...officeData,
@@ -294,6 +295,8 @@ async function extractWithOfficeParser(
   file: FileRegistryEntry
 ): Promise<ExtractedContent> {
   try {
+    // Dynamic import to avoid build-time errors
+    const officeParser = (await import('officeparser')).default;
     const text = await officeParser.parseOfficeAsync(buffer);
 
     return {

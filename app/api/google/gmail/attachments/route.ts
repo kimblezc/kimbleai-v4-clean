@@ -5,6 +5,9 @@ import { UnifiedFileSystem } from '@/lib/unified-file-system';
 import { processFile } from '@/lib/file-processors';
 import { RAGSearchSystem } from '@/lib/rag-search';
 
+// Force dynamic rendering to avoid build-time static analysis issues
+export const dynamic = 'force-dynamic';
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
