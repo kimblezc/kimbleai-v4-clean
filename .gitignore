@@ -82,3 +82,9 @@ client_secret*.json
 *.mp3
 *.wav
 LOGIN-FIX-INSTRUCTIONS.md
+
+# Documentation with secrets
+AUTH-*.md
+DEPLOYMENT-*.md
+QUICK-*.md
+D20-*.md
