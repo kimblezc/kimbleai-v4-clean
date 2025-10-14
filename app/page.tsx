@@ -66,6 +66,7 @@ export default function Home() {
   const [createdProjects, setCreatedProjects] = useState<Set<string>>(new Set());
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const completedJobsRef = React.useRef<Set<string>>(new Set());
+  const initialProjectSetRef = React.useRef<boolean>(false);
   const [showGoogleServices, setShowGoogleServices] = useState(false);
   const [moveToProjectConvId, setMoveToProjectConvId] = useState<string | null>(null);
   const [showProjectDropdown, setShowProjectDropdown] = useState<string | null>(null);
@@ -140,9 +141,10 @@ export default function Home() {
 
         setConversationHistory(filteredConversations.slice(0, 10));
 
-        // Set first project as current if none selected
-        if (!projectId && dynamicProjects.length > 0) {
+        // Set first project as current if none selected - only do this once on initial load
+        if (!projectId && !initialProjectSetRef.current && dynamicProjects.length > 0) {
           setCurrentProject(dynamicProjects[0].id);
+          initialProjectSetRef.current = true;
         }
       } else {
         console.error('Failed to load conversations:', data.error);
@@ -224,9 +226,12 @@ export default function Home() {
   };
 
   // Load conversations on initial mount and user change
+  // Note: We intentionally omit loadConversations from deps to prevent infinite loop
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
+    initialProjectSetRef.current = false; // Reset when user changes
     loadConversations();
-  }, [currentUser, loadConversations]);
+  }, [currentUser]);
 
   // Persist currentProject to localStorage and restore on load
   React.useEffect(() => {
