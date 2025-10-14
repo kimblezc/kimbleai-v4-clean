@@ -2255,7 +2255,7 @@ export default function Home() {
             gap: '12px',
             alignItems: 'center'
           }}>
-            <D20Dice size={48} spinning={true} />
+            <D20Dice size={64} spinning={true} />
             <span style={{
               fontSize: '20px',
               fontWeight: '700',

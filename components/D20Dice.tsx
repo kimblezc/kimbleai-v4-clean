@@ -171,180 +171,42 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
       .filter(f => f.visible)
       .sort((a, b) => a.depth - b.depth);
 
-    // Generate color based on light intensity
-    const getColor = (intensity: number) => {
-      const colors = [
-        { r: 30, g: 77, b: 122 },    // Darkest
-        { r: 37, g: 99, b: 168 },    // Dark
-        { r: 74, g: 158, b: 255 },   // Medium
-        { r: 94, g: 184, b: 255 },   // Bright
-        { r: 143, g: 211, b: 255 }   // Brightest
-      ];
-
-      const scaledIntensity = intensity * (colors.length - 1);
-      const index = Math.floor(scaledIntensity);
-      const fraction = scaledIntensity - index;
-
-      const c1 = colors[Math.min(index, colors.length - 1)];
-      const c2 = colors[Math.min(index + 1, colors.length - 1)];
-
-      const r = Math.round(c1.r + (c2.r - c1.r) * fraction);
-      const g = Math.round(c1.g + (c2.g - c1.g) * fraction);
-      const b = Math.round(c1.b + (c2.b - c1.b) * fraction);
-
-      return `rgb(${r}, ${g}, ${b})`;
-    };
-
-    // Find the brightest, most centered face for the "20" number
-    const bestFaceForNumber = sortedFaces.reduce((best, current) => {
-      const centerDistance = Math.sqrt(
-        current.center[0]**2 +
-        current.center[1]**2
-      );
-      const score = current.intensity - centerDistance * 0.1;
-      const bestScore = best.intensity - Math.sqrt(best.center[0]**2 + best.center[1]**2) * 0.1;
-      return score > bestScore ? current : best;
-    }, sortedFaces[sortedFaces.length - 1]);
-
-    // Calculate center of the best face for number placement
-    const numberFace = bestFaceForNumber.face;
-    const numberX = (
-      projectedVertices[numberFace[0]][0] +
-      projectedVertices[numberFace[1]][0] +
-      projectedVertices[numberFace[2]][0]
-    ) / 3;
-    const numberY = (
-      projectedVertices[numberFace[0]][1] +
-      projectedVertices[numberFace[1]][1] +
-      projectedVertices[numberFace[2]][1]
-    ) / 3;
-
     return (
       <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-        <defs>
-          <filter id="d20-shadow">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-            <feOffset dx="0" dy="3" result="offsetblur"/>
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.4"/>
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
+        {/* Render all visible faces as wireframe */}
+        {sortedFaces.map((faceData, index) => {
+          const face = faceData.face;
+          const p1 = projectedVertices[face[0]];
+          const p2 = projectedVertices[face[1]];
+          const p3 = projectedVertices[face[2]];
 
-          <filter id="d20-glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* Ground shadow */}
-        <ellipse
-          cx="100"
-          cy="165"
-          rx="40"
-          ry="12"
-          fill="rgba(0,0,0,0.3)"
-        />
-
-        <g filter="url(#d20-shadow)">
-          <g filter="url(#d20-glow)">
-            {/* Render all visible faces */}
-            {sortedFaces.map((faceData, index) => {
-              const face = faceData.face;
-              const p1 = projectedVertices[face[0]];
-              const p2 = projectedVertices[face[1]];
-              const p3 = projectedVertices[face[2]];
-
-              const pathData = `M ${p1[0]},${p1[1]} L ${p2[0]},${p2[1]} L ${p3[0]},${p3[1]} Z`;
-              const color = getColor(faceData.intensity);
-
-              return (
-                <path
-                  key={index}
-                  d={pathData}
-                  fill={color}
-                  stroke="#0d1f2f"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-              );
-            })}
-
-            {/* Edge highlights on brightest faces */}
-            {sortedFaces.slice(-3).map((faceData, index) => {
-              const face = faceData.face;
-              const p1 = projectedVertices[face[0]];
-              const p2 = projectedVertices[face[1]];
-              const p3 = projectedVertices[face[2]];
-
-              return (
-                <g key={`edge-${index}`}>
-                  <line
-                    x1={p1[0]} y1={p1[1]}
-                    x2={p2[0]} y2={p2[1]}
-                    stroke="rgba(165, 216, 255, 0.4)"
-                    strokeWidth="1"
-                  />
-                  <line
-                    x1={p2[0]} y1={p2[1]}
-                    x2={p3[0]} y2={p3[1]}
-                    stroke="rgba(165, 216, 255, 0.4)"
-                    strokeWidth="1"
-                  />
-                  <line
-                    x1={p3[0]} y1={p3[1]}
-                    x2={p1[0]} y2={p1[1]}
-                    stroke="rgba(165, 216, 255, 0.4)"
-                    strokeWidth="1"
-                  />
-                </g>
-              );
-            })}
-          </g>
-        </g>
-
-        {/* "20" number on the brightest, most visible face */}
-        <text
-          x={numberX}
-          y={numberY}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize="28"
-          fontWeight="900"
-          fill="#ffffff"
-          stroke="#0d1f2f"
-          strokeWidth="2"
-          style={{
-            fontFamily: 'Arial Black, Arial, sans-serif',
-            paintOrder: 'stroke fill',
-            letterSpacing: '-1px'
-          }}
-        >
-          20
-        </text>
-
-        {/* Text shadow for depth */}
-        <text
-          x={numberX + 1}
-          y={numberY + 1}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize="28"
-          fontWeight="900"
-          fill="rgba(0,0,0,0.4)"
-          style={{
-            fontFamily: 'Arial Black, Arial, sans-serif',
-            letterSpacing: '-1px'
-          }}
-        >
-          20
-        </text>
+          return (
+            <g key={index}>
+              {/* White edges with thick lines */}
+              <line
+                x1={p1[0]} y1={p1[1]}
+                x2={p2[0]} y2={p2[1]}
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <line
+                x1={p2[0]} y1={p2[1]}
+                x2={p3[0]} y2={p3[1]}
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <line
+                x1={p3[0]} y1={p3[1]}
+                x2={p1[0]} y2={p1[1]}
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </g>
+          );
+        })}
       </svg>
     );
   };
@@ -363,8 +225,7 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
       className={`inline-block ${className}`}
       style={{
         width: size,
-        height: size,
-        filter: 'drop-shadow(0 0 12px rgba(74, 158, 255, 0.7))'
+        height: size
       }}
     >
       {renderD20()}
