@@ -2268,12 +2268,10 @@ export default function Home() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {/* Logo - Top Left */}
             <div style={{
-              position: 'absolute',
-              top: '16px',
-              left: '284px',
               display: 'flex',
               gap: '12px',
-              alignItems: 'center'
+              alignItems: 'center',
+              marginLeft: '8px'
             }}>
               <D20Dice size={32} spinning={true} />
               <span style={{

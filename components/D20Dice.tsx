@@ -15,194 +15,313 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
     setIsMounted(true);
   }, []);
 
-  // 3D Isometric D20 with strong perspective and depth
-  const D20SVG = () => (
-    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-      <defs>
-        {/* Strong gradients for clear 3D depth */}
-        {/* Top face - lightest (facing up and toward viewer) */}
-        <linearGradient id="d20-top-face" x1="50%" y1="0%" x2="50%" y2="100%">
-          <stop offset="0%" stopColor="#8fd3ff" />
-          <stop offset="50%" stopColor="#5eb8ff" />
-          <stop offset="100%" stopColor="#4a9eff" />
-        </linearGradient>
+  // Mathematically correct icosahedron using golden ratio
+  const D20SVG = () => {
+    // Golden ratio for perfect icosahedron proportions
+    const φ = 1.618033988749895;
 
-        {/* Left face - medium (side lighting) */}
-        <linearGradient id="d20-left-face" x1="0%" y1="50%" x2="100%" y2="50%">
-          <stop offset="0%" stopColor="#2d7ac9" />
-          <stop offset="100%" stopColor="#4a9eff" />
-        </linearGradient>
+    // Scale and center for viewBox 0 0 200 200
+    const scale = 35;
+    const centerX = 100;
+    const centerY = 100;
 
-        {/* Right face - darker (away from light) */}
-        <linearGradient id="d20-right-face" x1="100%" y1="50%" x2="0%" y2="50%">
-          <stop offset="0%" stopColor="#1e4d7a" />
-          <stop offset="100%" stopColor="#2563a8" />
-        </linearGradient>
+    // 12 vertices of a regular icosahedron (normalized coordinates)
+    // These are the mathematically correct positions
+    const rawVertices = [
+      [0, 1, φ],   // 0
+      [0, -1, φ],  // 1
+      [0, 1, -φ],  // 2
+      [0, -1, -φ], // 3
+      [1, φ, 0],   // 4
+      [-1, φ, 0],  // 5
+      [1, -φ, 0],  // 6
+      [-1, -φ, 0], // 7
+      [φ, 0, 1],   // 8
+      [-φ, 0, 1],  // 9
+      [φ, 0, -1],  // 10
+      [-φ, 0, -1]  // 11
+    ];
 
-        {/* Shadow and glow effects */}
-        <filter id="d20-shadow">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-          <feOffset dx="0" dy="2" result="offsetblur"/>
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.3"/>
-          </feComponentTransfer>
-          <feMerge>
-            <feMergeNode/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
+    // Rotation for optimal viewing angle (showing multiple faces clearly)
+    const rotateX = (v: number[], angle: number) => {
+      const rad = angle * Math.PI / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      return [v[0], v[1] * cos - v[2] * sin, v[1] * sin + v[2] * cos];
+    };
 
-        <filter id="d20-glow">
-          <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
+    const rotateY = (v: number[], angle: number) => {
+      const rad = angle * Math.PI / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      return [v[0] * cos + v[2] * sin, v[1], -v[0] * sin + v[2] * cos];
+    };
 
-      {/*
-        Isometric D20 projection showing 3 main faces clearly
-        Using isometric angles (30 degrees) for true 3D appearance
-        Structure: One top triangular face + two side triangular faces
-      */}
-      <g filter="url(#d20-shadow)">
-        {/* Cast shadow on ground */}
-        <ellipse cx="60" cy="95" rx="28" ry="8" fill="rgba(0,0,0,0.2)" />
+    const rotateZ = (v: number[], angle: number) => {
+      const rad = angle * Math.PI / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      return [v[0] * cos - v[1] * sin, v[0] * sin + v[1] * cos, v[2]];
+    };
 
-        {/* Main 3D structure with clear visible faces */}
-        <g filter="url(#d20-glow)">
-          {/* BOTTOM FACES - drawn first for proper layering */}
-          {/* Bottom left side faces (darker, less visible) */}
-          <path
-            d="M 30,75 L 60,90 L 45,55 Z"
-            fill="#1a3d5f"
-            stroke="#0d1f2f"
-            strokeWidth="1.5"
-            opacity="0.6"
-          />
+    // Apply rotation to show the die from a good angle
+    const vertices = rawVertices.map(v => {
+      let rotated = rotateX(v, 15);
+      rotated = rotateY(rotated, 25);
+      rotated = rotateZ(rotated, 10);
+      return rotated;
+    });
 
-          {/* Bottom right side faces */}
-          <path
-            d="M 90,75 L 60,90 L 75,55 Z"
-            fill="#0f2942"
-            stroke="#0a1f33"
-            strokeWidth="1.5"
-            opacity="0.5"
-          />
+    // Project 3D vertices to 2D (isometric-style projection)
+    const project = (v: number[]) => {
+      const x = centerX + v[0] * scale - v[2] * scale * 0.5;
+      const y = centerY - v[1] * scale - v[2] * scale * 0.3;
+      return [x, y, v[2]]; // Keep z for depth sorting
+    };
 
-          {/* LEFT FACE - Medium shading (visible side face) */}
-          {/* This is a key visible face showing depth */}
-          <path
-            d="M 30,75 L 45,55 L 35,40 L 20,60 Z"
-            fill="url(#d20-left-face)"
-            stroke="#2563a8"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
+    const projectedVertices = vertices.map(project);
 
-          {/* Left upper triangle */}
-          <path
-            d="M 35,40 L 60,25 L 45,55 Z"
-            fill="url(#d20-left-face)"
-            stroke="#2563a8"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
+    // All 20 triangular faces of the icosahedron
+    const faces = [
+      [0, 1, 8],   [0, 8, 4],   [0, 4, 5],   [0, 5, 9],   [0, 9, 1],
+      [1, 6, 8],   [8, 6, 10],  [8, 10, 4],  [4, 10, 2],  [4, 2, 5],
+      [5, 2, 11],  [5, 11, 9],  [9, 11, 7],  [9, 7, 1],   [1, 7, 6],
+      [3, 2, 10],  [3, 10, 6],  [3, 6, 7],   [3, 7, 11],  [3, 11, 2]
+    ];
 
-          {/* RIGHT FACE - Darker shading (visible side face away from light) */}
-          {/* This creates strong contrast with left face */}
-          <path
-            d="M 90,75 L 75,55 L 85,40 L 100,60 Z"
-            fill="url(#d20-right-face)"
-            stroke="#1e4d7a"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
+    // Calculate face centers and normals for depth sorting and shading
+    const faceData = faces.map(face => {
+      const v1 = vertices[face[0]];
+      const v2 = vertices[face[1]];
+      const v3 = vertices[face[2]];
 
-          {/* Right upper triangle */}
-          <path
-            d="M 85,40 L 60,25 L 75,55 Z"
-            fill="url(#d20-right-face)"
-            stroke="#1e4d7a"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
+      // Center of face (average of vertices)
+      const center = [
+        (v1[0] + v2[0] + v3[0]) / 3,
+        (v1[1] + v2[1] + v3[1]) / 3,
+        (v1[2] + v2[2] + v3[2]) / 3
+      ];
 
-          {/* TOP FACE - Lightest shading (primary visible face with "20") */}
-          {/* Large central triangular face pointing toward viewer */}
-          <path
-            d="M 60,25 L 35,40 L 60,52 L 85,40 Z"
-            fill="url(#d20-top-face)"
-            stroke="#4a9eff"
-            strokeWidth="2.5"
-            strokeLinejoin="round"
-          />
+      // Calculate normal vector for lighting
+      const edge1 = [v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]];
+      const edge2 = [v3[0] - v1[0], v3[1] - v1[1], v3[2] - v1[2]];
 
-          {/* Central connecting faces for depth */}
-          <path
-            d="M 45,55 L 60,52 L 35,40 Z"
-            fill="url(#d20-top-face)"
-            stroke="#4a9eff"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            opacity="0.95"
-          />
+      // Cross product for normal
+      const normal = [
+        edge1[1] * edge2[2] - edge1[2] * edge2[1],
+        edge1[2] * edge2[0] - edge1[0] * edge2[2],
+        edge1[0] * edge2[1] - edge1[1] * edge2[0]
+      ];
 
-          <path
-            d="M 75,55 L 60,52 L 85,40 Z"
-            fill="#5eb8ff"
-            stroke="#4a9eff"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            opacity="0.9"
-          />
+      // Normalize
+      const length = Math.sqrt(normal[0]**2 + normal[1]**2 + normal[2]**2);
+      const normalized = [normal[0]/length, normal[1]/length, normal[2]/length];
 
-          {/* Edge highlights for extra definition */}
-          <line x1="60" y1="25" x2="60" y2="52" stroke="#a5d8ff" strokeWidth="1.5" opacity="0.7" />
-          <line x1="60" y1="25" x2="35" y2="40" stroke="#8fd3ff" strokeWidth="1.2" opacity="0.6" />
-          <line x1="60" y1="25" x2="85" y2="40" stroke="#7ec3ff" strokeWidth="1.2" opacity="0.5" />
+      // Light direction (from top-front-left)
+      const light = [0.3, 0.5, 1];
+      const lightLength = Math.sqrt(light[0]**2 + light[1]**2 + light[2]**2);
+      const lightNorm = [light[0]/lightLength, light[1]/lightLength, light[2]/lightLength];
+
+      // Dot product for lighting intensity
+      const intensity = Math.max(0,
+        normalized[0] * lightNorm[0] +
+        normalized[1] * lightNorm[1] +
+        normalized[2] * lightNorm[2]
+      );
+
+      return {
+        face,
+        center,
+        depth: center[2], // Z-depth for sorting
+        intensity,
+        // Check if facing viewer (for backface culling)
+        visible: normalized[2] > 0
+      };
+    });
+
+    // Sort faces by depth (back to front) for proper rendering
+    const sortedFaces = faceData
+      .filter(f => f.visible)
+      .sort((a, b) => a.depth - b.depth);
+
+    // Generate color based on light intensity
+    const getColor = (intensity: number) => {
+      // Map intensity (0-1) to color gradient
+      const colors = [
+        { r: 30, g: 77, b: 122 },    // Darkest (away from light)
+        { r: 37, g: 99, b: 168 },    // Dark
+        { r: 74, g: 158, b: 255 },   // Medium
+        { r: 94, g: 184, b: 255 },   // Bright
+        { r: 143, g: 211, b: 255 }   // Brightest (facing light)
+      ];
+
+      const scaledIntensity = intensity * (colors.length - 1);
+      const index = Math.floor(scaledIntensity);
+      const fraction = scaledIntensity - index;
+
+      const c1 = colors[Math.min(index, colors.length - 1)];
+      const c2 = colors[Math.min(index + 1, colors.length - 1)];
+
+      const r = Math.round(c1.r + (c2.r - c1.r) * fraction);
+      const g = Math.round(c1.g + (c2.g - c1.g) * fraction);
+      const b = Math.round(c1.b + (c2.b - c1.b) * fraction);
+
+      return `rgb(${r}, ${g}, ${b})`;
+    };
+
+    // Find the brightest, most centered face for the "20" number
+    const bestFaceForNumber = sortedFaces.reduce((best, current) => {
+      const centerDistance = Math.sqrt(
+        current.center[0]**2 +
+        current.center[1]**2
+      );
+      const score = current.intensity - centerDistance * 0.1;
+      const bestScore = best.intensity - Math.sqrt(best.center[0]**2 + best.center[1]**2) * 0.1;
+      return score > bestScore ? current : best;
+    }, sortedFaces[sortedFaces.length - 1]);
+
+    // Calculate center of the best face for number placement
+    const numberFace = bestFaceForNumber.face;
+    const numberX = (
+      projectedVertices[numberFace[0]][0] +
+      projectedVertices[numberFace[1]][0] +
+      projectedVertices[numberFace[2]][0]
+    ) / 3;
+    const numberY = (
+      projectedVertices[numberFace[0]][1] +
+      projectedVertices[numberFace[1]][1] +
+      projectedVertices[numberFace[2]][1]
+    ) / 3;
+
+    return (
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+        <defs>
+          <filter id="d20-shadow">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+            <feOffset dx="0" dy="3" result="offsetblur"/>
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.4"/>
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <filter id="d20-glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Ground shadow */}
+        <ellipse
+          cx="100"
+          cy="165"
+          rx="40"
+          ry="12"
+          fill="rgba(0,0,0,0.3)"
+        />
+
+        <g filter="url(#d20-shadow)">
+          <g filter="url(#d20-glow)">
+            {/* Render all visible faces */}
+            {sortedFaces.map((faceData, index) => {
+              const face = faceData.face;
+              const p1 = projectedVertices[face[0]];
+              const p2 = projectedVertices[face[1]];
+              const p3 = projectedVertices[face[2]];
+
+              const pathData = `M ${p1[0]},${p1[1]} L ${p2[0]},${p2[1]} L ${p3[0]},${p3[1]} Z`;
+              const color = getColor(faceData.intensity);
+
+              return (
+                <path
+                  key={index}
+                  d={pathData}
+                  fill={color}
+                  stroke="#0d1f2f"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              );
+            })}
+
+            {/* Edge highlights on brightest faces for extra definition */}
+            {sortedFaces.slice(-3).map((faceData, index) => {
+              const face = faceData.face;
+              const p1 = projectedVertices[face[0]];
+              const p2 = projectedVertices[face[1]];
+              const p3 = projectedVertices[face[2]];
+
+              return (
+                <g key={`edge-${index}`}>
+                  <line
+                    x1={p1[0]} y1={p1[1]}
+                    x2={p2[0]} y2={p2[1]}
+                    stroke="rgba(165, 216, 255, 0.4)"
+                    strokeWidth="1"
+                  />
+                  <line
+                    x1={p2[0]} y1={p2[1]}
+                    x2={p3[0]} y2={p3[1]}
+                    stroke="rgba(165, 216, 255, 0.4)"
+                    strokeWidth="1"
+                  />
+                  <line
+                    x1={p3[0]} y1={p3[1]}
+                    x2={p1[0]} y2={p1[1]}
+                    stroke="rgba(165, 216, 255, 0.4)"
+                    strokeWidth="1"
+                  />
+                </g>
+              );
+            })}
+          </g>
         </g>
-      </g>
 
-      {/* "20" number on the top face - large and clear */}
-      <text
-        x="60"
-        y="45"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize="22"
-        fontWeight="900"
-        fill="#ffffff"
-        stroke="#1e4d7a"
-        strokeWidth="1.5"
-        style={{
-          fontFamily: 'Arial Black, Arial, sans-serif',
-          paintOrder: 'stroke fill',
-          letterSpacing: '-1px'
-        }}
-      >
-        20
-      </text>
+        {/* "20" number on the brightest, most visible face */}
+        <text
+          x={numberX}
+          y={numberY}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="28"
+          fontWeight="900"
+          fill="#ffffff"
+          stroke="#0d1f2f"
+          strokeWidth="2"
+          style={{
+            fontFamily: 'Arial Black, Arial, sans-serif',
+            paintOrder: 'stroke fill',
+            letterSpacing: '-1px'
+          }}
+        >
+          20
+        </text>
 
-      {/* Additional text shadow for depth */}
-      <text
-        x="60"
-        y="46"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize="22"
-        fontWeight="900"
-        fill="rgba(0,0,0,0.3)"
-        style={{
-          fontFamily: 'Arial Black, Arial, sans-serif',
-          letterSpacing: '-1px'
-        }}
-      >
-        20
-      </text>
-    </svg>
-  );
+        {/* Text shadow for depth */}
+        <text
+          x={numberX + 1}
+          y={numberY + 1}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="28"
+          fontWeight="900"
+          fill="rgba(0,0,0,0.4)"
+          style={{
+            fontFamily: 'Arial Black, Arial, sans-serif',
+            letterSpacing: '-1px'
+          }}
+        >
+          20
+        </text>
+      </svg>
+    );
+  };
 
   if (!isMounted) {
     // Show static D20 placeholder during SSR
