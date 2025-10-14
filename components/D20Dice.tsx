@@ -9,14 +9,42 @@ interface D20DiceProps {
 }
 
 export default function D20Dice({ size = 64, className = '', spinning = true }: D20DiceProps) {
+  const [rotationX, setRotationX] = React.useState(15);
+  const [rotationY, setRotationY] = React.useState(25);
+  const [rotationZ, setRotationZ] = React.useState(10);
   const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  React.useEffect(() => {
+    if (!spinning || !isMounted) return;
+
+    let animationFrameId: number;
+    let startTime = Date.now();
+
+    const animate = () => {
+      const elapsed = (Date.now() - startTime) / 1000; // seconds
+      const speed = 0.3; // rotation speed
+
+      // Smooth, continuous 3D rotation
+      setRotationX((elapsed * 30 * speed) % 360);
+      setRotationY((elapsed * 40 * speed) % 360);
+      setRotationZ((elapsed * 20 * speed) % 360);
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [spinning, isMounted]);
+
   // Mathematically correct icosahedron using golden ratio
-  const D20SVG = () => {
+  const renderD20 = () => {
     // Golden ratio for perfect icosahedron proportions
     const φ = 1.618033988749895;
 
@@ -26,7 +54,6 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
     const centerY = 100;
 
     // 12 vertices of a regular icosahedron (normalized coordinates)
-    // These are the mathematically correct positions
     const rawVertices = [
       [0, 1, φ],   // 0
       [0, -1, φ],  // 1
@@ -42,7 +69,7 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
       [-φ, 0, -1]  // 11
     ];
 
-    // Rotation for optimal viewing angle (showing multiple faces clearly)
+    // 3D rotation functions
     const rotateX = (v: number[], angle: number) => {
       const rad = angle * Math.PI / 180;
       const cos = Math.cos(rad);
@@ -64,11 +91,11 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
       return [v[0] * cos - v[1] * sin, v[0] * sin + v[1] * cos, v[2]];
     };
 
-    // Apply rotation to show the die from a good angle
+    // Apply rotation to all vertices
     const vertices = rawVertices.map(v => {
-      let rotated = rotateX(v, 15);
-      rotated = rotateY(rotated, 25);
-      rotated = rotateZ(rotated, 10);
+      let rotated = rotateX(v, rotationX);
+      rotated = rotateY(rotated, rotationY);
+      rotated = rotateZ(rotated, rotationZ);
       return rotated;
     });
 
@@ -89,13 +116,13 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
       [3, 2, 10],  [3, 10, 6],  [3, 6, 7],   [3, 7, 11],  [3, 11, 2]
     ];
 
-    // Calculate face centers and normals for depth sorting and shading
+    // Calculate face data for rendering
     const faceData = faces.map(face => {
       const v1 = vertices[face[0]];
       const v2 = vertices[face[1]];
       const v3 = vertices[face[2]];
 
-      // Center of face (average of vertices)
+      // Center of face
       const center = [
         (v1[0] + v2[0] + v3[0]) / 3,
         (v1[1] + v2[1] + v3[1]) / 3,
@@ -146,13 +173,12 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
 
     // Generate color based on light intensity
     const getColor = (intensity: number) => {
-      // Map intensity (0-1) to color gradient
       const colors = [
-        { r: 30, g: 77, b: 122 },    // Darkest (away from light)
+        { r: 30, g: 77, b: 122 },    // Darkest
         { r: 37, g: 99, b: 168 },    // Dark
         { r: 74, g: 158, b: 255 },   // Medium
         { r: 94, g: 184, b: 255 },   // Bright
-        { r: 143, g: 211, b: 255 }   // Brightest (facing light)
+        { r: 143, g: 211, b: 255 }   // Brightest
       ];
 
       const scaledIntensity = intensity * (colors.length - 1);
@@ -250,7 +276,7 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
               );
             })}
 
-            {/* Edge highlights on brightest faces for extra definition */}
+            {/* Edge highlights on brightest faces */}
             {sortedFaces.slice(-3).map((faceData, index) => {
               const face = faceData.face;
               const p1 = projectedVertices[face[0]];
@@ -327,7 +353,7 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
     // Show static D20 placeholder during SSR
     return (
       <div style={{ width: size, height: size }} className={`inline-block ${className}`}>
-        <D20SVG />
+        {renderD20()}
       </div>
     );
   }
@@ -338,47 +364,10 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
       style={{
         width: size,
         height: size,
-        perspective: '1000px',
-        perspectiveOrigin: 'center center'
+        filter: 'drop-shadow(0 0 12px rgba(74, 158, 255, 0.7))'
       }}
     >
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes d20-rotate-3d {
-            0% {
-              transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
-            }
-            25% {
-              transform: rotateX(90deg) rotateY(90deg) rotateZ(45deg);
-            }
-            50% {
-              transform: rotateX(180deg) rotateY(180deg) rotateZ(90deg);
-            }
-            75% {
-              transform: rotateX(270deg) rotateY(270deg) rotateZ(135deg);
-            }
-            100% {
-              transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg);
-            }
-          }
-          .d20-spinning {
-            animation: d20-rotate-3d 4s ease-in-out infinite;
-            transform-style: preserve-3d;
-          }
-        `
-      }} />
-
-      <div
-        className={spinning ? 'd20-spinning' : ''}
-        style={{
-          filter: 'drop-shadow(0 0 10px rgba(74, 158, 255, 0.6))',
-          width: '100%',
-          height: '100%',
-          transformStyle: 'preserve-3d',
-        }}
-      >
-        <D20SVG />
-      </div>
+      {renderD20()}
     </div>
   );
 }

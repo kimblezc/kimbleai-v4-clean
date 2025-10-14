@@ -1492,31 +1492,11 @@ export default function Home() {
         flexDirection: 'column',
         padding: '16px'
       }}>
-        {/* User Switcher */}
-        <div style={{ marginBottom: '20px' }}>
-          <select
-            value={currentUser}
-            onChange={(e) => setCurrentUser(e.target.value as 'zach' | 'rebecca')}
-            style={{
-              width: '100%',
-              padding: '8px',
-              backgroundColor: '#2a2a2a',
-              border: '1px solid #444',
-              borderRadius: '6px',
-              color: '#ffffff',
-              fontSize: '14px'
-            }}
-          >
-            <option value="zach">Zach (Admin)</option>
-            <option value="rebecca">Rebecca (User)</option>
-          </select>
-        </div>
-
         {/* Search Bar */}
         <div style={{ marginBottom: '16px' }}>
           <input
             type="text"
-            placeholder="Search conversations, projects, tags..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -2263,134 +2243,95 @@ export default function Home() {
         <div style={{
           padding: '16px 24px',
           borderBottom: '1px solid #333',
-          backgroundColor: '#171717'
+          backgroundColor: '#171717',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {/* Logo - Top Left */}
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'center',
-              marginLeft: '8px'
+          {/* D20 Logo - Center */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'center'
+          }}>
+            <D20Dice size={48} spinning={true} />
+            <span style={{
+              fontSize: '20px',
+              fontWeight: '700',
+              background: 'linear-gradient(135deg, #4a9eff 0%, #00d4aa 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
             }}>
-              <D20Dice size={32} spinning={true} />
-              <span style={{
-                fontSize: '16px',
-                fontWeight: '700',
-                background: 'linear-gradient(135deg, #4a9eff 0%, #00d4aa 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-                KimbleAI
-              </span>
-            </div>
-            {/* System Status - Top Right */}
-            <div style={{
-              position: 'absolute',
-              top: '16px',
-              right: '24px',
-              display: 'flex',
-              gap: '12px',
-              fontSize: '11px',
-              color: '#888',
-              fontWeight: '500',
-              alignItems: 'center'
-            }}>
-              <span>KimbleAI v4</span>
-              <span>•</span>
-              <span style={{ color: '#4ade80' }}>Online</span>
-              <span>•</span>
-              <span>Memory: Active</span>
-              <span>•</span>
-              {status === 'loading' ? (
-                <span style={{ color: '#888' }}>Auth...</span>
-              ) : session ? (
-                <>
-                  <span style={{ color: '#4ade80' }}>Google ✅</span>
-                  <button
-                    onClick={() => signOut()}
-                    style={{
-                      padding: '4px 8px',
-                      backgroundColor: 'transparent',
-                      border: '1px solid #444',
-                      borderRadius: '4px',
-                      color: '#888',
-                      fontSize: '10px',
-                      cursor: 'pointer',
-                      fontWeight: '500',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#ef4444';
-                      e.currentTarget.style.color = '#ef4444';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#444';
-                      e.currentTarget.style.color = '#888';
-                    }}
-                  >
-                    Disconnect
-                  </button>
-                </>
-              ) : (
+              KimbleAI
+            </span>
+          </div>
+
+          {/* System Status - Top Right */}
+          <div style={{
+            position: 'absolute',
+            right: '24px',
+            display: 'flex',
+            gap: '12px',
+            fontSize: '11px',
+            color: '#888',
+            fontWeight: '500',
+            alignItems: 'center'
+          }}>
+            <span>v4</span>
+            <span>•</span>
+            <span style={{ color: '#4ade80' }}>●</span>
+            <span>•</span>
+            <span>Memory</span>
+            <span>•</span>
+            {status === 'loading' ? (
+              <span style={{ color: '#888' }}>Auth...</span>
+            ) : session ? (
+              <>
+                <span style={{ color: '#4ade80' }}>Google ✅</span>
                 <button
-                  onClick={() => signIn('google')}
+                  onClick={() => signOut()}
                   style={{
                     padding: '4px 8px',
-                    backgroundColor: '#4285f4',
-                    border: 'none',
+                    backgroundColor: 'transparent',
+                    border: '1px solid #444',
                     borderRadius: '4px',
-                    color: 'white',
+                    color: '#888',
                     fontSize: '10px',
                     cursor: 'pointer',
-                    fontWeight: '600'
+                    fontWeight: '500',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#ef4444';
+                    e.currentTarget.style.color = '#ef4444';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#444';
+                    e.currentTarget.style.color = '#888';
                   }}
                 >
-                  Connect
+                  Sign Out
                 </button>
-              )}
-            </div>
-            <div>
-              {conversationTitle ? (
-                <div>
-                  <h1 style={{
-                    margin: 0,
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#ffffff'
-                  }}>
-                    {conversationTitle}
-                  </h1>
-                  <p style={{
-                    margin: '2px 0 0 0',
-                    fontSize: '12px',
-                    color: '#888'
-                  }}>
-                    Project: {projects.find(p => p.id === currentProject)?.name || 'No Project'}
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <h1 style={{
-                    margin: 0,
-                    fontSize: '18px',
-                    fontWeight: '600',
-                    color: '#ffffff'
-                  }}>
-                    KimbleAI Chat
-                  </h1>
-                  <p style={{
-                    margin: '4px 0 0 0',
-                    fontSize: '14px',
-                    color: '#888'
-                  }}>
-                    AI Assistant with Memory & Context
-                  </p>
-                </div>
-              )}
-            </div>
-
+              </>
+            ) : (
+              <button
+                onClick={() => signIn('google')}
+                style={{
+                  padding: '4px 8px',
+                  backgroundColor: '#4285f4',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: 'white',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Connect
+              </button>
+            )}
           </div>
         </div>
 
