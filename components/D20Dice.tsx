@@ -166,14 +166,13 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
       };
     });
 
-    // Sort faces by depth (back to front) for proper rendering
+    // Sort ALL faces by depth (back to front) - NO backface culling for transparency
     const sortedFaces = faceData
-      .filter(f => f.visible)
       .sort((a, b) => a.depth - b.depth);
 
     return (
       <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-        {/* Render all visible faces as wireframe */}
+        {/* Render ALL faces as wireframe - transparent so you see front AND back */}
         {sortedFaces.map((faceData, index) => {
           const face = faceData.face;
           const p1 = projectedVertices[face[0]];
