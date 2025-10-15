@@ -74,6 +74,7 @@ export default function Home() {
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [pendingTranscriptionId, setPendingTranscriptionId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   // Redirect to sign-in if not authenticated
   React.useEffect(() => {
@@ -1245,6 +1246,58 @@ export default function Home() {
       }, 3000); // Clear after 3 seconds
     }
   }, [isAnalyzingPhoto, pastedImage]);
+
+  // Drag and drop handlers for image upload
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if we're leaving the drop zone entirely
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    console.log('Files dropped:', files.length);
+
+    // Filter for image files
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      console.log('No image files found in drop');
+      return;
+    }
+
+    // Process the first image file
+    const file = imageFiles[0];
+    console.log('Processing dropped image:', file.name, file.type);
+
+    // Create preview URL
+    const imageUrl = URL.createObjectURL(file);
+    setPastedImage(imageUrl);
+
+    // Set as selected photo and analyze
+    setSelectedPhoto(file);
+    handlePhotoAnalysis(file);
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -2428,10 +2481,42 @@ export default function Home() {
           style={{
             padding: '24px',
             borderTop: '1px solid #333',
-            backgroundColor: '#171717'
+            backgroundColor: isDragging ? '#2a2a2a' : '#171717',
+            transition: 'background-color 0.2s ease',
+            position: 'relative'
           }}
           onPaste={handlePaste}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
         >
+          {/* Drag overlay indicator */}
+          {isDragging && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(74, 158, 255, 0.1)',
+              border: '2px dashed #4a9eff',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              zIndex: 10
+            }}>
+              <div style={{
+                color: '#4a9eff',
+                fontSize: '18px',
+                fontWeight: 600
+              }}>
+                📸 Drop image to analyze
+              </div>
+            </div>
+          )}
           <div style={{
             display: 'flex',
             gap: '12px',
@@ -2446,7 +2531,7 @@ export default function Home() {
                   sendMessage();
                 }
               }}
-              placeholder="Type your message or paste a screenshot..."
+              placeholder="Type your message, paste a screenshot, or drag & drop an image..."
               disabled={loading}
               style={{
                 flex: 1,
