@@ -808,46 +808,44 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       driveStorageSuccessful = false;
     }
 
-    // Fallback to Supabase if Google Drive fails
-    if (!driveStorageSuccessful) {
-      console.log('⚠️ Google Drive failed, falling back to Supabase...');
-
-      try {
-        const { data: convData } = await supabase
-          .from('conversations')
-          .upsert({
-            id: conversationId,
-            user_id: userData.id,
-            title: userMessage.substring(0, 50),
-            updated_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        // Save user message to Supabase
-        const userEmbedding = await generateEmbedding(userMessage);
-        await supabase.from('messages').insert({
-          conversation_id: conversationId,
+    // 💾 DUAL-WRITE: Always save to Supabase for fast conversation list queries
+    // This ensures chats appear in the UI immediately, regardless of Drive storage status
+    try {
+      const { data: convData } = await supabase
+        .from('conversations')
+        .upsert({
+          id: conversationId,
           user_id: userData.id,
-          role: 'user',
-          content: userMessage,
-          embedding: userEmbedding
-        });
+          title: userMessage.substring(0, 50),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
 
-        // Save AI response to Supabase
-        const aiEmbedding = await generateEmbedding(aiResponse);
-        await supabase.from('messages').insert({
-          conversation_id: conversationId,
-          user_id: userData.id,
-          role: 'assistant',
-          content: aiResponse,
-          embedding: aiEmbedding
-        });
+      // Save user message to Supabase
+      const userEmbedding = await generateEmbedding(userMessage);
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        user_id: userData.id,
+        role: 'user',
+        content: userMessage,
+        embedding: userEmbedding
+      });
 
-        console.log('💾 Supabase fallback storage: SUCCESS');
-      } catch (supabaseError) {
-        console.error('🚨 Supabase fallback failed:', supabaseError);
-      }
+      // Save AI response to Supabase
+      const aiEmbedding = await generateEmbedding(aiResponse);
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        user_id: userData.id,
+        role: 'assistant',
+        content: aiResponse,
+        embedding: aiEmbedding
+      });
+
+      console.log('💾 Supabase storage: SUCCESS (dual-write enabled)');
+    } catch (supabaseError) {
+      console.error('🚨 Supabase storage failed:', supabaseError);
+      // Non-blocking: Continue even if Supabase fails (Drive storage may have succeeded)
     }
 
     // 🚀 AUTOMATIC BACKGROUND INDEXING - This runs without blocking the response
