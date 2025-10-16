@@ -486,12 +486,34 @@ export default function Home() {
       formData.append('analysisType', photoAnalysisType);
       formData.append('userId', currentUser);
 
+      console.log('📸 Starting photo analysis:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        analysisType: photoAnalysisType,
+        userId: currentUser
+      });
+
       const response = await fetch('/api/photo', {
         method: 'POST',
         body: formData,
+        credentials: 'include', // Ensure cookies are sent for authentication
       });
 
+      console.log('📡 Photo API response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Photo API error response:', errorText);
+        throw new Error(`API returned ${response.status}: ${errorText.substring(0, 200)}`);
+      }
+
       const data = await response.json();
+      console.log('✅ Photo analysis successful:', {
+        photoId: data.photoId,
+        tags: data.autoTags,
+        project: data.suggestedProject
+      });
 
       if (data.success) {
         // Add photo analysis as a message
@@ -523,10 +545,26 @@ export default function Home() {
         throw new Error(data.error || 'Photo analysis failed');
       }
     } catch (error: any) {
-      console.error('Photo analysis error:', error);
+      console.error('🚨 Photo analysis error:', error);
+
+      let errorDetails = error.message;
+
+      // Provide more specific error messages
+      if (error.message === 'Failed to fetch') {
+        errorDetails = 'Network error: Unable to reach the server. Please check your internet connection and try again.';
+      } else if (error.message.includes('401')) {
+        errorDetails = 'Authentication required: Please refresh the page and sign in again.';
+      } else if (error.message.includes('403')) {
+        errorDetails = 'Access denied: Your account may not have permission to use this feature.';
+      } else if (error.message.includes('413')) {
+        errorDetails = 'File too large: Please use an image under 20MB.';
+      } else if (error.message.includes('415')) {
+        errorDetails = 'Invalid file type: Please use JPEG, PNG, or WebP images only.';
+      }
+
       const errorMessage: Message = {
         role: 'assistant',
-        content: `❌ **Photo Analysis Failed**\n\nError: ${error.message}\n\nPlease try again with a different image or contact support if the issue persists.`,
+        content: `❌ **Photo Analysis Failed**\n\n${errorDetails}\n\n**Technical Details:** ${error.message}\n\nIf this issue persists, please contact support.`,
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, errorMessage]);
