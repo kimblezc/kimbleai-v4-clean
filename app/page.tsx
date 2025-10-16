@@ -75,6 +75,9 @@ export default function Home() {
   const [pendingTranscriptionId, setPendingTranscriptionId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [costStats, setCostStats] = useState<{
+    daily: { used: number; limit: number; percentage: number };
+  } | null>(null);
 
   // Redirect to sign-in if not authenticated
   React.useEffect(() => {
@@ -82,6 +85,33 @@ export default function Home() {
       window.location.href = '/auth/signin';
     }
   }, [status]);
+
+  // Load cost stats
+  React.useEffect(() => {
+    const loadCosts = async () => {
+      if (!session?.user?.email) return;
+
+      try {
+        const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
+        const userData = await userResponse.json();
+        if (!userData.success || !userData.user?.id) return;
+
+        const response = await fetch(`/api/costs?action=summary&userId=${userData.user.id}`);
+        const data = await response.json();
+        if (!data.error) {
+          setCostStats({ daily: data.daily });
+        }
+      } catch (err) {
+        console.error('Failed to load costs:', err);
+      }
+    };
+
+    if (session) {
+      loadCosts();
+      const interval = setInterval(loadCosts, 60000); // Refresh every 60s
+      return () => clearInterval(interval);
+    }
+  }, [session]);
 
   // Removed: Deep Research & Agent Mode (non-functional, will rebuild properly)
 
@@ -1529,22 +1559,63 @@ export default function Home() {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100vh',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      backgroundColor: '#0f0f0f',
-      color: '#ffffff'
-    }}>
-      {/* Sidebar */}
+    <>
+      <style jsx global>{`
+        /* Mobile Responsive Optimizations */
+        @media (max-width: 768px) {
+          /* Hide sidebar on mobile, make it a modal/drawer if needed */
+          .sidebar {
+            width: 100% !important;
+            max-width: 280px !important;
+            position: fixed !important;
+            left: -100% !important;
+            z-index: 1000 !important;
+            transition: left 0.3s ease !important;
+          }
+          .sidebar.open {
+            left: 0 !important;
+          }
+          /* Adjust cost display for mobile */
+          .cost-display {
+            font-size: 9px !important;
+            padding: 3px 6px !important;
+          }
+          .cost-display span {
+            font-size: 8px !important;
+          }
+          /* Stack elements vertically on small screens */
+          .top-bar {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          /* Extra small screens (phones in portrait) */
+          .cost-display {
+            font-size: 8px !important;
+            padding: 2px 4px !important;
+            gap: 3px !important;
+          }
+        }
+      `}</style>
       <div style={{
-        width: '260px',
-        backgroundColor: '#171717',
-        borderRight: '1px solid #333',
         display: 'flex',
-        flexDirection: 'column',
-        padding: '16px'
+        height: '100vh',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        backgroundColor: '#0f0f0f',
+        color: '#ffffff'
       }}>
+        {/* Sidebar */}
+        <div className="sidebar" style={{
+          width: '260px',
+          backgroundColor: '#171717',
+          borderRight: '1px solid #333',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '16px'
+        }}>
         {/* Search Bar */}
         <div style={{ marginBottom: '16px' }}>
           <input
@@ -2321,8 +2392,8 @@ export default function Home() {
             </span>
           </div>
 
-          {/* System Status - Top Right */}
-          <div style={{
+          {/* System Status & Cost Monitor - Top Right */}
+          <div className="top-bar" style={{
             position: 'absolute',
             right: '24px',
             display: 'flex',
@@ -2332,12 +2403,54 @@ export default function Home() {
             fontWeight: '500',
             alignItems: 'center'
           }}>
-            <span>v4</span>
-            <span>•</span>
-            <span style={{ color: '#4ade80' }}>●</span>
-            <span>•</span>
-            <span>Memory</span>
-            <span>•</span>
+            {/* Minimalist Cost Display */}
+            {session && costStats && (
+              <div
+                className="cost-display"
+                onClick={() => window.location.href = '/costs'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 8px',
+                  backgroundColor: '#2a2a2a',
+                  border: `1px solid ${
+                    costStats.daily.percentage >= 90 ? '#ef4444' :
+                    costStats.daily.percentage >= 75 ? '#f59e0b' :
+                    costStats.daily.percentage >= 50 ? '#3b82f6' :
+                    '#10b981'
+                  }`,
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '10px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#333';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#2a2a2a';
+                }}
+              >
+                <span style={{
+                  color: costStats.daily.percentage >= 90 ? '#ef4444' :
+                         costStats.daily.percentage >= 75 ? '#f59e0b' :
+                         costStats.daily.percentage >= 50 ? '#3b82f6' :
+                         '#10b981',
+                  fontSize: '10px'
+                }}>
+                  ●
+                </span>
+                <span style={{ color: '#ccc', fontWeight: '600' }}>
+                  ${costStats.daily.used.toFixed(2)}
+                </span>
+                <span style={{ color: '#666' }}>/</span>
+                <span style={{ color: '#888', fontSize: '9px' }}>
+                  ${costStats.daily.limit.toFixed(0)}
+                </span>
+              </div>
+            )}
+
             {status === 'loading' ? (
               <span style={{ color: '#888' }}>Auth...</span>
             ) : session ? (
@@ -3047,5 +3160,6 @@ export default function Home() {
         </div>
       )}
     </div>
+    </>
   );
 }
