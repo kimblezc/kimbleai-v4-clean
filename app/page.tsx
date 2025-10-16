@@ -79,18 +79,23 @@ export default function Home() {
   const [costStats, setCostStats] = useState<{
     daily: { used: number; limit: number; percentage: number };
   } | null>(null);
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
-  // Rotating welcome messages with D&D theme
-  const welcomeMessages = [
-    "Roll for Initiative",
-    "Your Quest Awaits",
-    "The Adventure Begins",
-    "Forge Your Legend",
-    "Gather Your Party",
-    "Enter the Realm",
-    "Seek Knowledge Within"
-  ];
+  // Get welcome message based on time of day and user
+  const getWelcomeMessage = () => {
+    const hour = new Date().getHours();
+    const userName = session?.user?.name?.split(' ')[0] || currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
+
+    // Time-based greetings
+    if (hour >= 5 && hour < 12) {
+      return `Good Morning, ${userName}`;
+    } else if (hour >= 12 && hour < 17) {
+      return `Good Afternoon, ${userName}`;
+    } else if (hour >= 17 && hour < 21) {
+      return `Good Evening, ${userName}`;
+    } else {
+      return `Welcome Back, ${userName}`;
+    }
+  };
 
   // Redirect to sign-in if not authenticated
   React.useEffect(() => {
@@ -125,14 +130,6 @@ export default function Home() {
       return () => clearInterval(interval);
     }
   }, [session]);
-
-  // Rotate welcome messages
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMessageIndex((prev) => (prev + 1) % welcomeMessages.length);
-    }, 4000); // Change message every 4 seconds
-    return () => clearInterval(interval);
-  }, [welcomeMessages.length]);
 
   // Auto-scroll to bottom when messages change
   React.useEffect(() => {
@@ -2678,10 +2675,9 @@ export default function Home() {
                 background: 'linear-gradient(135deg, #8b7355 0%, #d4af37 50%, #8b7355 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                transition: 'opacity 0.5s ease-in-out'
+                backgroundClip: 'text'
               }}>
-                {welcomeMessages[currentMessageIndex]}
+                {getWelcomeMessage()}
               </h2>
               <p style={{
                 fontSize: '16px',
