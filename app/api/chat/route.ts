@@ -117,13 +117,13 @@ export async function POST(request: NextRequest) {
       lastMessage.projectId // If user has a project context
     );
 
-    // Also retrieve recent conversation history
+    // Also retrieve recent conversation history (reduced from 50 to 15 for performance)
     const { data: allUserMessages, error: messagesError } = await supabase
       .from('messages')
       .select('content, role, created_at, conversation_id')
       .eq('user_id', userData.id)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(15);
 
     if (messagesError) {
       console.error('Messages retrieval error:', messagesError);
@@ -740,113 +740,120 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     }
 
     // 🗂️ GOOGLE DRIVE STORAGE: Save conversation to Google Workspace Memory System
+    // NON-BLOCKING: This runs in the background without delaying the response
     let driveStorageSuccessful = false;
 
-    try {
-      // Get user's Google OAuth tokens
-      const { data: tokenData } = await supabase
-        .from('user_tokens')
-        .select('access_token, refresh_token')
-        .eq('user_id', userId)
-        .single();
+    (async () => {
+      try {
+        // Get user's Google OAuth tokens
+        const { data: tokenData } = await supabase
+          .from('user_tokens')
+          .select('access_token, refresh_token')
+          .eq('user_id', userId)
+          .single();
 
-      if (tokenData?.access_token) {
-        // Initialize Google Drive client with automatic token refresh
-        const oauth2Client = new google.auth.OAuth2(
-          process.env.GOOGLE_CLIENT_ID!,
-          process.env.GOOGLE_CLIENT_SECRET!,
-          process.env.NEXTAUTH_URL + '/api/auth/callback/google'
-        );
-        oauth2Client.setCredentials({
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token
-        });
+        if (tokenData?.access_token) {
+          // Initialize Google Drive client with automatic token refresh
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID!,
+            process.env.GOOGLE_CLIENT_SECRET!,
+            process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+          );
+          oauth2Client.setCredentials({
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token
+          });
 
-        // Set up automatic token refresh
-        oauth2Client.on('tokens', async (tokens) => {
-          console.log('🔄 OAuth tokens refreshed for user:', userId);
-          if (tokens.access_token) {
-            await supabase.from('user_tokens').update({
-              access_token: tokens.access_token,
-              expires_at: tokens.expiry_date ? Math.floor(tokens.expiry_date / 1000) : null,
-              updated_at: new Date().toISOString()
-            }).eq('user_id', userId);
-          }
-        });
-
-        const drive = google.drive({ version: 'v3', auth: oauth2Client });
-        const ragSystem = new WorkspaceRAGSystem(drive);
-
-        // Store conversation directly in Google Drive
-        const conversationData = {
-          id: conversationId,
-          title: userMessage.substring(0, 50) + '...',
-          project: lastMessage.projectId || 'general',
-          messages: [
-            {
-              role: 'user',
-              content: userMessage,
-              timestamp: new Date().toISOString()
-            },
-            {
-              role: 'assistant',
-              content: aiResponse,
-              timestamp: new Date().toISOString()
+          // Set up automatic token refresh
+          oauth2Client.on('tokens', async (tokens) => {
+            console.log('🔄 OAuth tokens refreshed for user:', userId);
+            if (tokens.access_token) {
+              await supabase.from('user_tokens').update({
+                access_token: tokens.access_token,
+                expires_at: tokens.expiry_date ? Math.floor(tokens.expiry_date / 1000) : null,
+                updated_at: new Date().toISOString()
+              }).eq('user_id', userId);
             }
-          ]
-        };
+          });
 
-        const result = await ragSystem.storeConversationWithRAG(userId, conversationData);
-        driveStorageSuccessful = true;
-        console.log('💾 Google Drive storage: SUCCESS', result.conversationId);
-      } else {
-        console.log('⚠️ No Google OAuth tokens found for user:', userId);
+          const drive = google.drive({ version: 'v3', auth: oauth2Client });
+          const ragSystem = new WorkspaceRAGSystem(drive);
+
+          // Store conversation directly in Google Drive
+          const conversationData = {
+            id: conversationId,
+            title: userMessage.substring(0, 50) + '...',
+            project: lastMessage.projectId || 'general',
+            messages: [
+              {
+                role: 'user',
+                content: userMessage,
+                timestamp: new Date().toISOString()
+              },
+              {
+                role: 'assistant',
+                content: aiResponse,
+                timestamp: new Date().toISOString()
+              }
+            ]
+          };
+
+          const result = await ragSystem.storeConversationWithRAG(userId, conversationData);
+          console.log('💾 Google Drive storage: SUCCESS', result.conversationId);
+        } else {
+          console.log('⚠️ No Google OAuth tokens found for user:', userId);
+        }
+
+      } catch (storageError) {
+        console.error('🚨 Google Drive storage error:', storageError);
       }
-
-    } catch (storageError) {
-      console.error('🚨 Google Drive storage error:', storageError);
-      driveStorageSuccessful = false;
-    }
+    })();
 
     // 💾 DUAL-WRITE: Always save to Supabase for fast conversation list queries
+    // NON-BLOCKING: This runs in the background without delaying the response
     // This ensures chats appear in the UI immediately, regardless of Drive storage status
-    try {
-      const { data: convData } = await supabase
-        .from('conversations')
-        .upsert({
-          id: conversationId,
-          user_id: userData.id,
-          title: userMessage.substring(0, 50),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+    (async () => {
+      try {
+        const { data: convData } = await supabase
+          .from('conversations')
+          .upsert({
+            id: conversationId,
+            user_id: userData.id,
+            title: userMessage.substring(0, 50),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
 
-      // Save user message to Supabase
-      const userEmbedding = await generateEmbedding(userMessage);
-      await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        user_id: userData.id,
-        role: 'user',
-        content: userMessage,
-        embedding: userEmbedding
-      });
+        // Save user message to Supabase with embedding (parallel)
+        const [userEmbedding, aiEmbedding] = await Promise.all([
+          generateEmbedding(userMessage),
+          generateEmbedding(aiResponse)
+        ]);
 
-      // Save AI response to Supabase
-      const aiEmbedding = await generateEmbedding(aiResponse);
-      await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        user_id: userData.id,
-        role: 'assistant',
-        content: aiResponse,
-        embedding: aiEmbedding
-      });
+        // Save both messages in parallel
+        await Promise.all([
+          supabase.from('messages').insert({
+            conversation_id: conversationId,
+            user_id: userData.id,
+            role: 'user',
+            content: userMessage,
+            embedding: userEmbedding
+          }),
+          supabase.from('messages').insert({
+            conversation_id: conversationId,
+            user_id: userData.id,
+            role: 'assistant',
+            content: aiResponse,
+            embedding: aiEmbedding
+          })
+        ]);
 
-      console.log('💾 Supabase storage: SUCCESS (dual-write enabled)');
-    } catch (supabaseError) {
-      console.error('🚨 Supabase storage failed:', supabaseError);
-      // Non-blocking: Continue even if Supabase fails (Drive storage may have succeeded)
-    }
+        console.log('💾 Supabase storage: SUCCESS (dual-write enabled)');
+      } catch (supabaseError) {
+        console.error('🚨 Supabase storage failed:', supabaseError);
+      }
+    })();
 
     // 🚀 AUTOMATIC BACKGROUND INDEXING - This runs without blocking the response
     const backgroundIndexer = BackgroundIndexer.getInstance();
@@ -873,24 +880,30 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       console.error('Background indexing failed for AI message:', error);
     });
 
-    // Extract and save knowledge
+    // Extract and save knowledge (NON-BLOCKING)
     const facts = extractFacts(userMessage, aiResponse);
     if (facts.length > 0) {
-      for (const fact of facts) {
-        const factEmbedding = await generateEmbedding(fact.content);
-        await supabase.from('knowledge_base').insert({
-          user_id: userData.id,
-          source_type: 'conversation',
-          category: fact.category,
-          title: fact.title,
-          content: fact.content,
-          embedding: factEmbedding,
-          importance: fact.importance,
-          tags: fact.tags,
-          metadata: { conversation_id: conversationId }
-        });
-      }
-      console.log(`Extracted ${facts.length} facts to knowledge base`);
+      (async () => {
+        try {
+          for (const fact of facts) {
+            const factEmbedding = await generateEmbedding(fact.content);
+            await supabase.from('knowledge_base').insert({
+              user_id: userData.id,
+              source_type: 'conversation',
+              category: fact.category,
+              title: fact.title,
+              content: fact.content,
+              embedding: factEmbedding,
+              importance: fact.importance,
+              tags: fact.tags,
+              metadata: { conversation_id: conversationId }
+            });
+          }
+          console.log(`Extracted ${facts.length} facts to knowledge base`);
+        } catch (error) {
+          console.error('Fact extraction error:', error);
+        }
+      })();
     }
 
     // ZAPIER INTEGRATION: Send conversation saved webhook (async, non-blocking)
@@ -902,7 +915,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
         { role: 'assistant', content: aiResponse, timestamp: new Date().toISOString() }
       ],
       {
-        storageLocation: driveStorageSuccessful ? 'google-drive' : 'supabase-fallback',
+        storageLocation: 'background-processing',
         knowledgeItemsFound: autoContext.relevantKnowledge.length,
         factsExtracted: facts.length,
         modelUsed: selectedModel.model
@@ -911,10 +924,11 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       console.error('[Zapier] Failed to send conversation saved webhook:', error);
     });
 
+    // PERFORMANCE OPTIMIZED: Return response immediately, storage/indexing happens in background
     return NextResponse.json({
       response: aiResponse,
       saved: true,
-      storageLocation: driveStorageSuccessful ? 'google-drive' : 'supabase-fallback',
+      storageLocation: 'background-processing',
       memoryActive: true,
       knowledgeItemsFound: autoContext.relevantKnowledge.length,
       allMessagesRetrieved: allUserMessages?.length || 0,
