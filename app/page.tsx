@@ -2494,6 +2494,60 @@ export default function Home() {
             ) : session ? (
               <>
                 <span style={{ color: '#4ade80' }}>Google ✅</span>
+
+                {/* User Selector Toggle */}
+                <div style={{
+                  display: 'flex',
+                  gap: '4px',
+                  padding: '2px',
+                  backgroundColor: '#1a1a1a',
+                  border: '1px solid #444',
+                  borderRadius: '4px'
+                }}>
+                  <button
+                    onClick={() => {
+                      setCurrentUser('zach');
+                      setMessages([]);
+                      setCurrentConversationId(null);
+                      loadConversations();
+                    }}
+                    style={{
+                      padding: '4px 10px',
+                      backgroundColor: currentUser === 'zach' ? '#4a9eff' : 'transparent',
+                      border: 'none',
+                      borderRadius: '3px',
+                      color: currentUser === 'zach' ? '#000' : '#888',
+                      fontSize: '10px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Zach
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentUser('rebecca');
+                      setMessages([]);
+                      setCurrentConversationId(null);
+                      loadConversations();
+                    }}
+                    style={{
+                      padding: '4px 10px',
+                      backgroundColor: currentUser === 'rebecca' ? '#ff6b9d' : 'transparent',
+                      border: 'none',
+                      borderRadius: '3px',
+                      color: currentUser === 'rebecca' ? '#000' : '#888',
+                      fontSize: '10px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Rebecca
+                  </button>
+                </div>
+
                 <button
                   onClick={() => signOut()}
                   style={{

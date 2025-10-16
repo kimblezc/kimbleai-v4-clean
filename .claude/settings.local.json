@@ -111,7 +111,14 @@
       "Bash(npx next build:*)",
       "WebFetch(domain:kimbleai-v4-clean-rgekqq35a-kimblezcs-projects.vercel.app)",
       "Bash(del:*)",
-      "Bash(where psql)"
+      "Bash(where psql)",
+      "Bash(git reset:*)",
+      "Bash(npx supabase db dump:*)",
+      "Bash(npx supabase db remote commit:*)",
+      "Bash(NEXT_PUBLIC_APP_URL=http://localhost:3001 timeout 60 npx tsx:*)",
+      "WebFetch(domain:kimbleai-v4-clean-l82l4zwe4-kimblezcs-projects.vercel.app)",
+      "WebFetch(domain:kimbleai-v4-clean-hqeov6q9f-kimblezcs-projects.vercel.app)",
+      "WebFetch(domain:kimbleai-v4-clean-8yylpvsax-kimblezcs-projects.vercel.app)"
     ],
     "deny": [],
     "ask": []

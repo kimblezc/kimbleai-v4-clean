@@ -11,6 +11,7 @@
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { costMonitor } from './cost-monitor';
+import { webSearch } from './web-search-service';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -205,44 +206,23 @@ Return ONLY valid JSON in this exact format:
   }
 
   /**
-   * Perform a web search (placeholder - will be replaced with actual search implementation)
+   * Perform a web search using REAL search APIs (Tavily, Bing, or Google)
+   * NO MORE FAKE GPT-SIMULATED SEARCHES!
    */
   private async performWebSearch(query: string): Promise<{ results: any[] }> {
     try {
-      // Use a simple search approach - this is a placeholder
-      // In production, you'd use Google Custom Search API, Bing API, or SerpAPI
-
-      // For now, we'll use OpenAI to generate synthetic search results
-      // This is a fallback - replace with actual search API
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini', // Use cheaper model for search
-        messages: [{
-          role: 'system',
-          content: `You are a web search simulator. Generate 5 realistic search results for the given query.
-Return ONLY valid JSON in this format:
-{
-  "results": [
-    {
-      "title": "Result title",
-      "url": "https://example.com/page",
-      "snippet": "Brief description of the result content (2-3 sentences)",
-      "relevance": 0.95
-    }
-  ]
-}
-
-Make the results realistic, diverse, and relevant to the query.`
-        }, {
-          role: 'user',
-          content: `Search query: ${query}`
-        }],
-        response_format: { type: 'json_object' },
-        max_tokens: 1000,
-        temperature: 0.8
+      // Use the real web search service
+      const searchResponse = await webSearch.search(query, {
+        maxResults: 5,
+        searchDepth: 'advanced'
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{"results": []}');
-      return result;
+      // Log which provider was used
+      console.log(`[DeepResearch] Using ${searchResponse.provider} for search: "${query}"`);
+
+      return {
+        results: searchResponse.results
+      };
     } catch (error: any) {
       console.error('[DeepResearch] Web search failed:', error);
       return { results: [] };
