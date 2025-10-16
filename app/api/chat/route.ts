@@ -200,11 +200,17 @@ You have active access to Gmail, Google Drive, and File Management functions:
 - get_file_details: Get detailed information about a specific file including transcriptions, analysis, or content
 
 **When to use File Management functions:**
-- User asks about "my files", "uploaded files", "my PDFs", "my audio recordings", etc.
-- User wants to find content in previously uploaded documents
-- User asks to organize or categorize files
-- User wants details about a specific file (transcription, content, analysis)
-- ALWAYS call these functions when users ask about their uploaded content
+- User asks about "MY files", "MY uploaded files", "MY PDFs", "MY audio recordings"
+- User wants to find content in THEIR previously uploaded documents
+- User asks to organize or categorize THEIR files
+- User wants details about a specific file THEY uploaded
+- Keywords: "my", "uploaded", "find my", "search my files"
+
+**When NOT to use File Management functions:**
+- General knowledge questions ("what is...", "tell me about...", "explain...")
+- Questions about concepts, history, or topics (e.g., "what do you know about DND")
+- No mention of "my" or "uploaded" or "files"
+- User is asking for information, not searching their data
 
 **User**: ${userData.name} (${userData.email})
 **Role**: ${userData.role} ${userData.role === 'admin' ? '(Full System Access)' : '(Standard User)'}
@@ -782,9 +788,9 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
             ]
           };
 
-          // Timeout protection for follow-up call
+          // Timeout protection for follow-up call (increased to 30s for better formatting)
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Follow-up API call timeout')), 20000);
+            setTimeout(() => reject(new Error('Follow-up API call timeout')), 30000);
           });
 
           try {
@@ -1446,33 +1452,7 @@ async function searchUploadedFiles(params: {
   try {
     const { userId, query, fileType, projectId, maxResults } = params;
 
-    // Search in knowledge base for file content
-    const embedding = await generateEmbedding(query);
-
-    let knowledgeQuery = supabase
-      .from('knowledge_base')
-      .select('*, uploaded_files!inner(*)')
-      .eq('user_id', userId)
-      .limit(maxResults);
-
-    // Filter by file type if specified
-    if (fileType && fileType !== 'all') {
-      knowledgeQuery = knowledgeQuery.eq('uploaded_files.category', fileType);
-    }
-
-    // Filter by project if specified
-    if (projectId) {
-      knowledgeQuery = knowledgeQuery.eq('uploaded_files.project_id', projectId);
-    }
-
-    // Text search in title and content
-    if (query) {
-      knowledgeQuery = knowledgeQuery.or(`title.ilike.%${query}%,content.ilike.%${query}%`);
-    }
-
-    const { data: results } = await knowledgeQuery;
-
-    // Also search uploaded_files table directly
+    // PERFORMANCE: Search filename first (fast) before expensive embedding generation
     let filesQuery = supabase
       .from('uploaded_files')
       .select('*')
@@ -1489,6 +1469,38 @@ async function searchUploadedFiles(params: {
     }
 
     const { data: files } = await filesQuery;
+
+    // PERFORMANCE: Skip expensive embedding and knowledge base search if simple filename search found results
+    // Only do deep content search if filename search returned nothing
+    let results = null;
+    if (!files || files.length === 0) {
+      // Only generate embedding if we need deep content search
+      const embedding = await generateEmbedding(query);
+
+      let knowledgeQuery = supabase
+        .from('knowledge_base')
+        .select('*, uploaded_files!inner(*)')
+        .eq('user_id', userId)
+        .limit(maxResults);
+
+      // Filter by file type if specified
+      if (fileType && fileType !== 'all') {
+        knowledgeQuery = knowledgeQuery.eq('uploaded_files.category', fileType);
+      }
+
+      // Filter by project if specified
+      if (projectId) {
+        knowledgeQuery = knowledgeQuery.eq('uploaded_files.project_id', projectId);
+      }
+
+      // Text search in title and content
+      if (query) {
+        knowledgeQuery = knowledgeQuery.or(`title.ilike.%${query}%,content.ilike.%${query}%`);
+      }
+
+      const { data: kbResults } = await knowledgeQuery;
+      results = kbResults;
+    }
 
     // Combine and format results
     const combinedResults = [
