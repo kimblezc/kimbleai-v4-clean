@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import CodeEditor from '@/components/code/CodeEditor';
-import FileExplorer from '@/components/code/FileExplorer';
-import Terminal from '@/components/code/Terminal';
-import AIAssistant from '@/components/code/AIAssistant';
-import GitHubPanel from '@/components/code/GitHubPanel';
+import dynamic from 'next/dynamic';
+
+// Disable SSR for components that use browser APIs
+const CodeEditor = dynamic(() => import('@/components/code/CodeEditor'), { ssr: false });
+const FileExplorer = dynamic(() => import('@/components/code/FileExplorer'), { ssr: false });
+const Terminal = dynamic(() => import('@/components/code/Terminal'), { ssr: false });
+const AIAssistant = dynamic(() => import('@/components/code/AIAssistant'), { ssr: false });
+const GitHubPanel = dynamic(() => import('@/components/code/GitHubPanel'), { ssr: false });
 
 export default function CodePage() {
   const { data: session, status } = useSession();
