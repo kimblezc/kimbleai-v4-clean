@@ -2,8 +2,8 @@ import './globals.css'
 import { Providers } from './providers'
 
 export const metadata = {
-  title: 'KimbleAI - AI-Powered Productivity Platform',
-  description: 'Organize, collaborate, and manage your work with AI assistance',
+  title: 'KimbleAI - Your AI Adventure Awaits',
+  description: 'Where AI meets adventure. Organize, collaborate, and embark on your quest with intelligent assistance',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -28,6 +28,9 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="en" className="dark">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap" rel="stylesheet" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

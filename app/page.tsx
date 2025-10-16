@@ -67,6 +67,7 @@ export default function Home() {
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const completedJobsRef = React.useRef<Set<string>>(new Set());
   const initialProjectSetRef = React.useRef<boolean>(false);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [showGoogleServices, setShowGoogleServices] = useState(false);
   const [moveToProjectConvId, setMoveToProjectConvId] = useState<string | null>(null);
   const [showProjectDropdown, setShowProjectDropdown] = useState<string | null>(null);
@@ -78,6 +79,18 @@ export default function Home() {
   const [costStats, setCostStats] = useState<{
     daily: { used: number; limit: number; percentage: number };
   } | null>(null);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+
+  // Rotating welcome messages with D&D theme
+  const welcomeMessages = [
+    "Roll for Initiative",
+    "Your Quest Awaits",
+    "The Adventure Begins",
+    "Forge Your Legend",
+    "Gather Your Party",
+    "Enter the Realm",
+    "Seek Knowledge Within"
+  ];
 
   // Redirect to sign-in if not authenticated
   React.useEffect(() => {
@@ -112,6 +125,21 @@ export default function Home() {
       return () => clearInterval(interval);
     }
   }, [session]);
+
+  // Rotate welcome messages
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentMessageIndex((prev) => (prev + 1) % welcomeMessages.length);
+    }, 4000); // Change message every 4 seconds
+    return () => clearInterval(interval);
+  }, [welcomeMessages.length]);
+
+  // Auto-scroll to bottom when messages change
+  React.useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages, loading]);
 
   // Removed: Deep Research & Agent Mode (non-functional, will rebuild properly)
 
@@ -2450,8 +2478,10 @@ export default function Home() {
           }}>
             <D20Dice size={96} spinning={true} />
             <span style={{
-              fontSize: '20px',
+              fontSize: '24px',
               fontWeight: '700',
+              fontFamily: '"Cinzel", serif',
+              letterSpacing: '2px',
               background: 'linear-gradient(135deg, #4a9eff 0%, #00d4aa 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -2639,11 +2669,27 @@ export default function Home() {
               color: '#666',
               marginTop: '50px'
             }}>
-              <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>
-                Welcome to KimbleAI v4
+              <h2 style={{
+                fontSize: '32px',
+                marginBottom: '16px',
+                fontFamily: '"Cinzel", serif',
+                fontWeight: '600',
+                letterSpacing: '3px',
+                background: 'linear-gradient(135deg, #8b7355 0%, #d4af37 50%, #8b7355 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                transition: 'opacity 0.5s ease-in-out'
+              }}>
+                {welcomeMessages[currentMessageIndex]}
               </h2>
-              <p style={{ fontSize: '16px', margin: 0 }}>
-                Start a conversation to experience AI with perfect memory
+              <p style={{
+                fontSize: '16px',
+                margin: 0,
+                color: '#888',
+                fontStyle: 'italic'
+              }}>
+                Where AI meets adventure
               </p>
             </div>
           )}
@@ -2710,6 +2756,7 @@ export default function Home() {
               KimbleAI is thinking...
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
