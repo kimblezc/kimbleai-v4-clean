@@ -83,17 +83,29 @@ export default function Home() {
   // Get welcome message based on time of day and user
   const welcomeMessage = React.useMemo(() => {
     const hour = new Date().getHours();
-    const userName = currentUser === 'zach' ? 'Zachary' : 'Rebecca';
 
-    // Time-based greetings
+    // Custom greetings for Rebecca
+    if (currentUser === 'rebecca') {
+      if (hour >= 6 && hour < 12) {
+        return 'Good Morning my lovely dear Rebecca';
+      } else if (hour >= 12 && hour < 17) {
+        return 'Afternoon pretty Rebecca';
+      } else if (hour >= 17 && hour < 22) {
+        return 'Good evening my darling dear';
+      } else {
+        return 'I love you, I cherish you, please go to sleep';
+      }
+    }
+
+    // Standard greetings for Zachary
     if (hour >= 5 && hour < 12) {
-      return `Good Morning, ${userName}`;
+      return 'Good Morning, Zachary';
     } else if (hour >= 12 && hour < 17) {
-      return `Good Afternoon, ${userName}`;
+      return 'Good Afternoon, Zachary';
     } else if (hour >= 17 && hour < 21) {
-      return `Good Evening, ${userName}`;
+      return 'Good Evening, Zachary';
     } else {
-      return `Welcome Back, ${userName}`;
+      return 'Welcome Back, Zachary';
     }
   }, [currentUser]);
 
