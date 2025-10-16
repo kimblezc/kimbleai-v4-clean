@@ -24,11 +24,29 @@ export default function CostsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadCostStats = async () => {
+    if (!session?.user?.email) {
+      setError('No user session found');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/costs?action=summary&userId=zach');
+      // Get the user UUID from the database first
+      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
+      const userData = await userResponse.json();
+
+      if (!userData.success || !userData.user?.id) {
+        setError('Could not find user in database');
+        return;
+      }
+
+      const userId = userData.user.id;
+
+      // Now fetch cost stats with the actual user UUID
+      const response = await fetch(`/api/costs?action=summary&userId=${userId}`);
       const data = await response.json();
 
       if (data.error) {

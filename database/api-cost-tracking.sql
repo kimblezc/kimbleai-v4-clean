@@ -5,7 +5,7 @@
 
 CREATE TABLE IF NOT EXISTS api_cost_tracking (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL,
+  user_id UUID NOT NULL,
   model TEXT NOT NULL,
   endpoint TEXT NOT NULL,
   input_tokens INTEGER DEFAULT 0,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS budget_alerts (
   severity TEXT NOT NULL CHECK (severity IN ('warning', 'critical', 'emergency')),
   percent_used DECIMAL(5, 2) NOT NULL,
   message TEXT NOT NULL,
-  user_id TEXT,
+  user_id UUID,
   status JSONB NOT NULL,
   timestamp TIMESTAMPTZ DEFAULT NOW(),
   acknowledged BOOLEAN DEFAULT FALSE,
@@ -60,7 +60,7 @@ COMMENT ON TABLE budget_alerts IS 'Stores budget alert history for monitoring an
 
 CREATE TABLE IF NOT EXISTS budget_config (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT UNIQUE,
+  user_id UUID UNIQUE,
   monthly_limit DECIMAL(10, 2) NOT NULL DEFAULT 100.00,
   daily_limit DECIMAL(10, 2) NOT NULL DEFAULT 10.00,
   hourly_limit DECIMAL(10, 2) NOT NULL DEFAULT 2.00,
@@ -86,7 +86,7 @@ COMMENT ON TABLE budget_config IS 'Per-user budget configuration and alert setti
 -- Function: Get spending for a time period
 CREATE OR REPLACE FUNCTION get_spending_since(
   since_timestamp TIMESTAMPTZ,
-  filter_user_id TEXT DEFAULT NULL
+  filter_user_id UUID DEFAULT NULL
 )
 RETURNS DECIMAL(10, 2)
 LANGUAGE plpgsql
@@ -106,7 +106,7 @@ $$;
 
 -- Function: Get monthly spending
 CREATE OR REPLACE FUNCTION get_monthly_spending(
-  filter_user_id TEXT DEFAULT NULL
+  filter_user_id UUID DEFAULT NULL
 )
 RETURNS DECIMAL(10, 2)
 LANGUAGE plpgsql
@@ -121,7 +121,7 @@ $$;
 
 -- Function: Get daily spending
 CREATE OR REPLACE FUNCTION get_daily_spending(
-  filter_user_id TEXT DEFAULT NULL
+  filter_user_id UUID DEFAULT NULL
 )
 RETURNS DECIMAL(10, 2)
 LANGUAGE plpgsql
@@ -136,7 +136,7 @@ $$;
 
 -- Function: Get hourly spending
 CREATE OR REPLACE FUNCTION get_hourly_spending(
-  filter_user_id TEXT DEFAULT NULL
+  filter_user_id UUID DEFAULT NULL
 )
 RETURNS DECIMAL(10, 2)
 LANGUAGE plpgsql
@@ -160,8 +160,8 @@ RETURNS TABLE (
   cost_usd DECIMAL(10, 6),
   input_tokens INTEGER,
   output_tokens INTEGER,
-  timestamp TIMESTAMPTZ,
-  user_id TEXT
+  call_timestamp TIMESTAMPTZ,
+  user_id UUID
 )
 LANGUAGE plpgsql
 AS $$
@@ -247,15 +247,15 @@ ALTER TABLE budget_config ENABLE ROW LEVEL SECURITY;
 -- Policies: Users can only see their own cost data
 CREATE POLICY api_cost_tracking_user_policy ON api_cost_tracking
   FOR SELECT
-  USING (auth.uid()::text = user_id OR auth.jwt()->>'role' = 'admin');
+  USING (auth.uid() = user_id OR auth.jwt()->>'role' = 'admin');
 
 CREATE POLICY budget_alerts_user_policy ON budget_alerts
   FOR SELECT
-  USING (auth.uid()::text = user_id OR auth.jwt()->>'role' = 'admin');
+  USING (auth.uid() = user_id OR auth.jwt()->>'role' = 'admin');
 
 CREATE POLICY budget_config_user_policy ON budget_config
   FOR ALL
-  USING (auth.uid()::text = user_id OR auth.jwt()->>'role' = 'admin');
+  USING (auth.uid() = user_id OR auth.jwt()->>'role' = 'admin');
 
 -- ==================== AUTOMATIC CLEANUP ====================
 

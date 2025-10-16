@@ -30,6 +30,14 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'summary': {
+        // Validate userId is provided
+        if (!userId) {
+          return NextResponse.json(
+            { error: 'userId parameter is required' },
+            { status: 400 }
+          );
+        }
+
         // Quick overview
         const [budgetStatus, analytics] = await Promise.all([
           costMonitor.checkBudgetLimits(userId),
@@ -43,12 +51,16 @@ export async function GET(request: NextRequest) {
           process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        const { data: recentCalls } = await supabase
+        const { data: recentCalls, error: callsError } = await supabase
           .from('api_cost_tracking')
           .select('*')
-          .eq('user_id', userId || 'zach')
+          .eq('user_id', userId)
           .order('timestamp', { ascending: false })
           .limit(20);
+
+        if (callsError) {
+          console.error('[CostAPI] Error fetching recent calls:', callsError);
+        }
 
         return NextResponse.json({
           hourly: {
