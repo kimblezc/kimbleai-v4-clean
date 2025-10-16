@@ -83,18 +83,42 @@ export default function Home() {
   // Get welcome message based on time of day and user
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
-    const userName = session?.user?.name?.split(' ')[0] || currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
+    const userName = currentUser === 'zach' ? 'Zachary' : 'Rebecca';
+
+    // D&D lore snippets
+    const dndLore = [
+      "May Tymora's luck guide your path",
+      "The Weave flows strong today",
+      "Your adventure continues",
+      "Roll for initiative when ready",
+      "The realm awaits your wisdom",
+      "Knowledge is the true treasure",
+      "The dice favor the prepared",
+      "Magic flows through all things",
+      "Every quest begins with a single step",
+      "The tavern is always open",
+      "Wisdom comes to those who seek",
+      "Your legend grows with each choice",
+      "The dungeon master smiles upon you",
+      "Fortune favors the bold adventurer",
+      "The multiverse holds infinite possibilities"
+    ];
+
+    const randomLore = dndLore[Math.floor(Math.random() * dndLore.length)];
 
     // Time-based greetings
+    let greeting = '';
     if (hour >= 5 && hour < 12) {
-      return `Good Morning, ${userName}`;
+      greeting = `Good Morning, ${userName}`;
     } else if (hour >= 12 && hour < 17) {
-      return `Good Afternoon, ${userName}`;
+      greeting = `Good Afternoon, ${userName}`;
     } else if (hour >= 17 && hour < 21) {
-      return `Good Evening, ${userName}`;
+      greeting = `Good Evening, ${userName}`;
     } else {
-      return `Welcome Back, ${userName}`;
+      greeting = `Welcome Back, ${userName}`;
     }
+
+    return `${greeting} • ${randomLore}`;
   };
 
   // Redirect to sign-in if not authenticated
@@ -1679,6 +1703,29 @@ export default function Home() {
           flexDirection: 'column',
           padding: '16px'
         }}>
+        {/* User Selector */}
+        <div style={{ marginBottom: '16px' }}>
+          <select
+            value={currentUser}
+            onChange={(e) => setCurrentUser(e.target.value as 'zach' | 'rebecca')}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              color: '#ffffff',
+              fontSize: '13px',
+              fontWeight: '600',
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="zach">🎲 Zachary (DM)</option>
+            <option value="rebecca">✨ Rebecca (Player)</option>
+          </select>
+        </div>
+
         {/* Search Bar */}
         <div style={{ marginBottom: '16px' }}>
           <input
