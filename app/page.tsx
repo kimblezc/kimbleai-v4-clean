@@ -1754,11 +1754,42 @@ export default function Home() {
             color: '#ffffff',
             fontSize: '14px',
             cursor: 'pointer',
-            marginBottom: '16px'
+            marginBottom: '12px'
           }}
         >
           + New Chat
         </button>
+
+        {/* Code Editor Button */}
+        <button
+          onClick={() => window.location.href = '/code'}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#1e40af',
+            border: '1px solid #2563eb',
+            borderRadius: '8px',
+            color: '#ffffff',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          <span style={{ fontSize: '16px' }}>💻</span>
+          Code Editor
+        </button>
+
+        {/* Spacer to separate from other sections */}
+        <div style={{
+          height: '1px',
+          backgroundColor: '#333',
+          marginBottom: '16px'
+        }}></div>
 
         {/* Recent Conversations */}
         {conversationHistory.length > 0 && (
