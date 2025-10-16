@@ -81,45 +81,21 @@ export default function Home() {
   } | null>(null);
 
   // Get welcome message based on time of day and user
-  const getWelcomeMessage = () => {
+  const welcomeMessage = React.useMemo(() => {
     const hour = new Date().getHours();
     const userName = currentUser === 'zach' ? 'Zachary' : 'Rebecca';
 
-    // D&D lore snippets
-    const dndLore = [
-      "May Tymora's luck guide your path",
-      "The Weave flows strong today",
-      "Your adventure continues",
-      "Roll for initiative when ready",
-      "The realm awaits your wisdom",
-      "Knowledge is the true treasure",
-      "The dice favor the prepared",
-      "Magic flows through all things",
-      "Every quest begins with a single step",
-      "The tavern is always open",
-      "Wisdom comes to those who seek",
-      "Your legend grows with each choice",
-      "The dungeon master smiles upon you",
-      "Fortune favors the bold adventurer",
-      "The multiverse holds infinite possibilities"
-    ];
-
-    const randomLore = dndLore[Math.floor(Math.random() * dndLore.length)];
-
     // Time-based greetings
-    let greeting = '';
     if (hour >= 5 && hour < 12) {
-      greeting = `Good Morning, ${userName}`;
+      return `Good Morning, ${userName}`;
     } else if (hour >= 12 && hour < 17) {
-      greeting = `Good Afternoon, ${userName}`;
+      return `Good Afternoon, ${userName}`;
     } else if (hour >= 17 && hour < 21) {
-      greeting = `Good Evening, ${userName}`;
+      return `Good Evening, ${userName}`;
     } else {
-      greeting = `Welcome Back, ${userName}`;
+      return `Welcome Back, ${userName}`;
     }
-
-    return `${greeting} • ${randomLore}`;
-  };
+  }, [currentUser]);
 
   // Redirect to sign-in if not authenticated
   React.useEffect(() => {
@@ -2724,7 +2700,7 @@ export default function Home() {
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text'
               }}>
-                {getWelcomeMessage()}
+                {welcomeMessage}
               </h2>
               <p style={{
                 fontSize: '16px',
