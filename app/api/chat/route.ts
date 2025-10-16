@@ -58,7 +58,25 @@ export async function GET() {
   });
 }
 
+// Request timeout configuration (Vercel has 60s max, we'll use 55s to have time to respond)
+const REQUEST_TIMEOUT_MS = 55000;
+const OPENAI_TIMEOUT_MS = 40000;
+
 export async function POST(request: NextRequest) {
+  const requestStartTime = Date.now();
+
+  // Helper function to check if we're approaching timeout
+  const isNearTimeout = () => {
+    const elapsed = Date.now() - requestStartTime;
+    return elapsed > REQUEST_TIMEOUT_MS - 5000; // 5s buffer
+  };
+
+  // Helper function to get remaining time
+  const getRemainingTime = () => {
+    const elapsed = Date.now() - requestStartTime;
+    return Math.max(0, REQUEST_TIMEOUT_MS - elapsed);
+  };
+
   try {
     let requestData;
     try {
@@ -109,6 +127,17 @@ export async function POST(request: NextRequest) {
 
     // 🤖 AUTO-REFERENCE BUTLER: Automatically gather ALL relevant context
     console.log(`🤖 Digital Butler gathering context for user ${userData.id}...`);
+
+    // Check timeout before expensive operation
+    if (isNearTimeout()) {
+      console.error('[Timeout] Request timeout approaching, returning early');
+      return NextResponse.json({
+        error: 'Request timeout',
+        details: 'Your query is too complex to process within the time limit. Try breaking it into smaller requests.',
+        suggestion: 'Instead of asking for "everything", try specific queries like "search my Gmail for DND" or "search my Drive for DND files"'
+      }, { status: 504 });
+    }
+
     const butler = AutoReferenceButler.getInstance();
     const autoContext = await butler.gatherRelevantContext(
       userMessage,
@@ -117,16 +146,23 @@ export async function POST(request: NextRequest) {
       lastMessage.projectId // If user has a project context
     );
 
-    // Also retrieve recent conversation history (reduced from 50 to 15 for performance)
-    const { data: allUserMessages, error: messagesError } = await supabase
-      .from('messages')
-      .select('content, role, created_at, conversation_id')
-      .eq('user_id', userData.id)
-      .order('created_at', { ascending: false })
-      .limit(15);
+    // PERFORMANCE: Skip message history for simple general knowledge queries
+    let allUserMessages = null;
+    if (autoContext.confidence > 0) {
+      // Only fetch history if context was gathered (not a simple general query)
+      const { data: messageData, error: messagesError } = await supabase
+        .from('messages')
+        .select('content, role, created_at, conversation_id')
+        .eq('user_id', userData.id)
+        .order('created_at', { ascending: false })
+        .limit(15);
 
-    if (messagesError) {
-      console.error('Messages retrieval error:', messagesError);
+      if (messagesError) {
+        console.error('Messages retrieval error:', messagesError);
+      }
+      allUserMessages = messageData;
+    } else {
+      console.log('[Performance] Skipping message history for simple general query');
     }
 
     // Format auto-context for AI
@@ -511,7 +547,28 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     let completion;
     try {
       console.log(`[OpenAI] Calling API with model: ${selectedModel.model}`);
-      completion = await openai.chat.completions.create(modelParams);
+
+      // Check timeout before expensive OpenAI call
+      const remainingTime = getRemainingTime();
+      if (remainingTime < 10000) {
+        console.error('[Timeout] Insufficient time for OpenAI call');
+        return NextResponse.json({
+          error: 'Request timeout',
+          details: 'Not enough time remaining to process your request',
+          suggestion: 'Try a simpler query or break your request into smaller parts'
+        }, { status: 504 });
+      }
+
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('OpenAI API call timeout')), OPENAI_TIMEOUT_MS);
+      });
+
+      // Race between API call and timeout
+      completion = await Promise.race([
+        openai.chat.completions.create(modelParams),
+        timeoutPromise
+      ]) as any;
 
       // Validate response structure
       if (!completion || !completion.choices || completion.choices.length === 0) {
@@ -530,6 +587,16 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       console.error('[OpenAI] Model:', selectedModel.model);
       console.error('[OpenAI] Error details:', apiError.message);
       console.error('[OpenAI] Error code:', apiError.code);
+
+      // Check if it was a timeout error
+      if (apiError.message === 'OpenAI API call timeout') {
+        return NextResponse.json({
+          error: 'Request timeout',
+          details: 'The AI model took too long to respond. Your query may be too complex.',
+          suggestion: 'Try breaking your request into smaller, more specific questions',
+          model: selectedModel.model
+        }, { status: 504 });
+      }
 
       return NextResponse.json({
         error: 'AI service temporarily unavailable',
@@ -701,17 +768,31 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
 
       // If we have function results, make another call to get the final response
       if (functionResults.length > 0) {
-        const followUpParams = {
-          ...modelParams,
-          messages: [
-            ...contextMessages,
-            completion.choices[0].message,
-            ...functionResults
-          ]
-        };
+        // Check timeout before follow-up call
+        if (isNearTimeout()) {
+          console.warn('[Timeout] Skipping follow-up OpenAI call, returning function results as-is');
+          aiResponse = `I found the following information:\n\n${JSON.stringify(functionResults, null, 2)}`;
+        } else {
+          const followUpParams = {
+            ...modelParams,
+            messages: [
+              ...contextMessages,
+              completion.choices[0].message,
+              ...functionResults
+            ]
+          };
 
-        const followUpCompletion = await openai.chat.completions.create(followUpParams);
-        aiResponse = followUpCompletion.choices[0].message.content || aiResponse;
+          // Timeout protection for follow-up call
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Follow-up API call timeout')), 20000);
+          });
+
+          try {
+            const followUpCompletion = await Promise.race([
+              openai.chat.completions.create(followUpParams),
+              timeoutPromise
+            ]) as any;
+            aiResponse = followUpCompletion.choices[0].message.content || aiResponse;
 
         // COST TRACKING: Track follow-up API call
         const followUpInputTokens = followUpCompletion.usage?.prompt_tokens || 0;
@@ -734,8 +815,15 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
           },
         });
 
-        console.log(`[CostMonitor] Tracked follow-up API call: $${followUpCost.toFixed(4)}`);
-        console.log(`✅ Function calls completed, final response generated`);
+            console.log(`[CostMonitor] Tracked follow-up API call: $${followUpCost.toFixed(4)}`);
+            console.log(`✅ Function calls completed, final response generated`);
+          } catch (timeoutError: any) {
+            console.warn('[Timeout] Follow-up API call timed out, using function results');
+            if (timeoutError.message === 'Follow-up API call timeout') {
+              aiResponse = `I found the following information but ran out of time to format it properly:\n\n${JSON.stringify(functionResults, null, 2)}`;
+            }
+          }
+        }
       }
     }
 
@@ -943,12 +1031,19 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
 
   } catch (error: any) {
     console.error('Chat API error:', error);
+
+    // Always return proper JSON, never let it timeout to HTML error
     return NextResponse.json({
       error: 'Chat processing failed',
-      details: error.message
+      details: error.message,
+      suggestion: 'Please try again with a simpler query or break your request into parts'
     }, { status: 500 });
   }
 }
+
+// Export runtime config to ensure proper timeout handling
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 function extractFacts(userMessage: string, aiResponse: string): any[] {
   const facts = [];

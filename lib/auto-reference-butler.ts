@@ -49,10 +49,50 @@ export class AutoReferenceButler {
       const intent = this.classifyIntent(userMessage);
       const keywords = this.extractKeywords(userMessage);
 
-      // Generate search embeddings
-      const embedding = await this.generateEmbedding(userMessage);
+      // PERFORMANCE OPTIMIZATION: Skip expensive context gathering for simple general queries
+      // Fast-path for questions that don't need user-specific context
+      const needsContext = this.shouldGatherContext(userMessage, intent, entities, projectId);
 
-      // Gather context from all sources in parallel
+      if (!needsContext) {
+        console.log('[AutoReferenceButler] Fast-path: Skipping context gathering for simple query');
+        return {
+          relevantKnowledge: [],
+          relevantMemories: [],
+          relevantFiles: [],
+          relevantEmails: [],
+          relevantCalendarEvents: [],
+          recentActivity: [],
+          projectContext: null,
+          confidence: 0,
+          sources: []
+        };
+      }
+
+      // Generate search embeddings (only if context is needed)
+      // TIMEOUT: Add timeout to embedding generation
+      const embeddingPromise = this.generateEmbedding(userMessage);
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+      const embedding = await Promise.race([embeddingPromise, timeoutPromise]);
+
+      // Gather context from all sources in parallel with timeout
+      const contextPromises = [
+        this.getRelevantKnowledge(userId, keywords, embedding, entities),
+        this.getRelevantMemories(userId, keywords, embedding, conversationId),
+        this.getRelevantFiles(userId, keywords, entities, projectId),
+        this.getRelevantEmails(userId, keywords, entities, projectId),
+        this.getRelevantCalendarEvents(userId, keywords, entities),
+        this.getRecentActivity(userId, projectId),
+        projectId ? this.getProjectContext(projectId) : Promise.resolve(null)
+      ];
+
+      // Add overall timeout for all context gathering (10 seconds max)
+      const contextTimeout = new Promise<any[]>((resolve) => {
+        setTimeout(() => {
+          console.warn('[AutoReferenceButler] Context gathering timed out, using partial results');
+          resolve([[], [], [], [], [], [], null]);
+        }, 10000);
+      });
+
       const [
         knowledgeContext,
         memoryContext,
@@ -61,14 +101,9 @@ export class AutoReferenceButler {
         calendarContext,
         activityContext,
         projectContext
-      ] = await Promise.all([
-        this.getRelevantKnowledge(userId, keywords, embedding, entities),
-        this.getRelevantMemories(userId, keywords, embedding, conversationId),
-        this.getRelevantFiles(userId, keywords, entities, projectId),
-        this.getRelevantEmails(userId, keywords, entities, projectId),
-        this.getRelevantCalendarEvents(userId, keywords, entities),
-        this.getRecentActivity(userId, projectId),
-        projectId ? this.getProjectContext(projectId) : null
+      ] = await Promise.race([
+        Promise.all(contextPromises),
+        contextTimeout
       ]);
 
       // Calculate confidence based on relevance and recency
@@ -189,6 +224,65 @@ export class AutoReferenceButler {
     return 'general';
   }
 
+  /**
+   * Determine if context gathering is needed for this query
+   * Returns false for simple general knowledge questions to enable fast-path
+   */
+  private shouldGatherContext(
+    message: string,
+    intent: string,
+    entities: string[],
+    projectId?: string
+  ): boolean {
+    // Always gather context if user explicitly specifies a project
+    if (projectId) {
+      return true;
+    }
+
+    // Always gather context for specific intents that need user data
+    const contextRequiredIntents = ['recall', 'scheduling', 'communication', 'files', 'project_management', 'search'];
+    if (contextRequiredIntents.includes(intent)) {
+      return true;
+    }
+
+    // Always gather context if entities detected (dates, emails, files, projects)
+    if (entities.length > 0) {
+      return true;
+    }
+
+    const lowerMessage = message.toLowerCase();
+
+    // Keywords that indicate user wants personal/contextual data
+    const contextKeywords = [
+      'my ', 'our ', 'we ', 'i ', 'me ',
+      'last ', 'recent', 'yesterday', 'today', 'tomorrow',
+      'previous', 'earlier', 'ago',
+      'show me', 'find my', 'where is', 'when did',
+      'did i', 'have i', 'what was'
+    ];
+
+    if (contextKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return true;
+    }
+
+    // Skip context for general knowledge questions
+    const generalQuestions = [
+      'what is', 'what are', 'who is', 'who are', 'where is',
+      'how does', 'how do', 'how can', 'how to',
+      'why does', 'why do', 'why is',
+      'tell me about', 'explain', 'describe',
+      'define', 'meaning of'
+    ];
+
+    if (generalQuestions.some(pattern => lowerMessage.includes(pattern))) {
+      console.log('[AutoReferenceButler] Detected general knowledge question, using fast-path');
+      return false;
+    }
+
+    // Default to gathering context if uncertain
+    return true;
+  }
+
   private extractKeywords(message: string): string[] {
     // Remove common stop words and extract meaningful keywords
     const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'cant', 'cannot', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them']);
@@ -224,7 +318,7 @@ export class AutoReferenceButler {
       const { data } = await query
         .order('importance', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(3); // Reduced from 5 to 3 for faster queries
 
       return data || [];
     } catch (error) {
@@ -260,7 +354,7 @@ export class AutoReferenceButler {
       const { data } = await query
         .order('importance', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(2); // Reduced from 3 to 2 for faster queries
 
       return data || [];
     } catch (error) {
@@ -296,7 +390,7 @@ export class AutoReferenceButler {
 
       const { data } = await query
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(2); // Reduced from 3 to 2 for faster queries
 
       return data || [];
     } catch (error) {
@@ -332,7 +426,7 @@ export class AutoReferenceButler {
 
       const { data } = await query
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(2); // Reduced from 3 to 2 for faster queries
 
       return data || [];
     } catch (error) {
@@ -387,7 +481,7 @@ export class AutoReferenceButler {
 
       const { data } = await query
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(3); // Reduced from 5 to 3 for faster queries
 
       return data || [];
     } catch (error) {
