@@ -170,20 +170,6 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
     const sortedFaces = faceData
       .sort((a, b) => a.depth - b.depth);
 
-    // Find opposite faces for numbers (1 and 20)
-    // Face 0 is front top, Face 15 is back bottom (opposite sides of icosahedron)
-    const face20Index = 0;  // Front face
-    const face1Index = 15;  // Back face (opposite)
-
-    const face20Center = faceData[face20Index].center;
-    const face1Center = faceData[face1Index].center;
-
-    // Project centers for number placement
-    const num20X = centerX + face20Center[0] * scale - face20Center[2] * scale * 0.5;
-    const num20Y = centerY - face20Center[1] * scale - face20Center[2] * scale * 0.3;
-    const num1X = centerX + face1Center[0] * scale - face1Center[2] * scale * 0.5;
-    const num1Y = centerY - face1Center[1] * scale - face1Center[2] * scale * 0.3;
-
     return (
       <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
         {/* Render ALL faces as wireframe - transparent so you see front AND back */}
@@ -220,44 +206,6 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
             </g>
           );
         })}
-
-        {/* Number "20" on front face */}
-        <text
-          x={num20X}
-          y={num20Y}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize="24"
-          fontWeight="900"
-          fill="#ffffff"
-          stroke="#000000"
-          strokeWidth="1"
-          style={{
-            fontFamily: 'Arial Black, Arial, sans-serif',
-            paintOrder: 'stroke fill'
-          }}
-        >
-          20
-        </text>
-
-        {/* Number "1" on back face (opposite) */}
-        <text
-          x={num1X}
-          y={num1Y}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize="24"
-          fontWeight="900"
-          fill="#ffffff"
-          stroke="#000000"
-          strokeWidth="1"
-          style={{
-            fontFamily: 'Arial Black, Arial, sans-serif',
-            paintOrder: 'stroke fill'
-          }}
-        >
-          1
-        </text>
       </svg>
     );
   };
