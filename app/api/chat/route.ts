@@ -98,6 +98,8 @@ export async function POST(request: NextRequest) {
     const lastMessage = messages[messages.length - 1];
     const userMessage = lastMessage.content;
 
+    console.log(`⏱️ [Performance] Request started at ${Date.now() - requestStartTime}ms`);
+
     // Get user data
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -127,6 +129,7 @@ export async function POST(request: NextRequest) {
 
     // 🤖 AUTO-REFERENCE BUTLER: Automatically gather ALL relevant context
     console.log(`🤖 Digital Butler gathering context for user ${userData.id}...`);
+    const butlerStartTime = Date.now();
 
     // Check timeout before expensive operation
     if (isNearTimeout()) {
@@ -145,6 +148,9 @@ export async function POST(request: NextRequest) {
       conversationId,
       lastMessage.projectId // If user has a project context
     );
+
+    const butlerEndTime = Date.now();
+    console.log(`⏱️ [Performance] AutoReferenceButler completed in ${butlerEndTime - butlerStartTime}ms (confidence: ${Math.round(autoContext.confidence)}%)`);
 
     // PERFORMANCE: Skip message history for simple general knowledge queries
     let allUserMessages = null;
@@ -552,7 +558,9 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     // Get AI response with improved error handling
     let completion;
     try {
+      const openaiStartTime = Date.now();
       console.log(`[OpenAI] Calling API with model: ${selectedModel.model}`);
+      console.log(`⏱️ [Performance] Elapsed time before OpenAI call: ${openaiStartTime - requestStartTime}ms`);
 
       // Check timeout before expensive OpenAI call
       const remainingTime = getRemainingTime();
@@ -581,6 +589,9 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
         console.error('[OpenAI] Invalid response structure:', completion);
         throw new Error('Invalid response structure from OpenAI API');
       }
+
+      const openaiEndTime = Date.now();
+      console.log(`⏱️ [Performance] OpenAI API call completed in ${openaiEndTime - openaiStartTime}ms`);
 
       // Log if content is null/empty
       if (!completion.choices[0].message.content) {
@@ -1019,6 +1030,10 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     });
 
     // PERFORMANCE OPTIMIZED: Return response immediately, storage/indexing happens in background
+    const totalTime = Date.now() - requestStartTime;
+    console.log(`⏱️ [Performance] TOTAL REQUEST TIME: ${totalTime}ms`);
+    console.log(`⏱️ [Performance] Breakdown: Butler=${butlerEndTime - butlerStartTime}ms, OpenAI=${openaiEndTime - openaiStartTime}ms, Other=${totalTime - (butlerEndTime - butlerStartTime) - (openaiEndTime - openaiStartTime)}ms`);
+
     return NextResponse.json({
       response: aiResponse,
       saved: true,

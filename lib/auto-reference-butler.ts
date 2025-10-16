@@ -267,11 +267,51 @@ export class AutoReferenceButler {
 
     // Skip context for general knowledge questions
     const generalQuestions = [
-      'what is', 'what are', 'who is', 'who are', 'where is',
-      'how does', 'how do', 'how can', 'how to',
-      'why does', 'why do', 'why is',
-      'tell me about', 'explain', 'describe',
-      'define', 'meaning of'
+      // "What" questions
+      'what is', 'what are', 'what was', 'what were',
+      'what does', 'what do', 'what did',
+      'what can', 'what could', 'what would',
+      'what about', 'what\'s',
+
+      // "Who" questions
+      'who is', 'who are', 'who was', 'who were',
+      'who can', 'who does', 'who\'s',
+
+      // "Where" questions (general, not personal)
+      'where does', 'where do', 'where can',
+      'where is the', 'where are the',
+
+      // "How" questions
+      'how does', 'how do', 'how did',
+      'how can', 'how could', 'how would',
+      'how to', 'how do you', 'how does one',
+
+      // "Why" questions
+      'why does', 'why do', 'why did',
+      'why is', 'why are', 'why was', 'why were',
+      'why can', 'why would',
+
+      // "When" questions (general historical)
+      'when did', 'when does', 'when was', 'when were',
+
+      // Informational requests
+      'tell me about', 'tell me more about',
+      'explain', 'explain to me',
+      'describe', 'describe the',
+      'define', 'definition of', 'meaning of',
+      'give me information', 'information about',
+      'i want to know about', 'i want to learn about',
+      'can you explain', 'could you explain',
+      'please explain', 'please describe',
+
+      // Simple queries
+      'what\'s the difference between',
+      'what are the benefits',
+      'what are the advantages',
+      'what are the disadvantages',
+      'how many', 'how much',
+      'list the', 'list all',
+      'name some', 'give me some examples'
     ];
 
     if (generalQuestions.some(pattern => lowerMessage.includes(pattern))) {
