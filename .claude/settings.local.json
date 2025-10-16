@@ -118,7 +118,11 @@
       "Bash(NEXT_PUBLIC_APP_URL=http://localhost:3001 timeout 60 npx tsx:*)",
       "WebFetch(domain:kimbleai-v4-clean-l82l4zwe4-kimblezcs-projects.vercel.app)",
       "WebFetch(domain:kimbleai-v4-clean-hqeov6q9f-kimblezcs-projects.vercel.app)",
-      "WebFetch(domain:kimbleai-v4-clean-8yylpvsax-kimblezcs-projects.vercel.app)"
+      "WebFetch(domain:kimbleai-v4-clean-8yylpvsax-kimblezcs-projects.vercel.app)",
+      "Bash(npx supabase db push:*)",
+      "Bash(npx supabase:*)",
+      "Bash(\"/c/Program Files/PostgreSQL/18/bin/psql.exe\" --version)",
+      "WebFetch(domain:kimbleai-v4-clean-ouy9nuvpi-kimblezcs-projects.vercel.app)"
     ],
     "deny": [],
     "ask": []
