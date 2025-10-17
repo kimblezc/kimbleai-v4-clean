@@ -67,7 +67,7 @@ export default function CodeEditor({ file, onSave }: CodeEditorProps) {
       <div className="h-full flex items-center justify-center bg-gray-900 text-gray-400">
         <div className="text-center">
           <svg
-            className="w-12 h-12 mx-auto mb-4 opacity-50"
+            className="w-8 h-8 mx-auto mb-4 opacity-50"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
