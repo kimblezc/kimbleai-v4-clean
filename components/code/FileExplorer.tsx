@@ -166,7 +166,7 @@ export default function FileExplorer({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="p-2 bg-gray-750 border-b border-gray-700">
+      <div className="p-2 bg-gray-700 border-b border-gray-700">
         <span className="text-xs text-gray-400 uppercase font-semibold">
           Files
         </span>

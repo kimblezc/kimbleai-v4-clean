@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       .from('user_tokens')
       .select('access_token')
       .eq('user_id', userData.id)
-      .eq('provider', 'google')
+      .eq('provider', 'github')
       .single();
 
     if (!tokenData?.access_token) {

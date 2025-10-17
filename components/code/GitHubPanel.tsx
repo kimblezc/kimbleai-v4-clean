@@ -80,7 +80,7 @@ export default function GitHubPanel({
       {/* Current Repo Button */}
       <button
         onClick={() => setShowRepos(!showRepos)}
-        className="w-full p-3 text-left hover:bg-gray-750 transition-colors flex items-center justify-between"
+        className="w-full p-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between"
       >
         <div className="flex items-center space-x-2 flex-1 min-w-0">
           <span className="text-sm">📦</span>
@@ -109,7 +109,7 @@ export default function GitHubPanel({
 
       {/* Repository List Dropdown */}
       {showRepos && (
-        <div className="max-h-64 overflow-y-auto bg-gray-750 border-t border-gray-700">
+        <div className="max-h-64 overflow-y-auto bg-gray-700 border-t border-gray-700">
           {loading ? (
             <div className="p-4 text-center text-sm text-gray-400">
               Loading repositories...

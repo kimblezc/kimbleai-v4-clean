@@ -14,6 +14,11 @@ interface CodeEditorProps {
 
 export default function CodeEditor({ file, onSave }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
@@ -83,6 +88,14 @@ export default function CodeEditor({ file, onSave }: CodeEditorProps) {
     );
   }
 
+  if (!mounted) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-900">
+        <div className="text-gray-400">Loading editor...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full">
       <Editor
@@ -91,6 +104,11 @@ export default function CodeEditor({ file, onSave }: CodeEditorProps) {
         value={file.content}
         theme="vs-dark"
         onMount={handleEditorDidMount}
+        loading={
+          <div className="h-full flex items-center justify-center bg-gray-900">
+            <div className="text-gray-400">Loading editor...</div>
+          </div>
+        }
         options={{
           fontSize: 14,
           fontFamily: 'JetBrains Mono, Fira Code, Consolas, monospace',
