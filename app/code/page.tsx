@@ -121,15 +121,13 @@ export default function CodePage() {
 
         {/* Editor */}
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 overflow-hidden">
-            <CodeEditor
-              file={selectedFile}
-              onSave={(content) => {
-                console.log('Saving file:', selectedFile?.path, content);
-                // TODO: Implement save functionality
-              }}
-            />
-          </div>
+          <CodeEditor
+            file={selectedFile}
+            onSave={(content) => {
+              console.log('Saving file:', selectedFile?.path, content);
+              // TODO: Implement save functionality
+            }}
+          />
 
           {/* Right Sidebar - AI Assistant */}
           {showAI && (

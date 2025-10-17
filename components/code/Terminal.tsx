@@ -133,8 +133,6 @@ export default function Terminal() {
   }, []);
 
   return (
-    <div className="h-full w-full bg-black">
-      <div ref={terminalRef} className="h-full w-full p-2" />
-    </div>
+    <div ref={terminalRef} className="h-full w-full bg-black p-2" />
   );
 }

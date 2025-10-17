@@ -142,7 +142,7 @@ export default function AIAssistant({
             }`}
           >
             <div
-              className={`max-w-[85%] rounded-lg p-3 ${
+              className={`max-w-[280px] rounded-lg p-3 ${
                 message.role === 'user'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-700 text-gray-100'

@@ -97,7 +97,7 @@ export default function CodeEditor({ file, onSave }: CodeEditorProps) {
   }
 
   return (
-    <div className="h-full">
+    <div className="h-full w-full overflow-hidden">
       <Editor
         height="100%"
         language={getLanguage(file.path)}
