@@ -557,8 +557,11 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
 
     // Get AI response with improved error handling
     let completion;
+    let openaiStartTime = 0;
+    let openaiEndTime = 0;
+
     try {
-      const openaiStartTime = Date.now();
+      openaiStartTime = Date.now();
       console.log(`[OpenAI] Calling API with model: ${selectedModel.model}`);
       console.log(`⏱️ [Performance] Elapsed time before OpenAI call: ${openaiStartTime - requestStartTime}ms`);
 
@@ -590,7 +593,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
         throw new Error('Invalid response structure from OpenAI API');
       }
 
-      const openaiEndTime = Date.now();
+      openaiEndTime = Date.now();
       console.log(`⏱️ [Performance] OpenAI API call completed in ${openaiEndTime - openaiStartTime}ms`);
 
       // Log if content is null/empty
