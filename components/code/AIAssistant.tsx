@@ -124,7 +124,7 @@ export default function AIAssistant({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center text-gray-400 py-8">
-            <div className="text-4xl mb-4">👋</div>
+            <div className="text-3xl mb-4">👋</div>
             <p className="text-sm">
               Hi! I'm your AI coding assistant.
             </p>
