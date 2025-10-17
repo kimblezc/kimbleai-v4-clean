@@ -1,7 +1,7 @@
 // KimbleAI v4 Service Worker
 // Provides offline support and caching
 
-const CACHE_VERSION = 'kimbleai-v4-1.0';
+const CACHE_VERSION = 'kimbleai-v4-2.0-d20-fix';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
