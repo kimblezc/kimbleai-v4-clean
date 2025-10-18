@@ -1,12 +1,16 @@
 /**
- * Autonomous Agent System
+ * Archie - The Autonomous Agent System
  *
- * A self-healing, self-optimizing agent that:
- * - Monitors for errors and performance issues
- * - Automatically fixes known problems
- * - Runs tests and validates changes
- * - Generates comprehensive logs and executive summaries
- * - Persists across restarts and runs 24/7 in the cloud
+ * Meet Archie, a wise horned owl with green eyes who serves as your autonomous digital butler.
+ *
+ * Archie is a self-healing, self-optimizing agent that:
+ * - Monitors for errors and performance issues (with owl-like vigilance)
+ * - Automatically fixes known problems (with wise solutions)
+ * - Runs tests and validates changes (carefully and thoroughly)
+ * - Generates comprehensive logs and executive summaries (clear insights)
+ * - Persists across restarts and runs 24/7 in the cloud (always watching)
+ *
+ * Like a horned owl hunting at night, Archie sees problems others miss and acts swiftly.
  */
 
 import { createClient } from '@supabase/supabase-js';

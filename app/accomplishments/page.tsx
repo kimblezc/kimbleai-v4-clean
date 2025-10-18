@@ -490,14 +490,15 @@ export default function AccomplishmentsPage() {
         {/* Footer */}
         <div className="mt-12 p-6 bg-[#1a1a1a] border border-[#333] rounded-lg">
           <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
+            <div className="text-2xl flex-shrink-0">🦉</div>
             <div>
               <p className="text-sm text-gray-300 leading-relaxed">
-                <span className="font-semibold text-white">Autonomous Agent Status:</span> Running every 5 minutes.
-                Updates logged in real-time as work progresses. Agent detects issues, generates fixes, tests, and deploys automatically.
+                <span className="font-semibold text-white">Meet Archie</span> <span className="text-green-400">👁️</span> - Your wise horned owl autonomous agent with piercing green eyes.
+                Archie runs every 5 minutes, watching over your system with owl-like vigilance.
+                He detects issues, generates fixes, tests thoroughly, and deploys automatically.
               </p>
               <p className="text-xs text-gray-500 mt-2">
-                Current time (CET): {currentTime} • Next agent run: Within 5 minutes
+                Current time (CET): {currentTime} • Next Archie run: Within 5 minutes
               </p>
             </div>
           </div>
