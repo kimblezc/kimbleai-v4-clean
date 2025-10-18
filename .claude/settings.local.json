@@ -134,7 +134,9 @@
       "WebFetch(domain:kimbleai-v4-clean-fwv4csn7i-kimblezcs-projects.vercel.app)",
       "WebFetch(domain:kimbleai-v4-clean-my5e238cc-kimblezcs-projects.vercel.app)",
       "Bash(git reflog expire --expire=now --all)",
-      "Bash(git gc --prune=now --aggressive)"
+      "Bash(git gc --prune=now --aggressive)",
+      "Bash(if exist \"D:\\OneDrive\\Documents\\kimbleai-v4-clean\\app\\api\\agents\" rmdir \"D:\\OneDrive\\Documents\\kimbleai-v4-clean\\app\\api\\agents\")",
+      "Bash(if exist \"D:\\OneDrive\\Documents\\kimbleai-v4-clean\\app\\agents\" rmdir \"D:\\OneDrive\\Documents\\kimbleai-v4-clean\\app\\agents\")"
     ],
     "deny": [],
     "ask": []
