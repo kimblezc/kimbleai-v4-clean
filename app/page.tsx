@@ -1982,6 +1982,28 @@ export default function Home() {
           + New Chat
         </button>
 
+        {/* Accomplishments Link */}
+        <button
+          onClick={() => window.location.href = '/accomplishments'}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#1a5490',
+            border: '1px solid #2563eb',
+            borderRadius: '8px',
+            color: '#ffffff',
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          🚀 Accomplishments
+        </button>
+
         {/* Code Editor Button */}
         <button
           onClick={() => window.location.href = '/code'}
