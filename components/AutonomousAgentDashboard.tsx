@@ -654,76 +654,162 @@ export default function AutonomousAgentDashboard() {
 
         {view === 'findings' && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">🔍 Findings & Insights</h2>
-              <p className="text-sm text-gray-600">Issues and improvements discovered by Archie</p>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">🔍 Findings & Insights</h2>
+                <p className="text-sm text-gray-600 mt-1">Issues and improvements discovered by Archie • {status?.statistics.findings.total || 0} total findings</p>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {status?.recent_activity?.findings && status.recent_activity.findings.length > 0 ? (
                 status.recent_activity.findings.map((finding, idx) => {
                   const severityConfig = {
-                    critical: { bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-900', badge: 'bg-red-600 text-white' },
-                    high: { bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-900', badge: 'bg-orange-600 text-white' },
-                    medium: { bg: 'bg-yellow-50', border: 'border-yellow-500', text: 'text-yellow-900', badge: 'bg-yellow-600 text-white' },
-                    low: { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-900', badge: 'bg-blue-600 text-white' },
-                    info: { bg: 'bg-gray-50', border: 'border-gray-500', text: 'text-gray-900', badge: 'bg-gray-600 text-white' }
+                    critical: { bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-900', badge: 'bg-red-600 text-white', icon: '🔴' },
+                    high: { bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-900', badge: 'bg-orange-600 text-white', icon: '🟠' },
+                    medium: { bg: 'bg-yellow-50', border: 'border-yellow-500', text: 'text-yellow-900', badge: 'bg-yellow-600 text-white', icon: '🟡' },
+                    low: { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-900', badge: 'bg-blue-600 text-white', icon: '🟢' },
+                    info: { bg: 'bg-gray-50', border: 'border-gray-400', text: 'text-gray-900', badge: 'bg-gray-600 text-white', icon: 'ℹ️' }
                   };
                   const config = severityConfig[finding.severity as keyof typeof severityConfig] || severityConfig.info;
 
+                  const typeIcons = {
+                    'autonomous_code_generation': '💻',
+                    'improvement': '💡',
+                    'optimization': '⚡',
+                    'log_analysis': '📊',
+                    'task_prioritization': '🎯',
+                    'goal_initialization': '🎯'
+                  };
+
                   return (
-                    <div key={idx} className={`${config.bg} rounded-lg border-l-4 ${config.border} p-6`}>
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${config.badge}`}>
-                              {finding.severity.toUpperCase()}
-                            </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              finding.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
-                              finding.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {finding.status.replace('_', ' ')}
-                            </span>
-                            <h3 className={`text-lg font-semibold ${config.text}`}>{finding.title}</h3>
+                    <div key={idx} className={`${config.bg} rounded-xl border-l-4 ${config.border} shadow-sm hover:shadow-md transition-shadow duration-200`}>
+                      {/* Header */}
+                      <div className="p-6 pb-4">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 flex-wrap mb-3">
+                              <span className="text-2xl">{config.icon}</span>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${config.badge}`}>
+                                {finding.severity}
+                              </span>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                finding.status === 'open' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
+                                finding.status === 'in_progress' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                                'bg-green-100 text-green-800 border border-green-300'
+                              }`}>
+                                {finding.status.replace('_', ' ').toUpperCase()}
+                              </span>
+                              {finding.detection_method && (
+                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-300">
+                                  {typeIcons[finding.detection_method as keyof typeof typeIcons] || '🔍'} {finding.detection_method.replace(/_/g, ' ')}
+                                </span>
+                              )}
+                            </div>
+                            <h3 className={`text-lg font-bold ${config.text} mb-2`}>{finding.title}</h3>
+                          </div>
+                          <div className="text-right ml-4">
+                            <div className="text-xs text-gray-500 mb-1">Detected</div>
+                            <div className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                              {new Date(finding.detected_at).toLocaleString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500">
-                            {new Date(finding.detected_at).toLocaleString('en-GB', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+
+                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{finding.description}</p>
+
+                        {finding.location && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-xs font-semibold text-gray-600">📍 Location:</span>
+                            <code className="text-xs bg-white px-3 py-1 rounded border border-gray-300 font-mono">{finding.location}</code>
                           </div>
-                        </div>
+                        )}
                       </div>
 
-                      <p className="text-sm text-gray-700 mb-3">{finding.description}</p>
+                      {/* Code Generation Evidence */}
+                      {finding.evidence && finding.evidence.files && (
+                        <div className="border-t border-gray-200 bg-white/50 p-6">
+                          <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <span>💻</span>
+                            <span>Archie's Implementation Plan</span>
+                            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                              {finding.evidence.files.length} files to modify
+                            </span>
+                          </h4>
 
-                      {finding.location && (
-                        <div className="mb-2">
-                          <span className="text-xs font-medium text-gray-600">📍 Location:</span>
-                          <code className="text-xs bg-gray-100 px-2 py-1 rounded ml-2">{finding.location}</code>
-                        </div>
-                      )}
+                          <div className="space-y-3">
+                            {finding.evidence.files.map((file: any, fileIdx: number) => (
+                              <div key={fileIdx} className="bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-300 transition-colors">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="text-lg">{file.action === 'create' ? '📄' : file.action === 'modify' ? '✏️' : '🗑️'}</span>
+                                      <code className="text-sm font-bold text-gray-900 font-mono">{file.path}</code>
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                        file.action === 'create' ? 'bg-green-100 text-green-700' :
+                                        file.action === 'modify' ? 'bg-blue-100 text-blue-700' :
+                                        'bg-red-100 text-red-700'
+                                      }`}>
+                                        {file.action.toUpperCase()}
+                                      </span>
+                                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                        file.riskLevel === 'low' ? 'bg-green-100 text-green-700' :
+                                        file.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                        'bg-red-100 text-red-700'
+                                      }`}>
+                                        {file.riskLevel ? `${file.riskLevel.toUpperCase()} RISK` : 'RISK UNKNOWN'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
 
-                      {finding.detection_method && (
-                        <div className="text-xs text-gray-600">
-                          <span className="font-medium">Detection Method:</span> {finding.detection_method}
+                                <div className="space-y-2 text-xs">
+                                  <div>
+                                    <span className="font-semibold text-gray-700">Changes:</span>
+                                    <p className="text-gray-600 mt-1 pl-4 border-l-2 border-blue-200">{file.changes}</p>
+                                  </div>
+                                  {file.reasoning && (
+                                    <div>
+                                      <span className="font-semibold text-gray-700">Reasoning:</span>
+                                      <p className="text-gray-600 mt-1 pl-4 border-l-2 border-green-200">{file.reasoning}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {finding.evidence.testingNotes && (
+                            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                              <h5 className="text-xs font-bold text-blue-900 mb-2">🧪 Testing Notes</h5>
+                              <p className="text-xs text-blue-800">{finding.evidence.testingNotes}</p>
+                            </div>
+                          )}
+
+                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-xs text-yellow-800">
+                              <strong>⚠️ Status:</strong> File modification is disabled in production. These changes are logged for review.
+                              To apply: Set <code className="bg-yellow-100 px-1 py-0.5 rounded">ARCHIE_ENABLE_FILE_MODIFICATION=true</code> in local environment.
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
                   );
                 })
               ) : (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-                  <p className="text-gray-500 mb-2">No findings yet</p>
-                  <p className="text-sm text-gray-400">
-                    Archie will proactively hunt for bugs and improvements on his next run
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                  <div className="text-6xl mb-4">🔍</div>
+                  <p className="text-gray-900 font-semibold text-lg mb-2">No findings yet</p>
+                  <p className="text-sm text-gray-500">
+                    Archie will proactively hunt for bugs and improvements on his next run (every 5 minutes)
                   </p>
                 </div>
               )}
