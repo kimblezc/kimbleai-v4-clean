@@ -182,10 +182,14 @@ async function indexDriveFiles(userId: string, accessToken: string, refreshToken
         }
 
         // Extract content
-        const content = await extractDriveFileContent(drive, file);
+        const fullContent = await extractDriveFileContent(drive, file);
 
-        // Generate embedding
-        const embedding = await generateEmbedding(content);
+        // Generate embedding from FULL content (up to 8K chars)
+        const embedding = await generateEmbedding(fullContent);
+
+        // Store ONLY a small snippet (500 chars max) to save space
+        // We rely on the embedding for semantic search, not the full content
+        const contentSnippet = fullContent.substring(0, 500);
 
         // Index or update the file
         const { error } = await supabase
@@ -194,7 +198,7 @@ async function indexDriveFiles(userId: string, accessToken: string, refreshToken
             id: existing?.id, // Keep existing ID if updating
             user_id: userId,
             title: file.name,
-            content: content,
+            content: contentSnippet, // ONLY SNIPPET, not full content
             source_type: 'drive',
             source_id: file.id,
             category: 'file',
@@ -300,11 +304,14 @@ async function indexGmailMessages(userId: string, accessToken: string, refreshTo
       const date = headers.find((h: any) => h.name === 'Date')?.value || '';
       const snippet = fullMessage.data.snippet || '';
 
-      // Create content
-      const content = `From: ${from}\nSubject: ${subject}\nDate: ${date}\n\n${snippet}`;
+      // Create full content for embedding
+      const fullContent = `From: ${from}\nSubject: ${subject}\nDate: ${date}\n\n${snippet}`;
 
-      // Generate embedding
-      const embedding = await generateEmbedding(content);
+      // Generate embedding from full content
+      const embedding = await generateEmbedding(fullContent);
+
+      // Store ONLY a small snippet (500 chars) to save database space
+      const contentSnippet = fullContent.substring(0, 500);
 
       // Index the email
       const { error } = await supabase
@@ -312,7 +319,7 @@ async function indexGmailMessages(userId: string, accessToken: string, refreshTo
         .insert({
           user_id: userId,
           title: subject,
-          content: content,
+          content: contentSnippet, // ONLY SNIPPET, not full email
           source_type: 'email',
           source_id: message.id,
           category: 'email',
@@ -343,6 +350,33 @@ async function indexGmailMessages(userId: string, accessToken: string, refreshTo
   return { indexed, skipped, hasMore: !!pageToken };
 }
 
+// Check storage usage and warn if approaching limits
+async function checkStorageLimits() {
+  try {
+    const { count } = await supabase
+      .from('knowledge_base')
+      .select('*', { count: 'exact', head: true });
+
+    // Estimate: Each row ~6.5 KB (500 char content + 1536 float embedding + metadata)
+    const estimatedMB = ((count || 0) * 6.5) / 1024;
+    const FREE_TIER_LIMIT_MB = 500;
+    const usagePercent = (estimatedMB / FREE_TIER_LIMIT_MB) * 100;
+
+    if (usagePercent >= 90) {
+      console.error(`🚨 [STORAGE] CRITICAL: ${usagePercent.toFixed(1)}% of Supabase free tier used (${estimatedMB.toFixed(0)} MB / ${FREE_TIER_LIMIT_MB} MB). UPGRADE IMMEDIATELY!`);
+    } else if (usagePercent >= 75) {
+      console.warn(`⚠️  [STORAGE] WARNING: ${usagePercent.toFixed(1)}% of Supabase free tier used (${estimatedMB.toFixed(0)} MB / ${FREE_TIER_LIMIT_MB} MB). Consider upgrading soon.`);
+    } else {
+      console.log(`✅ [STORAGE] Storage healthy: ${usagePercent.toFixed(1)}% used (${estimatedMB.toFixed(0)} MB / ${FREE_TIER_LIMIT_MB} MB)`);
+    }
+
+    return { estimatedMB, usagePercent };
+  } catch (error) {
+    console.error('[STORAGE] Failed to check limits:', error);
+    return null;
+  }
+}
+
 /**
  * POST /api/index/cron
  * Scheduled indexing cron job
@@ -365,6 +399,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[INDEXING CRON] Starting scheduled indexing job');
+
+    // Check storage before indexing
+    const storageBefore = await checkStorageLimits();
 
     // Get all active users with Google tokens
     const { data: tokens, error: tokensError } = await supabase
@@ -439,6 +476,9 @@ export async function POST(request: NextRequest) {
 
     const duration = Date.now() - startTime;
 
+    // Check storage after indexing
+    const storageAfter = await checkStorageLimits();
+
     // Log the cron job result
     await supabase.from('cron_logs').insert({
       job_name: 'auto_indexing',
@@ -454,6 +494,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `Indexing completed: ${results.successful} successful, ${results.failed} failed`,
       duration: `${(duration / 1000).toFixed(1)}s`,
+      storage: {
+        before: storageBefore,
+        after: storageAfter
+      },
       results
     });
 

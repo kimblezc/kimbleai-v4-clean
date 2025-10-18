@@ -51,6 +51,27 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'UNKNOWN';
 
+  // Allow cron endpoints with valid CRON_SECRET
+  if (path.includes('/cron') && path.startsWith('/api/')) {
+    const authHeader = request.headers.get('authorization');
+    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+
+    if (authHeader === expectedAuth) {
+      console.log(`✅ [CRON] Valid CRON_SECRET for ${path}`);
+      return NextResponse.next();
+    } else {
+      console.log(`🚫 [CRON] Invalid CRON_SECRET for ${path}`);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized',
+          message: 'Invalid or missing CRON_SECRET',
+        },
+        { status: 401 }
+      );
+    }
+  }
+
   // Skip authentication for public paths
   const isPublicPath = PUBLIC_PATHS.some(publicPath =>
     path.startsWith(publicPath)
