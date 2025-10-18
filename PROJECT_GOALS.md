@@ -184,18 +184,23 @@
 **User Requirement:** "90% of chat interactions under 8 seconds"
 
 **Target Performance:**
-- [ ] **90% of chats: < 8 seconds** (PRIMARY GOAL)
+- [ ] **90% of chats: < 8 seconds** (PRIMARY GOAL - Fast Mode)
 - [ ] Simple queries: < 2 seconds
 - [ ] Medium queries: < 5 seconds
 - [ ] Complex queries: < 8 seconds (90th percentile)
-- [ ] Deep research mode: < 30 seconds (user opts in)
+- [ ] **Deep Research Mode: 30s to 5 minutes** (user opts in, like OpenAI o1/Claude extended thinking)
 
-**Deep Research Integration:**
+**Deep Research Mode (Like OpenAI o1 / Claude Extended Thinking):**
 - [ ] Incorporate existing deep research options
-- [ ] Make deep research opt-in (checkbox/button)
-- [ ] Show estimated time before deep research
-- [ ] Stream progress updates during deep research
+- [ ] Make deep research opt-in (toggle: "Fast" vs "Deep Research")
+- [ ] **Allow 30 seconds to 5+ minutes for proper research**
+- [ ] Show reasoning/thinking process (like o1)
+- [ ] Multi-step research with visible progress
+- [ ] Search multiple sources, cross-reference findings
+- [ ] Synthesize comprehensive answers with citations
+- [ ] Stream progress updates: "Searching Gmail... Analyzing 47 emails... Cross-referencing Drive files..."
 - [ ] Default to FAST mode (< 8s), opt-in to DEEP mode
+- [ ] Clear UI distinction: ⚡ Fast (8s) vs 🔬 Deep Research (minutes)
 
 **Success Criteria:**
 - [ ] 90% of interactions < 8 seconds (measured)
