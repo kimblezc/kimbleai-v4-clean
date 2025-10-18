@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
   '/api/backup/cron', // Cron jobs (protected by CRON_SECRET in route)
   '/api/index/cron', // Cron jobs (protected by CRON_SECRET in route)
   '/api/cron', // Cron jobs (protected by CRON_SECRET in route)
+  '/api/agent', // Archie autonomous agent (protected by CRON_SECRET in route)
   '/api/storage', // Storage monitoring endpoints
   '/auth/signin',
   '/auth/error',
