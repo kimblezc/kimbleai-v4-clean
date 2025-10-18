@@ -125,7 +125,14 @@
 **Why Critical:** Must stay within free tiers and budget limits
 
 **Services to Track:**
-- OpenAI API usage (GPT-4, embeddings)
+- **OpenAI API usage (ALL models):**
+  - GPT-5 (primary model - site built for this)
+  - GPT-4 Turbo
+  - GPT-4
+  - GPT-3.5 Turbo
+  - Text embeddings (text-embedding-3-small, text-embedding-3-large)
+  - Whisper (if used for transcription)
+  - DALL-E (if used for image generation)
 - AssemblyAI transcription costs
 - Vercel function invocations
 - Supabase database size and queries
@@ -170,10 +177,23 @@
 **Dashboard Metrics:**
 - Total cost today/week/month
 - Cost by service (OpenAI, AssemblyAI, etc.)
+- **Cost by OpenAI model** (GPT-5, GPT-4 Turbo, embeddings)
 - Cost per user
 - Cost per API endpoint
+- Cost per chat interaction
+- Token usage tracking (input/output tokens per model)
 - Quota usage (Gmail, Drive, Vercel)
 - Trend analysis (costs increasing/decreasing)
+- Budget alerts (when approaching monthly limit)
+
+**OpenAI Cost Tracking Details:**
+- Track tokens per request (input + output)
+- Track model used (GPT-5, GPT-4, embeddings, etc.)
+- Calculate cost per request based on model pricing
+- Identify most expensive endpoints
+- Suggest model downgrade opportunities (GPT-5 → GPT-4 when appropriate)
+- Cache frequently requested responses
+- Monitor GPT-5 usage specifically (highest cost)
 
 ---
 
