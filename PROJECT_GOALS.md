@@ -178,29 +178,42 @@
 ---
 
 ### 6. Optimize Chatbot Response Time 🐌
-**Priority:** 8/10 (High)
+**Priority:** 9/10 (Critical) **⬆️ UPGRADED from 8/10**
 **Impact:** Poor user experience, users abandoning queries
 **Current Status:** Slow (often > 10 seconds)
+**User Requirement:** "90% of chat interactions under 8 seconds"
 
 **Target Performance:**
+- [ ] **90% of chats: < 8 seconds** (PRIMARY GOAL)
 - [ ] Simple queries: < 2 seconds
 - [ ] Medium queries: < 5 seconds
-- [ ] Complex queries: < 15 seconds
-- [ ] 95th percentile: < 10 seconds
+- [ ] Complex queries: < 8 seconds (90th percentile)
+- [ ] Deep research mode: < 30 seconds (user opts in)
+
+**Deep Research Integration:**
+- [ ] Incorporate existing deep research options
+- [ ] Make deep research opt-in (checkbox/button)
+- [ ] Show estimated time before deep research
+- [ ] Stream progress updates during deep research
+- [ ] Default to FAST mode (< 8s), opt-in to DEEP mode
 
 **Success Criteria:**
-- [ ] Average response time < 5 seconds
-- [ ] No queries > 30 seconds (except explicit long-running tasks)
+- [ ] 90% of interactions < 8 seconds (measured)
 - [ ] Real-time streaming of responses
 - [ ] Visible progress indicators
+- [ ] Deep research available but opt-in only
+- [ ] Clear distinction between fast/deep modes
 
 **Agent Tasks:**
 - Profile /api/chat endpoint performance
-- Implement response streaming
+- Implement FAST mode (< 8s, default)
+- Implement DEEP mode (< 30s, opt-in)
+- Add response streaming
 - Add caching for common queries
 - Optimize OpenAI API calls (parallel where possible)
 - Reduce database query overhead
-- Implement query result caching
+- Add mode selector UI (Fast vs Deep Research)
+- Track response time metrics (p50, p90, p95)
 
 ---
 
