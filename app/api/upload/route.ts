@@ -43,23 +43,39 @@ export async function POST(request: NextRequest) {
     
     let content = '';
     
-    // Handle PDF files - SIMPLIFIED APPROACH
+    // Handle PDF files - RE-ENABLED with pdf-parse
     if (file.type === 'application/pdf') {
-      // For now, return a message that PDF parsing is in development
-      // We'll handle PDFs differently to avoid the build issue
-      return NextResponse.json({ 
-        error: 'PDF parsing temporarily disabled', 
-        details: 'Please upload TXT, MD, or CSV files for now. PDF support coming soon.' 
-      }, { status: 400 });
+      try {
+        const pdfParse = require('pdf-parse');
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const pdfData = await pdfParse(buffer);
+        content = pdfData.text;
+
+        if (!content || content.trim().length === 0) {
+          return NextResponse.json({
+            error: 'PDF appears to be empty or image-based',
+            details: 'No text content could be extracted. PDF may contain only images.'
+          }, { status: 400 });
+        }
+
+        console.log(`[PDF Upload] Extracted ${content.length} characters from ${pdfData.numpages} pages`);
+      } catch (pdfError: any) {
+        console.error('PDF parsing error:', pdfError);
+        return NextResponse.json({
+          error: 'Failed to parse PDF',
+          details: pdfError.message
+        }, { status: 400 });
+      }
     } else {
       // Handle text-based files (TXT, MD, CSV, etc.)
       try {
         content = await file.text();
       } catch (textError) {
         console.error('Error reading file:', textError);
-        return NextResponse.json({ 
-          error: 'Failed to read file', 
-          details: 'File might be corrupted or in an unsupported format' 
+        return NextResponse.json({
+          error: 'Failed to read file',
+          details: 'File might be corrupted or in an unsupported format'
         }, { status: 400 });
       }
     }

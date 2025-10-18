@@ -5,7 +5,7 @@
 -- Stores edit proposals that require user approval
 CREATE TABLE IF NOT EXISTS drive_edit_proposals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL,
+  user_id UUID NOT NULL,
   file_id TEXT NOT NULL,
   file_name TEXT NOT NULL,
   file_type TEXT,
@@ -69,7 +69,7 @@ CREATE TRIGGER trigger_update_drive_edit_proposals_updated_at
 CREATE TABLE IF NOT EXISTS drive_edit_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   proposal_id UUID REFERENCES drive_edit_proposals(id) ON DELETE CASCADE,
-  user_id TEXT NOT NULL,
+  user_id UUID NOT NULL,
   file_id TEXT NOT NULL,
   file_name TEXT NOT NULL,
 

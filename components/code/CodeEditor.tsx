@@ -64,10 +64,21 @@ export default function CodeEditor({ file, onSave }: CodeEditorProps) {
 
   if (!file) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-900 text-gray-400">
-        <div className="text-center">
-          <p className="text-sm">Select a file to start editing</p>
-          <p className="text-xs mt-2 text-gray-500">
+      <div style={{
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0f0f0f',
+        color: '#888'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontSize: '12px' }}>Select a file to start editing</p>
+          <p style={{
+            fontSize: '11px',
+            marginTop: '8px',
+            color: '#666'
+          }}>
             Or create a new file from the file explorer
           </p>
         </div>
@@ -77,14 +88,25 @@ export default function CodeEditor({ file, onSave }: CodeEditorProps) {
 
   if (!mounted) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-900">
-        <div className="text-gray-400 text-xs">Loading editor...</div>
+      <div style={{
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0f0f0f'
+      }}>
+        <div style={{ color: '#888', fontSize: '11px' }}>Loading editor...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full overflow-hidden bg-gray-900">
+    <div style={{
+      height: '100%',
+      width: '100%',
+      overflow: 'hidden',
+      backgroundColor: '#0f0f0f'
+    }}>
       <Editor
         height="100%"
         language={getLanguage(file.path)}
@@ -92,8 +114,15 @@ export default function CodeEditor({ file, onSave }: CodeEditorProps) {
         theme="vs-dark"
         onMount={handleEditorDidMount}
         loading={
-          <div className="h-full w-full flex items-center justify-center bg-gray-900">
-            <div className="text-gray-400 text-xs">Loading editor...</div>
+          <div style={{
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#0f0f0f'
+          }}>
+            <div style={{ color: '#888', fontSize: '11px' }}>Loading editor...</div>
           </div>
         }
         options={{

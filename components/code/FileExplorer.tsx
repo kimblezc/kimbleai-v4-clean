@@ -124,18 +124,32 @@ export default function FileExplorer({
     return (
       <div key={file.path}>
         <div
-          className={`flex items-center px-2 py-1.5 cursor-pointer hover:bg-gray-700 transition-colors ${
-            isLoading ? 'opacity-50' : ''
-          }`}
-          style={{ paddingLeft: `${depth * 12 + 8}px` }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '6px 8px',
+            paddingLeft: `${depth * 12 + 12}px`,
+            cursor: 'pointer',
+            transition: 'background-color 0.2s',
+            opacity: isLoading ? 0.5 : 1
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2a2a2a'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           onClick={() => handleFileClick(file)}
         >
-          <span className="mr-2 text-sm">{getFileIcon(file)}</span>
-          <span className="text-sm text-gray-200 truncate flex-1">
+          <span style={{ marginRight: '8px', fontSize: '11px' }}>{getFileIcon(file)}</span>
+          <span style={{
+            fontSize: '12px',
+            color: '#e5e5e5',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1
+          }}>
             {file.name}
           </span>
           {isLoading && (
-            <span className="text-xs text-blue-400">...</span>
+            <span style={{ fontSize: '11px', color: '#4a9eff' }}>...</span>
           )}
         </div>
 
@@ -150,7 +164,13 @@ export default function FileExplorer({
 
   if (!currentRepo) {
     return (
-      <div className="flex-1 p-4 text-center text-gray-400 text-sm">
+      <div style={{
+        flex: 1,
+        padding: '16px',
+        textAlign: 'center',
+        color: '#888',
+        fontSize: '12px'
+      }}>
         Select a repository to view files
       </div>
     );
@@ -158,16 +178,31 @@ export default function FileExplorer({
 
   if (files.length === 0) {
     return (
-      <div className="flex-1 p-4 text-center text-gray-400 text-sm">
+      <div style={{
+        flex: 1,
+        padding: '16px',
+        textAlign: 'center',
+        color: '#888',
+        fontSize: '12px'
+      }}>
         Loading files...
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="p-2 bg-gray-700 border-b border-gray-700">
-        <span className="text-xs text-gray-400 uppercase font-semibold">
+    <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{
+        padding: '8px 12px',
+        backgroundColor: '#0a0a0a',
+        borderBottom: '1px solid #333'
+      }}>
+        <span style={{
+          fontSize: '11px',
+          color: '#888',
+          textTransform: 'uppercase',
+          fontWeight: '600'
+        }}>
           Files
         </span>
       </div>

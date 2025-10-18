@@ -108,27 +108,55 @@ export default function AIAssistant({
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-800">
+    <div style={{
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: '#171717'
+    }}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-lg font-semibold flex items-center">
-          <span className="mr-2">🤖</span>
+      <div style={{
+        padding: '16px',
+        borderBottom: '1px solid #333'
+      }}>
+        <h2 style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          <span style={{ marginRight: '8px' }}>🤖</span>
           AI Assistant
         </h2>
-        <p className="text-xs text-gray-400 mt-1">
+        <p style={{
+          fontSize: '11px',
+          color: '#888',
+          marginTop: '4px'
+        }}>
           Powered by OpenAI GPT-4.1 mini
         </p>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
         {messages.length === 0 && (
-          <div className="text-center text-gray-400 py-8">
-            <div className="text-xl mb-4">👋</div>
-            <p className="text-sm">
+          <div style={{
+            textAlign: 'center',
+            color: '#888',
+            padding: '32px 0'
+          }}>
+            <div style={{ fontSize: '24px', marginBottom: '16px' }}>👋</div>
+            <p style={{ fontSize: '12px' }}>
               Hi! I'm your AI coding assistant.
             </p>
-            <p className="text-xs mt-2">
+            <p style={{ fontSize: '11px', marginTop: '8px' }}>
               Ask me to help with code, debug issues, or explain concepts.
             </p>
           </div>
@@ -137,21 +165,32 @@ export default function AIAssistant({
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`flex ${
-              message.role === 'user' ? 'justify-end' : 'justify-start'
-            }`}
+            style={{
+              display: 'flex',
+              justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start'
+            }}
           >
             <div
-              className={`max-w-[280px] rounded-lg p-3 ${
-                message.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-100'
-              }`}
+              style={{
+                maxWidth: '280px',
+                borderRadius: '8px',
+                padding: '12px',
+                backgroundColor: message.role === 'user' ? '#1e40af' : '#2a2a2a',
+                color: '#ffffff'
+              }}
             >
-              <div className="text-sm whitespace-pre-wrap break-words">
+              <div style={{
+                fontSize: '12px',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}>
                 {message.content}
               </div>
-              <div className="text-xs opacity-50 mt-1">
+              <div style={{
+                fontSize: '10px',
+                opacity: 0.5,
+                marginTop: '4px'
+              }}>
                 {message.timestamp.toLocaleTimeString()}
               </div>
             </div>
@@ -159,18 +198,34 @@ export default function AIAssistant({
         ))}
 
         {loading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-700 rounded-lg p-3">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.1s' }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.2s' }}
-                ></div>
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{
+              backgroundColor: '#2a2a2a',
+              borderRadius: '8px',
+              padding: '12px'
+            }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  backgroundColor: '#888',
+                  borderRadius: '50%',
+                  animation: 'bounce 1s infinite'
+                }}></div>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  backgroundColor: '#888',
+                  borderRadius: '50%',
+                  animation: 'bounce 1s infinite 0.1s'
+                }}></div>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  backgroundColor: '#888',
+                  borderRadius: '50%',
+                  animation: 'bounce 1s infinite 0.2s'
+                }}></div>
               </div>
             </div>
           </div>
@@ -181,16 +236,41 @@ export default function AIAssistant({
 
       {/* Quick Actions */}
       {currentFile && messages.length === 0 && (
-        <div className="p-4 border-t border-gray-700">
-          <div className="text-xs text-gray-400 mb-2 uppercase font-semibold">
+        <div style={{
+          padding: '16px',
+          borderTop: '1px solid #333'
+        }}>
+          <div style={{
+            fontSize: '11px',
+            color: '#888',
+            marginBottom: '8px',
+            textTransform: 'uppercase',
+            fontWeight: '600'
+          }}>
             Quick Actions
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '8px'
+          }}>
             {quickActions.map((action) => (
               <button
                 key={action.label}
                 onClick={() => handleQuickAction(action.prompt)}
-                className="text-xs bg-gray-700 hover:bg-gray-600 rounded px-2 py-2 text-left transition-colors"
+                style={{
+                  fontSize: '11px',
+                  backgroundColor: '#0a0a0a',
+                  border: '1px solid #333',
+                  borderRadius: '6px',
+                  padding: '8px',
+                  textAlign: 'left',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2a2a2a'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a0a0a'}
               >
                 {action.label}
               </button>
@@ -200,27 +280,63 @@ export default function AIAssistant({
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-700">
-        <div className="flex space-x-2">
+      <div style={{
+        padding: '16px',
+        borderTop: '1px solid #333'
+      }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask me anything..."
-            className="flex-1 bg-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{
+              flex: 1,
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              padding: '10px 12px',
+              fontSize: '12px',
+              color: '#ffffff',
+              outline: 'none'
+            }}
             disabled={loading}
           />
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-sm font-medium transition-colors"
+            style={{
+              padding: '10px 16px',
+              backgroundColor: loading || !input.trim() ? '#0a0a0a' : '#1e40af',
+              border: loading || !input.trim() ? '1px solid #333' : '1px solid #2563eb',
+              borderRadius: '6px',
+              color: '#ffffff',
+              fontSize: '12px',
+              fontWeight: '500',
+              cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              if (!loading && input.trim()) {
+                e.currentTarget.style.backgroundColor = '#2563eb';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading && input.trim()) {
+                e.currentTarget.style.backgroundColor = '#1e40af';
+              }
+            }}
           >
             {loading ? '...' : 'Send'}
           </button>
         </div>
         {currentFile && (
-          <div className="text-xs text-gray-400 mt-2">
+          <div style={{
+            fontSize: '11px',
+            color: '#888',
+            marginTop: '8px'
+          }}>
             Context: {currentFile.path}
           </div>
         )}

@@ -390,6 +390,10 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
 
+    console.log('[INDEXING CRON DEBUG] Auth header:', authHeader);
+    console.log('[INDEXING CRON DEBUG] Expected:', expectedAuth);
+    console.log('[INDEXING CRON DEBUG] Match:', authHeader === expectedAuth);
+
     if (authHeader !== expectedAuth) {
       console.error('[INDEXING CRON] Unauthorized request');
       return NextResponse.json({

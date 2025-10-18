@@ -3,10 +3,11 @@
  * Provides REAL web search capabilities using multiple providers
  *
  * Supported Providers:
- * - Tavily API (Recommended for AI agents - optimized for research)
- * - Bing Search API (Microsoft Azure)
- * - Google Custom Search API
- * - Fallback to basic web scraping (limited)
+ * - Zapier Pro (Recommended if you have Zapier Pro - uses existing subscription)
+ * - Google Custom Search API (FREE 3000 searches/month)
+ * - Bing Search API (FREE 1000 searches/month)
+ * - Tavily API ($50/mo - NOT recommended for 2-user systems)
+ * - Fallback (returns setup instructions)
  */
 
 export interface SearchResult {
@@ -36,20 +37,25 @@ export interface SearchOptions {
 }
 
 class WebSearchService {
-  private provider: 'tavily' | 'bing' | 'google' | 'fallback';
+  private provider: 'zapier' | 'google' | 'bing' | 'tavily' | 'fallback';
   private apiKey: string | null = null;
+  private zapierWebhookUrl: string | null = null;
 
   constructor() {
-    // Determine which search provider is configured
-    if (process.env.TAVILY_API_KEY) {
-      this.provider = 'tavily';
-      this.apiKey = process.env.TAVILY_API_KEY;
-    } else if (process.env.BING_SEARCH_API_KEY) {
-      this.provider = 'bing';
-      this.apiKey = process.env.BING_SEARCH_API_KEY;
+    // Determine which search provider is configured (priority order: cheapest first)
+    if (process.env.ZAPIER_SEARCH_WEBHOOK_URL) {
+      this.provider = 'zapier';
+      this.zapierWebhookUrl = process.env.ZAPIER_SEARCH_WEBHOOK_URL;
     } else if (process.env.GOOGLE_CUSTOM_SEARCH_API_KEY) {
       this.provider = 'google';
       this.apiKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY;
+    } else if (process.env.BING_SEARCH_API_KEY) {
+      this.provider = 'bing';
+      this.apiKey = process.env.BING_SEARCH_API_KEY;
+    } else if (process.env.TAVILY_API_KEY) {
+      this.provider = 'tavily';
+      this.apiKey = process.env.TAVILY_API_KEY;
+      console.warn('[WebSearch] Using Tavily ($50/mo). Consider switching to FREE Google or Zapier search.');
     } else {
       this.provider = 'fallback';
       console.warn('[WebSearch] No search API configured. Using fallback mode (limited functionality).');
@@ -68,14 +74,17 @@ class WebSearchService {
       let results: SearchResult[] = [];
 
       switch (this.provider) {
-        case 'tavily':
-          results = await this.searchWithTavily(query, options);
+        case 'zapier':
+          results = await this.searchWithZapier(query, options);
+          break;
+        case 'google':
+          results = await this.searchWithGoogle(query, options);
           break;
         case 'bing':
           results = await this.searchWithBing(query, options);
           break;
-        case 'google':
-          results = await this.searchWithGoogle(query, options);
+        case 'tavily':
+          results = await this.searchWithTavily(query, options);
           break;
         case 'fallback':
           results = await this.searchWithFallback(query, options);
@@ -107,8 +116,62 @@ class WebSearchService {
   }
 
   /**
-   * Search with Tavily (RECOMMENDED)
-   * Tavily is optimized for AI research agents
+   * Search with Zapier Pro (BEST if you have Zapier Pro)
+   * Uses your existing Zapier Pro subscription - no additional cost
+   */
+  private async searchWithZapier(query: string, options: SearchOptions): Promise<SearchResult[]> {
+    if (!this.zapierWebhookUrl) {
+      throw new Error('Zapier webhook URL not configured');
+    }
+
+    const response = await fetch(this.zapierWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query,
+        maxResults: options.maxResults || 10
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Zapier webhook error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Zapier returns results in various formats depending on search action used
+    // Handle common formats
+    if (Array.isArray(data)) {
+      return data.map((result: any) => ({
+        title: result.title || result.name || 'Untitled',
+        url: result.url || result.link || '',
+        snippet: result.snippet || result.description || '',
+        content: result.content,
+        publishedDate: result.publishedDate || result.date
+      }));
+    }
+
+    // If Zapier returns single object with results array
+    if (data.results && Array.isArray(data.results)) {
+      return data.results.map((result: any) => ({
+        title: result.title || result.name || 'Untitled',
+        url: result.url || result.link || '',
+        snippet: result.snippet || result.description || '',
+        content: result.content,
+        publishedDate: result.publishedDate || result.date
+      }));
+    }
+
+    // Fallback: return empty results
+    console.warn('[WebSearch] Zapier returned unexpected format:', data);
+    return [];
+  }
+
+  /**
+   * Search with Tavily ($50/mo - NOT RECOMMENDED for 2-user systems)
+   * Consider using FREE alternatives: Google Custom Search or Zapier
    */
   private async searchWithTavily(query: string, options: SearchOptions): Promise<SearchResult[]> {
     if (!this.apiKey) {
@@ -219,19 +282,26 @@ class WebSearchService {
 
   /**
    * Fallback search (no API required, but limited)
-   * Uses DuckDuckGo HTML scraping or returns instructive message
+   * Returns setup instructions for FREE search options
    */
   private async searchWithFallback(query: string, options: SearchOptions): Promise<SearchResult[]> {
     // Return a helpful message instead of fake results
     return [{
-      title: 'Configure a Search API',
-      url: 'https://docs.kimbleai.com/search-setup',
-      snippet: `To enable real web search, configure one of these APIs in your .env.local file:
+      title: 'Configure a FREE Search API',
+      url: 'file://SETUP-GOOGLE-SEARCH.md',
+      snippet: `To enable real web search, add ONE of these FREE options to .env.local:
 
-1. TAVILY_API_KEY (Recommended for AI research)
-2. BING_SEARCH_API_KEY (Microsoft Azure)
-3. GOOGLE_CUSTOM_SEARCH_API_KEY + GOOGLE_CUSTOM_SEARCH_ENGINE_ID
+OPTION 1 (EASIEST): Use Zapier Pro (you already have this!)
+  ZAPIER_SEARCH_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/YOUR_HOOK_ID
 
+OPTION 2: Google Custom Search (3000 FREE searches/month)
+  GOOGLE_CUSTOM_SEARCH_API_KEY=your-key
+  GOOGLE_CUSTOM_SEARCH_ENGINE_ID=your-engine-id
+
+OPTION 3: Bing Search (1000 FREE searches/month)
+  BING_SEARCH_API_KEY=your-key
+
+See SETUP-GOOGLE-SEARCH.md for detailed instructions.
 Current search query: "${query}"`,
       score: 0
     }];

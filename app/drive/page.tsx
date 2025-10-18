@@ -24,6 +24,20 @@ interface AgentTask {
   completedAt?: string;
 }
 
+interface EditProposal {
+  id: string;
+  fileId: string;
+  fileName: string;
+  editType: string;
+  reason: string;
+  confidence: number;
+  status: string;
+  originalContent?: string;
+  newContent?: string;
+  contentDiff?: string;
+  createdAt: string;
+}
+
 export default function DriveIntelligencePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -35,6 +49,8 @@ export default function DriveIntelligencePage() {
   ]);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [pendingEdits, setPendingEdits] = useState<EditProposal[]>([]);
+  const [selectedProposal, setSelectedProposal] = useState<EditProposal | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -44,6 +60,7 @@ export default function DriveIntelligencePage() {
 
     if (status === 'authenticated') {
       loadDriveFiles(currentFolder);
+      loadPendingEdits();
     }
   }, [status, currentFolder, router]);
 
@@ -60,6 +77,91 @@ export default function DriveIntelligencePage() {
       console.error('Error loading Drive files:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingEdits = async () => {
+    try {
+      const response = await fetch('/api/google/drive/edit-approval?action=list&status=pending');
+      const data = await response.json();
+
+      if (data.success && data.proposals) {
+        setPendingEdits(data.proposals);
+      }
+    } catch (error) {
+      console.error('Error loading pending edits:', error);
+    }
+  };
+
+  const approveEdit = async (proposalId: string) => {
+    try {
+      const response = await fetch('/api/google/drive/edit-approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve', proposalId })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Apply the edit
+        const applyResponse = await fetch('/api/google/drive/edit-approval', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'apply', proposalId })
+        });
+
+        const applyData = await applyResponse.json();
+
+        if (applyData.success) {
+          alert('Edit approved and applied successfully!');
+          loadPendingEdits();
+          setSelectedProposal(null);
+        } else {
+          alert(`Failed to apply edit: ${applyData.error}`);
+        }
+      } else {
+        alert(`Failed to approve edit: ${data.error}`);
+      }
+    } catch (error: any) {
+      console.error('Error approving edit:', error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+  const rejectEdit = async (proposalId: string, reason?: string) => {
+    try {
+      const response = await fetch('/api/google/drive/edit-approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', proposalId, reason })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('Edit rejected');
+        loadPendingEdits();
+        setSelectedProposal(null);
+      } else {
+        alert(`Failed to reject edit: ${data.error}`);
+      }
+    } catch (error: any) {
+      console.error('Error rejecting edit:', error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+  const viewProposalDetails = async (proposalId: string) => {
+    try {
+      const response = await fetch(`/api/google/drive/edit-approval?action=get&proposalId=${proposalId}`);
+      const data = await response.json();
+
+      if (data.success && data.proposal) {
+        setSelectedProposal(data.proposal);
+      }
+    } catch (error) {
+      console.error('Error loading proposal details:', error);
     }
   };
 
@@ -282,6 +384,304 @@ export default function DriveIntelligencePage() {
             AI-powered file organization, cleanup, and analysis for Google Drive
           </p>
         </div>
+
+        {/* Edit Approval Panel */}
+        {pendingEdits.length > 0 && (
+          <div style={{
+            backgroundColor: '#1a2a1a',
+            border: '2px solid #10a37f',
+            borderRadius: '12px',
+            padding: '20px',
+            marginBottom: '24px'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px'
+            }}>
+              <h2 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                margin: 0,
+                color: '#10a37f'
+              }}>
+                ✋ Pending Edit Approvals ({pendingEdits.length})
+              </h2>
+              <span style={{ fontSize: '12px', color: '#888' }}>
+                These edits require your approval
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {pendingEdits.map((proposal) => (
+                <div
+                  key={proposal.id}
+                  style={{
+                    backgroundColor: '#0f0f0f',
+                    border: '1px solid #333',
+                    borderRadius: '8px',
+                    padding: '16px'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'start',
+                    gap: '16px'
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#fff',
+                        marginBottom: '8px'
+                      }}>
+                        {proposal.fileName}
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#888',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{
+                          padding: '2px 8px',
+                          backgroundColor: '#4a9eff22',
+                          color: '#4a9eff',
+                          borderRadius: '4px',
+                          marginRight: '8px'
+                        }}>
+                          {proposal.editType.replace('_', ' ')}
+                        </span>
+                        Confidence: {(proposal.confidence * 100).toFixed(0)}%
+                      </div>
+                      <div style={{
+                        fontSize: '13px',
+                        color: '#ccc',
+                        marginBottom: '12px'
+                      }}>
+                        <strong>Reason:</strong> {proposal.reason}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      <button
+                        onClick={() => viewProposalDetails(proposal.id)}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#4a9eff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        👁️ Review
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to approve this edit to "${proposal.fileName}"?`)) {
+                            approveEdit(proposal.id);
+                          }
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#10a37f',
+                          border: 'none',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        ✓ Approve
+                      </button>
+                      <button
+                        onClick={() => {
+                          const reason = prompt('Reason for rejection (optional):');
+                          rejectEdit(proposal.id, reason || undefined);
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#ef4444',
+                          border: 'none',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        ✗ Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Proposal Detail Modal */}
+        {selectedProposal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: '#171717',
+              border: '1px solid #333',
+              borderRadius: '12px',
+              maxWidth: '800px',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              padding: '32px'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'start',
+                marginBottom: '24px'
+              }}>
+                <h2 style={{
+                  fontSize: '20px',
+                  fontWeight: '600',
+                  margin: 0,
+                  color: '#fff'
+                }}>
+                  Edit Proposal Details
+                </h2>
+                <button
+                  onClick={() => setSelectedProposal(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#888',
+                    fontSize: '20px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>File Name</div>
+                  <div style={{ fontSize: '16px', color: '#fff', fontWeight: '600' }}>
+                    {selectedProposal.fileName}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>Edit Type</div>
+                  <div style={{ fontSize: '14px', color: '#4a9eff' }}>
+                    {selectedProposal.editType.replace('_', ' ').toUpperCase()}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>Reason</div>
+                  <div style={{ fontSize: '14px', color: '#ccc' }}>
+                    {selectedProposal.reason}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>AI Confidence</div>
+                  <div style={{ fontSize: '14px', color: '#10a37f' }}>
+                    {(selectedProposal.confidence * 100).toFixed(0)}%
+                  </div>
+                </div>
+
+                {selectedProposal.contentDiff && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>Changes Preview</div>
+                    <pre style={{
+                      fontSize: '12px',
+                      color: '#ccc',
+                      backgroundColor: '#0a0a0a',
+                      padding: '16px',
+                      borderRadius: '6px',
+                      border: '1px solid #333',
+                      overflow: 'auto',
+                      maxHeight: '300px',
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {selectedProposal.contentDiff}
+                    </pre>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    if (confirm(`Approve edit to "${selectedProposal.fileName}"?`)) {
+                      approveEdit(selectedProposal.id);
+                    }
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: '#10a37f',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  ✓ Approve & Apply
+                </button>
+                <button
+                  onClick={() => {
+                    const reason = prompt('Reason for rejection (optional):');
+                    rejectEdit(selectedProposal.id, reason || undefined);
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: '#ef4444',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  ✗ Reject
+                </button>
+                <button
+                  onClick={() => setSelectedProposal(null)}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: 'transparent',
+                    border: '1px solid #333',
+                    borderRadius: '8px',
+                    color: '#888',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Breadcrumbs */}
         <div style={{
