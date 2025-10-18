@@ -79,6 +79,7 @@ export default function Home() {
   const [costStats, setCostStats] = useState<{
     daily: { used: number; limit: number; percentage: number };
   } | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Get welcome message based on time of day and user
   const welcomeMessage = React.useMemo(() => {
@@ -1638,7 +1639,7 @@ export default function Home() {
       <style jsx global>{`
         /* Mobile Responsive Optimizations */
         @media (max-width: 768px) {
-          /* Hide sidebar on mobile, make it a modal/drawer if needed */
+          /* Hide sidebar on mobile, make it a modal/drawer */
           .sidebar {
             width: 100% !important;
             max-width: 280px !important;
@@ -1646,9 +1647,38 @@ export default function Home() {
             left: -100% !important;
             z-index: 1000 !important;
             transition: left 0.3s ease !important;
+            height: 100vh !important;
+            top: 0 !important;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.3);
           }
           .sidebar.open {
             left: 0 !important;
+          }
+          /* Mobile hamburger button */
+          .mobile-menu-btn {
+            display: flex !important;
+            position: fixed !important;
+            top: 16px !important;
+            left: 16px !important;
+            z-index: 999 !important;
+            background-color: #2a2a2a !important;
+            border: 1px solid #444 !important;
+            border-radius: 6px !important;
+            padding: 8px 12px !important;
+            cursor: pointer !important;
+            color: #fff !important;
+          }
+          /* Overlay when sidebar is open */
+          .sidebar-overlay {
+            display: block !important;
+          }
+          /* Mobile close button in sidebar */
+          .mobile-close-btn {
+            display: block !important;
+          }
+          /* Adjust header for mobile */
+          .main-header {
+            padding-left: 60px !important;
           }
           /* Adjust cost display for mobile */
           .cost-display {
@@ -1661,8 +1691,18 @@ export default function Home() {
           /* Stack elements vertically on small screens */
           .top-bar {
             flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
+            align-items: flex-end !important;
+            gap: 6px !important;
+          }
+        }
+
+        @media (min-width: 769px) {
+          /* Hide mobile controls on desktop */
+          .mobile-menu-btn {
+            display: none !important;
+          }
+          .sidebar-overlay {
+            display: none !important;
           }
         }
 
@@ -1673,6 +1713,9 @@ export default function Home() {
             padding: 2px 4px !important;
             gap: 3px !important;
           }
+          .main-header h1 {
+            font-size: 18px !important;
+          }
         }
       `}</style>
       <div style={{
@@ -1682,8 +1725,40 @@ export default function Home() {
         backgroundColor: '#0f0f0f',
         color: '#ffffff'
       }}>
+        {/* Mobile Menu Button */}
+        <button
+          className="mobile-menu-btn"
+          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>☰</span>
+          <span style={{ fontSize: '12px', fontWeight: '500' }}>Menu</span>
+        </button>
+
+        {/* Sidebar Overlay (mobile only) */}
+        {isMobileSidebarOpen && (
+          <div
+            className="sidebar-overlay"
+            onClick={() => setIsMobileSidebarOpen(false)}
+            style={{
+              display: 'none',
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 999
+            }}
+          />
+        )}
+
         {/* Sidebar */}
-        <div className="sidebar" style={{
+        <div className={`sidebar ${isMobileSidebarOpen ? 'open' : ''}`} style={{
           width: '260px',
           backgroundColor: '#171717',
           borderRight: '1px solid #333',
@@ -1691,6 +1766,29 @@ export default function Home() {
           flexDirection: 'column',
           padding: '16px'
         }}>
+        {/* Mobile Close Button */}
+        {isMobileSidebarOpen && (
+          <button
+            onClick={() => setIsMobileSidebarOpen(false)}
+            style={{
+              display: 'none',
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              background: 'none',
+              border: 'none',
+              color: '#888',
+              fontSize: '24px',
+              cursor: 'pointer',
+              padding: '4px',
+              lineHeight: '1'
+            }}
+            className="mobile-close-btn"
+          >
+            ✕
+          </button>
+        )}
+
         {/* User Selector */}
         <div style={{ marginBottom: '16px' }}>
           <select
@@ -1804,6 +1902,7 @@ export default function Home() {
             setConversationTitle('');
             setSuggestedTags([]);
             setShowTags(false);
+            setIsMobileSidebarOpen(false);
           }}
           style={{
             width: '100%',
@@ -2345,7 +2444,10 @@ export default function Home() {
               {session ? '✓ Connected' : '○ Not Connected'}
             </div>
             <button
-              onClick={() => setShowGoogleServices(!showGoogleServices)}
+              onClick={() => {
+                setShowGoogleServices(!showGoogleServices);
+                setIsMobileSidebarOpen(false);
+              }}
               style={{
                 background: 'none',
                 border: 'none',
@@ -2493,7 +2595,7 @@ export default function Home() {
           backgroundColor: '#0f0f0f'
         }}>
         {/* Header */}
-        <div style={{
+        <div className="main-header" style={{
           padding: '16px 24px',
           borderBottom: '1px solid #333',
           backgroundColor: '#171717',
