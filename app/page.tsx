@@ -7,6 +7,7 @@ import FormattedMessage from '../components/FormattedMessage';
 import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
 import D20Dice from '../components/D20Dice';
+import UnifiedSearch from '../components/search/UnifiedSearch';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -80,6 +81,7 @@ export default function Home() {
     daily: { used: number; limit: number; percentage: number };
   } | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Get welcome message based on time of day and user
   const welcomeMessage = React.useMemo(() => {
@@ -1911,8 +1913,11 @@ export default function Home() {
         </div>
 
         {/* Unified Search Button */}
-        <a
-          href="/search"
+        <button
+          onClick={() => {
+            setIsSearchOpen(true);
+            setIsMobileSidebarOpen(false);
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -1925,9 +1930,9 @@ export default function Home() {
             fontSize: '13px',
             fontWeight: '600',
             cursor: 'pointer',
-            textDecoration: 'none',
             marginBottom: '12px',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            width: '100%'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#2563eb';
@@ -1950,7 +1955,7 @@ export default function Home() {
             <path d="m21 21-4.35-4.35"></path>
           </svg>
           <span>Search Everything</span>
-        </a>
+        </button>
 
         {/* New Chat Button */}
         <button
@@ -3520,6 +3525,12 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Unified Search Modal */}
+      <UnifiedSearch
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </div>
     </>
   );

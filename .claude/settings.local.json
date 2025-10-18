@@ -132,7 +132,9 @@
       "Bash(if exist nul rm nul)",
       "WebFetch(domain:kimbleai-v4-clean-9042hh1lk-kimblezcs-projects.vercel.app)",
       "WebFetch(domain:kimbleai-v4-clean-fwv4csn7i-kimblezcs-projects.vercel.app)",
-      "WebFetch(domain:kimbleai-v4-clean-my5e238cc-kimblezcs-projects.vercel.app)"
+      "WebFetch(domain:kimbleai-v4-clean-my5e238cc-kimblezcs-projects.vercel.app)",
+      "Bash(git reflog expire --expire=now --all)",
+      "Bash(git gc --prune=now --aggressive)"
     ],
     "deny": [],
     "ask": []
