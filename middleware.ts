@@ -21,6 +21,10 @@ const PUBLIC_PATHS = [
   '/api/health', // Health check endpoint (for monitoring)
   '/api/status', // Status endpoint (for monitoring)
   '/api/test-assemblyai', // TEMPORARY: AssemblyAI diagnostics
+  '/api/backup/cron', // Cron jobs (protected by CRON_SECRET in route)
+  '/api/index/cron', // Cron jobs (protected by CRON_SECRET in route)
+  '/api/cron', // Cron jobs (protected by CRON_SECRET in route)
+  '/api/storage', // Storage monitoring endpoints
   '/auth/signin',
   '/auth/error',
   '/auth/signout',
@@ -51,33 +55,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'UNKNOWN';
 
-  // Allow cron endpoints with valid CRON_SECRET
-  if (path.includes('/cron') && path.startsWith('/api/')) {
-    const authHeader = request.headers.get('authorization');
-    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
-
-    console.log(`[CRON DEBUG] Path: ${path}`);
-    console.log(`[CRON DEBUG] Auth Header: ${authHeader ? 'present' : 'missing'}`);
-    console.log(`[CRON DEBUG] Expected: ${expectedAuth}`);
-    console.log(`[CRON DEBUG] Match: ${authHeader === expectedAuth}`);
-
-    if (authHeader === expectedAuth) {
-      console.log(`✅ [CRON] Valid CRON_SECRET for ${path}`);
-      return NextResponse.next();
-    } else {
-      console.log(`🚫 [CRON] Invalid CRON_SECRET for ${path}`);
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          message: 'Invalid or missing CRON_SECRET',
-        },
-        { status: 401 }
-      );
-    }
-  }
-
-  // Skip authentication for public paths
+  // Skip authentication for public paths (including cron endpoints)
   const isPublicPath = PUBLIC_PATHS.some(publicPath =>
     path.startsWith(publicPath)
   );
