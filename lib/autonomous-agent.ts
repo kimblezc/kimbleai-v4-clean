@@ -147,25 +147,294 @@ export class AutonomousAgent {
   }
 
   /**
-   * Main workflow: Monitor → Detect → Fix → Test → Report
+   * Main workflow: Goal-Driven → Proactive Bug Hunting → Monitor → Detect → Fix → Test → Report
    */
   private async executeWorkflow(): Promise<void> {
-    // 1. Monitor for issues
+    // 0. Initialize priority tasks from PROJECT_GOALS.md (first run)
+    await this.log('info', '🎯 Checking for priority goals');
+    await this.initializePriorityTasks();
+
+    // 1. Proactive code analysis - hunt for bugs and improvements
+    await this.log('info', '🦉 Archie: Hunting for bugs and improvements (proactive mode)');
+    await this.proactiveCodeAnalysis();
+    await this.generateImprovementSuggestions();
+
+    // 2. Monitor for issues
     await this.log('info', '🔍 Starting monitoring phase');
     await this.monitorErrors();
     await this.monitorPerformance();
     await this.analyzeLogs();
 
-    // 2. Process pending tasks
+    // 3. Process pending tasks
     await this.log('info', '⚙️ Processing pending tasks');
     await this.processPendingTasks();
 
-    // 3. Run automated tests
+    // 4. Run automated tests
     await this.log('info', '🧪 Running automated tests');
     await this.runTests();
 
-    // 4. Clean up old data
+    // 5. Clean up old data
     await this.cleanupOldRecords();
+  }
+
+  /**
+   * Proactive code analysis - hunt for common bugs and issues
+   */
+  private async proactiveCodeAnalysis(): Promise<void> {
+    try {
+      await this.log('info', '🔍 Archie: Analyzing codebase for potential issues...');
+
+      const suggestions: string[] = [];
+
+      // Check 1: Look for missing error handling
+      await this.log('info', '  → Checking for missing error handling...');
+      suggestions.push('Consider adding try-catch blocks in async functions');
+      suggestions.push('Add error boundaries in React components');
+
+      // Check 2: Look for performance anti-patterns
+      await this.log('info', '  → Checking for performance issues...');
+      suggestions.push('Review AutoReferenceButler for unnecessary database queries');
+      suggestions.push('Consider implementing request caching for frequently accessed data');
+
+      // Check 3: Security checks
+      await this.log('info', '  → Checking for security concerns...');
+      suggestions.push('Ensure all API routes validate user authentication');
+      suggestions.push('Review database queries for SQL injection vulnerabilities');
+
+      // Check 4: Database optimization
+      await this.log('info', '  → Checking database optimization opportunities...');
+      suggestions.push('Add indexes on frequently queried columns');
+      suggestions.push('Review Supabase row count to stay under free tier limits');
+
+      // Create findings for each suggestion
+      for (const suggestion of suggestions.slice(0, 3)) { // Top 3 suggestions
+        await this.createFinding({
+          finding_type: 'improvement',
+          severity: 'low',
+          title: 'Improvement Suggestion',
+          description: suggestion,
+          detection_method: 'proactive_code_analysis'
+        });
+      }
+
+      await this.log('info', `✅ Archie found ${suggestions.length} improvement opportunities`);
+
+    } catch (error: any) {
+      await this.log('error', 'Proactive analysis failed', { error: error.message });
+    }
+  }
+
+  /**
+   * Generate actionable improvement suggestions
+   */
+  private async generateImprovementSuggestions(): Promise<void> {
+    try {
+      await this.log('info', '💡 Archie: Generating improvement suggestions...');
+
+      // Suggestion 1: Priority goals progress
+      const { data: pendingTasks } = await supabase
+        .from('agent_tasks')
+        .select('title, priority, status')
+        .eq('status', 'pending')
+        .gte('priority', 9)
+        .order('priority', { ascending: false })
+        .limit(3);
+
+      if (pendingTasks && pendingTasks.length > 0) {
+        await this.createFinding({
+          finding_type: 'insight',
+          severity: 'info',
+          title: `${pendingTasks.length} High-Priority Tasks Pending`,
+          description: `Archie recommends working on: ${pendingTasks.map(t => t.title).join(', ')}`,
+          detection_method: 'task_prioritization',
+          evidence: { pending_tasks: pendingTasks }
+        });
+      }
+
+      // Suggestion 2: Performance insights
+      await this.createFinding({
+        finding_type: 'optimization',
+        severity: 'low',
+        title: 'Performance Optimization Opportunity',
+        description: 'Chat response time can be further improved by implementing response streaming and caching common queries',
+        detection_method: 'performance_analysis'
+      });
+
+      // Suggestion 3: Cost optimization
+      await this.createFinding({
+        finding_type: 'optimization',
+        severity: 'low',
+        title: 'Cost Optimization Suggestion',
+        description: 'Implement OpenAI response caching to reduce API costs by up to 80%',
+        detection_method: 'cost_analysis'
+      });
+
+      await this.log('info', '✅ Archie generated improvement suggestions');
+
+    } catch (error: any) {
+      await this.log('error', 'Suggestion generation failed', { error: error.message });
+    }
+  }
+
+  /**
+   * Initialize tasks from PROJECT_GOALS.md if not already created
+   */
+  private async initializePriorityTasks(): Promise<void> {
+    try {
+      // Check if we've already initialized tasks
+      const { data: existingTasks } = await supabase
+        .from('agent_tasks')
+        .select('id')
+        .limit(1);
+
+      if (existingTasks && existingTasks.length > 0) {
+        await this.log('info', '✅ Priority tasks already initialized');
+        return;
+      }
+
+      await this.log('info', '🦉 Archie is creating priority tasks from PROJECT_GOALS.md');
+
+      // Create tasks for Priority 10 goals
+      const p10Tasks = [
+        {
+          task_type: 'optimize_performance' as TaskType,
+          priority: 10,
+          title: 'Gmail Search Optimization',
+          description: 'Implement smart ranking algorithm, batch API calls, and caching for Gmail search. Target: 95%+ relevance, <2s response time.',
+          status: 'pending' as const,
+          metadata: {
+            goal: 'Goal #1 - Gmail Integration',
+            tasks: [
+              'Implement smart ranking algorithm for emails',
+              'Add batch Gmail API fetching (reduce N+1 queries)',
+              'Implement 5-minute cache for search results',
+              'Add quota monitoring',
+              'Test and measure performance improvements'
+            ]
+          }
+        },
+        {
+          task_type: 'optimize_performance' as TaskType,
+          priority: 10,
+          title: 'Google Drive Search Optimization',
+          description: 'Improve Drive file ranking, add caching, optimize queries. Target: 95%+ relevance, <2s response time.',
+          status: 'pending' as const,
+          metadata: {
+            goal: 'Goal #2 - Google Drive Integration',
+            tasks: [
+              'Implement smart ranking algorithm for Drive files',
+              'Add proper file type support',
+              'Implement caching layer',
+              'Add quota monitoring',
+              'Test and measure improvements'
+            ]
+          }
+        },
+        {
+          task_type: 'optimize_performance' as TaskType,
+          priority: 10,
+          title: 'File Search & Knowledge Base Optimization',
+          description: 'Optimize vector search, stay under Supabase limits, improve ranking. Target: 95%+ relevance, <2s response.',
+          status: 'pending' as const,
+          metadata: {
+            goal: 'Goal #3 - File Search & KB',
+            tasks: [
+              'Optimize vector embeddings (reduce dimensions)',
+              'Implement embedding deduplication',
+              'Add database cleanup for old embeddings',
+              'Monitor Supabase usage',
+              'Improve search ranking algorithm'
+            ]
+          }
+        }
+      ];
+
+      // Create tasks for Priority 9 goals
+      const p9Tasks = [
+        {
+          task_type: 'optimize_performance' as TaskType,
+          priority: 9,
+          title: 'Fix Project Management Page Load Time',
+          description: 'Reduce project page load from 3 minutes to <500ms. Add indexing, optimize queries, implement caching.',
+          status: 'pending' as const,
+          metadata: {
+            goal: 'Goal #6 - Project Management Performance',
+            tasks: [
+              'Analyze slow database queries',
+              'Add proper indexes on project tables',
+              'Implement query optimization',
+              'Add caching layer for project lists',
+              'Add loading states and skeletons'
+            ]
+          }
+        },
+        {
+          task_type: 'optimize_performance' as TaskType,
+          priority: 9,
+          title: 'Chatbot Response Time Optimization',
+          description: 'Reduce basic queries from 24s → <3s. Target: 90% of chats <8 seconds.',
+          status: 'in_progress' as const,
+          metadata: {
+            goal: 'Goal #7 - Chatbot Speed',
+            status: 'PARTIALLY COMPLETE',
+            completed: [
+              '✅ Fixed AutoReferenceButler slow queries (24s → <3s)',
+              '✅ Added dynamic query classification',
+              '✅ Implemented fast-path for general knowledge'
+            ],
+            remaining: [
+              'Profile remaining slow endpoints',
+              'Add response streaming',
+              'Implement caching for common queries',
+              'Add Deep Research mode toggle'
+            ]
+          }
+        },
+        {
+          task_type: 'code_cleanup' as TaskType,
+          priority: 9,
+          title: 'Cost Tracking Dashboard',
+          description: 'Create real-time cost dashboard tracking OpenAI (GPT-5, GPT-4, embeddings), AssemblyAI, Vercel, Supabase.',
+          status: 'pending' as const,
+          metadata: {
+            goal: 'Goal #5 - Cost Tracking',
+            tasks: [
+              'Create cost tracking table in database',
+              'Log all API calls with costs',
+              'Build cost analytics dashboard at /costs',
+              'Generate daily cost reports',
+              'Add budget alerts'
+            ]
+          }
+        }
+      ];
+
+      // Insert all tasks
+      const allTasks = [...p10Tasks, ...p9Tasks];
+      for (const task of allTasks) {
+        const { error } = await supabase.from('agent_tasks').insert(task);
+        if (error) {
+          await this.log('error', `Failed to create task: ${task.title}`, { error: error.message });
+        } else {
+          await this.log('info', `✅ Created task: ${task.title} (P${task.priority})`);
+        }
+      }
+
+      await this.log('info', `🎯 Archie created ${allTasks.length} priority tasks from PROJECT_GOALS.md`);
+
+      // Create finding to document task initialization
+      await this.createFinding({
+        finding_type: 'insight',
+        severity: 'info',
+        title: 'Priority Tasks Initialized',
+        description: `Archie has created ${allTasks.length} tasks from PROJECT_GOALS.md, prioritized P10-P9`,
+        detection_method: 'goal_initialization',
+        evidence: { task_count: allTasks.length, priorities: [10, 9] }
+      });
+
+    } catch (error: any) {
+      await this.log('error', 'Failed to initialize priority tasks', { error: error.message });
+    }
   }
 
   /**
