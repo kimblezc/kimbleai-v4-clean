@@ -1034,14 +1034,16 @@ Be specific about file paths and code changes.`;
   }
 
   /**
-   * Apply code changes to files - AUTONOMOUS FILE MODIFICATION WITH SAFETY
+   * Apply code changes to files - FULL AUTONOMOUS FILE MODIFICATION ENABLED
    */
   private async applyCodeChanges(plan: string, task: any): Promise<{ filesModified: string[] }> {
     await this.log('info', '📝 Analyzing code changes to apply...');
 
-    // Parse the plan to extract file modifications
-    // For safety, we'll use GPT to generate specific code edits
+    const backupDir = path.join(process.cwd(), '.archie-backups', Date.now().toString());
+    const filesModified: string[] = [];
+
     try {
+      // Step 1: Generate detailed code changes using GPT-4
       const codeGenPrompt = `Based on this implementation plan, generate SPECIFIC code changes.
 
 Plan:
@@ -1052,70 +1054,182 @@ Subtasks: ${(task.metadata?.tasks || []).slice(0, 3).join(', ')}
 
 For each file that needs to be modified, provide:
 1. Exact file path (relative to project root)
-2. What to change (be specific - line numbers if possible)
-3. The actual code to add/modify
+2. Specific changes to make
+3. Reasoning for the change
+
+IMPORTANT CONSTRAINTS:
+- Only suggest changes you are 100% confident will work
+- Use well-tested patterns (no experimental code)
+- Be conservative (small, incremental changes)
+- Prioritize fixes that directly address the task
+- Avoid changes that could break existing functionality
 
 Format as JSON:
 {
   "files": [
     {
       "path": "path/to/file.ts",
-      "changes": "Specific code changes to make",
-      "reasoning": "Why this change helps"
+      "action": "create|modify|delete",
+      "changes": "Detailed description of changes",
+      "newContent": "Complete new file content (for create) or null",
+      "reasoning": "Why this change helps",
+      "riskLevel": "low|medium|high"
     }
-  ]
+  ],
+  "testingNotes": "What to verify after changes"
 }
 
-Only include changes that are safe, well-tested patterns, and directly address the task.`;
+Only include changes with low risk that you are confident will improve the codebase.`;
 
       const codeGenResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: 'You are a senior software engineer. Generate safe, specific code changes. Be conservative - only suggest changes you are confident will work.'
+            content: 'You are Archie, an autonomous senior software engineer. Generate safe, conservative code changes. Only suggest changes you are 100% confident will work. Prefer small, incremental improvements over large refactors.'
           },
           {
             role: 'user',
             content: codeGenPrompt
           }
         ],
-        max_completion_tokens: 2000,
+        max_completion_tokens: 3000,
         response_format: { type: 'json_object' }
       });
 
       const codeChanges = JSON.parse(codeGenResponse.choices[0].message.content || '{"files":[]}');
 
-      await this.log('info', '📋 Code changes analyzed', {
+      await this.log('info', '📋 Code changes generated', {
         fileCount: codeChanges.files?.length || 0,
-        changes: codeChanges
+        testingNotes: codeChanges.testingNotes
       });
 
-      // For maximum safety: LOG the changes but don't apply them yet
-      // This creates a "review mode" where you can see what Archie wants to do
-      if (codeChanges.files && codeChanges.files.length > 0) {
-        await this.createFinding({
-          finding_type: 'insight',
-          severity: 'info',
-          title: `Archie Generated Code Changes for: ${task.title}`,
-          description: `Archie analyzed the task and generated code changes. Review the changes in the logs before enabling auto-deployment.`,
-          detection_method: 'autonomous_code_generation',
-          evidence: codeChanges
-        });
-
-        await this.log('info', '⚠️ Code changes generated but not applied', {
-          reason: 'Safety mode enabled - review changes before auto-applying',
-          filesAffected: codeChanges.files.map((f: any) => f.path)
-        });
-
-        // Return empty array for now - this prevents actual file modification
-        // TODO: Enable file modification after user reviews a few successful generations
+      if (!codeChanges.files || codeChanges.files.length === 0) {
+        await this.log('info', 'No file changes needed for this task');
         return { filesModified: [] };
       }
 
-      return { filesModified: [] };
+      // Step 2: Create backups before modifying anything
+      await this.log('info', '💾 Creating backups before modifications...');
+      await fs.mkdir(backupDir, { recursive: true });
+
+      for (const fileChange of codeChanges.files) {
+        // Skip high-risk changes
+        if (fileChange.riskLevel === 'high') {
+          await this.log('warn', `⚠️ Skipping high-risk change: ${fileChange.path}`);
+          continue;
+        }
+
+        const filePath = path.join(process.cwd(), fileChange.path);
+
+        try {
+          // Backup existing file if it exists
+          if (fileChange.action !== 'create') {
+            const fileContent = await fs.readFile(filePath, 'utf-8');
+            const backupPath = path.join(backupDir, fileChange.path);
+            await fs.mkdir(path.dirname(backupPath), { recursive: true });
+            await fs.writeFile(backupPath, fileContent, 'utf-8');
+            await this.log('info', `✅ Backed up: ${fileChange.path}`);
+          }
+
+          // Step 3: Apply the change
+          if (fileChange.action === 'create' && fileChange.newContent) {
+            // Create new file
+            await fs.mkdir(path.dirname(filePath), { recursive: true });
+            await fs.writeFile(filePath, fileChange.newContent, 'utf-8');
+            filesModified.push(fileChange.path);
+            await this.log('info', `✅ Created: ${fileChange.path}`);
+
+          } else if (fileChange.action === 'modify') {
+            // For modifications, we'll use GPT to generate the exact new content
+            const currentContent = await fs.readFile(filePath, 'utf-8');
+
+            const modifyPrompt = `Current file content:
+\`\`\`
+${currentContent.slice(0, 5000)}
+\`\`\`
+
+Change to make: ${fileChange.changes}
+
+Generate the COMPLETE modified file content. Preserve all existing code and only make the specific changes described.`;
+
+            const modifyResponse = await openai.chat.completions.create({
+              model: 'gpt-4o',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a code editor. Generate the complete modified file content. Make only the requested changes and preserve everything else exactly as is.'
+                },
+                {
+                  role: 'user',
+                  content: modifyPrompt
+                }
+              ],
+              max_completion_tokens: 4000
+            });
+
+            const newContent = modifyResponse.choices[0].message.content || currentContent;
+            await fs.writeFile(filePath, newContent, 'utf-8');
+            filesModified.push(fileChange.path);
+            await this.log('info', `✅ Modified: ${fileChange.path}`, {
+              changes: fileChange.changes,
+              reasoning: fileChange.reasoning
+            });
+
+          } else if (fileChange.action === 'delete') {
+            await fs.unlink(filePath);
+            filesModified.push(fileChange.path);
+            await this.log('info', `✅ Deleted: ${fileChange.path}`);
+          }
+
+        } catch (error: any) {
+          await this.log('error', `Failed to modify ${fileChange.path}`, { error: error.message });
+          // Continue with other files
+        }
+      }
+
+      // Step 4: Log summary
+      await this.log('info', `📦 File modification complete`, {
+        filesModified: filesModified.length,
+        backupLocation: backupDir
+      });
+
+      // Create finding to document the changes
+      await this.createFinding({
+        finding_type: 'insight',
+        severity: 'info',
+        title: `Archie Applied Code Changes: ${task.title}`,
+        description: `Archie autonomously modified ${filesModified.length} file(s). Backups saved to ${backupDir}.`,
+        detection_method: 'autonomous_code_modification',
+        evidence: {
+          files: codeChanges.files,
+          filesModified,
+          backupLocation: backupDir,
+          testingNotes: codeChanges.testingNotes
+        }
+      });
+
+      return { filesModified };
+
     } catch (error: any) {
-      await this.log('error', 'Code change analysis failed', { error: error.message });
+      await this.log('error', 'Code modification failed', { error: error.message });
+
+      // Restore from backup if any files were modified
+      if (filesModified.length > 0) {
+        await this.log('warn', '⚠️ Restoring files from backup...');
+        try {
+          for (const file of filesModified) {
+            const backupPath = path.join(backupDir, file);
+            const filePath = path.join(process.cwd(), file);
+            const backupContent = await fs.readFile(backupPath, 'utf-8');
+            await fs.writeFile(filePath, backupContent, 'utf-8');
+          }
+          await this.log('info', '✅ Files restored from backup');
+        } catch (restoreError: any) {
+          await this.log('error', 'Backup restoration failed', { error: restoreError.message });
+        }
+      }
+
       return { filesModified: [] };
     }
   }
