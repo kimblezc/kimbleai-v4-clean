@@ -56,6 +56,11 @@ export async function middleware(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
 
+    console.log(`[CRON DEBUG] Path: ${path}`);
+    console.log(`[CRON DEBUG] Auth Header: ${authHeader ? 'present' : 'missing'}`);
+    console.log(`[CRON DEBUG] Expected: ${expectedAuth}`);
+    console.log(`[CRON DEBUG] Match: ${authHeader === expectedAuth}`);
+
     if (authHeader === expectedAuth) {
       console.log(`✅ [CRON] Valid CRON_SECRET for ${path}`);
       return NextResponse.next();
