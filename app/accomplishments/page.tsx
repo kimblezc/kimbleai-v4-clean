@@ -22,8 +22,8 @@ export default function AccomplishmentsPage() {
     // Completed - Phase 1
     {
       id: '1',
-      date: 'Oct 18, 2025',
-      time: '2:30 PM',
+      date: '18 10 2025',
+      time: '14:30',
       category: 'Infrastructure',
       title: 'Autonomous Agent System',
       description: 'Deployed complete self-healing agent with 5 database tables, 13 indexes, 3 triggers. Runs every 5 minutes.',
@@ -33,8 +33,8 @@ export default function AccomplishmentsPage() {
     },
     {
       id: '2',
-      date: 'Oct 18, 2025',
-      time: '1:45 PM',
+      date: '18 10 2025',
+      time: '13:45',
       category: 'Database',
       title: 'Agent Database Schema',
       description: 'Deployed 5 tables to Supabase: agent_tasks, agent_findings, agent_logs, agent_reports, agent_state',
@@ -44,8 +44,8 @@ export default function AccomplishmentsPage() {
     },
     {
       id: '3',
-      date: 'Oct 18, 2025',
-      time: '3:00 PM',
+      date: '18 10 2025',
+      time: '15:00',
       category: 'Performance',
       title: 'Agent Runs Every 5 Minutes',
       description: 'Upgraded from hourly to 5-minute execution. Agent now runs 288x per day instead of 24.',
@@ -55,8 +55,8 @@ export default function AccomplishmentsPage() {
     },
     {
       id: '4',
-      date: 'Oct 18, 2025',
-      time: '11:30 AM',
+      date: '18 10 2025',
+      time: '11:30',
       category: 'Features',
       title: 'Unified Search Modal',
       description: 'Dark-themed search modal for Gmail, Drive, Local files, and Knowledge Base. One-click access from sidebar.',
@@ -66,8 +66,8 @@ export default function AccomplishmentsPage() {
     },
     {
       id: '5',
-      date: 'Oct 18, 2025',
-      time: '10:15 AM',
+      date: '18 10 2025',
+      time: '10:15',
       category: 'Bug Fix',
       title: '504 Timeout Protection',
       description: 'Added timeout protection for complex queries. Butler timeout (15s) + dynamic OpenAI timeouts.',
@@ -77,8 +77,8 @@ export default function AccomplishmentsPage() {
     },
     {
       id: '6',
-      date: 'Oct 18, 2025',
-      time: '3:30 PM',
+      date: '18 10 2025',
+      time: '15:30',
       category: 'Planning',
       title: 'Project Goals Defined',
       description: '16 prioritized goals created: Gmail optimization (P10), Drive (P10), Search (P10), Cost tracking (P9), and more.',
@@ -88,14 +88,25 @@ export default function AccomplishmentsPage() {
     },
     {
       id: '7',
-      date: 'Oct 18, 2025',
-      time: '4:00 PM',
+      date: '18 10 2025',
+      time: '16:00',
       category: 'Automation',
       title: 'Auto-Deployment Workflow',
       description: '10-step workflow: detect → fix → test → deploy → verify → rollback if needed. Fully documented.',
       impact: 'Bugs fixed and deployed within 7-10 minutes automatically',
       status: 'completed',
       priority: 9
+    },
+    {
+      id: '8',
+      date: '18 10 2025',
+      time: '17:15',
+      category: 'Cleanup',
+      title: 'Removed Fake Agent System',
+      description: 'Deleted /agents/status page and fake agent infrastructure. These were architectural abstractions, not real autonomous agents.',
+      impact: 'Eliminated confusion, reduced database overhead, clearer system architecture',
+      status: 'completed',
+      priority: 8
     },
 
     // In Progress
