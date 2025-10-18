@@ -3,10 +3,18 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+// Lazy initialization to avoid build-time errors
+let supabase: ReturnType<typeof createClient> | null = null;
+
+function getSupabaseClient() {
+  if (!supabase && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+  }
+  return supabase;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,8 +36,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get Supabase client
+    const supabaseClient = getSupabaseClient();
+    if (!supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Database configuration error' },
+        { status: 500 }
+      );
+    }
+
     // Get GitHub access token from database
-    const { data: account, error: accountError } = await supabase
+    const { data: account, error: accountError } = await supabaseClient
       .from('accounts')
       .select('access_token')
       .eq('user_email', session.user.email)
