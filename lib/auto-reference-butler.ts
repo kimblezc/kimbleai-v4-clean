@@ -296,6 +296,8 @@ export class AutoReferenceButler {
 
       // Informational requests
       'tell me about', 'tell me more about',
+      'tell me what you know', 'what do you know about',
+      'what can you tell me', 'tell me everything about',
       'explain', 'explain to me',
       'describe', 'describe the',
       'define', 'definition of', 'meaning of',
@@ -319,8 +321,10 @@ export class AutoReferenceButler {
       return false;
     }
 
-    // Default to gathering context if uncertain
-    return true;
+    // PERFORMANCE: Default to FALSE (skip context) unless there's clear signal it's needed
+    // This is much faster and most queries don't need user-specific context
+    console.log('[AutoReferenceButler] No clear context signals detected, using fast-path');
+    return false;
   }
 
   private extractKeywords(message: string): string[] {
