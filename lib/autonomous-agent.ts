@@ -181,6 +181,12 @@ export class AutonomousAgent {
         .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString()) // Last hour
         .limit(20);
 
+      // If api_logs table doesn't exist, that's OK - log and continue
+      if (error && error.message?.includes('relation "api_logs" does not exist')) {
+        await this.log('info', 'ℹ️ api_logs table not found (this is OK for now)');
+        return;
+      }
+
       if (error) throw error;
 
       if (recentLogs && recentLogs.length > 0) {
@@ -231,6 +237,12 @@ export class AutonomousAgent {
         .gte('response_time_ms', 5000) // Slower than 5 seconds
         .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
         .limit(50);
+
+      // If api_logs table doesn't exist, that's OK - log and continue
+      if (error && error.message?.includes('relation "api_logs" does not exist')) {
+        await this.log('info', 'ℹ️ api_logs table not found (this is OK for now)');
+        return;
+      }
 
       if (error) throw error;
 
