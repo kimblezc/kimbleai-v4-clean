@@ -190,6 +190,25 @@ export default function AutonomousAgentDashboard() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4">📋 Executive Summary</h2>
 
+              {/* How to Read This Dashboard */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-bold text-blue-900 mb-2">📖 How to Read This Dashboard</h3>
+                <div className="space-y-2 text-xs text-blue-800">
+                  <p>
+                    <strong>Real Work:</strong> Tasks and findings created by Archie during his automated runs (every 5 minutes)
+                  </p>
+                  <p>
+                    <strong>Test Data:</strong> Marked with ⚠️ yellow badges - used to verify dashboard functionality
+                  </p>
+                  <p>
+                    <strong>Progress:</strong> Each task shows % complete based on subtasks finished and current phase
+                  </p>
+                  <p>
+                    <strong>Priority:</strong> P10 = Highest (Gmail, Drive, Files), P9 = High (Performance, Speed, Costs)
+                  </p>
+                </div>
+              </div>
+
               {status?.latest_report && (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                   <div className="flex items-start justify-between mb-4">
@@ -251,27 +270,92 @@ export default function AutonomousAgentDashboard() {
                 </div>
               )}
 
-              {/* Recent Activity */}
+              {/* What Archie is Doing Right Now */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">🕐 Recent Activity</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">🦉 What Archie is Doing</h3>
 
-                <div className="space-y-3">
-                  {status?.recent_activity?.tasks?.map((task, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <div className={`w-2 h-2 rounded-full ${
-                        task.status === 'completed' ? 'bg-green-500' :
-                        task.status === 'failed' ? 'bg-red-500' :
-                        task.status === 'in_progress' ? 'bg-blue-500' :
-                        'bg-gray-400'
-                      }`}></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">{task.title}</p>
-                        <p className="text-xs text-gray-500">{task.task_type}</p>
+                {status?.recent_activity?.tasks?.length > 0 ? (
+                  <div className="space-y-3">
+                    {status.recent_activity.tasks
+                      .filter(task => task.status === 'in_progress' || task.status === 'pending')
+                      .slice(0, 3)
+                      .map((task, idx) => {
+                        const subtasks = task.metadata?.tasks || [];
+                        const completedSubtasks = task.metadata?.completed_tasks || [];
+                        const progress = subtasks.length > 0
+                          ? Math.round((completedSubtasks.length / subtasks.length) * 100)
+                          : 0;
+
+                        return (
+                          <div key={idx} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                            <div className="flex items-start gap-3 mb-2">
+                              <div className={`w-3 h-3 mt-1 rounded-full ${
+                                task.status === 'in_progress' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'
+                              }`}></div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-sm font-semibold text-gray-900">{task.title}</p>
+                                  <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded">
+                                    P{task.priority}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600 mb-2">{task.metadata?.goal || task.task_type}</p>
+
+                                {/* Mini Progress Bar */}
+                                {subtasks.length > 0 && (
+                                  <div className="mb-1">
+                                    <div className="flex items-center justify-between text-xs mb-1">
+                                      <span className="text-gray-600">Progress</span>
+                                      <span className="font-bold text-blue-600">{progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="h-2 rounded-full bg-blue-500"
+                                        style={{ width: `${progress}%` }}
+                                      ></div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {completedSubtasks.length}/{subtasks.length} subtasks done
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Current Action */}
+                                <div className="text-xs text-blue-700 font-medium">
+                                  {task.status === 'in_progress' ? '🔄 Active' : '⏸️ Queued'}
+                                  {task.metadata?.current_phase && ` • ${task.metadata.current_phase}`}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                    {/* Completed Tasks Summary */}
+                    {status.recent_activity.tasks.filter(t => t.status === 'completed').length > 0 && (
+                      <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-sm text-green-800">
+                          ✅ <strong>{status.recent_activity.tasks.filter(t => t.status === 'completed').length}</strong> task(s) completed recently
+                        </p>
                       </div>
-                      <span className="text-xs text-gray-500">{new Date(task.created_at).toLocaleTimeString()}</span>
-                    </div>
-                  ))}
-                </div>
+                    )}
+
+                    {/* No Active Tasks */}
+                    {status.recent_activity.tasks.filter(t => t.status === 'in_progress' || t.status === 'pending').length === 0 && (
+                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                        <p className="text-sm text-gray-600">
+                          🦉 Archie is currently idle. Next run in ~5 minutes.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ <strong>No tasks yet.</strong> Archie will create priority tasks from PROJECT_GOALS.md on his next run.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -403,6 +487,246 @@ export default function AutonomousAgentDashboard() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {view === 'tasks' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">⚙️ Active Tasks</h2>
+              <p className="text-sm text-gray-600">Showing real-time task progress from Archie</p>
+            </div>
+
+            <div className="space-y-4">
+              {status?.recent_activity?.tasks && status.recent_activity.tasks.length > 0 ? (
+                status.recent_activity.tasks.map((task, idx) => {
+                  const subtasks = task.metadata?.tasks || [];
+                  const completedSubtasks = task.metadata?.completed_tasks || [];
+                  const progress = subtasks.length > 0
+                    ? Math.round((completedSubtasks.length / subtasks.length) * 100)
+                    : 0;
+
+                  const priorityColors = {
+                    10: 'bg-red-100 text-red-700 border-red-300',
+                    9: 'bg-orange-100 text-orange-700 border-orange-300',
+                    8: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+                    7: 'bg-blue-100 text-blue-700 border-blue-300',
+                  };
+                  const priorityColor = priorityColors[task.priority as keyof typeof priorityColors] || 'bg-gray-100 text-gray-700 border-gray-300';
+
+                  const statusIcons = {
+                    pending: '⏸️',
+                    in_progress: '🔄',
+                    completed: '✅',
+                    failed: '❌'
+                  };
+
+                  const phaseInfo = task.metadata?.current_phase || 'Planning';
+
+                  return (
+                    <div key={idx} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                      {/* Task Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${priorityColor}`}>
+                              P{task.priority}
+                            </span>
+                            <span className="text-2xl">{statusIcons[task.status as keyof typeof statusIcons]}</span>
+                            <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+                          {task.metadata?.goal && (
+                            <p className="text-xs text-blue-600 font-medium">🎯 {task.metadata.goal}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500 mb-1">Last Updated</div>
+                          <div className="text-xs font-medium text-gray-700">
+                            {new Date(task.updated_at || task.created_at).toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      {subtasks.length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">Progress</span>
+                            <span className="text-sm font-bold text-blue-600">{progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div
+                              className={`h-3 rounded-full transition-all ${
+                                progress === 100 ? 'bg-green-500' :
+                                progress > 0 ? 'bg-blue-500' :
+                                'bg-gray-400'
+                              }`}
+                              style={{ width: `${progress}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {completedSubtasks.length} of {subtasks.length} subtasks completed
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Current Phase */}
+                      <div className="mb-4">
+                        <div className="text-sm font-medium text-gray-700 mb-2">Current Phase</div>
+                        <div className="flex gap-2">
+                          {['Planning', 'Implementation', 'Testing', 'Deployment'].map(phase => (
+                            <div
+                              key={phase}
+                              className={`flex-1 text-center py-2 rounded text-xs font-medium ${
+                                phaseInfo === phase
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 text-gray-500'
+                              }`}
+                            >
+                              {phase}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Subtasks */}
+                      {subtasks.length > 0 && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-700 mb-2">Subtasks</div>
+                          <div className="space-y-2">
+                            {subtasks.map((subtask: string, subIdx: number) => {
+                              const isCompleted = completedSubtasks.includes(subtask);
+                              return (
+                                <div
+                                  key={subIdx}
+                                  className={`flex items-center gap-3 p-2 rounded ${
+                                    isCompleted ? 'bg-green-50' : 'bg-gray-50'
+                                  }`}
+                                >
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                                    isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                                  }`}>
+                                    {isCompleted && <span className="text-white text-xs">✓</span>}
+                                  </div>
+                                  <span className={`text-sm ${
+                                    isCompleted ? 'text-gray-600 line-through' : 'text-gray-900'
+                                  }`}>
+                                    {subtask}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Test Data Badge */}
+                      {task.metadata?.test && (
+                        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                          <p className="text-xs text-yellow-800">
+                            ⚠️ <strong>Test Data:</strong> This is a test task to verify the dashboard is working.
+                            Real tasks will appear here when Archie runs his next cycle.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                  <p className="text-gray-500 mb-2">No tasks found</p>
+                  <p className="text-sm text-gray-400">
+                    Archie will create tasks from PROJECT_GOALS.md on his next run (every 5 minutes)
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {view === 'findings' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">🔍 Findings & Insights</h2>
+              <p className="text-sm text-gray-600">Issues and improvements discovered by Archie</p>
+            </div>
+
+            <div className="space-y-4">
+              {status?.recent_activity?.findings && status.recent_activity.findings.length > 0 ? (
+                status.recent_activity.findings.map((finding, idx) => {
+                  const severityConfig = {
+                    critical: { bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-900', badge: 'bg-red-600 text-white' },
+                    high: { bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-900', badge: 'bg-orange-600 text-white' },
+                    medium: { bg: 'bg-yellow-50', border: 'border-yellow-500', text: 'text-yellow-900', badge: 'bg-yellow-600 text-white' },
+                    low: { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-900', badge: 'bg-blue-600 text-white' },
+                    info: { bg: 'bg-gray-50', border: 'border-gray-500', text: 'text-gray-900', badge: 'bg-gray-600 text-white' }
+                  };
+                  const config = severityConfig[finding.severity as keyof typeof severityConfig] || severityConfig.info;
+
+                  return (
+                    <div key={idx} className={`${config.bg} rounded-lg border-l-4 ${config.border} p-6`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${config.badge}`}>
+                              {finding.severity.toUpperCase()}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              finding.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
+                              finding.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {finding.status.replace('_', ' ')}
+                            </span>
+                            <h3 className={`text-lg font-semibold ${config.text}`}>{finding.title}</h3>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500">
+                            {new Date(finding.detected_at).toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-sm text-gray-700 mb-3">{finding.description}</p>
+
+                      {finding.location && (
+                        <div className="mb-2">
+                          <span className="text-xs font-medium text-gray-600">📍 Location:</span>
+                          <code className="text-xs bg-gray-100 px-2 py-1 rounded ml-2">{finding.location}</code>
+                        </div>
+                      )}
+
+                      {finding.detection_method && (
+                        <div className="text-xs text-gray-600">
+                          <span className="font-medium">Detection Method:</span> {finding.detection_method}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                  <p className="text-gray-500 mb-2">No findings yet</p>
+                  <p className="text-sm text-gray-400">
+                    Archie will proactively hunt for bugs and improvements on his next run
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
