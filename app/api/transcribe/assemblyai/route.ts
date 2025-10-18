@@ -592,6 +592,34 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
       console.log('[ASSEMBLYAI] Saved to database with ID:', dbId);
     }
 
+    // COST TRACKING: Track transcription cost
+    try {
+      const audioDurationHours = result.audio_duration / 3600; // Convert seconds to hours
+      const transcriptionCost = audioDurationHours * 0.41; // $0.41 per hour with speaker diarization
+
+      await costMonitor.trackAPICall({
+        user_id: userId,
+        model: 'assemblyai-transcription',
+        endpoint: '/api/transcribe/assemblyai',
+        input_tokens: 0, // Not applicable for transcription
+        output_tokens: 0, // Not applicable for transcription
+        cost_usd: transcriptionCost,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          audio_duration_seconds: result.audio_duration,
+          audio_duration_hours: audioDurationHours,
+          file_size_bytes: fileSize,
+          filename: filename,
+          speaker_count: result.utterances?.length || 0,
+          transcription_id: dbId || result.id
+        },
+      });
+      console.log(`[CostMonitor] Tracked transcription: ${audioDurationHours.toFixed(2)}h = $${transcriptionCost.toFixed(4)}`);
+    } catch (costError) {
+      console.error('[CostMonitor] Failed to track transcription cost:', costError);
+      // Continue even if cost tracking fails
+    }
+
     // Complete
     const finalJob = jobStore.get(jobId);
     if (finalJob) {
@@ -818,6 +846,36 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
 
     if (saveError) {
       console.error('[ASSEMBLYAI] Database save error:', saveError);
+    } else {
+      console.log('[ASSEMBLYAI] Saved to database with ID:', transcriptionData?.id);
+    }
+
+    // COST TRACKING: Track transcription cost
+    try {
+      const audioDurationHours = result.audio_duration / 3600; // Convert seconds to hours
+      const transcriptionCost = audioDurationHours * 0.41; // $0.41 per hour with speaker diarization
+
+      await costMonitor.trackAPICall({
+        user_id: userId,
+        model: 'assemblyai-transcription',
+        endpoint: '/api/transcribe/assemblyai',
+        input_tokens: 0, // Not applicable for transcription
+        output_tokens: 0, // Not applicable for transcription
+        cost_usd: transcriptionCost,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          audio_duration_seconds: result.audio_duration,
+          audio_duration_hours: audioDurationHours,
+          file_size_bytes: audioFile.size,
+          filename: audioFile.name,
+          speaker_count: result.speaker_labels?.length || 0,
+          transcription_id: transcriptionData?.id
+        },
+      });
+      console.log(`[CostMonitor] Tracked transcription: ${audioDurationHours.toFixed(2)}h = $${transcriptionCost.toFixed(4)}`);
+    } catch (costError) {
+      console.error('[CostMonitor] Failed to track transcription cost:', costError);
+      // Continue even if cost tracking fails
     }
 
     // Complete

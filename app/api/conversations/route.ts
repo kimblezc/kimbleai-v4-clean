@@ -68,13 +68,15 @@ export async function GET(request: NextRequest) {
       const messageCount = conv.messages?.length || 0;
       const lastMessage = conv.messages?.[0]; // Latest message (due to ordering)
 
-      // Auto-detect project from content since we don't have metadata column
-      const projectFromTitle = autoDetectProject(conv.title || '');
-      const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
-      const autoDetected = projectFromTitle || projectFromContent;
+      // DISABLED: Auto-detect project from content since we don't have metadata column
+      // User wants manual project assignment only
+      // const projectFromTitle = autoDetectProject(conv.title || '');
+      // const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
+      // const autoDetected = projectFromTitle || projectFromContent;
 
       // Only use auto-detected project if it hasn't been deleted
-      const detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : '';
+      // const detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : '';
+      const detectedProject = ''; // Always empty - no auto-assignment
 
       return {
         id: conv.id,
@@ -190,7 +192,7 @@ export async function POST(request: NextRequest) {
       conversation: {
         id: conversation.id,
         title: conversation.title,
-        project: autoDetectProject(conversation.title || '') || '',
+        project: '', // DISABLED auto-detection - manual assignment only
         messages: formattedMessages
       }
     });

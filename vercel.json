@@ -18,6 +18,10 @@
     "app/api/cron/index-attachments/route.ts": {
       "maxDuration": 300,
       "memory": 3008
+    },
+    "app/api/agent/cron/route.ts": {
+      "maxDuration": 300,
+      "memory": 3008
     }
   },
   "crons": [
@@ -32,6 +36,10 @@
     {
       "path": "/api/cron/index-attachments",
       "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/agent/cron",
+      "schedule": "0 * * * *"
     }
   ],
   "headers": [

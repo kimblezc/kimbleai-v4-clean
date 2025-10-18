@@ -176,8 +176,10 @@ export async function POST(request: NextRequest) {
       // Auto-generate tags based on the analysis
       const tags = autoGenerateTagsFromAnalysis(analysis || '', analysisType);
 
-      // Auto-detect project category
-      const projectCategory = autoDetectProjectFromImage(analysis || '', analysisType);
+      // DISABLED: Auto-detect project category
+      // User wants manual project assignment only
+      // const projectCategory = autoDetectProjectFromImage(analysis || '', analysisType);
+      const projectCategory = ''; // Always empty - no auto-assignment
 
       // Generate unique photo ID
       const photoId = generatePhotoId();

@@ -100,6 +100,23 @@ export async function POST(request: NextRequest) {
 
     console.log(`⏱️ [Performance] Request started at ${Date.now() - requestStartTime}ms`);
 
+    // QUERY COMPLEXITY DETECTION: Warn about complex queries but allow them
+    const broadQueryPatterns = [
+      /find everything/i,
+      /search (all|everything)/i,
+      /across all/i,
+      /all (files|emails|drives?|documents?)/i,
+      /everything (you can|about)/i
+    ];
+
+    const isBroadQuery = broadQueryPatterns.some(pattern => pattern.test(userMessage));
+    const hasMultipleDataSources = (userMessage.match(/\b(gmail|drive|email|file|document|calendar)\b/gi) || []).length > 2;
+    const isComplexQuery = isBroadQuery && hasMultipleDataSources;
+
+    if (isComplexQuery) {
+      console.warn('[QueryComplexity] Complex query detected, enabling aggressive timeout protection');
+    }
+
     // Get user data
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -142,12 +159,47 @@ export async function POST(request: NextRequest) {
     }
 
     const butler = AutoReferenceButler.getInstance();
-    const autoContext = await butler.gatherRelevantContext(
-      userMessage,
-      userData.id,
-      conversationId,
-      lastMessage.projectId // If user has a project context
-    );
+
+    // For complex queries, use a timeout wrapper to prevent butler from running too long
+    let autoContext;
+    if (isComplexQuery) {
+      const butlerTimeout = 15000; // 15 seconds max for complex queries
+      console.log(`[QueryComplexity] Using ${butlerTimeout}ms timeout for AutoReferenceButler`);
+
+      try {
+        autoContext = await Promise.race([
+          butler.gatherRelevantContext(
+            userMessage,
+            userData.id,
+            conversationId,
+            lastMessage.projectId
+          ),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Butler timeout')), butlerTimeout)
+          )
+        ]);
+      } catch (error: any) {
+        if (error.message === 'Butler timeout') {
+          console.warn('[QueryComplexity] Butler timed out, proceeding with limited context');
+          autoContext = {
+            relevantKnowledge: [],
+            relevantFiles: [],
+            relevantEmails: [],
+            relevantCalendar: [],
+            confidence: 0
+          };
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      autoContext = await butler.gatherRelevantContext(
+        userMessage,
+        userData.id,
+        conversationId,
+        lastMessage.projectId
+      );
+    }
 
     const butlerEndTime = Date.now();
     console.log(`⏱️ [Performance] AutoReferenceButler completed in ${butlerEndTime - butlerStartTime}ms (confidence: ${Math.round(autoContext.confidence)}%)`);
@@ -174,11 +226,23 @@ export async function POST(request: NextRequest) {
     // Format auto-context for AI
     const formattedAutoContext = butler.formatContextForAI(autoContext);
 
+    // For complex queries, add special instructions
+    const complexQueryInstructions = isComplexQuery ? `
+
+⚡ **COMPLEX QUERY DETECTED**
+This query requires searching multiple data sources. To avoid timeouts:
+1. Use function calling to search Gmail, Drive, and uploaded files **in parallel** when possible
+2. Be concise in your responses to minimize processing time
+3. Focus on the most relevant results rather than exhaustive searches
+4. If you're running out of time, provide partial results rather than failing completely
+
+` : '';
+
     // Build comprehensive context with auto-referenced data
     const contextMessages = [
       {
         role: 'system',
-        content: `You are KimbleAI, an advanced digital butler AI assistant with PERFECT MEMORY and AUTOMATIC DATA REFERENCING.
+        content: `You are KimbleAI, an advanced digital butler AI assistant with PERFECT MEMORY and AUTOMATIC DATA REFERENCING.${complexQueryInstructions}
 
 🤖 **AUTOMATIC CONTEXT RETRIEVAL ACTIVE**
 You automatically reference ALL relevant data from:
@@ -576,9 +640,16 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
         }, { status: 504 });
       }
 
+      // For complex queries, use remaining time more aggressively
+      const dynamicTimeout = isComplexQuery
+        ? Math.min(OPENAI_TIMEOUT_MS, remainingTime - 10000) // Leave 10s buffer
+        : OPENAI_TIMEOUT_MS;
+
+      console.log(`[OpenAI] Using ${dynamicTimeout}ms timeout (${isComplexQuery ? 'complex query, dynamic' : 'standard'})`);
+
       // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('OpenAI API call timeout')), OPENAI_TIMEOUT_MS);
+        setTimeout(() => reject(new Error('OpenAI API call timeout')), dynamicTimeout);
       });
 
       // Race between API call and timeout

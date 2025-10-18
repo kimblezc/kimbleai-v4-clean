@@ -1543,6 +1543,22 @@ export default function Home() {
         }),
       });
 
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          // If JSON parsing fails, it's likely an HTML error page (504, etc.)
+          throw new Error(`Server error (${response.status}): The request took too long to process. Please try a more specific query.`);
+        }
+
+        // Throw with the error details from the API
+        const errorMsg = errorData.details || errorData.error || 'Unknown error';
+        const suggestion = errorData.suggestion ? `\n\n${errorData.suggestion}` : '';
+        throw new Error(`${errorMsg}${suggestion}`);
+      }
+
       const data = await response.json();
 
       const assistantMessage: Message = {
@@ -1556,11 +1572,11 @@ export default function Home() {
 
       // Auto-refresh conversations to show the newly saved chat
       setTimeout(() => loadConversations(currentProject), 1000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error);
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'I encountered an error. Please try again.',
+        content: `**Error:** ${error.message}\n\nPlease try:\n• Breaking your query into smaller, specific requests\n• Searching one data source at a time (Gmail, Drive, or uploaded files)\n• Being more specific about what you're looking for`,
         timestamp: new Date().toISOString()
       };
       setMessages([...newMessages, errorMessage]);

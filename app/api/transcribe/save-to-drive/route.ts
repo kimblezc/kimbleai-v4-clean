@@ -209,6 +209,8 @@ export async function POST(request: NextRequest) {
         ...(targetFolderId && { parents: [targetFolderId] })
       };
 
+      console.log(`[SAVE-TO-DRIVE] Uploading file: ${fileName}, size: ${fileContent.length} chars, mimeType: ${mimeType}`);
+
       const form = new FormData();
       form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
       form.append('file', new Blob([fileContent], { type: mimeType }));
@@ -223,10 +225,14 @@ export async function POST(request: NextRequest) {
 
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
-        throw new Error(`Upload failed for ${fileName}: ${errorText}`);
+        console.error(`[SAVE-TO-DRIVE] Upload failed for ${fileName}:`, errorText);
+        console.error(`[SAVE-TO-DRIVE] Status: ${uploadResponse.status} ${uploadResponse.statusText}`);
+        throw new Error(`Upload failed for ${fileName} (${uploadResponse.status}): ${errorText}`);
       }
 
-      return await uploadResponse.json();
+      const result = await uploadResponse.json();
+      console.log(`[SAVE-TO-DRIVE] Successfully uploaded ${fileName}, file ID: ${result.id}`);
+      return result;
     }
 
     // Generate file formats
@@ -236,35 +242,49 @@ export async function POST(request: NextRequest) {
     if (multiFormat) {
       console.log('[SAVE-TO-DRIVE] Exporting in multiple formats...');
 
-      // 1. TXT format (with timestamps)
-      const txtFile = await uploadFile(
-        `${baseFilename}_transcript.txt`,
-        content,
-        'text/plain'
-      );
-      uploadedFiles.push({ format: 'TXT', ...txtFile });
+      try {
+        // 1. TXT format (with timestamps)
+        console.log('[SAVE-TO-DRIVE] Uploading TXT format...');
+        const txtFile = await uploadFile(
+          `${baseFilename}_transcript.txt`,
+          content,
+          'text/plain'
+        );
+        uploadedFiles.push({ format: 'TXT', ...txtFile });
+        console.log('[SAVE-TO-DRIVE] TXT upload complete');
+      } catch (error: any) {
+        console.error('[SAVE-TO-DRIVE] TXT upload failed:', error);
+        throw new Error(`TXT upload failed: ${error.message}`);
+      }
 
-      // 2. JSON format (full metadata)
-      const jsonContent = JSON.stringify({
-        id: transcription.id,
-        filename: transcription.filename,
-        duration: transcription.duration,
-        created_at: transcription.created_at,
-        project_id: transcription.project_id,
-        text: transcription.text,
-        utterances: utterances,
-        words: transcription.metadata?.words || [],
-        speaker_labels: transcription.metadata?.speaker_labels,
-        auto_tags: transcription.metadata?.auto_tags || [],
-        action_items: transcription.metadata?.action_items || []
-      }, null, 2);
+      try {
+        // 2. JSON format (full metadata)
+        console.log('[SAVE-TO-DRIVE] Uploading JSON format...');
+        const jsonContent = JSON.stringify({
+          id: transcription.id,
+          filename: transcription.filename,
+          duration: transcription.duration,
+          created_at: transcription.created_at,
+          project_id: transcription.project_id,
+          text: transcription.text,
+          utterances: utterances,
+          words: transcription.metadata?.words || [],
+          speaker_labels: transcription.metadata?.speaker_labels,
+          auto_tags: transcription.metadata?.auto_tags || [],
+          action_items: transcription.metadata?.action_items || []
+        }, null, 2);
 
-      const jsonFile = await uploadFile(
-        `${baseFilename}_transcript.json`,
-        jsonContent,
-        'application/json'
-      );
-      uploadedFiles.push({ format: 'JSON', ...jsonFile });
+        const jsonFile = await uploadFile(
+          `${baseFilename}_transcript.json`,
+          jsonContent,
+          'application/json'
+        );
+        uploadedFiles.push({ format: 'JSON', ...jsonFile });
+        console.log('[SAVE-TO-DRIVE] JSON upload complete');
+      } catch (error: any) {
+        console.error('[SAVE-TO-DRIVE] JSON upload failed:', error);
+        throw new Error(`JSON upload failed: ${error.message}`);
+      }
 
       // 3. SRT format (subtitles)
       let srtContent = '';
@@ -289,12 +309,19 @@ export async function POST(request: NextRequest) {
       }
 
       if (srtContent) {
-        const srtFile = await uploadFile(
-          `${baseFilename}_transcript.srt`,
-          srtContent,
-          'text/plain'
-        );
-        uploadedFiles.push({ format: 'SRT', ...srtFile });
+        try {
+          console.log('[SAVE-TO-DRIVE] Uploading SRT format...');
+          const srtFile = await uploadFile(
+            `${baseFilename}_transcript.srt`,
+            srtContent,
+            'text/plain'
+          );
+          uploadedFiles.push({ format: 'SRT', ...srtFile });
+          console.log('[SAVE-TO-DRIVE] SRT upload complete');
+        } catch (error: any) {
+          console.error('[SAVE-TO-DRIVE] SRT upload failed:', error);
+          throw new Error(`SRT upload failed: ${error.message}`);
+        }
       }
 
       // 4. VTT format (WebVTT subtitles)
@@ -320,12 +347,19 @@ export async function POST(request: NextRequest) {
       }
 
       if (vttContent !== 'WEBVTT\n\n') {
-        const vttFile = await uploadFile(
-          `${baseFilename}_transcript.vtt`,
-          vttContent,
-          'text/vtt'
-        );
-        uploadedFiles.push({ format: 'VTT', ...vttFile });
+        try {
+          console.log('[SAVE-TO-DRIVE] Uploading VTT format...');
+          const vttFile = await uploadFile(
+            `${baseFilename}_transcript.vtt`,
+            vttContent,
+            'text/vtt'
+          );
+          uploadedFiles.push({ format: 'VTT', ...vttFile });
+          console.log('[SAVE-TO-DRIVE] VTT upload complete');
+        } catch (error: any) {
+          console.error('[SAVE-TO-DRIVE] VTT upload failed:', error);
+          throw new Error(`VTT upload failed: ${error.message}`);
+        }
       }
 
       console.log(`[SAVE-TO-DRIVE] Uploaded ${uploadedFiles.length} files`);
@@ -385,10 +419,36 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('[SAVE-TO-DRIVE] Error:', error);
+    console.error('[SAVE-TO-DRIVE] Critical error:', error);
+    console.error('[SAVE-TO-DRIVE] Error stack:', error.stack);
+
+    // Provide more specific error messages based on the error type
+    let userMessage = 'Failed to save to Google Drive';
+    let statusCode = 500;
+
+    if (error.message?.includes('Upload failed')) {
+      userMessage = 'File upload to Google Drive failed';
+    } else if (error.message?.includes('401') || error.message?.includes('authentication')) {
+      userMessage = 'Google Drive authentication expired';
+      statusCode = 401;
+    } else if (error.message?.includes('403') || error.message?.includes('permission')) {
+      userMessage = 'Insufficient permissions for Google Drive';
+      statusCode = 403;
+    } else if (error.message?.includes('404')) {
+      userMessage = 'Transcription not found';
+      statusCode = 404;
+    } else if (error.message?.includes('quota')) {
+      userMessage = 'Google Drive storage quota exceeded';
+      statusCode = 429;
+    }
+
     return NextResponse.json(
-      { error: 'Failed to save to Google Drive', details: error.message },
-      { status: 500 }
+      {
+        error: userMessage,
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
+      { status: statusCode }
     );
   }
 }
