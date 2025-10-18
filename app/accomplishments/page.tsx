@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle, Clock, Database, Globe, Search, DollarSign, Zap, Code, FileText, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -18,6 +18,30 @@ interface Accomplishment {
 
 export default function AccomplishmentsPage() {
   const router = useRouter();
+
+  // Get current time in Central European Time
+  const getCurrentCET = () => {
+    return new Date().toLocaleString('en-GB', {
+      timeZone: 'Europe/Paris', // CET/CEST
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  };
+
+  const [currentTime, setCurrentTime] = useState(getCurrentCET());
+
+  // Update time every minute
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(getCurrentCET());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [accomplishments] = useState<Accomplishment[]>([
     // Completed - Phase 1
     {
@@ -451,7 +475,7 @@ export default function AccomplishmentsPage() {
                 Updates logged in real-time as work progresses. Agent detects issues, generates fixes, tests, and deploys automatically.
               </p>
               <p className="text-xs text-gray-500 mt-2">
-                Last updated: {new Date().toLocaleString()} • Next agent run: Within 5 minutes
+                Current time (CET): {currentTime} • Next agent run: Within 5 minutes
               </p>
             </div>
           </div>
