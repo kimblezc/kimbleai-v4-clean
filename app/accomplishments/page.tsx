@@ -506,9 +506,21 @@ export default function AccomplishmentsPage() {
               <p className="text-sm text-gray-300 leading-relaxed">
                 <span className="font-semibold text-white">Meet Archie</span> <span className="text-green-400">👁️</span> - Your wise horned owl autonomous agent with piercing green eyes.
                 Archie runs every 5 minutes, watching over your system with owl-like vigilance.
-                He detects issues, generates fixes, tests thoroughly, and deploys automatically.
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <div className="mt-3 p-3 bg-[#0a0a0a] border border-[#4a9eff]/30 rounded-lg">
+                <p className="text-sm font-semibold text-[#4a9eff] mb-2">🎯 What Archie Does:</p>
+                <ul className="text-xs text-gray-400 space-y-1 ml-4">
+                  <li>✅ Creates tasks from PROJECT_GOALS.md (P10-P9 priorities)</li>
+                  <li>🔍 Actively hunts for bugs and performance issues</li>
+                  <li>💡 Generates improvement suggestions</li>
+                  <li>🧪 Tests fixes and iterates until they work</li>
+                  <li>🚀 Deploys successful improvements automatically</li>
+                </ul>
+              </div>
+              <p className="text-xs text-gray-500 mt-3">
+                <a href="/agent" className="text-[#4a9eff] hover:underline font-semibold">→ View Archie Dashboard</a> to see tasks, findings, and logs in real-time
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
                 Current time (CET): {currentTime} • Next Archie run: Within 5 minutes
               </p>
             </div>
