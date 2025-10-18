@@ -283,6 +283,57 @@
 
 ---
 
+### 8. Zapier Pro Integration & Workflow Automation ⚡
+**Priority:** 9/10 (Critical) **⬆️ NEW**
+**Impact:** Reduce API costs, improve reliability, leverage existing subscription
+**Current Status:** Zapier Pro purchased but underutilized
+
+**Why Critical:**
+- Zapier Pro is already paid for (sunk cost - use it or lose it!)
+- Can offload Gmail/Drive API calls → saves money
+- Can reduce Vercel function invocations → saves costs
+- Can improve reliability by distributing load
+- Built-in error handling and retry logic
+- 750 tasks/month available (0 currently used)
+
+**Services to Integrate via Zapier:**
+- [ ] Gmail monitoring and indexing
+- [ ] Google Drive file change detection
+- [ ] Calendar event notifications
+- [ ] Email attachment processing
+- [ ] Automated data backups
+- [ ] Scheduled reports and summaries
+- [ ] Cost tracking webhook receivers
+- [ ] Error alerts and notifications
+
+**Success Criteria:**
+- [ ] 50%+ of Zapier Pro tasks used (375+ tasks/month)
+- [ ] Gmail indexing offloaded to Zapier (reduce Vercel costs)
+- [ ] Drive change detection via Zapier webhooks
+- [ ] Automated daily/weekly reports
+- [ ] Zero unused Zapier capacity (maximize ROI)
+- [ ] Cost savings tracked (Vercel → Zapier)
+
+**Agent Tasks:**
+- Create Zapier workflows for Gmail indexing
+- Set up Drive file monitoring via Zapier
+- Implement webhook receivers in KimbleAI
+- Configure automated reports (daily/weekly)
+- Set up error notifications to Zapier
+- Monitor Zapier task usage (track 0 → 750)
+- Calculate cost savings (API calls moved to Zapier)
+- Document all Zapier integrations
+- Add Zapier status to cost dashboard
+
+**Expected Cost Savings:**
+- Reduce OpenAI embedding calls (Gmail/Drive indexing)
+- Reduce Vercel function invocations (scheduled tasks)
+- Reduce Gmail API direct calls (use Zapier polling)
+- Reduce Drive API direct calls (use Zapier webhooks)
+- Better quota management (distributed across services)
+
+---
+
 ## 🎨 HIGH PRIORITY (User Experience)
 
 ### 4. Site Aesthetics & Dark Theme Consistency
