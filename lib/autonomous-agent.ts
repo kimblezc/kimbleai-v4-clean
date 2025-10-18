@@ -1049,8 +1049,9 @@ Be specific about file paths and code changes.`;
   private async applyCodeChanges(plan: string, task: any): Promise<{ filesModified: string[] }> {
     await this.log('info', '📝 Analyzing code changes to apply...');
 
-    // Check if running in serverless environment
-    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    // Check if running in serverless environment (can be overridden with env var)
+    const isServerless = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) &&
+                         process.env.ARCHIE_ENABLE_FILE_MODIFICATION !== 'true';
     const backupDir = path.join(process.cwd(), '.archie-backups', Date.now().toString());
     const filesModified: string[] = [];
 
