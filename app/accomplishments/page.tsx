@@ -320,64 +320,66 @@ export default function AccomplishmentsPage() {
           </div>
         </div>
 
-        {/* Timeline View */}
+        {/* Table View */}
         <div className="space-y-12">
           {/* Completed Section */}
           {completed.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                Completed
+                Completed ({completed.length})
               </h2>
-              <div className="space-y-4">
-                {completed.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="relative pl-12"
-                  >
-                    {/* Timeline dot */}
-                    <div className={`absolute left-0 top-2 w-8 h-8 ${getCategoryColor(item.category)} rounded-full flex items-center justify-center`}>
-                      <div className="text-white">
-                        {getCategoryIcon(item.category)}
-                      </div>
-                    </div>
-
-                    {/* Timeline line */}
-                    {index < completed.length - 1 && (
-                      <div className="absolute left-4 top-10 w-0.5 h-full bg-gradient-to-b from-green-700 to-transparent"></div>
-                    )}
-
-                    {/* Content Card */}
-                    <div className="bg-[#111] border border-green-700/30 rounded-xl p-6 hover:border-green-500/50 transition-all ml-4">
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-xl font-bold text-white">{item.title}</h3>
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)} text-white`}>
+              <div className="bg-[#111] border border-green-700/30 rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-green-900/20 border-b border-green-700/30">
+                        <th className="text-left p-4 text-sm font-semibold text-green-400 whitespace-nowrap">Date & Time</th>
+                        <th className="text-left p-4 text-sm font-semibold text-green-400 whitespace-nowrap">Category</th>
+                        <th className="text-left p-4 text-sm font-semibold text-green-400">Title</th>
+                        <th className="text-left p-4 text-sm font-semibold text-green-400">Description</th>
+                        <th className="text-left p-4 text-sm font-semibold text-green-400">Impact</th>
+                        <th className="text-center p-4 text-sm font-semibold text-green-400 whitespace-nowrap">Priority</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {completed.map((item, index) => (
+                        <tr
+                          key={item.id}
+                          className={`border-b border-green-700/10 hover:bg-green-900/10 transition-colors ${index === completed.length - 1 ? 'border-b-0' : ''}`}
+                        >
+                          <td className="p-4 align-top">
+                            <div className="text-sm font-medium text-green-400 whitespace-nowrap">{item.date}</div>
+                            <div className="text-xs text-gray-500 whitespace-nowrap">{item.time}</div>
+                          </td>
+                          <td className="p-4 align-top">
+                            <span className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)} text-white whitespace-nowrap`}>
+                              {getCategoryIcon(item.category)}
                               {item.category}
                             </span>
-                          </div>
-                          <p className="text-gray-400 leading-relaxed">{item.description}</p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-sm font-semibold text-green-400 mb-1">{item.date}</div>
-                          {item.time && <div className="text-xs text-gray-500">{item.time}</div>}
-                        </div>
-                      </div>
-
-                      {item.impact && (
-                        <div className="mt-4 pt-4 border-t border-green-700/20">
-                          <div className="flex items-start gap-2">
-                            <Zap className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-green-400">
-                              <span className="font-semibold">Impact:</span> {item.impact}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="text-sm font-semibold text-white">{item.title}</div>
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="text-sm text-gray-400 leading-relaxed">{item.description}</div>
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="flex items-start gap-2">
+                              <Zap className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                              <div className="text-sm text-green-400">{item.impact}</div>
+                            </div>
+                          </td>
+                          <td className="p-4 align-top text-center">
+                            <span className={`inline-block px-2 py-1 text-xs font-bold rounded ${item.priority >= 9 ? 'bg-red-900/30 text-red-400' : item.priority >= 7 ? 'bg-yellow-900/30 text-yellow-400' : 'bg-blue-900/30 text-blue-400'}`}>
+                              P{item.priority}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -387,53 +389,60 @@ export default function AccomplishmentsPage() {
             <div>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                In Progress
+                In Progress ({inProgress.length})
               </h2>
-              <div className="space-y-4">
-                {inProgress.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="relative pl-12"
-                  >
-                    <div className={`absolute left-0 top-2 w-8 h-8 ${getCategoryColor(item.category)} rounded-full flex items-center justify-center animate-pulse`}>
-                      <div className="text-white">
-                        {getCategoryIcon(item.category)}
-                      </div>
-                    </div>
-
-                    {index < inProgress.length - 1 && (
-                      <div className="absolute left-4 top-10 w-0.5 h-full bg-gradient-to-b from-yellow-700 to-transparent"></div>
-                    )}
-
-                    <div className="bg-[#111] border border-yellow-700/30 rounded-xl p-6 hover:border-yellow-500/50 transition-all ml-4">
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-xl font-bold text-white">{item.title}</h3>
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)} text-white`}>
-                              {item.category}
-                            </span>
-                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700">
+              <div className="bg-[#111] border border-yellow-700/30 rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-yellow-900/20 border-b border-yellow-700/30">
+                        <th className="text-left p-4 text-sm font-semibold text-yellow-400 whitespace-nowrap">Status</th>
+                        <th className="text-left p-4 text-sm font-semibold text-yellow-400 whitespace-nowrap">Category</th>
+                        <th className="text-left p-4 text-sm font-semibold text-yellow-400">Title</th>
+                        <th className="text-left p-4 text-sm font-semibold text-yellow-400">Description</th>
+                        <th className="text-left p-4 text-sm font-semibold text-yellow-400">Expected Impact</th>
+                        <th className="text-center p-4 text-sm font-semibold text-yellow-400 whitespace-nowrap">Priority</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inProgress.map((item, index) => (
+                        <tr
+                          key={item.id}
+                          className={`border-b border-yellow-700/10 hover:bg-yellow-900/10 transition-colors ${index === inProgress.length - 1 ? 'border-b-0' : ''}`}
+                        >
+                          <td className="p-4 align-top">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700 animate-pulse whitespace-nowrap">
                               ⏳ Active
                             </span>
-                          </div>
-                          <p className="text-gray-400 leading-relaxed">{item.description}</p>
-                        </div>
-                      </div>
-
-                      {item.impact && (
-                        <div className="mt-4 pt-4 border-t border-yellow-700/20">
-                          <div className="flex items-start gap-2">
-                            <Zap className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-yellow-400">
-                              <span className="font-semibold">Expected Impact:</span> {item.impact}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                          </td>
+                          <td className="p-4 align-top">
+                            <span className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)} text-white whitespace-nowrap`}>
+                              {getCategoryIcon(item.category)}
+                              {item.category}
+                            </span>
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="text-sm font-semibold text-white">{item.title}</div>
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="text-sm text-gray-400 leading-relaxed">{item.description}</div>
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="flex items-start gap-2">
+                              <Zap className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                              <div className="text-sm text-yellow-400">{item.impact}</div>
+                            </div>
+                          </td>
+                          <td className="p-4 align-top text-center">
+                            <span className={`inline-block px-2 py-1 text-xs font-bold rounded ${item.priority >= 9 ? 'bg-red-900/30 text-red-400' : item.priority >= 7 ? 'bg-yellow-900/30 text-yellow-400' : 'bg-blue-900/30 text-blue-400'}`}>
+                              P{item.priority}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -443,50 +452,60 @@ export default function AccomplishmentsPage() {
             <div>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                Planned
+                Planned ({planned.length})
               </h2>
-              <div className="space-y-4">
-                {planned.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="relative pl-12"
-                  >
-                    <div className={`absolute left-0 top-2 w-8 h-8 ${getCategoryColor(item.category)} rounded-full flex items-center justify-center opacity-60`}>
-                      <div className="text-white">
-                        {getCategoryIcon(item.category)}
-                      </div>
-                    </div>
-
-                    {index < planned.length - 1 && (
-                      <div className="absolute left-4 top-10 w-0.5 h-full bg-gradient-to-b from-blue-700/50 to-transparent"></div>
-                    )}
-
-                    <div className="bg-[#111] border border-blue-700/20 rounded-xl p-6 hover:border-blue-500/30 transition-all ml-4 opacity-80 hover:opacity-100">
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-xl font-bold text-white">{item.title}</h3>
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)} text-white`}>
+              <div className="bg-[#111] border border-blue-700/30 rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-blue-900/20 border-b border-blue-700/30">
+                        <th className="text-left p-4 text-sm font-semibold text-blue-400 whitespace-nowrap">Status</th>
+                        <th className="text-left p-4 text-sm font-semibold text-blue-400 whitespace-nowrap">Category</th>
+                        <th className="text-left p-4 text-sm font-semibold text-blue-400">Title</th>
+                        <th className="text-left p-4 text-sm font-semibold text-blue-400">Description</th>
+                        <th className="text-left p-4 text-sm font-semibold text-blue-400">Expected Impact</th>
+                        <th className="text-center p-4 text-sm font-semibold text-blue-400 whitespace-nowrap">Priority</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {planned.map((item, index) => (
+                        <tr
+                          key={item.id}
+                          className={`border-b border-blue-700/10 hover:bg-blue-900/10 transition-colors ${index === planned.length - 1 ? 'border-b-0' : ''}`}
+                        >
+                          <td className="p-4 align-top">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full bg-blue-900/50 text-blue-400 border border-blue-700 whitespace-nowrap">
+                              📋 Planned
+                            </span>
+                          </td>
+                          <td className="p-4 align-top">
+                            <span className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)} text-white whitespace-nowrap`}>
+                              {getCategoryIcon(item.category)}
                               {item.category}
                             </span>
-                          </div>
-                          <p className="text-gray-400 leading-relaxed">{item.description}</p>
-                        </div>
-                      </div>
-
-                      {item.impact && (
-                        <div className="mt-4 pt-4 border-t border-blue-700/20">
-                          <div className="flex items-start gap-2">
-                            <Zap className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-blue-400">
-                              <span className="font-semibold">Expected Impact:</span> {item.impact}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="text-sm font-semibold text-white">{item.title}</div>
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="text-sm text-gray-400 leading-relaxed">{item.description}</div>
+                          </td>
+                          <td className="p-4 align-top">
+                            <div className="flex items-start gap-2">
+                              <Zap className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                              <div className="text-sm text-blue-400">{item.impact}</div>
+                            </div>
+                          </td>
+                          <td className="p-4 align-top text-center">
+                            <span className={`inline-block px-2 py-1 text-xs font-bold rounded ${item.priority >= 9 ? 'bg-red-900/30 text-red-400' : item.priority >= 7 ? 'bg-yellow-900/30 text-yellow-400' : 'bg-blue-900/30 text-blue-400'}`}>
+                              P{item.priority}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
