@@ -862,8 +862,17 @@ Format as JSON:
 
   /**
    * Run automated tests - REAL IMPLEMENTATION
+   * Note: Only works in development (local environment), skipped in serverless
    */
   private async runTests(): Promise<string> {
+    // Check if running in serverless environment
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+    if (isServerless) {
+      await this.log('info', '⏭️ Skipping tests (serverless environment - tests run during build)');
+      return 'Tests skipped in serverless - validation happens during deployment';
+    }
+
     await this.log('info', '🧪 Running automated test suite (build validation)');
 
     try {
@@ -1035,10 +1044,13 @@ Be specific about file paths and code changes.`;
 
   /**
    * Apply code changes to files - FULL AUTONOMOUS FILE MODIFICATION ENABLED
+   * Note: Only works in development (local environment), logs in serverless
    */
   private async applyCodeChanges(plan: string, task: any): Promise<{ filesModified: string[] }> {
     await this.log('info', '📝 Analyzing code changes to apply...');
 
+    // Check if running in serverless environment
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
     const backupDir = path.join(process.cwd(), '.archie-backups', Date.now().toString());
     const filesModified: string[] = [];
 
@@ -1109,7 +1121,24 @@ Only include changes with low risk that you are confident will improve the codeb
         return { filesModified: [] };
       }
 
-      // Step 2: Create backups before modifying anything
+      // Skip file modification in serverless - just log what would be done
+      if (isServerless) {
+        await this.log('info', '⏭️ Skipping file modification (serverless environment - read-only filesystem)');
+        await this.createFinding({
+          finding_type: 'insight',
+          severity: 'info',
+          title: `Archie Generated Code Changes: ${task.title}`,
+          description: `Archie analyzed the task and generated ${codeChanges.files.length} code change(s). File modification is disabled in production - deploy locally to apply changes.`,
+          detection_method: 'autonomous_code_generation',
+          evidence: {
+            files: codeChanges.files,
+            testingNotes: codeChanges.testingNotes
+          }
+        });
+        return { filesModified: [] };
+      }
+
+      // Step 2: Create backups before modifying anything (local development only)
       await this.log('info', '💾 Creating backups before modifications...');
       await fs.mkdir(backupDir, { recursive: true });
 
