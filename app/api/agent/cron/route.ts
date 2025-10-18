@@ -15,14 +15,21 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🤖 Autonomous Agent cron job triggered');
 
-    // Security: Verify this is actually a cron request
+    // Security: Verify this is actually a cron request OR allow manual trigger with special key
     const authHeader = request.headers.get('authorization');
+    const manualTrigger = request.nextUrl.searchParams.get('trigger');
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    // Allow manual trigger with ?trigger=archie-now
+    const isManualTrigger = manualTrigger === 'archie-now';
+    const isAuthorizedCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+    if (!isManualTrigger && cronSecret && !isAuthorizedCron) {
       console.error('Unauthorized cron request');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log(`Trigger type: ${isManualTrigger ? 'Manual' : 'Cron'}`);
 
     // Run the agent
     const agent = AutonomousAgent.getInstance();
@@ -31,6 +38,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Autonomous agent execution completed',
+      triggerType: isManualTrigger ? 'manual' : 'cron',
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
@@ -38,6 +46,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: error.message,
+      stack: error.stack,
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }
