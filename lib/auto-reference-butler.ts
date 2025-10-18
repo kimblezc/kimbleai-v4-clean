@@ -226,7 +226,7 @@ export class AutoReferenceButler {
 
   /**
    * Determine if context gathering is needed for this query
-   * Returns false for simple general knowledge questions to enable fast-path
+   * Uses intelligent semantic analysis instead of fixed pattern matching
    */
   private shouldGatherContext(
     message: string,
@@ -252,79 +252,66 @@ export class AutoReferenceButler {
 
     const lowerMessage = message.toLowerCase();
 
-    // Keywords that indicate user wants personal/contextual data
-    const contextKeywords = [
-      'my ', 'our ', 'we ', 'i ', 'me ',
-      'last ', 'recent', 'yesterday', 'today', 'tomorrow',
-      'previous', 'earlier', 'ago',
-      'show me', 'find my', 'where is', 'when did',
-      'did i', 'have i', 'what was'
-    ];
+    // Calculate personalization score (0-100)
+    let personalScore = 0;
 
-    if (contextKeywords.some(keyword => lowerMessage.includes(keyword))) {
-      return true;
+    // STRONG indicators of personal/contextual query (20 points each)
+    const strongPersonalIndicators = ['my ', ' my', 'our ', ' our', 'did i', 'have i', 'when did i', 'where is my', 'find my'];
+    strongPersonalIndicators.forEach(indicator => {
+      if (lowerMessage.includes(indicator)) personalScore += 20;
+    });
+
+    // MEDIUM indicators of personal query (10 points each)
+    const mediumPersonalIndicators = ['yesterday', 'last week', 'last month', 'recent', 'earlier', ' ago', 'previous', 'show me', 'show'];
+    mediumPersonalIndicators.forEach(indicator => {
+      if (lowerMessage.includes(indicator)) personalScore += 10;
+    });
+
+    // WEAK indicators of personal query (5 points each)
+    const weakPersonalIndicators = ['today', 'tomorrow', 'we ', ' us', ' me'];
+    weakPersonalIndicators.forEach(indicator => {
+      if (lowerMessage.includes(indicator)) personalScore += 5;
+    });
+
+    // STRONG indicators of general knowledge (subtract 30 points each)
+    const generalKnowledgeIndicators = [
+      'what is ', 'what are ', 'what was ', 'what were ',
+      'who is ', 'who was ', 'who were ',
+      'how does ', 'how do ', 'how did ',
+      'why does ', 'why do ', 'why is ', 'why are ',
+      'tell me about ', 'explain ', 'describe ',
+      'definition of ', 'meaning of ', 'what does',
+      'tell me what you know', 'what do you know',
+      'what can you tell me about'
+    ];
+    generalKnowledgeIndicators.forEach(indicator => {
+      if (lowerMessage.includes(indicator)) personalScore -= 30;
+    });
+
+    // Educational/informational patterns (subtract 20 points)
+    if (lowerMessage.match(/^(what|who|where|when|why|how) (is|are|was|were|does|do|did|can|could|would)/)) {
+      personalScore -= 20;
     }
 
-    // Skip context for general knowledge questions
-    const generalQuestions = [
-      // "What" questions
-      'what is', 'what are', 'what was', 'what were',
-      'what does', 'what do', 'what did',
-      'what can', 'what could', 'what would',
-      'what about', 'what\'s',
+    // Questions about concepts, topics, or general things (subtract 15 points)
+    const conceptIndicators = [' the ', ' a ', ' an '];
+    if (conceptIndicators.some(ind => lowerMessage.includes(ind))) {
+      // Only subtract if also asking "what/who/how"
+      if (lowerMessage.match(/^(what|who|how)/)) {
+        personalScore -= 15;
+      }
+    }
 
-      // "Who" questions
-      'who is', 'who are', 'who was', 'who were',
-      'who can', 'who does', 'who\'s',
+    // Decision threshold
+    const GATHER_CONTEXT_THRESHOLD = 15; // If score >= 15, gather context
 
-      // "Where" questions (general, not personal)
-      'where does', 'where do', 'where can',
-      'where is the', 'where are the',
-
-      // "How" questions
-      'how does', 'how do', 'how did',
-      'how can', 'how could', 'how would',
-      'how to', 'how do you', 'how does one',
-
-      // "Why" questions
-      'why does', 'why do', 'why did',
-      'why is', 'why are', 'why was', 'why were',
-      'why can', 'why would',
-
-      // "When" questions (general historical)
-      'when did', 'when does', 'when was', 'when were',
-
-      // Informational requests
-      'tell me about', 'tell me more about',
-      'tell me what you know', 'what do you know about',
-      'what can you tell me', 'tell me everything about',
-      'explain', 'explain to me',
-      'describe', 'describe the',
-      'define', 'definition of', 'meaning of',
-      'give me information', 'information about',
-      'i want to know about', 'i want to learn about',
-      'can you explain', 'could you explain',
-      'please explain', 'please describe',
-
-      // Simple queries
-      'what\'s the difference between',
-      'what are the benefits',
-      'what are the advantages',
-      'what are the disadvantages',
-      'how many', 'how much',
-      'list the', 'list all',
-      'name some', 'give me some examples'
-    ];
-
-    if (generalQuestions.some(pattern => lowerMessage.includes(pattern))) {
-      console.log('[AutoReferenceButler] Detected general knowledge question, using fast-path');
+    if (personalScore >= GATHER_CONTEXT_THRESHOLD) {
+      console.log(`[AutoReferenceButler] Personal query detected (score: ${personalScore}), gathering context`);
+      return true;
+    } else {
+      console.log(`[AutoReferenceButler] General query detected (score: ${personalScore}), using fast-path`);
       return false;
     }
-
-    // PERFORMANCE: Default to FALSE (skip context) unless there's clear signal it's needed
-    // This is much faster and most queries don't need user-specific context
-    console.log('[AutoReferenceButler] No clear context signals detected, using fast-path');
-    return false;
   }
 
   private extractKeywords(message: string): string[] {
