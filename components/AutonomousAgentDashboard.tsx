@@ -268,17 +268,14 @@ export default function AutonomousAgentDashboard() {
                 // Smart progress calculation
                 let progress = 0;
                 if (task.status === 'completed') {
-                  // Completed tasks show 100% if they have evidence/files, otherwise calculate from subtasks
-                  if (filesFromFinding.length > 0 || task.evidence?.files?.length > 0) {
-                    progress = 100;
-                  } else if (subtasks.length > 0) {
-                    progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
-                  } else {
-                    progress = 100; // Completed with no subtasks = 100%
-                  }
-                } else if (subtasks.length > 0) {
-                  // In progress or pending: calculate from subtasks
+                  // ALL completed tasks show 100%, always
+                  progress = 100;
+                } else if (task.status === 'in_progress' && subtasks.length > 0) {
+                  // In progress: calculate from subtasks if available
                   progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
+                } else if (task.status === 'pending') {
+                  // Pending tasks show 0%
+                  progress = 0;
                 }
 
                 const isCompleted = task.status === 'completed';
