@@ -208,39 +208,48 @@ export default function AutonomousAgentDashboard() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-8 bg-gray-950">
         {view === 'summary' && (
-          <div className="max-w-7xl mx-auto">
-            {/* Page Header */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-3">🎯 Project Goals Progress</h1>
-              <p className="text-gray-400 text-lg">Real-time status of what Archie has accomplished</p>
+          <div className="max-w-6xl mx-auto">
+            {/* Page Header - Cleaner */}
+            <div className="mb-10">
+              <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">🎯 Project Goals</h1>
+              <p className="text-gray-400 text-xl">See exactly what Archie built, why it matters, and the business impact</p>
             </div>
 
-            {/* Overall Progress Summary */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5">
-                <div className="text-5xl font-bold text-green-400 mb-2">
-                  {status?.recent_activity?.tasks?.filter(t => t.status === 'completed').length || 0}
+            {/* Overall Progress Summary - Larger, More Visual */}
+            <div className="grid grid-cols-3 gap-6 mb-12">
+              <div className="bg-gradient-to-br from-green-500/20 to-green-500/5 border-2 border-green-500/40 rounded-2xl p-7 hover:shadow-2xl hover:shadow-green-500/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-6xl">✅</span>
+                  <div className="text-7xl font-black text-green-400">
+                    {status?.recent_activity?.tasks?.filter(t => t.status === 'completed').length || 0}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-300">Goals Completed</div>
-                <div className="text-xs text-gray-500 mt-1">100% analyzed & code generated</div>
+                <div className="text-lg font-bold text-white mb-1">Goals Completed</div>
+                <div className="text-sm text-green-300/80">Analysis done • Code ready to deploy</div>
               </div>
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-5">
-                <div className="text-5xl font-bold text-blue-400 mb-2">
-                  {status?.recent_activity?.tasks?.filter(t => t.status === 'in_progress').length || 0}
+              <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/5 border-2 border-blue-500/40 rounded-2xl p-7 hover:shadow-2xl hover:shadow-blue-500/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-6xl">🔄</span>
+                  <div className="text-7xl font-black text-blue-400">
+                    {status?.recent_activity?.tasks?.filter(t => t.status === 'in_progress').length || 0}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-300">In Progress</div>
-                <div className="text-xs text-gray-500 mt-1">Currently being analyzed</div>
+                <div className="text-lg font-bold text-white mb-1">In Progress</div>
+                <div className="text-sm text-blue-300/80">Being analyzed right now</div>
               </div>
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-5">
-                <div className="text-5xl font-bold text-yellow-400 mb-2">
-                  {status?.recent_activity?.tasks?.filter(t => t.status === 'completed').reduce((sum: number, task: any) => {
-                    return sum + (task.evidence?.files?.length || 0);
-                  }, 0) || 19}
+              <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 border-2 border-yellow-500/40 rounded-2xl p-7 hover:shadow-2xl hover:shadow-yellow-500/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-6xl">📁</span>
+                  <div className="text-7xl font-black text-yellow-400">
+                    {status?.recent_activity?.tasks?.filter(t => t.status === 'completed').reduce((sum: number, task: any) => {
+                      return sum + (task.evidence?.files?.length || 0);
+                    }, 0) || 19}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-300">Files Ready</div>
-                <div className="text-xs text-gray-500 mt-1">Production-ready code to deploy</div>
+                <div className="text-lg font-bold text-white mb-1">Files Ready</div>
+                <div className="text-sm text-yellow-300/80">Production code to deploy</div>
               </div>
             </div>
 
@@ -272,75 +281,78 @@ export default function AutonomousAgentDashboard() {
                 return (
                   <div
                     key={idx}
-                    className={`bg-gray-900 border rounded-xl p-6 shadow-xl transition-all ${
-                      isCompleted ? 'border-green-500/40 shadow-green-500/20' :
-                      isInProgress ? 'border-blue-500/40 shadow-blue-500/20' :
+                    className={`bg-gradient-to-br from-gray-900 to-gray-900/50 border-2 rounded-2xl p-8 shadow-2xl transition-all hover:scale-[1.01] ${
+                      isCompleted ? 'border-green-500/50 shadow-green-500/20' :
+                      isInProgress ? 'border-blue-500/50 shadow-blue-500/20' :
                       'border-gray-700 shadow-gray-800/20'
                     }`}
                   >
-                    {/* Goal Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl ${
+                    {/* Goal Header - Cleaner Layout */}
+                    <div className="mb-6">
+                      <div className="flex items-start gap-4 mb-4">
+                        <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-5xl flex-shrink-0 ${
                           isCompleted ? 'bg-green-500/20 border-2 border-green-500' :
                           isInProgress ? 'bg-blue-500/20 border-2 border-blue-500' :
                           'bg-gray-800 border-2 border-gray-700'
                         }`}>
                           {isCompleted ? '✅' : isInProgress ? '🔄' : '⏸️'}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3 flex-wrap">
+                            <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${
                               task.priority === 10 ? 'bg-red-600 text-white' :
                               task.priority === 9 ? 'bg-orange-600 text-white' :
                               'bg-blue-600 text-white'
                             }`}>
-                              P{task.priority}: {task.priority === 10 ? 'HIGHEST' : task.priority === 9 ? 'HIGH' : 'MEDIUM'}
+                              P{task.priority}: {task.priority === 10 ? 'HIGHEST PRIORITY' : task.priority === 9 ? 'HIGH PRIORITY' : 'MEDIUM'}
                             </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              isCompleted ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                              isInProgress ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                              'bg-gray-700 text-gray-400 border border-gray-600'
+                            <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${
+                              isCompleted ? 'bg-green-500/20 text-green-400 border-2 border-green-500/40' :
+                              isInProgress ? 'bg-blue-500/20 text-blue-400 border-2 border-blue-500/40' :
+                              'bg-gray-700 text-gray-400 border-2 border-gray-600'
                             }`}>
-                              {isCompleted ? 'COMPLETED' : isInProgress ? 'IN PROGRESS' : 'PENDING'}
+                              {isCompleted ? '✅ COMPLETED' : isInProgress ? '🔄 IN PROGRESS' : '⏸️ PENDING'}
                             </span>
                           </div>
-                          <h2 className="text-2xl font-bold text-white">{task.title}</h2>
-                          <p className="text-sm text-gray-400 mt-1">{task.description}</p>
+                          <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">{task.title}</h2>
+                          <p className="text-base text-gray-300 leading-relaxed">{task.description}</p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Progress Bar */}
-                    <div className="mb-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-300">Overall Progress</span>
-                        <span className="text-lg font-bold text-white">{progress}%</span>
+                    {/* Progress Bar - Bigger and More Visual */}
+                    <div className="mb-8 bg-gray-950/50 rounded-xl p-5 border border-gray-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-base font-bold text-white">Overall Progress</span>
+                        <span className="text-3xl font-black text-white">{progress}%</span>
                       </div>
-                      <div className="w-full bg-gray-800 rounded-full h-4 overflow-hidden">
+                      <div className="w-full bg-gray-800 rounded-full h-6 overflow-hidden shadow-inner">
                         <div
-                          className={`h-4 rounded-full transition-all duration-500 ${
-                            isCompleted ? 'bg-gradient-to-r from-green-500 to-green-400' :
-                            isInProgress ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
+                          className={`h-6 rounded-full transition-all duration-700 shadow-lg ${
+                            isCompleted ? 'bg-gradient-to-r from-green-500 via-green-400 to-green-500 shadow-green-500/50' :
+                            isInProgress ? 'bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500 shadow-blue-500/50 animate-pulse' :
                             'bg-gray-700'
                           }`}
                           style={{ width: `${progress}%` }}
                         ></div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1.5">
+                      <p className="text-sm text-gray-400 mt-3 flex items-center gap-2">
                         {isCompleted ?
-                          `✅ Analysis complete • Code generated for ${task.evidence?.files?.length || 'multiple'} files` :
+                          <><span className="text-green-400 text-xl">✅</span> Analysis complete • Code generated for <strong className="text-green-400">{task.evidence?.files?.length || 'multiple'}</strong> files</> :
                         isInProgress ?
-                          (subtasks.length > 0 ? `🔄 ${completedSubtasks.length} of ${subtasks.length} steps completed` : '🔄 Analyzing and planning implementation') :
-                          '⏸️ Queued for next run'
+                          <><span className="text-blue-400 text-xl">🔄</span> {subtasks.length > 0 ? `${completedSubtasks.length} of ${subtasks.length} steps completed` : 'Analyzing and planning implementation'}</> :
+                          <><span className="text-gray-500 text-xl">⏸️</span> Queued for next run</>
                         }
                       </p>
                     </div>
 
                     {/* What This Goal Is About - Plain English */}
-                    <div className="mb-5 bg-gray-950/50 rounded-lg p-5 border border-gray-800">
-                      <h4 className="text-sm font-bold text-white mb-3">📋 What This Goal Is About</h4>
-                      <p className="text-base text-gray-200 leading-relaxed mb-3">
+                    <div className="mb-8 bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-xl p-6 border-2 border-purple-500/30">
+                      <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span className="text-2xl">📋</span>
+                        <span>What This Goal Is About</span>
+                      </h4>
+                      <p className="text-lg text-gray-100 leading-relaxed mb-4">
                         {/* Gmail Search */}
                         {task.title.includes('Gmail') && (
                           <>Your Gmail searches were taking too long and using too much API quota. Archie built a smart search system that ranks emails by relevance, fetches multiple emails at once, and caches results for 5 minutes. <span className="text-green-400 font-semibold">Result: Faster searches, 80% less API usage.</span></>
@@ -370,13 +382,13 @@ export default function AutonomousAgentDashboard() {
                           <>{task.description}</>
                         )}
                       </p>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded border border-purple-500/30">
+                      <div className="flex items-center gap-3 text-sm flex-wrap">
+                        <span className="px-4 py-2 bg-purple-500/20 text-purple-200 rounded-lg border-2 border-purple-500/40 font-bold">
                           {task.priority === 10 ? '🔥 Highest Impact' : task.priority === 9 ? '⚡ High Impact' : '📊 Medium Impact'}
                         </span>
                         {isCompleted && task.evidence?.files && (
-                          <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded border border-green-500/30">
-                            ✅ {task.evidence.files.length} code files ready to use
+                          <span className="px-4 py-2 bg-green-500/20 text-green-200 rounded-lg border-2 border-green-500/40 font-bold">
+                            ✅ {task.evidence.files.length} code files ready
                           </span>
                         )}
                       </div>
@@ -384,8 +396,11 @@ export default function AutonomousAgentDashboard() {
 
                     {/* What Was Accomplished (Completed Tasks) */}
                     {isCompleted && (
-                      <div className="mb-5 bg-green-500/5 rounded-lg p-5 border border-green-500/20">
-                        <h4 className="text-base font-bold text-green-400 mb-4">✅ What Archie Actually Built</h4>
+                      <div className="mb-8 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-xl p-7 border-2 border-green-500/30">
+                        <h4 className="text-xl font-bold text-green-400 mb-6 flex items-center gap-2">
+                          <span className="text-3xl">✅</span>
+                          <span>What Archie Actually Built</span>
+                        </h4>
 
                         {/* Gmail */}
                         {task.title.includes('Gmail') && (
@@ -572,27 +587,33 @@ export default function AutonomousAgentDashboard() {
                           </ul>
                         )}
 
-                        <div className="mt-5 pt-4 border-t border-green-500/20">
-                          <p className="text-sm font-semibold text-white mb-2">
-                            📂 Ready to Deploy
-                          </p>
-                          <p className="text-xs text-gray-300 mb-3">
-                            Archie generated <strong className="text-green-400">{task.evidence?.files?.length || 'multiple'} production-ready code files</strong> with complete implementations, testing notes, and safety checks. All changes are marked <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-semibold">LOW RISK</span>.
-                          </p>
-                          <button
-                            onClick={() => setView('findings')}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-semibold rounded-lg transition-colors"
-                          >
-                            🔍 View All Code Files & Details
-                          </button>
+                        <div className="mt-6 pt-6 border-t-2 border-green-500/20">
+                          <div className="bg-green-500/10 rounded-lg p-5 border border-green-500/30">
+                            <p className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                              <span className="text-2xl">📂</span>
+                              <span>Ready to Deploy</span>
+                            </p>
+                            <p className="text-base text-gray-200 mb-4 leading-relaxed">
+                              Archie generated <strong className="text-green-400 text-lg">{task.evidence?.files?.length || 'multiple'} production-ready code files</strong> with complete implementations, testing notes, and safety checks. All changes are marked <span className="px-3 py-1 bg-green-500/30 text-green-300 rounded-lg font-bold border border-green-500/50">LOW RISK</span>.
+                            </p>
+                            <button
+                              onClick={() => setView('findings')}
+                              className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-xl transition-all hover:scale-105 shadow-lg hover:shadow-xl"
+                            >
+                              🔍 View All Code Files & Implementation Details
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
 
                     {/* What's Being Worked On (In Progress Tasks) */}
                     {isInProgress && (
-                      <div className="bg-blue-500/5 rounded-lg p-5 border border-blue-500/20">
-                        <h4 className="text-base font-bold text-blue-400 mb-4">🔄 What Archie Is Working On Right Now</h4>
+                      <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl p-7 border-2 border-blue-500/30">
+                        <h4 className="text-xl font-bold text-blue-400 mb-6 flex items-center gap-2">
+                          <span className="text-3xl">🔄</span>
+                          <span>What Archie Is Working On Right Now</span>
+                        </h4>
 
                         {/* Chatbot specific */}
                         {task.title.includes('Chatbot') && (
