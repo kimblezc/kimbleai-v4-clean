@@ -249,9 +249,22 @@ export default function AutonomousAgentDashboard() {
               {status?.recent_activity?.tasks?.map((task: any, idx: number) => {
                 const subtasks = task.metadata?.tasks || [];
                 const completedSubtasks = task.metadata?.completed_tasks || [];
-                const progress = subtasks.length > 0
-                  ? Math.round((completedSubtasks.length / subtasks.length) * 100)
-                  : (task.status === 'completed' ? 40 : 0);
+
+                // Smart progress calculation
+                let progress = 0;
+                if (task.status === 'completed') {
+                  // Completed tasks show 100% if they have evidence/files, otherwise calculate from subtasks
+                  if (task.evidence?.files?.length > 0) {
+                    progress = 100;
+                  } else if (subtasks.length > 0) {
+                    progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
+                  } else {
+                    progress = 100; // Completed with no subtasks = 100%
+                  }
+                } else if (subtasks.length > 0) {
+                  // In progress or pending: calculate from subtasks
+                  progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
+                }
 
                 const isCompleted = task.status === 'completed';
                 const isInProgress = task.status === 'in_progress';
@@ -316,9 +329,9 @@ export default function AutonomousAgentDashboard() {
                       </div>
                       <p className="text-xs text-gray-500 mt-1.5">
                         {isCompleted ?
-                          `✅ Analysis complete • Code generated for ${task.evidence?.files?.length || 5} files` :
+                          `✅ Analysis complete • Code generated for ${task.evidence?.files?.length || 'multiple'} files` :
                         isInProgress ?
-                          `🔄 ${completedSubtasks.length} of ${subtasks.length} steps completed` :
+                          (subtasks.length > 0 ? `🔄 ${completedSubtasks.length} of ${subtasks.length} steps completed` : '🔄 Analyzing and planning implementation') :
                           '⏸️ Queued for next run'
                         }
                       </p>
