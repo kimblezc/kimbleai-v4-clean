@@ -262,11 +262,17 @@ export default function AutonomousAgentDashboard() {
                 const subtasks = task.metadata?.tasks || [];
                 const completedSubtasks = task.metadata?.completed_tasks || [];
 
+                // Find related finding with file information
+                const relatedFinding = status?.recent_activity?.findings?.find((f: any) =>
+                  f.title?.includes(task.title) || f.description?.includes(task.title)
+                );
+                const filesFromFinding = relatedFinding?.evidence?.files || [];
+
                 // Smart progress calculation
                 let progress = 0;
                 if (task.status === 'completed') {
                   // Completed tasks show 100% if they have evidence/files, otherwise calculate from subtasks
-                  if (task.evidence?.files?.length > 0) {
+                  if (filesFromFinding.length > 0 || task.evidence?.files?.length > 0) {
                     progress = 100;
                   } else if (subtasks.length > 0) {
                     progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
@@ -280,6 +286,7 @@ export default function AutonomousAgentDashboard() {
 
                 const isCompleted = task.status === 'completed';
                 const isInProgress = task.status === 'in_progress';
+                const fileCount = filesFromFinding.length || task.evidence?.files?.length || 0;
 
                 return (
                   <div
@@ -341,7 +348,7 @@ export default function AutonomousAgentDashboard() {
                       </div>
                       <p className="text-sm text-gray-400 mt-3 flex items-center gap-2">
                         {isCompleted ?
-                          <><span className="text-green-400 text-xl">✅</span> Analysis complete • Code generated for <strong className="text-green-400">{task.evidence?.files?.length || 'multiple'}</strong> files</> :
+                          <><span className="text-green-400 text-xl">✅</span> Analysis complete • Code generated for <strong className="text-green-400">{fileCount || 'multiple'}</strong> files</> :
                         isInProgress ?
                           <><span className="text-blue-400 text-xl">🔄</span> {subtasks.length > 0 ? `${completedSubtasks.length} of ${subtasks.length} steps completed` : 'Analyzing and planning implementation'}</> :
                           <><span className="text-gray-500 text-xl">⏸️</span> Queued for next run</>
@@ -389,9 +396,9 @@ export default function AutonomousAgentDashboard() {
                         <span className="px-4 py-2 bg-purple-500/20 text-purple-200 rounded-lg border-2 border-purple-500/40 font-bold">
                           {task.priority === 10 ? '🔥 Highest Impact' : task.priority === 9 ? '⚡ High Impact' : '📊 Medium Impact'}
                         </span>
-                        {isCompleted && task.evidence?.files && (
+                        {isCompleted && fileCount > 0 && (
                           <span className="px-4 py-2 bg-green-500/20 text-green-200 rounded-lg border-2 border-green-500/40 font-bold">
-                            ✅ {task.evidence.files.length} code files ready
+                            ✅ {fileCount} code files ready
                           </span>
                         )}
                       </div>
