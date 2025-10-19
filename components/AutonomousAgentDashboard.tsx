@@ -1,11 +1,14 @@
 'use client';
 
 /**
- * Autonomous Agent Dashboard
+ * Autonomous Agent Dashboard v2.0
+ * Updated: Oct 19, 2025
  *
- * Two-column layout:
- * - Left: Executive Summary (for humans)
- * - Right: Technical Logs (for debugging)
+ * Features:
+ * - Visual redesign with large typography (7xl numbers)
+ * - Progress bars with percentages
+ * - Layman explanations with business impact
+ * - Goal-focused layout
  */
 
 import { useState, useEffect } from 'react';
