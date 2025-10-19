@@ -1,14 +1,13 @@
 'use client';
 
 /**
- * Autonomous Agent Dashboard v2.0
+ * Autonomous Agent Dashboard v3.0
  * Updated: Oct 19, 2025
  *
- * Features:
- * - Visual redesign with large typography (7xl numbers)
- * - Progress bars with percentages
- * - Layman explanations with business impact
- * - Goal-focused layout
+ * 3-Section Structure:
+ * 1. Pending Queue (tasks waiting)
+ * 2. 🔥 ACTIVE WORK (what Archie is doing RIGHT NOW - MOST IMPORTANT)
+ * 3. ✅ Completed (before/after with technical details)
  */
 
 import { useState, useEffect } from 'react';
@@ -65,7 +64,7 @@ export default function AutonomousAgentDashboard() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 60000); // Refresh every minute
+    const interval = setInterval(loadData, 30000); // Refresh every 30 seconds
     return () => clearInterval(interval);
   }, [view, logLevel]);
 
@@ -214,45 +213,43 @@ export default function AutonomousAgentDashboard() {
       <div className="flex-1 overflow-auto p-8 bg-gray-950">
         {view === 'summary' && (
           <div className="max-w-6xl mx-auto">
-            {/* Page Header - Cleaner */}
+            {/* Page Header */}
             <div className="mb-10">
-              <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">🎯 Project Goals</h1>
-              <p className="text-gray-400 text-xl">See exactly what Archie built, why it matters, and the business impact</p>
+              <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">🎯 Archie's Work Dashboard</h1>
+              <p className="text-gray-400 text-xl">Real-time view of what Archie is building, fixing, and optimizing • Updates every 30s</p>
             </div>
 
-            {/* Overall Progress Summary - Larger, More Visual */}
+            {/* Overall Stats - Reordered: Pending, Active, Completed */}
             <div className="grid grid-cols-3 gap-6 mb-12">
-              <div className="bg-gradient-to-br from-green-500/20 to-green-500/5 border-2 border-green-500/40 rounded-2xl p-7 hover:shadow-2xl hover:shadow-green-500/20 transition-all">
+              <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/50 border-2 border-gray-700 rounded-2xl p-7">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-6xl">⏳</span>
+                  <div className="text-7xl font-black text-gray-400">
+                    {status?.recent_activity?.tasks?.filter(t => t.status === 'pending').length || 0}
+                  </div>
+                </div>
+                <div className="text-lg font-bold text-white mb-1">Queued Tasks</div>
+                <div className="text-sm text-gray-400">Waiting to start</div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/5 border-2 border-blue-500/40 rounded-2xl p-7 ring-4 ring-blue-500/20">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-6xl">🔥</span>
+                  <div className="text-7xl font-black text-blue-400 animate-pulse">
+                    {status?.recent_activity?.tasks?.filter(t => t.status === 'in_progress').length || 0}
+                  </div>
+                </div>
+                <div className="text-lg font-bold text-white mb-1">Active Now</div>
+                <div className="text-sm text-blue-300/80">Being worked on right now</div>
+              </div>
+              <div className="bg-gradient-to-br from-green-500/20 to-green-500/5 border-2 border-green-500/40 rounded-2xl p-7">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-6xl">✅</span>
                   <div className="text-7xl font-black text-green-400">
                     {status?.recent_activity?.tasks?.filter(t => t.status === 'completed').length || 0}
                   </div>
                 </div>
-                <div className="text-lg font-bold text-white mb-1">Goals Completed</div>
-                <div className="text-sm text-green-300/80">Analysis done • Code ready to deploy</div>
-              </div>
-              <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/5 border-2 border-blue-500/40 rounded-2xl p-7 hover:shadow-2xl hover:shadow-blue-500/20 transition-all">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-6xl">🔄</span>
-                  <div className="text-7xl font-black text-blue-400">
-                    {status?.recent_activity?.tasks?.filter(t => t.status === 'in_progress').length || 0}
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-white mb-1">In Progress</div>
-                <div className="text-sm text-blue-300/80">Being analyzed right now</div>
-              </div>
-              <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 border-2 border-yellow-500/40 rounded-2xl p-7 hover:shadow-2xl hover:shadow-yellow-500/20 transition-all">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-6xl">📁</span>
-                  <div className="text-7xl font-black text-yellow-400">
-                    {status?.recent_activity?.tasks?.filter(t => t.status === 'completed').reduce((sum: number, task: any) => {
-                      return sum + (task.evidence?.files?.length || 0);
-                    }, 0) || 19}
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-white mb-1">Files Ready</div>
-                <div className="text-sm text-yellow-300/80">Production code to deploy</div>
+                <div className="text-lg font-bold text-white mb-1">Completed</div>
+                <div className="text-sm text-green-300/80">Ready to deploy</div>
               </div>
             </div>
 
