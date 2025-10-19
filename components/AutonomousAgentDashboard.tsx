@@ -170,6 +170,14 @@ export default function AutonomousAgentDashboard() {
   const inProgressTasks = status?.recent_activity?.tasks?.filter(t => t.status === 'in_progress') || [];
   const pendingTasks = status?.recent_activity?.tasks?.filter(t => t.status === 'pending') || [];
 
+  // Filter findings for ideas/suggestions (not code generation)
+  const ideas = status?.recent_activity?.findings?.filter((f: any) =>
+    f.finding_type === 'improvement' ||
+    f.finding_type === 'optimization' ||
+    f.detection_method === 'log_analysis' ||
+    (f.severity === 'low' && !f.evidence?.files)
+  ) || [];
+
   return (
     <div className="min-h-screen bg-gray-950">
       {/* Header */}
@@ -179,7 +187,7 @@ export default function AutonomousAgentDashboard() {
           <p className="text-gray-400 text-lg">Autonomous Agent • Real-time updates every 30s</p>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-8">
+          <div className="grid grid-cols-4 gap-4 mt-8">
             <div className="bg-green-500/10 border-2 border-green-500/40 rounded-xl p-5">
               <div className="text-5xl font-black text-green-400 mb-1">{completedTasks.length}</div>
               <div className="text-sm font-bold text-green-300">✅ Completed</div>
@@ -191,6 +199,10 @@ export default function AutonomousAgentDashboard() {
             <div className="bg-gray-800 border-2 border-gray-700 rounded-xl p-5">
               <div className="text-5xl font-black text-gray-400 mb-1">{pendingTasks.length}</div>
               <div className="text-sm font-bold text-gray-400">⏳ In Queue</div>
+            </div>
+            <div className="bg-purple-500/10 border-2 border-purple-500/40 rounded-xl p-5">
+              <div className="text-5xl font-black text-purple-400 mb-1">{ideas.length}</div>
+              <div className="text-sm font-bold text-purple-300">💡 Good Ideas</div>
             </div>
           </div>
         </div>
@@ -256,8 +268,56 @@ export default function AutonomousAgentDashboard() {
             </div>
           )}
 
+          {/* SECTION 4: GOOD IDEAS */}
+          {ideas.length > 0 && (
+            <div>
+              <div className="mb-6">
+                <h2 className="text-3xl font-bold text-purple-400 flex items-center gap-3">
+                  <span>💡</span>
+                  <span>Good Ideas & Suggestions</span>
+                  <span className="text-xl text-gray-500">({ideas.length})</span>
+                </h2>
+                <p className="text-gray-400 mt-1">Optimizations and improvements Archie discovered</p>
+              </div>
+              <div className="space-y-4">
+                {ideas.map((idea: any, idx: number) => (
+                  <div key={idx} className="bg-purple-500/10 border-2 border-purple-500/40 rounded-xl p-6 hover:border-purple-500/60 transition-all">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-purple-500/20 border-2 border-purple-500 flex items-center justify-center text-2xl flex-shrink-0">
+                        💡
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${
+                            idea.severity === 'low' ? 'bg-green-500/20 text-green-400 border-green-500/40' :
+                            idea.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40' :
+                            'bg-blue-500/20 text-blue-400 border-blue-500/40'
+                          }`}>
+                            {idea.finding_type?.toUpperCase() || 'SUGGESTION'}
+                          </span>
+                          <span className="text-xs text-gray-500">{new Date(idea.detected_at).toLocaleDateString()}</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">{idea.title}</h3>
+                        <p className="text-sm text-gray-300 leading-relaxed">{idea.description}</p>
+
+                        {idea.location && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-xs text-gray-500">📍</span>
+                            <code className="text-xs bg-gray-900 px-2 py-1 rounded border border-gray-700 text-purple-300">
+                              {idea.location}
+                            </code>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Empty State */}
-          {completedTasks.length === 0 && inProgressTasks.length === 0 && pendingTasks.length === 0 && (
+          {completedTasks.length === 0 && inProgressTasks.length === 0 && pendingTasks.length === 0 && ideas.length === 0 && (
             <div className="text-center py-20">
               <div className="text-8xl mb-6 opacity-50">🦉</div>
               <h3 className="text-2xl font-bold text-white mb-2">No Tasks Yet</h3>
