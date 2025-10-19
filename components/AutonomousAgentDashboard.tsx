@@ -210,29 +210,104 @@ export default function AutonomousAgentDashboard() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
         {view === 'summary' && (
-          <div className="grid grid-cols-2 gap-6">
-            {/* Executive Summary (Left) */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">📋 Executive Summary</h2>
+          <div className="max-w-6xl mx-auto">
+            {/* Priority Tasks Overview */}
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-white mb-2">📋 Priority Tasks</h2>
+              <p className="text-sm text-gray-400 mb-6">Archie's work from PROJECT_GOALS.md • 5 completed, 1 in progress</p>
 
-              {/* How to Read This Dashboard */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 className="text-sm font-bold text-blue-900 mb-2">📖 How to Read This Dashboard</h3>
-                <div className="space-y-2 text-xs text-blue-800">
-                  <p>
-                    <strong>Real Work:</strong> Tasks and findings created by Archie during his automated runs (every 5 minutes)
-                  </p>
-                  <p>
-                    <strong>Test Data:</strong> Marked with ⚠️ yellow badges - used to verify dashboard functionality
-                  </p>
-                  <p>
-                    <strong>Progress:</strong> Each task shows % complete based on subtasks finished and current phase
-                  </p>
-                  <p>
-                    <strong>Priority:</strong> P10 = Highest (Gmail, Drive, Files), P9 = High (Performance, Speed, Costs)
-                  </p>
-                </div>
+              <div className="space-y-4">
+                {/* Completed Tasks */}
+                {status?.recent_activity?.tasks?.filter(t => t.status === 'completed').map((task, idx) => (
+                  <div key={idx} className="bg-gray-900 border border-green-500/30 rounded-xl p-6 shadow-lg shadow-green-500/10">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
+                          <span className="text-2xl">✅</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            task.priority === 10 ? 'bg-red-600 text-white' :
+                            task.priority === 9 ? 'bg-orange-600 text-white' :
+                            'bg-blue-600 text-white'
+                          }`}>
+                            P{task.priority}
+                          </span>
+                          <h3 className="text-xl font-bold text-white">{task.title}</h3>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-3">{task.description}</p>
+                        <div className="bg-gray-950/50 rounded-lg p-4 border border-gray-800">
+                          <h4 className="text-xs font-semibold text-green-400 mb-2">What Was Fixed:</h4>
+                          <ul className="space-y-1 text-xs text-gray-300">
+                            {task.metadata?.tasks?.slice(0, 3).map((subtask: string, subIdx: number) => (
+                              <li key={subIdx} className="flex items-start gap-2">
+                                <span className="text-green-500 flex-shrink-0">•</span>
+                                <span>{subtask}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* In Progress Tasks */}
+                {status?.recent_activity?.tasks?.filter(t => t.status === 'in_progress').map((task, idx) => (
+                  <div key={idx} className="bg-gray-900 border border-blue-500/30 rounded-xl p-6 shadow-lg shadow-blue-500/10">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-blue-500/20 border-2 border-blue-500 flex items-center justify-center">
+                          <span className="text-2xl">🔄</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            task.priority === 10 ? 'bg-red-600 text-white' :
+                            task.priority === 9 ? 'bg-orange-600 text-white' :
+                            'bg-blue-600 text-white'
+                          }`}>
+                            P{task.priority}
+                          </span>
+                          <h3 className="text-xl font-bold text-white">{task.title}</h3>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-3">{task.description}</p>
+                        <div className="bg-gray-950/50 rounded-lg p-4 border border-gray-800">
+                          <h4 className="text-xs font-semibold text-blue-400 mb-2">Currently Working On:</h4>
+                          <ul className="space-y-1 text-xs text-gray-300">
+                            {task.metadata?.tasks?.slice(0, 3).map((subtask: string, subIdx: number) => (
+                              <li key={subIdx} className="flex items-start gap-2">
+                                <span className="text-blue-500 flex-shrink-0">•</span>
+                                <span>{subtask}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
+
+            {/* How to Read This Dashboard */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6 mb-8">
+              <h3 className="text-sm font-bold text-blue-400 mb-3">📖 How to Read This Dashboard</h3>
+              <div className="space-y-2 text-xs text-gray-300">
+                <p>
+                  <strong className="text-white">Real Work:</strong> Tasks and findings created by Archie during his automated runs (every 5 minutes)
+                </p>
+                <p>
+                  <strong className="text-white">Priority:</strong> P10 = Highest (Gmail, Drive, Files), P9 = High (Performance, Speed, Costs)
+                </p>
+                <p>
+                  <strong className="text-white">Progress:</strong> Each task shows % complete based on subtasks finished
+                </p>
+              </div>
+            </div>
 
               {status?.latest_report && (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
