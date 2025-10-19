@@ -126,58 +126,83 @@ export default function AutonomousAgentDashboard() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className="h-full flex flex-col bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-gray-900 border-b border-gray-800 px-6 py-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">🤖 Autonomous Agent</h1>
-            <p className="text-sm text-gray-600">Self-healing system monitoring • Runs 24/7 in the cloud</p>
+            <h1 className="text-3xl font-bold text-white mb-1">🦉 Archie</h1>
+            <p className="text-sm text-gray-400">Autonomous Agent • Monitoring & Optimizing 24/7</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${status?.agent_state?.agent_enabled ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-              <span className="text-sm font-medium text-gray-700">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg border border-gray-700">
+              <div className={`w-2.5 h-2.5 rounded-full ${status?.agent_state?.agent_enabled ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span className="text-sm font-medium text-gray-300">
                 {status?.agent_state?.agent_enabled ? 'Active' : 'Disabled'}
               </span>
             </div>
-            <div className={`px-3 py-1 rounded-full text-sm font-medium bg-${health.color}-100 text-${health.color}-800`}>
-              System Health: {health.label}
+            <div className={`px-4 py-2 rounded-lg text-sm font-semibold border ${
+              health.color === 'green' ? 'bg-green-500/10 text-green-400 border-green-500/30' :
+              health.color === 'blue' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+              health.color === 'yellow' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30' :
+              'bg-red-500/10 text-red-400 border-red-500/30'
+            }`}>
+              {health.label}
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-6 overflow-x-auto pb-2">
           <button
             onClick={() => setView('summary')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${view === 'summary' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              view === 'summary'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700'
+            }`}
           >
             📊 Summary
           </button>
           <button
             onClick={() => setView('reports')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${view === 'reports' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              view === 'reports'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700'
+            }`}
           >
-            📋 Executive Reports
+            📋 Reports
           </button>
           <button
             onClick={() => setView('logs')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${view === 'logs' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              view === 'logs'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700'
+            }`}
           >
-            🔧 Technical Logs
+            🔧 Logs
           </button>
           <button
             onClick={() => setView('tasks')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${view === 'tasks' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              view === 'tasks'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700'
+            }`}
           >
             ⚙️ Tasks
           </button>
           <button
             onClick={() => setView('findings')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${view === 'findings' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              view === 'findings'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700'
+            }`}
           >
-            🔍 Findings
+            🔍 Findings ({status?.statistics.findings.total || 0})
           </button>
         </div>
       </div>
@@ -654,22 +679,22 @@ export default function AutonomousAgentDashboard() {
 
         {view === 'findings' && (
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">🔍 Findings & Insights</h2>
-                <p className="text-sm text-gray-600 mt-1">Issues and improvements discovered by Archie • {status?.statistics.findings.total || 0} total findings</p>
+                <h2 className="text-3xl font-bold text-white mb-2">🔍 Findings & Insights</h2>
+                <p className="text-sm text-gray-400">Archie discovered {status?.statistics.findings.total || 0} issues and improvements</p>
               </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-5">
               {status?.recent_activity?.findings && status.recent_activity.findings.length > 0 ? (
                 status.recent_activity.findings.map((finding, idx) => {
                   const severityConfig = {
-                    critical: { bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-900', badge: 'bg-red-600 text-white', icon: '🔴' },
-                    high: { bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-900', badge: 'bg-orange-600 text-white', icon: '🟠' },
-                    medium: { bg: 'bg-yellow-50', border: 'border-yellow-500', text: 'text-yellow-900', badge: 'bg-yellow-600 text-white', icon: '🟡' },
-                    low: { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-900', badge: 'bg-blue-600 text-white', icon: '🟢' },
-                    info: { bg: 'bg-gray-50', border: 'border-gray-400', text: 'text-gray-900', badge: 'bg-gray-600 text-white', icon: 'ℹ️' }
+                    critical: { bg: 'bg-red-500/10', border: 'border-red-500/50', text: 'text-red-400', badge: 'bg-red-600 text-white', icon: '🔴', glow: 'shadow-red-500/20' },
+                    high: { bg: 'bg-orange-500/10', border: 'border-orange-500/50', text: 'text-orange-400', badge: 'bg-orange-600 text-white', icon: '🟠', glow: 'shadow-orange-500/20' },
+                    medium: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/50', text: 'text-yellow-400', badge: 'bg-yellow-600 text-white', icon: '🟡', glow: 'shadow-yellow-500/20' },
+                    low: { bg: 'bg-blue-500/10', border: 'border-blue-500/50', text: 'text-blue-400', badge: 'bg-blue-600 text-white', icon: '🟢', glow: 'shadow-blue-500/20' },
+                    info: { bg: 'bg-gray-800/50', border: 'border-gray-700', text: 'text-gray-300', badge: 'bg-gray-700 text-gray-200', icon: 'ℹ️', glow: 'shadow-gray-500/10' }
                   };
                   const config = severityConfig[finding.severity as keyof typeof severityConfig] || severityConfig.info;
 
@@ -683,7 +708,7 @@ export default function AutonomousAgentDashboard() {
                   };
 
                   return (
-                    <div key={idx} className={`${config.bg} rounded-xl border-l-4 ${config.border} shadow-sm hover:shadow-md transition-shadow duration-200`}>
+                    <div key={idx} className={`bg-gray-900 ${config.bg} rounded-xl border border-gray-800 ${config.border} shadow-lg ${config.glow} hover:shadow-xl hover:border-gray-700 transition-all duration-300`}>
                       {/* Header */}
                       <div className="p-6 pb-4">
                         <div className="flex items-start justify-between mb-4">
@@ -693,24 +718,24 @@ export default function AutonomousAgentDashboard() {
                               <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${config.badge}`}>
                                 {finding.severity}
                               </span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                finding.status === 'open' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
-                                finding.status === 'in_progress' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
-                                'bg-green-100 text-green-800 border border-green-300'
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                                finding.status === 'open' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                finding.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                'bg-green-500/20 text-green-400 border-green-500/30'
                               }`}>
                                 {finding.status.replace('_', ' ').toUpperCase()}
                               </span>
                               {finding.detection_method && (
-                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-300">
+                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700">
                                   {typeIcons[finding.detection_method as keyof typeof typeIcons] || '🔍'} {finding.detection_method.replace(/_/g, ' ')}
                                 </span>
                               )}
                             </div>
-                            <h3 className={`text-lg font-bold ${config.text} mb-2`}>{finding.title}</h3>
+                            <h3 className={`text-xl font-bold ${config.text} mb-2`}>{finding.title}</h3>
                           </div>
                           <div className="text-right ml-4">
                             <div className="text-xs text-gray-500 mb-1">Detected</div>
-                            <div className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                            <div className="text-xs font-medium text-gray-400 whitespace-nowrap">
                               {new Date(finding.detected_at).toLocaleString('en-GB', {
                                 day: '2-digit',
                                 month: '2-digit',
@@ -721,48 +746,48 @@ export default function AutonomousAgentDashboard() {
                           </div>
                         </div>
 
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{finding.description}</p>
+                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{finding.description}</p>
 
                         {finding.location && (
-                          <div className="mt-3 flex items-center gap-2">
-                            <span className="text-xs font-semibold text-gray-600">📍 Location:</span>
-                            <code className="text-xs bg-white px-3 py-1 rounded border border-gray-300 font-mono">{finding.location}</code>
+                          <div className="mt-4 flex items-center gap-2">
+                            <span className="text-xs font-semibold text-gray-400">📍 Location:</span>
+                            <code className="text-xs bg-gray-950 px-3 py-1.5 rounded border border-gray-700 font-mono text-gray-300">{finding.location}</code>
                           </div>
                         )}
                       </div>
 
                       {/* Code Generation Evidence */}
                       {finding.evidence && finding.evidence.files && (
-                        <div className="border-t border-gray-200 bg-white/50 p-6">
-                          <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <div className="border-t border-gray-800 bg-gray-950/50 p-6">
+                          <h4 className="text-sm font-bold text-white mb-5 flex items-center gap-2">
                             <span>💻</span>
                             <span>Archie's Implementation Plan</span>
-                            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                              {finding.evidence.files.length} files to modify
+                            <span className="ml-2 px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full text-xs font-semibold">
+                              {finding.evidence.files.length} files
                             </span>
                           </h4>
 
                           <div className="space-y-3">
                             {finding.evidence.files.map((file: any, fileIdx: number) => (
-                              <div key={fileIdx} className="bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-300 transition-colors">
-                                <div className="flex items-start justify-between mb-2">
+                              <div key={fileIdx} className="bg-gray-900 rounded-lg border border-gray-800 p-4 hover:border-gray-700 hover:bg-gray-800/50 transition-all duration-200">
+                                <div className="flex items-start justify-between mb-3">
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
                                       <span className="text-lg">{file.action === 'create' ? '📄' : file.action === 'modify' ? '✏️' : '🗑️'}</span>
-                                      <code className="text-sm font-bold text-gray-900 font-mono">{file.path}</code>
+                                      <code className="text-sm font-bold text-white font-mono">{file.path}</code>
                                     </div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                        file.action === 'create' ? 'bg-green-100 text-green-700' :
-                                        file.action === 'modify' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-red-100 text-red-700'
+                                    <div className="flex items-center gap-2">
+                                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${
+                                        file.action === 'create' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                        file.action === 'modify' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                        'bg-red-500/20 text-red-400 border-red-500/30'
                                       }`}>
                                         {file.action.toUpperCase()}
                                       </span>
-                                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                        file.riskLevel === 'low' ? 'bg-green-100 text-green-700' :
-                                        file.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                        'bg-red-100 text-red-700'
+                                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${
+                                        file.riskLevel === 'low' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                        file.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                        'bg-red-500/20 text-red-400 border-red-500/30'
                                       }`}>
                                         {file.riskLevel ? `${file.riskLevel.toUpperCase()} RISK` : 'RISK UNKNOWN'}
                                       </span>
@@ -770,15 +795,15 @@ export default function AutonomousAgentDashboard() {
                                   </div>
                                 </div>
 
-                                <div className="space-y-2 text-xs">
+                                <div className="space-y-3 text-xs">
                                   <div>
-                                    <span className="font-semibold text-gray-700">Changes:</span>
-                                    <p className="text-gray-600 mt-1 pl-4 border-l-2 border-blue-200">{file.changes}</p>
+                                    <span className="font-semibold text-gray-400">Changes:</span>
+                                    <p className="text-gray-300 mt-1.5 pl-4 border-l-2 border-blue-500/30 leading-relaxed">{file.changes}</p>
                                   </div>
                                   {file.reasoning && (
                                     <div>
-                                      <span className="font-semibold text-gray-700">Reasoning:</span>
-                                      <p className="text-gray-600 mt-1 pl-4 border-l-2 border-green-200">{file.reasoning}</p>
+                                      <span className="font-semibold text-gray-400">Reasoning:</span>
+                                      <p className="text-gray-300 mt-1.5 pl-4 border-l-2 border-green-500/30 leading-relaxed">{file.reasoning}</p>
                                     </div>
                                   )}
                                 </div>
@@ -787,16 +812,19 @@ export default function AutonomousAgentDashboard() {
                           </div>
 
                           {finding.evidence.testingNotes && (
-                            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                              <h5 className="text-xs font-bold text-blue-900 mb-2">🧪 Testing Notes</h5>
-                              <p className="text-xs text-blue-800">{finding.evidence.testingNotes}</p>
+                            <div className="mt-5 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                              <h5 className="text-xs font-bold text-blue-400 mb-2 flex items-center gap-2">
+                                <span>🧪</span>
+                                <span>Testing Notes</span>
+                              </h5>
+                              <p className="text-xs text-gray-300 leading-relaxed">{finding.evidence.testingNotes}</p>
                             </div>
                           )}
 
-                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <p className="text-xs text-yellow-800">
-                              <strong>⚠️ Status:</strong> File modification is disabled in production. These changes are logged for review.
-                              To apply: Set <code className="bg-yellow-100 px-1 py-0.5 rounded">ARCHIE_ENABLE_FILE_MODIFICATION=true</code> in local environment.
+                          <div className="mt-5 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                            <p className="text-xs text-yellow-300 leading-relaxed">
+                              <strong className="text-yellow-400">⚠️ Status:</strong> File modification is disabled in production. These changes are logged for review.
+                              To apply: Set <code className="bg-gray-950 border border-gray-700 px-2 py-1 rounded text-yellow-400 font-mono">ARCHIE_ENABLE_FILE_MODIFICATION=true</code> in local environment.
                             </p>
                           </div>
                         </div>
@@ -805,10 +833,10 @@ export default function AutonomousAgentDashboard() {
                   );
                 })
               ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                  <div className="text-6xl mb-4">🔍</div>
-                  <p className="text-gray-900 font-semibold text-lg mb-2">No findings yet</p>
-                  <p className="text-sm text-gray-500">
+                <div className="bg-gray-900 rounded-xl shadow-lg border border-gray-800 p-16 text-center">
+                  <div className="text-7xl mb-6 opacity-50">🔍</div>
+                  <p className="text-white font-bold text-xl mb-3">No findings yet</p>
+                  <p className="text-sm text-gray-400 max-w-md mx-auto">
                     Archie will proactively hunt for bugs and improvements on his next run (every 5 minutes)
                   </p>
                 </div>
