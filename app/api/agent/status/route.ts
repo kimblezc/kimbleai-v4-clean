@@ -50,21 +50,22 @@ async function getSummary() {
     // Agent state
     supabase.from('agent_state').select('*'),
 
-    // Recent tasks (last 24 hours)
+    // Recent tasks (last 7 days - increased from 24 hours)
     supabase
       .from('agent_tasks')
       .select('*')
-      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('priority', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(10),
+      .limit(20),
 
-    // Recent findings
+    // Recent findings (last 7 days)
     supabase
       .from('agent_findings')
       .select('*')
-      .gte('detected_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .order('severity', { ascending: true })
-      .limit(10),
+      .gte('detected_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('detected_at', { ascending: false })
+      .limit(30),
 
     // Latest report
     supabase
