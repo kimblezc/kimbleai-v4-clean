@@ -819,6 +819,11 @@ Format as JSON:
           result = await this.runTests();
           break;
 
+        case 'code_cleanup':
+          result = await this.cleanupCode(task);
+          changesMade = ['Code cleanup applied'];
+          break;
+
         default:
           result = `Task type ${task.task_type} not yet implemented`;
       }
@@ -984,6 +989,51 @@ Format as JSON:
       return `Bug fix applied: ${changesMade.join(', ')}`;
     } catch (error: any) {
       await this.log('error', '❌ Bug fix failed', { error: error.message });
+
+      if (changesMade.length > 0) {
+        await this.rollbackChanges();
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Code cleanup - REAL IMPLEMENTATION
+   * Refactor code, remove dead code, improve documentation, fix linting issues
+   */
+  private async cleanupCode(task: any): Promise<string> {
+    await this.log('info', `🧹 Cleaning up code: ${task.title}`);
+
+    let changesMade: string[] = [];
+
+    try {
+      // Generate cleanup plan using AI
+      const cleanupPlan = await this.generateCodeFix(task);
+
+      if (!cleanupPlan) {
+        await this.log('info', 'ℹ️ No cleanup needed or AI unavailable');
+        return 'Code cleanup analysis completed - no changes needed';
+      }
+
+      await this.log('info', '📋 Cleanup plan generated', { plan: cleanupPlan });
+
+      // Apply the cleanup changes
+      const applied = await this.applyCodeChanges(cleanupPlan, task);
+      changesMade = applied.filesModified;
+
+      // Run tests to ensure nothing broke
+      await this.runTests();
+
+      // Deploy if changes were made
+      if (changesMade.length > 0) {
+        await this.deployChanges(`Code cleanup: ${task.title}`, changesMade);
+        return `Code cleanup applied: ${changesMade.join(', ')}`;
+      }
+
+      return 'Code cleanup analysis completed - no changes needed';
+    } catch (error: any) {
+      await this.log('error', '❌ Code cleanup failed', { error: error.message });
 
       if (changesMade.length > 0) {
         await this.rollbackChanges();

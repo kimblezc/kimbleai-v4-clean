@@ -4,10 +4,11 @@
  */
 
 import { config } from 'dotenv';
-import { AutonomousAgent } from '../lib/autonomous-agent';
 
-// Load environment variables
+// Load environment variables FIRST (before any imports that use them)
 config({ path: '.env.local' });
+
+import { AutonomousAgent } from '../lib/autonomous-agent';
 
 async function triggerArchie() {
   console.log('🦉 Manually triggering Archie...\n');
