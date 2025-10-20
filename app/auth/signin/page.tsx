@@ -1,15 +1,17 @@
 'use client';
 
 import { redirect } from 'next/navigation';
+import { use } from 'react';
 import D20Dice from '../../../components/D20Dice';
 
 export default function SignInPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string; error?: string };
+  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
 }) {
-  const callbackUrl = searchParams?.callbackUrl || '/';
-  const error = searchParams?.error;
+  const params = use(searchParams);
+  const callbackUrl = params?.callbackUrl || '/';
+  const error = params?.error;
 
   return (
     <div style={{
