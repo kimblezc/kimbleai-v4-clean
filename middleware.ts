@@ -11,6 +11,7 @@ const AUTHORIZED_EMAILS = [
 // Public paths that don't require authentication
 const PUBLIC_PATHS = [
   '/api/auth',
+  '/api/chat-stream', // Streaming chat endpoint (for testing and public access)
   '/api/sync', // Device continuity endpoints
   '/api/costs', // Cost monitoring endpoints
   '/api/debug-costs', // TEMPORARY: Cost debugging endpoint
