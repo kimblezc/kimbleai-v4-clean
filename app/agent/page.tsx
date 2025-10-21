@@ -14,6 +14,10 @@ export const metadata = {
   description: 'Autonomous agent task tracking and project progress'
 };
 
+// Force dynamic rendering to always fetch fresh data from database
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function AgentPage() {
   return <ArchieConsolidatedDashboard />;
 }
