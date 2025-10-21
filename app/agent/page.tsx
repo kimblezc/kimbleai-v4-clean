@@ -1,17 +1,17 @@
 /**
- * Autonomous Agent Dashboard Page
+ * Archie's Consolidated Dashboard Page
  *
- * Displays the self-healing agent's activity, logs, and reports
+ * Displays completed, in-progress, pending tasks and suggestions
  * Accessible at: https://kimbleai.com/agent
  */
 
-import AutonomousAgentDashboard from '@/components/AutonomousAgentDashboard';
+import ArchieConsolidatedDashboard from '@/components/ArchieConsolidatedDashboard';
 
 export const metadata = {
-  title: 'Autonomous Agent | KimbleAI',
-  description: 'Self-healing system monitoring and optimization dashboard'
+  title: 'Archie Dashboard | KimbleAI',
+  description: 'Autonomous agent task tracking and project progress'
 };
 
 export default function AgentPage() {
-  return <AutonomousAgentDashboard />;
+  return <ArchieConsolidatedDashboard />;
 }
