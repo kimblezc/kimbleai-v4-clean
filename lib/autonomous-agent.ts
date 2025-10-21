@@ -352,7 +352,7 @@ Format as JSON:
         await this.createFinding({
           finding_type: 'improvement',
           severity: 'low',
-          title: 'Improvement Suggestion',
+          title: suggestion.substring(0, 100), // FIX: Use actual suggestion as title
           description: suggestion,
           detection_method: 'proactive_code_analysis'
         });
@@ -400,21 +400,31 @@ Format as JSON:
         for (const finding of recentFindings.slice(0, 10)) { // Convert top 10
           const mapping = taskMapping[finding.finding_type] || taskMapping.improvement;
 
-          // Check if task already exists for this finding
-          const { data: existingTask } = await supabase
-            .from('agent_tasks')
-            .select('id')
-            .eq('title', finding.title)
-            .eq('status', 'pending')
-            .single();
+          // Check if this finding already has a task (prevent duplicates)
+          // FIX: Check by description content, not generic title, and check ALL statuses
+          const descriptionKey = finding.description?.substring(0, 100);
 
-          if (!existingTask) {
+          const { data: existingTasks } = await supabase
+            .from('agent_tasks')
+            .select('id, status, description')
+            .eq('task_type', mapping.type);
+
+          const isDuplicate = existingTasks?.some(t =>
+            t.description?.substring(0, 100) === descriptionKey
+          );
+
+          if (!isDuplicate) {
             // Create actionable task from finding
+            // FIX: Use description if title is generic
+            const taskTitle = finding.title === 'Improvement Suggestion'
+              ? finding.description?.substring(0, 100) || finding.title
+              : finding.title;
+
             const newTask = await this.createTask({
               task_type: mapping.type,
               priority: mapping.priority,
               status: 'pending',
-              title: finding.title,
+              title: taskTitle,
               description: finding.description,
               file_paths: finding.location ? [finding.location] : [],
               metadata: {
@@ -1570,6 +1580,7 @@ ${filesModified.map(f => `- ${f}`).join('\n')}
 
   private async cleanupOldRecords(): Promise<void> {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     // Clean up old logs (keep 30 days)
     await supabase
@@ -1583,6 +1594,48 @@ ${filesModified.map(f => `- ${f}`).join('\n')}
       .delete()
       .eq('status', 'completed')
       .lt('completed_at', thirtyDaysAgo);
+
+    // FIX: Clean up findings linked to completed tasks (prevents duplicate task creation)
+    const { data: linkedFindings } = await supabase
+      .from('agent_findings')
+      .select('id, related_task_id')
+      .not('related_task_id', 'is', null);
+
+    if (linkedFindings && linkedFindings.length > 0) {
+      const taskIds = linkedFindings.map(f => f.related_task_id);
+
+      // Check which tasks are completed
+      const { data: completedTasks } = await supabase
+        .from('agent_tasks')
+        .select('id')
+        .in('id', taskIds)
+        .eq('status', 'completed');
+
+      if (completedTasks && completedTasks.length > 0) {
+        const completedTaskIds = completedTasks.map(t => t.id);
+
+        // Delete findings for completed tasks
+        const { count } = await supabase
+          .from('agent_findings')
+          .delete()
+          .in('related_task_id', completedTaskIds);
+
+        if (count && count > 0) {
+          await this.log('info', `🧹 Cleaned up ${count} processed findings`);
+        }
+      }
+    }
+
+    // Clean up old findings with no task link (older than 7 days)
+    const { count: oldFindingsCount } = await supabase
+      .from('agent_findings')
+      .delete()
+      .is('related_task_id', null)
+      .lt('detected_at', sevenDaysAgo);
+
+    if (oldFindingsCount && oldFindingsCount > 0) {
+      await this.log('info', `🧹 Cleaned up ${oldFindingsCount} old unlinked findings`);
+    }
 
     await this.log('info', 'Cleaned up old records');
   }
