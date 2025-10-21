@@ -82,7 +82,7 @@ async function fixStuckTasks() {
   const { data: findings, error: findingsError } = await supabase
     .from('agent_findings')
     .select('*')
-    .is('task_id', null) // Findings not yet converted to tasks
+    .is('related_task_id', null) // Findings not yet converted to tasks
     .order('severity', { ascending: true })
     .limit(30);
 
@@ -133,7 +133,7 @@ async function fixStuckTasks() {
         // Link task back to finding
         await supabase
           .from('agent_findings')
-          .update({ task_id: newTask.id })
+          .update({ related_task_id: newTask.id })
           .eq('id', finding.id);
 
         console.log(`  ✅ [${mapping.category.toUpperCase()}] Created P${mapping.priority} task: ${finding.title}`);

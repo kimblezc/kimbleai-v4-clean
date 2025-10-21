@@ -475,12 +475,37 @@ export async function POST(request: NextRequest) {
 // New function for pre-uploaded URLs (bypasses Vercel upload limits)
 async function processAssemblyAIFromUrl(audioUrl: string, filename: string, fileSize: number, userId: string, projectId: string, jobId: string) {
   try {
+    // Create job record in database immediately for cross-instance tracking
+    await supabase
+      .from('audio_transcriptions')
+      .insert({
+        job_id: jobId,
+        user_id: userId,
+        project_id: projectId,
+        filename: filename,
+        file_size: fileSize,
+        text: '', // Will be updated when complete
+        status: 'starting',
+        progress: 30,
+        metadata: {}
+      });
+
     // Update: Starting transcription (skip upload since it's already done)
     updateJobStatus(jobId, 30, 'starting_transcription');
 
     const transcriptId = await startTranscription(audioUrl);
 
-    // Store AssemblyAI ID for status tracking
+    // Store AssemblyAI ID in database for status tracking
+    await supabase
+      .from('audio_transcriptions')
+      .update({
+        assemblyai_id: transcriptId,
+        status: 'processing',
+        progress: 35
+      })
+      .eq('job_id', jobId);
+
+    // Store AssemblyAI ID for status tracking (legacy in-memory)
     const job = jobStore.get(jobId);
     if (job) {
       job.assemblyai_id = transcriptId;
@@ -542,15 +567,15 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
     // Save to database with enhanced metadata
     updateJobStatus(jobId, 95, 'saving');
 
+    // Update the existing job record with final results
     const { data: transcriptionData, error: saveError } = await supabase
       .from('audio_transcriptions')
-      .insert({
-        user_id: userId,
+      .update({
         project_id: autoTagAnalysis?.projectCategory || projectId,
-        filename: filename,
-        file_size: fileSize,
         duration: result.audio_duration,
         text: result.text,
+        status: 'completed',
+        progress: 100,
         service: 'assemblyai',
         metadata: {
           assemblyai_id: result.id,
@@ -568,20 +593,21 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
           auto_tagged_at: new Date().toISOString()
         }
       })
+      .eq('job_id', jobId)
       .select()
       .single();
 
     let dbId = transcriptionData?.id || null;
 
     if (saveError) {
-      console.error('[ASSEMBLYAI] Database save error:', saveError);
+      console.error('[ASSEMBLYAI] Database update error:', saveError);
       console.error('[ASSEMBLYAI] Error details:', JSON.stringify(saveError));
 
-      // If database save failed, try to look up existing transcription by AssemblyAI ID
+      // If database update failed, try to find the job record
       const { data: existingTranscription } = await supabase
         .from('audio_transcriptions')
         .select('id')
-        .eq('metadata->>assemblyai_id', result.id)
+        .eq('job_id', jobId)
         .single();
 
       if (existingTranscription) {
@@ -589,7 +615,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
         console.log('[ASSEMBLYAI] Found existing transcription with ID:', dbId);
       }
     } else {
-      console.log('[ASSEMBLYAI] Saved to database with ID:', dbId);
+      console.log('[ASSEMBLYAI] Updated database record with ID:', dbId);
     }
 
     // COST TRACKING: Track transcription cost
@@ -720,11 +746,23 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
 
   } catch (error: any) {
     console.error(`[ASSEMBLYAI] Job ${jobId} failed:`, error);
+
+    // Update database with error status
+    await supabase
+      .from('audio_transcriptions')
+      .update({
+        status: 'error',
+        progress: 0,
+        error: error.message
+      })
+      .eq('job_id', jobId);
+
+    // Update in-memory job store (legacy)
     const job = jobStore.get(jobId);
     if (job) {
       jobStore.set(jobId, {
         ...job,
-        status: 'failed',
+        status: 'error',
         progress: 0,
         eta: 0,
         error: error.message
@@ -984,6 +1022,7 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
 }
 
 function updateJobStatus(jobId: string, progress: number, status: string) {
+  // Update in-memory job store (legacy)
   const job = jobStore.get(jobId);
   if (job) {
     const remainingProgress = 100 - progress;
@@ -996,6 +1035,20 @@ function updateJobStatus(jobId: string, progress: number, status: string) {
       eta: Math.max(0, eta)
     });
   }
+
+  // Update database for cross-instance tracking
+  supabase
+    .from('audio_transcriptions')
+    .update({
+      status,
+      progress: Math.round(progress)
+    })
+    .eq('job_id', jobId)
+    .then(({ error }) => {
+      if (error) {
+        console.error(`[ASSEMBLYAI] Failed to update job ${jobId} in database:`, error);
+      }
+    });
 }
 
 // GET endpoint for progress checking
@@ -1011,14 +1064,130 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Try memory first (if same instance)
+    // Check database first for cross-instance support
+    const { data: dbJob, error: dbError } = await supabase
+      .from('audio_transcriptions')
+      .select('*')
+      .eq('job_id', jobId)
+      .single();
+
+    if (!dbError && dbJob) {
+      console.log(`[ASSEMBLYAI] Found job ${jobId} in database: status=${dbJob.status}, progress=${dbJob.progress}`);
+
+      // If job is in-progress and has assemblyai_id, query AssemblyAI for real-time status
+      if (dbJob.assemblyai_id && dbJob.status !== 'completed' && dbJob.status !== 'error') {
+        try {
+          const assemblyaiStatus = await checkTranscriptionStatus(dbJob.assemblyai_id);
+
+          // Update database with latest status from AssemblyAI
+          let newProgress = dbJob.progress || 50;
+          let newStatus = dbJob.status || 'processing';
+
+          if (assemblyaiStatus.status === 'completed') {
+            newProgress = 100;
+            newStatus = 'completed';
+          } else if (assemblyaiStatus.status === 'error') {
+            newProgress = 0;
+            newStatus = 'error';
+
+            await supabase
+              .from('audio_transcriptions')
+              .update({
+                status: 'error',
+                error: assemblyaiStatus.error,
+                progress: 0
+              })
+              .eq('job_id', jobId);
+
+            return NextResponse.json({
+              success: true,
+              jobId,
+              progress: 0,
+              eta: 0,
+              status: 'error',
+              result: null,
+              error: assemblyaiStatus.error
+            });
+          } else if (assemblyaiStatus.status === 'processing') {
+            // Increment progress slightly for visual feedback
+            newProgress = Math.min(dbJob.progress + 5, 90);
+            newStatus = 'processing';
+          }
+
+          // Update progress in database
+          await supabase
+            .from('audio_transcriptions')
+            .update({
+              status: newStatus,
+              progress: newProgress
+            })
+            .eq('job_id', jobId);
+
+          console.log(`[ASSEMBLYAI] Updated job ${jobId} from AssemblyAI: status=${newStatus}, progress=${newProgress}`);
+
+          return NextResponse.json({
+            success: true,
+            jobId,
+            progress: newProgress,
+            eta: Math.max(0, (100 - newProgress) * 3),
+            status: newStatus,
+            result: null,
+            error: null
+          });
+        } catch (assemblyError: any) {
+          console.error(`[ASSEMBLYAI] Failed to query AssemblyAI for ${jobId}:`, assemblyError);
+          // Fall through to return database status
+        }
+      }
+
+      // Return database status
+      if (dbJob.status === 'completed') {
+        return NextResponse.json({
+          success: true,
+          jobId,
+          progress: 100,
+          eta: 0,
+          status: 'completed',
+          result: {
+            id: dbJob.id,
+            text: dbJob.text,
+            duration: dbJob.duration,
+            speakers: dbJob.metadata?.utterances?.length || 0,
+            utterances: dbJob.metadata?.utterances || [],
+            words: dbJob.metadata?.words || [],
+            filename: dbJob.filename,
+            fileSize: dbJob.file_size
+          },
+          error: null
+        });
+      } else if (dbJob.status === 'error') {
+        return NextResponse.json({
+          success: true,
+          jobId,
+          progress: 0,
+          eta: 0,
+          status: 'error',
+          result: null,
+          error: dbJob.error || 'Transcription failed'
+        });
+      } else {
+        // In progress
+        return NextResponse.json({
+          success: true,
+          jobId,
+          progress: dbJob.progress || 30,
+          eta: Math.max(0, (100 - (dbJob.progress || 30)) * 3),
+          status: dbJob.status || 'processing',
+          result: null,
+          error: null
+        });
+      }
+    }
+
+    // Try memory as fallback (if same instance)
     const job = jobStore.get(jobId);
     if (job) {
-      // Clean up completed jobs after 10 minutes
-      if ((job.status === 'completed' || job.status === 'failed') &&
-          (Date.now() - job.startTime > 10 * 60 * 1000)) {
-        jobStore.delete(jobId);
-      }
+      console.log(`[ASSEMBLYAI] Found job ${jobId} in memory: status=${job.status}, progress=${job.progress}`);
 
       return NextResponse.json({
         success: true,
@@ -1031,69 +1200,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Job not in memory - check database for completed transcription
-    // Extract AssemblyAI ID from jobId (format: assemblyai_timestamp_randomid)
-    console.log(`[ASSEMBLYAI] Job ${jobId} not in memory, checking database...`);
-
-    // Try to find by metadata matching the timestamp portion of jobId
-    const { data: transcriptions, error: dbError } = await supabase
-      .from('audio_transcriptions')
-      .select('*')
-      .eq('service', 'assemblyai')
-      .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (dbError || !transcriptions || transcriptions.length === 0) {
-      // Return "processing" status to keep frontend polling
-      return NextResponse.json({
-        success: true,
-        jobId,
-        progress: 50,
-        eta: 120,
-        status: 'processing',
-        result: null,
-        error: null
-      });
-    }
-
-    // Find transcription that matches by checking if it was created around the same time
-    // JobId format: assemblyai_1759912367671_gcg39j182
-    const jobTimestamp = parseInt(jobId.split('_')[1]);
-    const recentTranscription = transcriptions.find(t => {
-      const createdAt = new Date(t.created_at).getTime();
-      // Check if created within 10 minutes of job start
-      return Math.abs(createdAt - jobTimestamp) < 10 * 60 * 1000;
-    });
-
-    if (recentTranscription) {
-      console.log(`[ASSEMBLYAI] Found completed transcription: ${recentTranscription.id}`);
-      return NextResponse.json({
-        success: true,
-        jobId,
-        progress: 100,
-        eta: 0,
-        status: 'completed',
-        result: {
-          id: recentTranscription.id,
-          text: recentTranscription.text,
-          duration: recentTranscription.duration,
-          speakers: recentTranscription.metadata?.utterances?.length || 0,
-          utterances: recentTranscription.metadata?.utterances || [],
-          words: recentTranscription.metadata?.words || [],
-          filename: recentTranscription.filename,
-          fileSize: recentTranscription.file_size
-        },
-        error: null
-      });
-    }
-
-    // Still processing - return in-progress status
+    // Job not found - might be very new or on different instance
+    console.log(`[ASSEMBLYAI] Job ${jobId} not found in database or memory`);
     return NextResponse.json({
       success: true,
       jobId,
-      progress: 60,
-      eta: 90,
-      status: 'processing',
+      progress: 30,
+      eta: 120,
+      status: 'starting',
       result: null,
       error: null
     });

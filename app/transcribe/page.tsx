@@ -156,7 +156,8 @@ export default function TranscribePage() {
 
     const poll = async () => {
       try {
-        const response = await fetch(`/api/transcribe/status?jobId=${jobId}`);
+        // Use the assemblyai endpoint's GET method which properly handles jobId lookups
+        const response = await fetch(`/api/transcribe/assemblyai?jobId=${jobId}`);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);

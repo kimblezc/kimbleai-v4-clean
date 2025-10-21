@@ -376,6 +376,7 @@ Format as JSON:
       const { data: recentFindings } = await supabase
         .from('agent_findings')
         .select('*')
+        .is('related_task_id', null) // Only unconverted findings
         .gte('detected_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order('severity', { ascending: true })
         .limit(30);
@@ -409,7 +410,7 @@ Format as JSON:
 
           if (!existingTask) {
             // Create actionable task from finding
-            await this.createTask({
+            const newTask = await this.createTask({
               task_type: mapping.type,
               priority: mapping.priority,
               status: 'pending',
@@ -424,6 +425,14 @@ Format as JSON:
                 evidence: finding.evidence
               }
             });
+
+            // Link finding to task to prevent duplicate conversions
+            if (newTask) {
+              await supabase
+                .from('agent_findings')
+                .update({ related_task_id: newTask.id })
+                .eq('id', finding.id);
+            }
 
             converted++;
             await this.log('info', `✅ [${mapping.category.toUpperCase()}] Created task: ${finding.title}`);
