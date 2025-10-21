@@ -3,6 +3,8 @@
  *
  * Displays completed, in-progress, pending tasks and suggestions
  * Accessible at: https://kimbleai.com/agent
+ *
+ * Updated: Oct 21, 2025 - 4-column layout with borders
  */
 
 import ArchieConsolidatedDashboard from '@/components/ArchieConsolidatedDashboard';

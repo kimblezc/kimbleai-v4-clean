@@ -1,20 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(git:*)",
-      "Bash(ls:*)",
-      "Bash(curl:*)",
-      "Bash(node:*)",
-      "Bash(tsc:*)",
-      "Bash(tsx:*)",
-      "WebSearch",
-      "Bash(taskkill /F /PID 39016)",
-      "Bash(powershell -Command \"Stop-Process -Id 39016 -Force\")",
-      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")"
-    ],
-    "deny": [],
-    "ask": []
+    "defaultMode": "bypassPermissions"
   }
 }
