@@ -2035,17 +2035,21 @@ export default function Home() {
           marginBottom: '16px'
         }}></div>
 
-        {/* Recent Conversations */}
-        {conversationHistory.length > 0 && (
-          <div style={{ marginBottom: '20px' }}>
+        {/* Projects Section - MOVED TO TOP */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '12px'
+          }}>
             <h3 style={{
-              fontSize: '12px',
+              fontSize: '14px',
               fontWeight: '600',
               color: '#aaa',
-              marginBottom: '8px',
-              textTransform: 'uppercase'
+              margin: 0
             }}>
-              Recent Chats
+              Projects
             </h3>
             <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
               {conversationHistory
@@ -2096,75 +2100,7 @@ export default function Home() {
                           {conv.lastMessage}{conv.project ? ` • ${formatProjectName(conv.project)}` : ''}
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowProjectDropdown(showProjectDropdown === conv.id ? null : conv.id);
-                        }}
-                        style={{
-                          padding: '4px 6px',
-                          backgroundColor: '#1a1a1a',
-                          border: '1px solid #444',
-                          borderRadius: '4px',
-                          color: '#888',
-                          fontSize: '10px',
-                          cursor: 'pointer',
-                          marginLeft: '8px',
-                          flexShrink: 0
-                        }}
-                        title="Move to Project"
-                      >
-                        📁
-                      </button>
                     </div>
-                    {showProjectDropdown === conv.id && (
-                      <div style={{
-                        position: 'absolute',
-                        right: 0,
-                        top: '100%',
-                        zIndex: 1000,
-                        backgroundColor: '#1a1a1a',
-                        border: '1px solid #444',
-                        borderRadius: '4px',
-                        padding: '8px',
-                        minWidth: '150px',
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
-                      }}>
-                        <div style={{
-                          fontSize: '10px',
-                          color: '#888',
-                          marginBottom: '6px',
-                          fontWeight: '600'
-                        }}>
-                          Move to Project:
-                        </div>
-                        {projects.map((project) => (
-                          <div
-                            key={project.id}
-                            onClick={() => moveConversationToProject(conv.id, project.id)}
-                            style={{
-                              padding: '6px 8px',
-                              backgroundColor: conv.project === project.id ? '#2a2a2a' : 'transparent',
-                              borderRadius: '3px',
-                              cursor: 'pointer',
-                              fontSize: '11px',
-                              color: '#ccc',
-                              marginBottom: '2px'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#2a2a2a';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = conv.project === project.id ? '#2a2a2a' : 'transparent';
-                            }}
-                          >
-                            {formatProjectName(project.id)}
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ))}
             </div>
