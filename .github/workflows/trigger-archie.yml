@@ -1,0 +1,40 @@
+name: Trigger Archie Autonomous Agent
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  trigger-archie:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Archie via Manual Endpoint
+        run: |
+          # Trigger the manual trigger endpoint (no auth required)
+          response=$(curl -s -w "\n%{http_code}" -X GET \
+            "https://www.kimbleai.com/api/agent/trigger?trigger=archie-manual")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          # 200 is success
+          if [ "$http_code" != "200" ]; then
+            echo "Error: Unexpected HTTP status $http_code"
+            exit 1
+          fi
+
+          echo "✅ Archie trigger completed successfully"
+
+      - name: Report Status
+        if: always()
+        run: |
+          echo "GitHub Actions successfully triggered Archie"
+          echo "This runs every 5 minutes (Vercel Crons replacement)"
