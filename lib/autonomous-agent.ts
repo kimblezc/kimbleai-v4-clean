@@ -366,49 +366,74 @@ Format as JSON:
   }
 
   /**
-   * Generate actionable improvement suggestions
+   * Generate actionable improvement suggestions AND convert them to tasks
    */
   private async generateImprovementSuggestions(): Promise<void> {
     try {
       await this.log('info', '💡 Archie: Generating improvement suggestions...');
 
-      // Suggestion 1: Priority goals progress
-      const { data: pendingTasks } = await supabase
-        .from('agent_tasks')
-        .select('title, priority, status')
-        .eq('status', 'pending')
-        .gte('priority', 9)
-        .order('priority', { ascending: false })
-        .limit(3);
+      // Get all recent findings that haven't been processed
+      const { data: recentFindings } = await supabase
+        .from('agent_findings')
+        .select('*')
+        .gte('detected_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('severity', { ascending: true })
+        .limit(30);
 
-      if (pendingTasks && pendingTasks.length > 0) {
-        await this.createFinding({
-          finding_type: 'insight',
-          severity: 'info',
-          title: `${pendingTasks.length} High-Priority Tasks Pending`,
-          description: `Archie recommends working on: ${pendingTasks.map(t => t.title).join(', ')}`,
-          detection_method: 'task_prioritization',
-          evidence: { pending_tasks: pendingTasks }
-        });
+      if (recentFindings && recentFindings.length > 0) {
+        await this.log('info', `🔍 Found ${recentFindings.length} findings to convert to tasks`);
+
+        // Map findings to task types across 4 categories
+        const taskMapping: Record<string, { type: TaskType; priority: number; category: string }> = {
+          error: { type: 'fix_bugs', priority: 9, category: 'debugging' },
+          bug: { type: 'fix_bugs', priority: 8, category: 'debugging' },
+          security: { type: 'security_scan', priority: 10, category: 'debugging' },
+          optimization: { type: 'optimize_performance', priority: 7, category: 'optimization' },
+          performance: { type: 'optimize_performance', priority: 8, category: 'optimization' },
+          improvement: { type: 'code_cleanup', priority: 6, category: 'optimization' },
+          warning: { type: 'run_tests', priority: 5, category: 'testing' },
+          insight: { type: 'documentation_update', priority: 4, category: 'deployment' }
+        };
+
+        let converted = 0;
+        for (const finding of recentFindings.slice(0, 10)) { // Convert top 10
+          const mapping = taskMapping[finding.finding_type] || taskMapping.improvement;
+
+          // Check if task already exists for this finding
+          const { data: existingTask } = await supabase
+            .from('agent_tasks')
+            .select('id')
+            .eq('title', finding.title)
+            .eq('status', 'pending')
+            .single();
+
+          if (!existingTask) {
+            // Create actionable task from finding
+            await this.createTask({
+              task_type: mapping.type,
+              priority: mapping.priority,
+              status: 'pending',
+              title: finding.title,
+              description: finding.description,
+              file_paths: finding.location ? [finding.location] : [],
+              metadata: {
+                finding_id: finding.id,
+                category: mapping.category,
+                severity: finding.severity,
+                detection_method: finding.detection_method,
+                evidence: finding.evidence
+              }
+            });
+
+            converted++;
+            await this.log('info', `✅ [${mapping.category.toUpperCase()}] Created task: ${finding.title}`);
+          }
+        }
+
+        if (converted > 0) {
+          await this.log('info', `🎯 Converted ${converted} findings to actionable tasks across all 4 categories`);
+        }
       }
-
-      // Suggestion 2: Performance insights
-      await this.createFinding({
-        finding_type: 'optimization',
-        severity: 'low',
-        title: 'Performance Optimization Opportunity',
-        description: 'Chat response time can be further improved by implementing response streaming and caching common queries',
-        detection_method: 'performance_analysis'
-      });
-
-      // Suggestion 3: Cost optimization
-      await this.createFinding({
-        finding_type: 'optimization',
-        severity: 'low',
-        title: 'Cost Optimization Suggestion',
-        description: 'Implement OpenAI response caching to reduce API costs by up to 80%',
-        detection_method: 'cost_analysis'
-      });
 
       await this.log('info', '✅ Archie generated improvement suggestions');
 
