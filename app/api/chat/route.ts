@@ -9,6 +9,7 @@ import { WorkspaceRAGSystem } from '@/app/api/google/workspace/rag-system';
 import { zapierClient } from '@/lib/zapier-client';
 import { embeddingCache } from '@/lib/embedding-cache';
 import { costMonitor } from '@/lib/cost-monitor';
+import { PromptCache } from '@/lib/prompt-cache';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -144,9 +145,27 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    // 🤖 AUTO-REFERENCE BUTLER: Automatically gather ALL relevant context
-    console.log(`🤖 Digital Butler gathering context for user ${userData.id}...`);
-    const butlerStartTime = Date.now();
+    // 💾 PROMPT CACHING: Check if we have a cached prompt for this query
+    const cachedPrompt = PromptCache.getCachedPrompt(userData.id, conversationId, userMessage);
+
+    const butler = AutoReferenceButler.getInstance();
+    let autoContext;
+    let allUserMessages = null;
+    let butlerStartTime = Date.now();
+    let butlerEndTime = Date.now();
+
+    if (cachedPrompt) {
+      // Cache hit! Skip expensive context gathering
+      console.log('[PromptCache] Using cached context - skipping Butler and history fetch');
+      autoContext = cachedPrompt.autoContext;
+      allUserMessages = cachedPrompt.messageHistory;
+    } else {
+      // Cache miss - need to gather context
+      console.log('[PromptCache] Cache miss - gathering fresh context');
+
+      // 🤖 AUTO-REFERENCE BUTLER: Automatically gather ALL relevant context
+      console.log(`🤖 Digital Butler gathering context for user ${userData.id}...`);
+      butlerStartTime = Date.now();
 
     // Check timeout before expensive operation
     if (isNearTimeout()) {
@@ -158,10 +177,7 @@ export async function POST(request: NextRequest) {
       }, { status: 504 });
     }
 
-    const butler = AutoReferenceButler.getInstance();
-
     // For complex queries, use a timeout wrapper to prevent butler from running too long
-    let autoContext;
     if (isComplexQuery) {
       const butlerTimeout = 15000; // 15 seconds max for complex queries
       console.log(`[QueryComplexity] Using ${butlerTimeout}ms timeout for AutoReferenceButler`);
@@ -201,27 +217,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const butlerEndTime = Date.now();
-    console.log(`⏱️ [Performance] AutoReferenceButler completed in ${butlerEndTime - butlerStartTime}ms (confidence: ${Math.round(autoContext.confidence)}%)`);
+      butlerEndTime = Date.now();
+      console.log(`⏱️ [Performance] AutoReferenceButler completed in ${butlerEndTime - butlerStartTime}ms (confidence: ${Math.round(autoContext.confidence)}%)`);
 
-    // PERFORMANCE: Skip message history for simple general knowledge queries
-    let allUserMessages = null;
-    if (autoContext.confidence > 0) {
-      // Only fetch history if context was gathered (not a simple general query)
-      const { data: messageData, error: messagesError } = await supabase
-        .from('messages')
-        .select('content, role, created_at, conversation_id')
-        .eq('user_id', userData.id)
-        .order('created_at', { ascending: false })
-        .limit(15);
+      // PERFORMANCE: Skip message history for simple general knowledge queries
+      if (autoContext.confidence > 0) {
+        // Only fetch history if context was gathered (not a simple general query)
+        const { data: messageData, error: messagesError } = await supabase
+          .from('messages')
+          .select('content, role, created_at, conversation_id')
+          .eq('user_id', userData.id)
+          .order('created_at', { ascending: false })
+          .limit(15);
 
-      if (messagesError) {
-        console.error('Messages retrieval error:', messagesError);
+        if (messagesError) {
+          console.error('Messages retrieval error:', messagesError);
+        }
+        allUserMessages = messageData;
+      } else {
+        console.log('[Performance] Skipping message history for simple general query');
       }
-      allUserMessages = messageData;
-    } else {
-      console.log('[Performance] Skipping message history for simple general query');
-    }
+    } // End of cache miss block
 
     // Format auto-context for AI
     const formattedAutoContext = butler.formatContextForAI(autoContext);
@@ -239,10 +255,7 @@ This query requires searching multiple data sources. To avoid timeouts:
 ` : '';
 
     // Build comprehensive context with auto-referenced data
-    const contextMessages = [
-      {
-        role: 'system',
-        content: `You are KimbleAI, an advanced digital butler AI assistant with PERFECT MEMORY and AUTOMATIC DATA REFERENCING.${complexQueryInstructions}
+    const systemMessageContent = `You are KimbleAI, an advanced digital butler AI assistant with PERFECT MEMORY and AUTOMATIC DATA REFERENCING.${complexQueryInstructions}
 
 🦉 **ABOUT ARCHIE - THE AUTONOMOUS AGENT**
 There is an autonomous agent named Archie who works alongside you:
@@ -319,10 +332,25 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
 - Act as a knowledgeable digital butler who remembers everything
 - Suggest relevant actions based on context (schedule meetings, find files, etc.)
 - Use data from all integrated sources (Drive, Gmail, Calendar, etc.) when helpful
-- For Zach (admin): Provide system insights and admin-level information when relevant`
+- For Zach (admin): Provide system insights and admin-level information when relevant`;
+
+    const contextMessages = [
+      {
+        role: 'system',
+        content: systemMessageContent
       },
       ...messages
     ];
+
+    // 💾 CACHE STORAGE: Store the context for future similar queries
+    if (!cachedPrompt) {
+      PromptCache.cachePrompt(userData.id, conversationId, userMessage, {
+        systemMessage: systemMessageContent,
+        contextMessages: contextMessages,
+        autoContext: autoContext,
+        messageHistory: allUserMessages
+      });
+    }
 
     // Intelligent model selection based on task complexity
     const currentUserMessage = messages[messages.length - 1]?.content || '';

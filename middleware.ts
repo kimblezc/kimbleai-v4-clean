@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   '/api/costs', // Cost monitoring endpoints
   '/api/debug-costs', // TEMPORARY: Cost debugging endpoint
   '/api/migrate-costs', // TEMPORARY: Database migration endpoint
+  '/api/prompt-cache-stats', // Prompt cache statistics (for monitoring)
   '/api/users', // User lookup endpoint (for cost tracking scripts)
   '/api/google', // Google Drive/Workspace endpoints (use userId for auth)
   '/api/transcribe', // Transcription endpoints (use userId for auth)
