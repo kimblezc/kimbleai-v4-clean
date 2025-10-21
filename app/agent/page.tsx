@@ -10,9 +10,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Force dynamic rendering
+// Force dynamic rendering - AGGRESSIVE CACHE BUSTING
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
 
 export const metadata = {
   title: 'Archie Dashboard | KimbleAI',
@@ -20,24 +22,35 @@ export const metadata = {
 };
 
 async function getData() {
-  // Fetch tasks
-  const { data: tasks } = await supabase
+  // Fetch ALL tasks by status (not limited to 50)
+  const { data: completedTasks } = await supabase
     .from('agent_tasks')
     .select('*')
-    .order('created_at', { ascending: false })
-    .limit(50);
+    .eq('status', 'completed')
+    .order('completed_at', { ascending: false });
+
+  const { data: inProgressTasks } = await supabase
+    .from('agent_tasks')
+    .select('*')
+    .eq('status', 'in_progress')
+    .order('created_at', { ascending: false });
+
+  const { data: pendingTasks } = await supabase
+    .from('agent_tasks')
+    .select('*')
+    .eq('status', 'pending')
+    .order('priority', { ascending: false });
 
   // Fetch findings
   const { data: findings } = await supabase
     .from('agent_findings')
     .select('*')
-    .order('detected_at', { ascending: false })
-    .limit(50);
+    .order('detected_at', { ascending: false });
 
   return {
-    completed: tasks?.filter(t => t.status === 'completed') || [],
-    inProgress: tasks?.filter(t => t.status === 'in_progress') || [],
-    pending: tasks?.filter(t => t.status === 'pending') || [],
+    completed: completedTasks || [],
+    inProgress: inProgressTasks || [],
+    pending: pendingTasks || [],
     suggestions: findings?.filter(f =>
       f.finding_type === 'improvement' ||
       f.finding_type === 'optimization' ||
