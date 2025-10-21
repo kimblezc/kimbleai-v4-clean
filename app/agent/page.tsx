@@ -344,13 +344,13 @@ export default async function ArchieDashboard() {
                             transition: 'width 0.5s ease'
                           }}></div>
                         </div>
-                        {totalSubtasks > 0 && (
+                        {total > 0 && (
                           <div style={{
                             fontSize: '11px',
                             color: '#64748b',
                             marginTop: '6px'
                           }}>
-                            {completedSubtasks} of {totalSubtasks} subtasks complete
+                            {completed} of {total} tasks complete
                           </div>
                         )}
                       </div>
