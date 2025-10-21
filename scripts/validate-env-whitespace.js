@@ -135,7 +135,7 @@ function detectLiteralWhitespace(value) {
 /**
  * Validate API key format
  */
-function validateApiKeyFormat(varName, value) {
+function validateApiKeyFormat(varName, value, isProductionFile = true) {
   const issues = [];
 
   // AssemblyAI - 32 hex characters
@@ -203,8 +203,8 @@ function validateApiKeyFormat(varName, value) {
     }
   }
 
-  // NEXTAUTH_URL
-  if (varName === 'NEXTAUTH_URL') {
+  // NEXTAUTH_URL - only check HTTPS for production files
+  if (varName === 'NEXTAUTH_URL' && isProductionFile) {
     if (!/^https:\/\//.test(value)) {
       issues.push({
         type: 'format',
@@ -275,7 +275,7 @@ function parseEnvFile(filePath) {
 /**
  * Validate a single environment variable
  */
-function validateVariable(variable) {
+function validateVariable(variable, isProductionFile = true) {
   const { name, value } = variable;
   const allIssues = [];
 
@@ -294,7 +294,7 @@ function validateVariable(variable) {
   });
 
   // Validate format
-  const formatIssues = validateApiKeyFormat(name, value);
+  const formatIssues = validateApiKeyFormat(name, value, isProductionFile);
   formatIssues.forEach(issue => allIssues.push(issue));
 
   return allIssues;
@@ -393,7 +393,9 @@ async function main() {
     console.log(`Found ${variables.length} variables\n`);
 
     variables.forEach(variable => {
-      const issues = validateVariable(variable);
+      // .env.local is for local development, skip production-specific validations
+      const isProductionFile = fileName !== '.env.local';
+      const issues = validateVariable(variable, isProductionFile);
       allIssues = allIssues.concat(issues);
     });
   }
