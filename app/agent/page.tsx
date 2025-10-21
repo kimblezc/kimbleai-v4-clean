@@ -266,10 +266,11 @@ export default async function ArchieDashboard() {
                 data.inProgress.map((task: any, i: number) => {
                   // Calculate progress percentage
                   const metadata = task.metadata || {};
-                  const completedSubtasks = metadata.completed_tasks?.length || 0;
-                  const totalSubtasks = metadata.tasks?.length || 0;
-                  const progress = totalSubtasks > 0
-                    ? Math.round((completedSubtasks / totalSubtasks) * 100)
+                  const completed = metadata.completed?.length || 0;
+                  const remaining = metadata.remaining?.length || 0;
+                  const total = completed + remaining;
+                  const progress = total > 0
+                    ? Math.round((completed / total) * 100)
                     : 0;
 
                   return (
