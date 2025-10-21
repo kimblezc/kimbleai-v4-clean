@@ -58,21 +58,37 @@ export default async function ArchieDashboard() {
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
       {/* Header */}
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ fontSize: '60px', marginBottom: '20px' }}>🦉</div>
+      <div style={{ width: '100%', padding: '0 20px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div style={{
+            fontSize: '60px',
+            marginBottom: '10px',
+            filter: 'drop-shadow(0 0 20px rgba(34, 197, 94, 0.6))'
+          }}>
+            🦉
+            <span style={{
+              position: 'absolute',
+              marginLeft: '-42px',
+              marginTop: '8px',
+              width: '8px',
+              height: '8px',
+              background: '#22c55e',
+              borderRadius: '50%',
+              boxShadow: '0 0 10px #22c55e, 18px 0 10px #22c55e'
+            }}></span>
+          </div>
           <h1 style={{
-            fontSize: '48px',
+            fontSize: '42px',
             fontWeight: 'bold',
             background: 'linear-gradient(to right, #60a5fa, #34d399)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            marginBottom: '10px'
+            marginBottom: '5px'
           }}>
             Archie's Dashboard
           </h1>
-          <p style={{ color: '#9ca3af', fontSize: '18px' }}>
-            NEW BUILD - Auto-updates every request
+          <p style={{ color: '#6b7280', fontSize: '14px' }}>
+            Auto-updates every request • Server-side rendered
           </p>
         </div>
 
@@ -257,43 +273,99 @@ export default async function ArchieDashboard() {
                   <p>No active tasks</p>
                 </div>
               ) : (
-                data.inProgress.map((task: any, i: number) => (
-                  <div key={i} style={{
-                    background: '#0f0f0f',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    marginBottom: '12px'
-                  }}>
-                    <div style={{
-                      background: '#3b82f6',
-                      color: 'white',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      display: 'inline-block',
-                      marginBottom: '8px'
+                data.inProgress.map((task: any, i: number) => {
+                  // Calculate progress percentage
+                  const metadata = task.metadata || {};
+                  const completedSubtasks = metadata.completed_tasks?.length || 0;
+                  const totalSubtasks = metadata.tasks?.length || 0;
+                  const progress = totalSubtasks > 0
+                    ? Math.round((completedSubtasks / totalSubtasks) * 100)
+                    : 0;
+
+                  return (
+                    <div key={i} style={{
+                      background: '#0f0f0f',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      marginBottom: '12px'
                     }}>
-                      P{task.priority} • ACTIVE
+                      <div style={{
+                        background: '#3b82f6',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        display: 'inline-block',
+                        marginBottom: '8px'
+                      }}>
+                        P{task.priority} • ACTIVE
+                      </div>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        marginBottom: '8px',
+                        color: 'white'
+                      }}>
+                        {task.title}
+                      </h3>
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#9ca3af',
+                        lineHeight: '1.5',
+                        marginBottom: '12px'
+                      }}>
+                        {task.description}
+                      </p>
+
+                      {/* Progress Bar */}
+                      <div style={{
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        borderRadius: '6px',
+                        padding: '10px',
+                        marginBottom: '8px'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginBottom: '6px'
+                        }}>
+                          <span style={{ fontSize: '12px', color: '#93c5fd', fontWeight: 'bold' }}>
+                            Progress
+                          </span>
+                          <span style={{ fontSize: '14px', color: '#3b82f6', fontWeight: 'bold' }}>
+                            {progress}%
+                          </span>
+                        </div>
+                        <div style={{
+                          width: '100%',
+                          height: '8px',
+                          background: '#1e293b',
+                          borderRadius: '4px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            width: `${progress}%`,
+                            height: '100%',
+                            background: 'linear-gradient(to right, #3b82f6, #60a5fa)',
+                            borderRadius: '4px',
+                            transition: 'width 0.5s ease'
+                          }}></div>
+                        </div>
+                        {totalSubtasks > 0 && (
+                          <div style={{
+                            fontSize: '11px',
+                            color: '#64748b',
+                            marginTop: '6px'
+                          }}>
+                            {completedSubtasks} of {totalSubtasks} subtasks complete
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      marginBottom: '8px',
-                      color: 'white'
-                    }}>
-                      {task.title}
-                    </h3>
-                    <p style={{
-                      fontSize: '13px',
-                      color: '#9ca3af',
-                      lineHeight: '1.5'
-                    }}>
-                      {task.description}
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -389,73 +461,109 @@ export default async function ArchieDashboard() {
                   <p>Archie is analyzing...</p>
                 </div>
               ) : (
-                data.suggestions.map((suggestion: any, i: number) => (
-                  <div key={i} style={{
-                    background: '#0f0f0f',
-                    border: '1px solid rgba(168, 85, 247, 0.3)',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    marginBottom: '12px'
-                  }}>
-                    <div style={{
-                      background: '#a855f7',
-                      color: 'white',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      display: 'inline-block',
-                      marginBottom: '8px'
+                data.suggestions.map((suggestion: any, i: number) => {
+                  // Determine implementation approach based on type
+                  const getImplementation = () => {
+                    if (suggestion.finding_type === 'optimization') {
+                      if (suggestion.title.includes('Cost')) {
+                        return 'Enable OpenAI prompt caching in API calls';
+                      } else if (suggestion.title.includes('Performance')) {
+                        return 'Add streaming responses + Redis caching layer';
+                      }
+                    } else if (suggestion.finding_type === 'improvement') {
+                      if (suggestion.description?.includes('error boundaries')) {
+                        return 'Wrap components with ErrorBoundary';
+                      } else if (suggestion.description?.includes('try-catch')) {
+                        return 'Add try-catch to async functions';
+                      } else if (suggestion.description?.includes('database queries')) {
+                        return 'Profile queries + add indexes';
+                      }
+                    }
+                    return 'Review and prioritize based on impact';
+                  };
+
+                  return (
+                    <div key={i} style={{
+                      background: '#0f0f0f',
+                      border: '1px solid rgba(168, 85, 247, 0.3)',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      marginBottom: '12px'
                     }}>
-                      {suggestion.finding_type?.toUpperCase() || 'SUGGESTION'}
+                      <div style={{
+                        background: '#a855f7',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        display: 'inline-block',
+                        marginBottom: '8px'
+                      }}>
+                        {suggestion.finding_type?.toUpperCase() || 'SUGGESTION'}
+                      </div>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        marginBottom: '8px',
+                        color: 'white'
+                      }}>
+                        {suggestion.title}
+                      </h3>
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#9ca3af',
+                        lineHeight: '1.5',
+                        marginBottom: '10px'
+                      }}>
+                        {suggestion.description}
+                      </p>
+
+                      {/* Implementation Guidance */}
+                      <div style={{
+                        background: 'rgba(168, 85, 247, 0.1)',
+                        border: '1px solid rgba(168, 85, 247, 0.2)',
+                        borderRadius: '4px',
+                        padding: '8px 10px',
+                        marginTop: '8px'
+                      }}>
+                        <div style={{
+                          fontSize: '10px',
+                          color: '#a855f7',
+                          fontWeight: 'bold',
+                          marginBottom: '4px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          → Implementation
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#c4b5fd',
+                          lineHeight: '1.4'
+                        }}>
+                          {getImplementation()}
+                        </div>
+                      </div>
                     </div>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      marginBottom: '8px',
-                      color: 'white'
-                    }}>
-                      {suggestion.title}
-                    </h3>
-                    <p style={{
-                      fontSize: '13px',
-                      color: '#9ca3af',
-                      lineHeight: '1.5'
-                    }}>
-                      {suggestion.description}
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
 
         </div>
 
-        {/* Footer */}
+        {/* Minimal Footer */}
         <div style={{
-          marginTop: '60px',
+          marginTop: '40px',
           textAlign: 'center',
-          padding: '30px',
-          background: '#1a1a1a',
-          borderRadius: '12px',
-          border: '1px solid #333'
+          padding: '20px',
+          borderTop: '1px solid #333'
         }}>
-          <div style={{ fontSize: '48px', marginBottom: '15px' }}>🦉</div>
-          <h3 style={{ fontSize: '24px', marginBottom: '10px', color: 'white' }}>
-            About Archie
-          </h3>
-          <p style={{ color: '#9ca3af', lineHeight: '1.6', maxWidth: '600px', margin: '0 auto' }}>
-            Archie is your autonomous agent - a wise horned owl who runs every 5 minutes.
-            He monitors your system, fixes bugs, optimizes performance, and works toward your project goals.
+          <p style={{ fontSize: '12px', color: '#6b7280', margin: '0' }}>
+            Archie 🦉 • Autonomous Agent • Runs every 5 minutes • Last updated: {new Date().toLocaleString()}
           </p>
-          <div style={{
-            marginTop: '20px',
-            fontSize: '12px',
-            color: '#6b7280'
-          }}>
-            Last updated: {new Date().toLocaleString()} • Server-side rendered
-          </div>
         </div>
       </div>
     </div>
