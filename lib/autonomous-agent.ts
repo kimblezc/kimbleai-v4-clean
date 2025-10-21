@@ -400,6 +400,12 @@ Format as JSON:
         for (const finding of recentFindings.slice(0, 10)) { // Convert top 10
           const mapping = taskMapping[finding.finding_type] || taskMapping.improvement;
 
+          // FIX: Skip converting "insight" findings - they're informational only, not actionable
+          if (finding.finding_type === 'insight') {
+            await this.log('info', `⏭️ Skipping insight finding (informational only): ${finding.title}`);
+            continue;
+          }
+
           // Check if this finding already has a task (prevent duplicates)
           // FIX: Check by description content, not generic title, and check ALL statuses
           const descriptionKey = finding.description?.substring(0, 100);
