@@ -789,7 +789,7 @@ Format as JSON:
         .from('agent_tasks')
         .select('*')
         .eq('status', 'pending')
-        .lte('scheduled_for', new Date().toISOString())
+        .or(`scheduled_for.is.null,scheduled_for.lte.${new Date().toISOString()}`)
         .order('priority', { ascending: false })
         .limit(5);
 
@@ -1479,8 +1479,25 @@ ${filesModified.map(f => `- ${f}`).join('\n')}
     console.log(`[${level.toUpperCase()}] ${message}`, details || '');
   }
 
-  private async createTask(task: AgentTask): Promise<void> {
-    await supabase.from('agent_tasks').insert(task);
+  private async createTask(task: AgentTask): Promise<any> {
+    // Set scheduled_for to NOW if not provided (ensures tasks are immediately processable)
+    const taskToInsert = {
+      ...task,
+      scheduled_for: task.scheduled_for || new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('agent_tasks')
+      .insert(taskToInsert)
+      .select()
+      .single();
+
+    if (error) {
+      await this.log('error', `Failed to create task: ${task.title}`, { error: error.message });
+      return null;
+    }
+
+    return data;
   }
 
   private async createFinding(finding: AgentFinding): Promise<void> {
