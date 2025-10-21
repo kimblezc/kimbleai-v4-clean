@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * Archie's Consolidated Dashboard
+ * Archie's Consolidated Dashboard - v2.0
  * Combines /agent and /accomplishments into one readable view
+ *
+ * Updated: Oct 21, 2025
  *
  * Layout: 4 columns with clear boundaries
  * - Completed Tasks (with details)
