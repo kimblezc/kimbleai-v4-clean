@@ -66,16 +66,6 @@ export default async function ArchieDashboard() {
             filter: 'drop-shadow(0 0 20px rgba(34, 197, 94, 0.6))'
           }}>
             🦉
-            <span style={{
-              position: 'absolute',
-              marginLeft: '-42px',
-              marginTop: '8px',
-              width: '8px',
-              height: '8px',
-              background: '#22c55e',
-              borderRadius: '50%',
-              boxShadow: '0 0 10px #22c55e, 18px 0 10px #22c55e'
-            }}></span>
           </div>
           <h1 style={{
             fontSize: '42px',
