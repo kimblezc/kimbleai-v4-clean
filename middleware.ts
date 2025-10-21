@@ -32,6 +32,7 @@ const PUBLIC_PATHS = [
   '/auth/signout',
   '/_next',
   '/favicon.ico',
+  '/manifest.json', // PWA manifest
 ];
 
 // Security logging function
