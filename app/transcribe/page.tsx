@@ -22,6 +22,7 @@ interface TranscriptionJob {
   progress: number;
   result?: any;
   error?: string;
+  transcriptionId?: string;  // Added: AssemblyAI transcription ID for downloads
 }
 
 export default function TranscribePage() {
@@ -33,6 +34,8 @@ export default function TranscribePage() {
   const [error, setError] = useState<string | null>(null);
   const [folderIdInput, setFolderIdInput] = useState('');
   const [dailyUsage, setDailyUsage] = useState<{ hours: number; cost: number } | null>(null);
+  const [projectName, setProjectName] = useState('general');  // Added: Project/category name
+  const [exportingFileId, setExportingFileId] = useState<string | null>(null);  // Added: Track which file is exporting
 
   // Load items from folder
   const loadFolder = async (folderId?: string) => {
@@ -112,7 +115,7 @@ export default function TranscribePage() {
           fileId: file.id,
           fileName: file.name,
           userId: 'zach',
-          projectId: 'general'
+          projectId: projectName  // Use user-selected project name
         })
       });
 
@@ -177,6 +180,10 @@ export default function TranscribePage() {
         job.progress = data.progress || 0;
         job.result = data.result;
         job.error = data.error;
+        // Save transcriptionId when complete for downloads/exports
+        if (data.status === 'completed' && jobId) {
+          job.transcriptionId = jobId;
+        }
 
         setJobs(new Map(jobs.set(fileId, job)));
 
@@ -214,6 +221,70 @@ export default function TranscribePage() {
       }
     } catch (err) {
       console.error('Failed to load usage:', err);
+    }
+  };
+
+  // Download transcription in specific format
+  const downloadFormat = async (transcriptionId: string, format: 'txt' | 'json' | 'srt' | 'vtt', fileName: string) => {
+    try {
+      // Use export endpoint to download file
+      const response = await fetch('/api/transcribe/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcriptionId,
+          format: format === 'vtt' ? 'srt' : format,  // Export API doesn't have VTT, we'll get it from save-to-drive
+          includeTimestamps: true,
+          includeSpeakers: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName.replace(/\.[^/.]+$/, '') + `_transcript.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      setError(`Download failed: ${err.message}`);
+    }
+  };
+
+  // Export all formats to Google Drive
+  const exportAllToDrive = async (fileId: string, transcriptionId: string) => {
+    setExportingFileId(fileId);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/transcribe/save-to-drive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcriptionId,
+          category: projectName,
+          userId: 'zach',
+          multiFormat: true  // Export all 4 formats: TXT, JSON, SRT, VTT
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Export failed');
+      }
+
+      alert(`✅ Exported ${data.files.length} files to Google Drive in "${projectName}" project!\n\nFiles:\n${data.files.map((f: any) => `• ${f.format}: ${f.fileName}`).join('\n')}`);
+    } catch (err: any) {
+      setError(`Export failed: ${err.message}`);
+    } finally {
+      setExportingFileId(null);
     }
   };
 
@@ -282,6 +353,33 @@ export default function TranscribePage() {
               <div style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.25rem' }}>
                 {dailyUsage ? `$${dailyUsage.cost.toFixed(2)} / $25 daily` : 'Budget enforced'}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Project/Category Selection */}
+        <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '0.5rem', padding: '1rem', marginBottom: '2rem' }}>
+          <div style={{ marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#34d399' }}>
+            📁 Project/Category Name
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="e.g., meetings, interviews, lectures"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              style={{
+                flex: 1,
+                padding: '0.75rem',
+                backgroundColor: '#1f2937',
+                border: '1px solid #374151',
+                borderRadius: '0.5rem',
+                color: '#fff',
+                fontSize: '0.875rem'
+              }}
+            />
+            <div style={{ fontSize: '0.75rem', color: '#9ca3af', minWidth: '200px' }}>
+              Exports will be saved to: kimbleai-transcriptions/{projectName}
             </div>
           </div>
         </div>
@@ -486,9 +584,75 @@ export default function TranscribePage() {
                                 </p>
                               </div>
                             )}
-                            {isCompleted && (
-                              <div style={{ fontSize: '0.875rem', color: '#34d399' }}>
-                                ✅ Complete • Added to knowledge base
+                            {isCompleted && job.transcriptionId && (
+                              <div>
+                                <div style={{ fontSize: '0.875rem', color: '#34d399', marginBottom: '0.75rem' }}>
+                                  ✅ Complete • Added to knowledge base
+                                </div>
+                                {/* Download buttons */}
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                  <button
+                                    onClick={() => downloadFormat(job.transcriptionId!, 'txt', file.name)}
+                                    style={{
+                                      padding: '0.375rem 0.75rem',
+                                      backgroundColor: '#1f2937',
+                                      border: '1px solid #374151',
+                                      borderRadius: '0.375rem',
+                                      color: '#60a5fa',
+                                      cursor: 'pointer',
+                                      fontSize: '0.75rem'
+                                    }}
+                                  >
+                                    📄 TXT
+                                  </button>
+                                  <button
+                                    onClick={() => downloadFormat(job.transcriptionId!, 'json', file.name)}
+                                    style={{
+                                      padding: '0.375rem 0.75rem',
+                                      backgroundColor: '#1f2937',
+                                      border: '1px solid #374151',
+                                      borderRadius: '0.375rem',
+                                      color: '#60a5fa',
+                                      cursor: 'pointer',
+                                      fontSize: '0.75rem'
+                                    }}
+                                  >
+                                    📦 JSON
+                                  </button>
+                                  <button
+                                    onClick={() => downloadFormat(job.transcriptionId!, 'srt', file.name)}
+                                    style={{
+                                      padding: '0.375rem 0.75rem',
+                                      backgroundColor: '#1f2937',
+                                      border: '1px solid #374151',
+                                      borderRadius: '0.375rem',
+                                      color: '#60a5fa',
+                                      cursor: 'pointer',
+                                      fontSize: '0.75rem'
+                                    }}
+                                  >
+                                    🎬 SRT
+                                  </button>
+                                  <button
+                                    onClick={() => exportAllToDrive(file.id, job.transcriptionId!)}
+                                    disabled={exportingFileId === file.id}
+                                    style={{
+                                      padding: '0.375rem 0.75rem',
+                                      backgroundColor: exportingFileId === file.id ? '#374151' : '#10b981',
+                                      border: 'none',
+                                      borderRadius: '0.375rem',
+                                      color: '#fff',
+                                      cursor: exportingFileId === file.id ? 'not-allowed' : 'pointer',
+                                      fontSize: '0.75rem',
+                                      fontWeight: '500'
+                                    }}
+                                  >
+                                    {exportingFileId === file.id ? '⏳ Exporting...' : '☁️ Export All to Drive'}
+                                  </button>
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>
+                                  Download individual formats or export all 4 files (TXT, JSON, SRT, VTT) to Drive
+                                </div>
                               </div>
                             )}
                             {isError && (

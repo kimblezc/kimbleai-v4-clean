@@ -2105,7 +2105,7 @@ export default function Home() {
                 ))}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Projects Section */}
         <div style={{ flex: 1 }}>
