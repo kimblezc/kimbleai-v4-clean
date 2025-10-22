@@ -26,18 +26,20 @@ export async function POST(request: NextRequest) {
     // Try NextAuth session first
     const session = await getServerSession(authOptions);
     let accessToken = session?.accessToken;
+    let refreshToken = null;
 
     // Fallback to Supabase token lookup if no session
     if (!accessToken) {
       console.log('[SAVE-TO-DRIVE] No NextAuth session, trying Supabase token lookup');
       const { data: tokenData } = await supabase
         .from('user_tokens')
-        .select('access_token')
+        .select('access_token, refresh_token')
         .eq('user_id', userId)
         .single();
 
       if (tokenData?.access_token) {
         accessToken = tokenData.access_token;
+        refreshToken = tokenData.refresh_token;
         console.log('[SAVE-TO-DRIVE] Using access token from Supabase');
       }
     }
@@ -48,6 +50,34 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Create OAuth2 client with automatic token refresh
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.NEXTAUTH_URL
+    );
+
+    // Set credentials
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+
+    // Add event listener to save refreshed tokens
+    oauth2Client.on('tokens', async (tokens) => {
+      if (tokens.access_token) {
+        console.log('[SAVE-TO-DRIVE] Token refreshed, saving to database');
+        await supabase
+          .from('user_tokens')
+          .update({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token || refreshToken,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+      }
+    });
 
     // Fetch transcription from database by assemblyai_id
     console.log(`[SAVE-TO-DRIVE] Querying database for assemblyai_id: ${transcriptionId}`);
@@ -141,16 +171,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Initialize Google Drive client
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID!,
-      process.env.GOOGLE_CLIENT_SECRET!,
-      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
-    );
-    oauth2Client.setCredentials({
-      access_token: accessToken
-    });
-
+    // Initialize Google Drive client (using OAuth2 client from above with token refresh)
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
     let targetFolderId = folderId;
