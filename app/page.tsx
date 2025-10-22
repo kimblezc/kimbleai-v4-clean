@@ -718,7 +718,6 @@ export default function Home() {
           }
 
           const transcriptionId = data.result.metadata?.assemblyai_id || data.result.id;
-          console.log('[AUDIO] Result object:', data.result);
           console.log('[AUDIO] AssemblyAI ID from metadata:', data.result.metadata?.assemblyai_id);
           console.log('[AUDIO] Database ID:', data.result.id);
           console.log('[AUDIO] Final transcriptionId:', transcriptionId);
