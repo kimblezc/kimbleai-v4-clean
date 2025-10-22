@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
       multiFormat = false  // Export all formats (TXT, JSON, SRT, VTT)
     } = await request.json();
 
+    console.log(`[SAVE-TO-DRIVE] Starting export for transcriptionId: ${transcriptionId}`);
+
     // Try NextAuth session first
     const session = await getServerSession(authOptions);
     let accessToken = session?.accessToken;
@@ -46,16 +48,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch transcription from database
+    // Fetch transcription from database by assemblyai_id
+    console.log(`[SAVE-TO-DRIVE] Querying database for assemblyai_id: ${transcriptionId}`);
     let { data: transcription, error } = await supabase
       .from('audio_transcriptions')
       .select('*')
-      .eq('id', transcriptionId)
+      .eq('assemblyai_id', transcriptionId)
       .single();
+
+    if (error) {
+      console.log('[SAVE-TO-DRIVE] Database query error:', error);
+    }
 
     // If not found in database, try fetching from AssemblyAI directly
     if (error || !transcription) {
-      console.log('[SAVE-TO-DRIVE] Not found in database, trying AssemblyAI API');
+      console.log('[SAVE-TO-DRIVE] Not found in database, trying AssemblyAI API with ID:', transcriptionId);
 
       try {
         const assemblyResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptionId}`, {
