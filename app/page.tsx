@@ -717,13 +717,19 @@ export default function Home() {
             content += `${data.result.text}\n\n`;
           }
 
+          const transcriptionId = data.result.metadata?.assemblyai_id || data.result.id;
+          console.log('[AUDIO] Result object:', data.result);
+          console.log('[AUDIO] AssemblyAI ID from metadata:', data.result.metadata?.assemblyai_id);
+          console.log('[AUDIO] Database ID:', data.result.id);
+          console.log('[AUDIO] Final transcriptionId:', transcriptionId);
+
           const transcriptionMessage: Message = {
             role: 'assistant',
             content,
             timestamp: new Date().toISOString(),
             projectId: currentProject,
             metadata: {
-              transcriptionId: data.result.metadata?.assemblyai_id || data.result.id,
+              transcriptionId: transcriptionId,
               googleDriveFileId: data.result.googleDriveFileId,
               type: 'transcription',
               filename: data.result.filename
@@ -737,7 +743,7 @@ export default function Home() {
             timestamp: new Date().toISOString(),
             projectId: currentProject,
             metadata: {
-              transcriptionId: data.result.metadata?.assemblyai_id || data.result.id,
+              transcriptionId: transcriptionId,  // Use the same ID from above
               googleDriveFileId: data.result.googleDriveFileId,
               type: 'export-prompt',
               filename: data.result.filename
@@ -1436,6 +1442,9 @@ export default function Home() {
       }
 
       const transcriptionId = exportPromptMessage.metadata.transcriptionId;
+
+      console.log('[EXPORT] Transcription ID from metadata:', transcriptionId);
+      console.log('[EXPORT] Export prompt metadata:', exportPromptMessage.metadata);
 
       // Open project selector modal instead of direct export
       setInput('');
