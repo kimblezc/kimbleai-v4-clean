@@ -182,32 +182,20 @@ export async function POST(request: NextRequest) {
 
     // Create organized folder structure if not specified
     if (!folderId) {
+      // Use old structure for now (new structure temporarily disabled for debugging)
       try {
-        // Use structured folder path: KimbleAI/Transcriptions/YYYY-MM/projectName
-        const projectName = category || transcription.project_id || 'general';
-        const folderPath = getTranscriptionPath(projectName);
-
-        console.log(`[SAVE-TO-DRIVE] Creating structured folder: ${folderPath}`);
-        targetFolderId = await ensureFolderExists(accessToken, folderPath);
-
-        console.log(`[SAVE-TO-DRIVE] Target folder: ${folderPath} (${targetFolderId})`);
+        const mainFolderId = await findOrCreateFolder('kimbleai-transcriptions');
+        if (mainFolderId) {
+          const projectName = category || transcription.project_id || 'general';
+          const projectFolderId = await findOrCreateFolder(projectName, mainFolderId);
+          if (projectFolderId) {
+            targetFolderId = projectFolderId;
+            console.log(`[SAVE-TO-DRIVE] Using folder structure: kimbleai-transcriptions/${projectName} (${projectFolderId})`);
+          }
+        }
       } catch (folderError) {
         console.error('[SAVE-TO-DRIVE] Error creating folder structure:', folderError);
-        // Fallback to old structure if new one fails
-        try {
-          const mainFolderId = await findOrCreateFolder('kimbleai-transcriptions');
-          if (mainFolderId) {
-            const projectName = category || transcription.project_id || 'general';
-            const projectFolderId = await findOrCreateFolder(projectName, mainFolderId);
-            if (projectFolderId) {
-              targetFolderId = projectFolderId;
-              console.log(`[SAVE-TO-DRIVE] Fallback to old structure: kimbleai-transcriptions/${projectName}`);
-            }
-          }
-        } catch (fallbackError) {
-          console.error('[SAVE-TO-DRIVE] Fallback folder creation failed:', fallbackError);
-          // Continue with root folder if both approaches fail
-        }
+        // Continue with root folder if folder creation fails
       }
     }
 
