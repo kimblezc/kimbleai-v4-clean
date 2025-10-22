@@ -1156,7 +1156,10 @@ export async function GET(request: NextRequest) {
             utterances: dbJob.metadata?.utterances || [],
             words: dbJob.metadata?.words || [],
             filename: dbJob.filename,
-            fileSize: dbJob.file_size
+            fileSize: dbJob.file_size,
+            metadata: {
+              assemblyai_id: dbJob.assemblyai_id || dbJob.metadata?.assemblyai_id
+            }
           },
           error: null
         });
