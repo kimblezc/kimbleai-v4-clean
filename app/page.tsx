@@ -723,7 +723,7 @@ export default function Home() {
             timestamp: new Date().toISOString(),
             projectId: currentProject,
             metadata: {
-              transcriptionId: data.result.id,
+              transcriptionId: data.result.metadata?.assemblyai_id || data.result.id,
               googleDriveFileId: data.result.googleDriveFileId,
               type: 'transcription',
               filename: data.result.filename
@@ -737,7 +737,7 @@ export default function Home() {
             timestamp: new Date().toISOString(),
             projectId: currentProject,
             metadata: {
-              transcriptionId: data.result.id,
+              transcriptionId: data.result.metadata?.assemblyai_id || data.result.id,
               googleDriveFileId: data.result.googleDriveFileId,
               type: 'export-prompt',
               filename: data.result.filename
