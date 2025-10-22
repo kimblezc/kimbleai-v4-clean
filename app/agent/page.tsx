@@ -70,6 +70,62 @@ export default async function ArchieDashboard() {
       padding: '40px 20px',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
+      {/* KimbleAI Logo */}
+      <div style={{ width: '100%', padding: '0 20px 20px 20px' }}>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              window.location.href = '/';
+            }
+          }}
+        >
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #4a9eff 0%, #667eea 50%, #764ba2 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: 'white',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+          }}>
+            20
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
+            <span style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              background: 'linear-gradient(135deg, #4a9eff 0%, #667eea 50%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              letterSpacing: '0.5px',
+            }}>
+              KimbleAI
+            </span>
+            <span style={{
+              fontSize: '10px',
+              color: '#888',
+              fontWeight: '500',
+              letterSpacing: '1px',
+            }}>
+              ROLL FOR INSIGHT
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div style={{ width: '100%', padding: '0 20px' }}>
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>

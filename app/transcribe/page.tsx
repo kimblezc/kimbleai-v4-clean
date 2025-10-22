@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import KimbleAILogo from '../../components/KimbleAILogo';
 
 interface DriveFile {
   id: string;
@@ -325,6 +326,11 @@ export default function TranscribePage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f0f0f', color: '#fff', padding: '2rem' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* KimbleAI Logo */}
+        <div style={{ marginBottom: '2rem' }}>
+          <KimbleAILogo />
+        </div>
+
         {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Audio Transcription from Drive</h1>

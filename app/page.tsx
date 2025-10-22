@@ -8,6 +8,7 @@ import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
 import D20Dice from '../components/D20Dice';
 import UnifiedSearch from '../components/search/UnifiedSearch';
+import KimbleAILogo from '../components/KimbleAILogo';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -1809,6 +1810,11 @@ export default function Home() {
             ✕
           </button>
         )}
+
+        {/* KimbleAI Logo */}
+        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+          <KimbleAILogo />
+        </div>
 
         {/* User Selector */}
         <div style={{ marginBottom: '16px' }}>
