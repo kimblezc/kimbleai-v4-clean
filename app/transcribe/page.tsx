@@ -183,7 +183,8 @@ export default function TranscribePage() {
         job.error = data.error;
         // Save transcriptionId when complete for downloads/exports
         if (data.status === 'completed' && jobId) {
-          job.transcriptionId = jobId;
+          // Use the actual AssemblyAI transcript ID from metadata, fallback to jobId
+          job.transcriptionId = data.result?.metadata?.assemblyai_id || jobId;
         }
 
         setJobs(new Map(jobs.set(fileId, job)));
