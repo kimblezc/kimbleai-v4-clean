@@ -264,6 +264,8 @@ export default function TranscribePage() {
     setExportingFileId(fileId);
     setError(null);
 
+    console.log(`[EXPORT] Exporting transcriptionId: ${transcriptionId}`);
+
     try {
       const response = await fetch('/api/transcribe/save-to-drive', {
         method: 'POST',
@@ -279,7 +281,8 @@ export default function TranscribePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Export failed');
+        console.error('[EXPORT] Server error:', data);
+        throw new Error(data.error || data.details || 'Export failed');
       }
 
       alert(`✅ Exported ${data.files.length} files to Google Drive in "${projectName}" project!\n\nFiles:\n${data.files.map((f: any) => `• ${f.format}: ${f.fileName}`).join('\n')}`);
