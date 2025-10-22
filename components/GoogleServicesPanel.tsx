@@ -70,9 +70,19 @@ export default function GoogleServicesPanel() {
         setStatus(prev => ({ ...prev, [service]: 'error' }));
         setResults(prev => ({ ...prev, [service]: data }));
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.log(`[GoogleServices] ${service} error (non-critical):`, error.message || error);
       setStatus(prev => ({ ...prev, [service]: 'error' }));
-      setResults(prev => ({ ...prev, [service]: { error: `Failed to fetch ${service} data`, details: String(error) } }));
+
+      // Provide user-friendly error messages
+      let errorMessage = `Failed to fetch ${service} data`;
+      if (error.message?.includes('503') || error.message?.includes('Service Unavailable')) {
+        errorMessage = `${service} API not enabled or unavailable`;
+      } else if (error.message?.includes('401') || error.message?.includes('403')) {
+        errorMessage = `${service} requires re-authorization`;
+      }
+
+      setResults(prev => ({ ...prev, [service]: { error: errorMessage, details: String(error) } }));
     }
   };
 
