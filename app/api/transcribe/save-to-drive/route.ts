@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { getTranscriptionPath, ensureFolderExists } from '@/lib/drive-folder-structure';
+import { google } from 'googleapis';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -140,51 +141,55 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Initialize Google Drive client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.NEXTAUTH_URL + '/api/auth/callback/google'
+    );
+    oauth2Client.setCredentials({
+      access_token: accessToken
+    });
+
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
     let targetFolderId = folderId;
 
     // Helper function to find or create folder
     async function findOrCreateFolder(folderName: string, parentId?: string): Promise<string | null> {
-      // Search for existing folder
-      const searchQuery = parentId
-        ? `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
-        : `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+      try {
+        // Search for existing folder
+        const searchQuery = parentId
+          ? `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
+          : `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
 
-      const searchResponse = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(searchQuery)}&fields=files(id,name)`,
-        {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        }
-      );
+        const searchResponse = await drive.files.list({
+          q: searchQuery,
+          fields: 'files(id, name)',
+          spaces: 'drive'
+        });
 
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        if (searchData.files && searchData.files.length > 0) {
+        if (searchResponse.data.files && searchResponse.data.files.length > 0) {
           console.log(`[SAVE-TO-DRIVE] Found existing folder: ${folderName}`);
-          return searchData.files[0].id;
+          return searchResponse.data.files[0].id!;
         }
+
+        // Create new folder if not found
+        console.log(`[SAVE-TO-DRIVE] Creating folder: ${folderName}`);
+        const createResponse = await drive.files.create({
+          requestBody: {
+            name: folderName,
+            mimeType: 'application/vnd.google-apps.folder',
+            ...(parentId && { parents: [parentId] })
+          },
+          fields: 'id, name'
+        });
+
+        return createResponse.data.id || null;
+      } catch (error) {
+        console.error(`[SAVE-TO-DRIVE] Error with folder ${folderName}:`, error);
+        return null;
       }
-
-      // Create new folder if not found
-      console.log(`[SAVE-TO-DRIVE] Creating folder: ${folderName}`);
-      const createResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: folderName,
-          mimeType: 'application/vnd.google-apps.folder',
-          ...(parentId && { parents: [parentId] })
-        }),
-      });
-
-      if (createResponse.ok) {
-        const folderData = await createResponse.json();
-        return folderData.id;
-      }
-
-      return null;
     }
 
     // Create organized folder structure if not specified
@@ -208,36 +213,30 @@ export async function POST(request: NextRequest) {
 
     // Helper function to upload a file to Drive
     async function uploadFile(fileName: string, fileContent: string, mimeType: string): Promise<any> {
-      const metadata = {
-        name: fileName,
-        mimeType: mimeType,
-        ...(targetFolderId && { parents: [targetFolderId] })
-      };
-
       console.log(`[SAVE-TO-DRIVE] Uploading file: ${fileName}, size: ${fileContent.length} chars, mimeType: ${mimeType}`);
 
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      form.append('file', new Blob([fileContent], { type: mimeType }));
+      try {
+        const response = await drive.files.create({
+          requestBody: {
+            name: fileName,
+            mimeType: mimeType,
+            ...(targetFolderId && { parents: [targetFolderId] })
+          },
+          media: {
+            mimeType: mimeType,
+            body: fileContent
+          },
+          fields: 'id, name, webViewLink'
+        });
 
-      const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: form,
-      });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        console.error(`[SAVE-TO-DRIVE] Upload failed for ${fileName}:`, errorText);
-        console.error(`[SAVE-TO-DRIVE] Status: ${uploadResponse.status} ${uploadResponse.statusText}`);
-        throw new Error(`Upload failed for ${fileName} (${uploadResponse.status}): ${errorText}`);
+        console.log(`[SAVE-TO-DRIVE] Successfully uploaded ${fileName}, file ID: ${response.data.id}`);
+        return response.data;
+      } catch (error: any) {
+        console.error(`[SAVE-TO-DRIVE] Upload failed for ${fileName}:`, error);
+        console.error(`[SAVE-TO-DRIVE] Error details:`, JSON.stringify(error, null, 2));
+        console.error(`[SAVE-TO-DRIVE] Error response:`, error.response?.data);
+        throw new Error(`Upload failed for ${fileName}: ${error.message || String(error)}`);
       }
-
-      const result = await uploadResponse.json();
-      console.log(`[SAVE-TO-DRIVE] Successfully uploaded ${fileName}, file ID: ${result.id}`);
-      return result;
     }
 
     // Generate file formats
