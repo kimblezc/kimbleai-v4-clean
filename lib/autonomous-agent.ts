@@ -153,38 +153,32 @@ export class AutonomousAgent {
   }
 
   /**
-   * Main workflow: Goal-Driven → Proactive Bug Hunting → Monitor → Detect → Fix → Test → Report
+   * Main workflow: FOCUSED MODE - Only real errors and performance issues
+   * DISABLED: Proactive suggestions (were creating noise/infinite loops)
    */
   private async executeWorkflow(): Promise<void> {
-    // 0. Initialize priority tasks from PROJECT_GOALS.md (first run)
-    await this.log('info', '🎯 Checking for priority goals');
-    await this.initializePriorityTasks();
-
-    // 1. Self-improvement - Archie analyzes and upgrades himself (HIGH PRIORITY)
-    await this.log('info', '🧠 Archie: Analyzing self for improvements (meta-learning mode)');
-    await this.selfImprove();
-
-    // 2. Proactive code analysis - hunt for bugs and improvements
-    await this.log('info', '🦉 Archie: Hunting for bugs and improvements (proactive mode)');
-    await this.proactiveCodeAnalysis();
-    await this.generateImprovementSuggestions();
-
-    // 3. Monitor for issues
-    await this.log('info', '🔍 Starting monitoring phase');
+    // 1. Monitor for REAL issues only (errors and performance problems)
+    await this.log('info', '🔍 Monitoring for critical issues');
     await this.monitorErrors();
     await this.monitorPerformance();
-    await this.analyzeLogs();
 
-    // 3. Process pending tasks
+    // 2. Process pending tasks (with ACTUAL implementation)
     await this.log('info', '⚙️ Processing pending tasks');
     await this.processPendingTasks();
 
-    // 4. Run automated tests
+    // 3. Run automated tests
     await this.log('info', '🧪 Running automated tests');
     await this.runTests();
 
-    // 5. Clean up old data
+    // 4. Clean up old data
     await this.cleanupOldRecords();
+
+    // DISABLED (was creating noise):
+    // - initializePriorityTasks() - created vague suggestions
+    // - selfImprove() - infinite loop of self-analysis
+    // - proactiveCodeAnalysis() - vague improvement suggestions
+    // - generateImprovementSuggestions() - duplicate suggestions
+    // - analyzeLogs() - redundant with monitorErrors()
   }
 
   /**
@@ -1517,7 +1511,31 @@ ${filesModified.map(f => `- ${f}`).join('\n')}
   }
 
   private async createFinding(finding: AgentFinding): Promise<void> {
+    // Duplicate detection: Check if we've already created a similar finding in the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const { data: recentFindings } = await supabase
+      .from('agent_findings')
+      .select('title, description')
+      .eq('finding_type', finding.finding_type)
+      .gte('detected_at', sevenDaysAgo.toISOString());
+
+    // Check for exact title match or very similar description
+    const isDuplicate = recentFindings?.some(f =>
+      f.title === finding.title ||
+      (f.description && finding.description &&
+       f.description.substring(0, 100) === finding.description.substring(0, 100))
+    );
+
+    if (isDuplicate) {
+      await this.log('info', `⏭️ Skipping duplicate finding: ${finding.title}`);
+      return;
+    }
+
+    // Not a duplicate - create it
     await supabase.from('agent_findings').insert(finding);
+    await this.log('info', `✨ Created new finding: ${finding.title}`);
   }
 
   private async saveReport(report: AgentReport): Promise<void> {
