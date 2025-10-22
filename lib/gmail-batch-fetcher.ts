@@ -6,10 +6,63 @@
  * 2. 5-minute caching layer
  * 3. Smart ranking algorithm
  * 4. Quota monitoring
+ * 5. Smart filters for common use cases
  */
 
 import { google } from 'googleapis';
 import { LRUCache } from 'lru-cache';
+
+// ============ SMART FILTERS ============
+
+/**
+ * Pre-built smart filters for common Gmail use cases
+ * These can be used directly in the query parameter
+ */
+export const GMAIL_SMART_FILTERS = {
+  important: 'is:important is:unread',
+  needsReply: 'is:unread from:(!me) -label:sent',
+  fromPeople: 'from:(!me) -category:promotions -category:social -category:forums',
+  attachments: 'has:attachment',
+  thisWeek: 'newer_than:7d',
+  today: 'newer_than:1d',
+  thisMonth: 'newer_than:30d',
+  starred: 'is:starred',
+  unread: 'is:unread',
+  sent: 'in:sent',
+  drafts: 'in:drafts',
+  priority: 'label:important OR is:starred',
+  largeAttachments: 'has:attachment larger:5M',
+  recentImportant: 'is:important newer_than:7d',
+  toMe: 'to:me -from:me',
+  fromDomain: (domain: string) => `from:@${domain}`,
+  subject: (term: string) => `subject:"${term}"`,
+  hasWord: (word: string) => `"${word}"`,
+} as const;
+
+/**
+ * Get a human-readable description of a filter
+ */
+export function getFilterDescription(filterKey: keyof typeof GMAIL_SMART_FILTERS): string {
+  const descriptions: Record<string, string> = {
+    important: 'Important & Unread emails',
+    needsReply: 'Emails that need a response',
+    fromPeople: 'Emails from real people (no newsletters/promotions)',
+    attachments: 'Emails with attachments',
+    thisWeek: 'Emails from the last 7 days',
+    today: "Today's emails",
+    thisMonth: 'Emails from the last 30 days',
+    starred: 'Starred emails',
+    unread: 'Unread emails',
+    sent: 'Sent emails',
+    drafts: 'Draft emails',
+    priority: 'Priority emails (important or starred)',
+    largeAttachments: 'Emails with attachments larger than 5MB',
+    recentImportant: 'Important emails from the last week',
+    toMe: 'Emails sent directly to me',
+  };
+
+  return descriptions[filterKey] || 'Custom filter';
+}
 
 // ============ CONFIGURATION ============
 

@@ -178,6 +178,43 @@ kimbleai-v4/
 - `budget_config` - Budget limits
 - `budget_alerts` - Budget alert history
 
+## Documentation Structure
+
+```
+Root Directory/
+├── CHATGPT_IMPORT_GUIDE.md      # Import conversations from ChatGPT
+├── CODE-EDITOR-GUIDE.md         # Using the integrated code editor
+├── HOW-TO-USE-SEARCH.md         # Search functionality guide
+├── PROJECT_GOALS.md             # Project vision and objectives
+├── IMPROVEMENT_WORKBOOK.md      # Current improvement plan
+└── README.md                    # This file
+
+/docs/
+├── archive/          # Historical session reports and completed tasks
+├── deployment/       # Deployment guides and migration instructions
+├── setup/            # Machine setup and configuration guides
+├── status/           # Current status tracking files
+└── *.md              # Active documentation (testing, auth, agents, etc.)
+```
+
+**User-Facing Guides:**
+- [ChatGPT Import Guide](CHATGPT_IMPORT_GUIDE.md)
+- [Code Editor Guide](CODE-EDITOR-GUIDE.md)
+- [How to Use Search](HOW-TO-USE-SEARCH.md)
+- [Project Goals](PROJECT_GOALS.md)
+
+**System Documentation:**
+- [Testing Report](docs/TESTING_REPORT.md)
+- [Zapier Setup](docs/ZAPIER_SETUP.md)
+- [Auth Quick Reference](docs/AUTH_QUICK_REFERENCE.md)
+- [File Management Guide](docs/FILE_MANAGEMENT_GUIDE.md)
+- [Autonomous Agent](docs/AUTONOMOUS_AGENT.md)
+
+**Setup & Deployment:**
+- [Setup Guides](docs/setup/)
+- [Deployment Guides](docs/deployment/)
+- [Status Files](docs/status/)
+
 ## API Reference
 
 ### Chat API

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getTranscriptionPath, ensureFolderExists } from '@/lib/drive-folder-structure';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -182,22 +183,31 @@ export async function POST(request: NextRequest) {
     // Create organized folder structure if not specified
     if (!folderId) {
       try {
-        // 1. Find or create main "kimbleai-transcriptions" folder
-        const mainFolderId = await findOrCreateFolder('kimbleai-transcriptions');
+        // Use structured folder path: KimbleAI/Transcriptions/YYYY-MM/projectName
+        const projectName = category || transcription.project_id || 'general';
+        const folderPath = getTranscriptionPath(projectName);
 
-        if (mainFolderId) {
-          // 2. Find or create project subfolder
-          const projectName = category || transcription.project_id || 'general';
-          const projectFolderId = await findOrCreateFolder(projectName, mainFolderId);
+        console.log(`[SAVE-TO-DRIVE] Creating structured folder: ${folderPath}`);
+        targetFolderId = await ensureFolderExists(accessToken, folderPath);
 
-          if (projectFolderId) {
-            targetFolderId = projectFolderId;
-            console.log(`[SAVE-TO-DRIVE] Target folder: kimbleai-transcriptions/${projectName}`);
-          }
-        }
+        console.log(`[SAVE-TO-DRIVE] Target folder: ${folderPath} (${targetFolderId})`);
       } catch (folderError) {
         console.error('[SAVE-TO-DRIVE] Error creating folder structure:', folderError);
-        // Continue with root folder if folder creation fails
+        // Fallback to old structure if new one fails
+        try {
+          const mainFolderId = await findOrCreateFolder('kimbleai-transcriptions');
+          if (mainFolderId) {
+            const projectName = category || transcription.project_id || 'general';
+            const projectFolderId = await findOrCreateFolder(projectName, mainFolderId);
+            if (projectFolderId) {
+              targetFolderId = projectFolderId;
+              console.log(`[SAVE-TO-DRIVE] Fallback to old structure: kimbleai-transcriptions/${projectName}`);
+            }
+          }
+        } catch (fallbackError) {
+          console.error('[SAVE-TO-DRIVE] Fallback folder creation failed:', fallbackError);
+          // Continue with root folder if both approaches fail
+        }
       }
     }
 

@@ -122,20 +122,23 @@ export default function Home() {
   // Load cost stats
   React.useEffect(() => {
     const loadCosts = async () => {
-      if (!session?.user?.email) return;
+      if (!session) return;
 
       try {
-        const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
-        const userData = await userResponse.json();
-        if (!userData.success || !userData.user?.id) return;
-
-        const response = await fetch(`/api/costs?action=summary&userId=${userData.user.id}`);
+        // Use currentUser directly (same userId used for chat API cost tracking)
+        const response = await fetch(`/api/costs?action=summary&userId=${currentUser}`);
         const data = await response.json();
+
+        if (data.error) {
+          console.error('[CostTracker] Error loading costs:', data.error);
+          return;
+        }
+
         if (!data.error) {
           setCostStats({ daily: data.daily });
         }
       } catch (err) {
-        console.error('Failed to load costs:', err);
+        console.error('[CostTracker] Failed to load costs:', err);
       }
     };
 
@@ -144,7 +147,7 @@ export default function Home() {
       const interval = setInterval(loadCosts, 60000); // Refresh every 60s
       return () => clearInterval(interval);
     }
-  }, [session]);
+  }, [session, currentUser]);
 
   // Auto-scroll to bottom when messages change
   React.useEffect(() => {
