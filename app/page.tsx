@@ -86,6 +86,7 @@ export default function Home() {
   } | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
 
   // Get welcome message based on time of day and user
   const welcomeMessage = React.useMemo(() => {
@@ -2054,13 +2055,13 @@ export default function Home() {
           marginBottom: '16px'
         }}></div>
 
-        {/* Projects Section - MOVED TO TOP */}
+        {/* Recent Chats Section */}
         <div style={{ marginBottom: '20px' }}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '12px'
+            marginBottom: '8px'
           }}>
             <h3 style={{
               fontSize: '14px',
@@ -2068,61 +2069,130 @@ export default function Home() {
               color: '#aaa',
               margin: 0
             }}>
-              Projects
+              Recent Chats
             </h3>
-            <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
-              {conversationHistory
-                .slice(0, 10)
-                .map((conv) => (
-                  <div
-                    key={conv.id}
-                    style={{
-                      position: 'relative',
-                      marginBottom: '4px'
-                    }}
-                  >
-                    <div
-                      onClick={() => {
-                        setCurrentConversationId(conv.id);
-                        setCurrentProject(conv.project || '');
-                        loadConversation(conv.id);
-                      }}
-                      style={{
-                        padding: '6px 8px',
-                        backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        borderLeft: `3px solid ${conv.project ? '#4a9eff' : '#666'}`,
-                        paddingLeft: '8px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontSize: '11px',
-                          color: '#ccc',
-                          fontWeight: '500',
-                          marginBottom: '2px',
-                          lineHeight: '1.2',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {conv.title}
-                        </div>
-                        <div style={{
-                          fontSize: '9px',
-                          color: '#666'
-                        }}>
-                          {conv.lastMessage}{conv.project ? ` • ${formatProjectName(conv.project)}` : ''}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            {activeTagFilters.length > 0 && (
+              <button
+                onClick={() => setActiveTagFilters([])}
+                style={{
+                  padding: '2px 6px',
+                  fontSize: '10px',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #666',
+                  borderRadius: '4px',
+                  color: '#666',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#4a9eff';
+                  e.currentTarget.style.color = '#4a9eff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#666';
+                  e.currentTarget.style.color = '#666';
+                }}
+                title="Clear all tag filters"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+          {activeTagFilters.length > 0 && (
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '4px',
+              marginBottom: '8px'
+            }}>
+              {activeTagFilters.map(tag => (
+                <span
+                  key={tag}
+                  style={{
+                    padding: '2px 6px',
+                    fontSize: '9px',
+                    backgroundColor: '#4a9eff',
+                    color: '#000',
+                    borderRadius: '8px',
+                    fontWeight: '600'
+                  }}
+                >
+                  #{tag}
+                </span>
+              ))}
             </div>
+          )}
+          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+            {conversationHistory
+              .filter(conv => {
+                // If no tag filters active, show all
+                if (activeTagFilters.length === 0) return true;
+                // If conversation has tags, check if any match active filters
+                if (conv.tags && Array.isArray(conv.tags)) {
+                  return conv.tags.some((tag: string) => activeTagFilters.includes(tag));
+                }
+                // If no tags on conversation, don't show when filters active
+                return false;
+              })
+              .slice(0, 10)
+              .map((conv) => (
+                <div
+                  key={conv.id}
+                  onClick={() => {
+                    setCurrentConversationId(conv.id);
+                    setCurrentProject(conv.project || '');
+                    loadConversation(conv.id);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    borderLeft: `3px solid ${conv.project ? '#4a9eff' : '#666'}`,
+                    marginBottom: '4px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentConversationId !== conv.id) {
+                      e.currentTarget.style.backgroundColor = '#1a1a1a';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (currentConversationId !== conv.id) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#ccc',
+                    fontWeight: '500',
+                    marginBottom: '2px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {conv.title || 'Untitled Chat'}
+                  </div>
+                  <div style={{
+                    fontSize: '10px',
+                    color: '#666'
+                  }}>
+                    {conv.lastMessage ? conv.lastMessage.substring(0, 30) + '...' : 'No messages'}{conv.project ? ` • ${formatProjectName(conv.project)}` : ''}
+                  </div>
+                </div>
+              ))}
+            {conversationHistory.length === 0 && (
+              <div style={{
+                padding: '16px',
+                textAlign: 'center',
+                color: '#666',
+                fontSize: '12px'
+              }}>
+                No recent chats
+              </div>
+            )}
           </div>
         </div>
 
@@ -3305,26 +3375,37 @@ export default function Home() {
                 gap: '6px',
                 marginBottom: '12px'
               }}>
-                {suggestedTags.map((tag, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      padding: '4px 8px',
-                      backgroundColor: '#2a2a2a',
-                      border: '1px solid #444',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      color: '#ccc',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => {
-                      // Add to search or filter functionality later
-                      console.log('Tag clicked:', tag);
-                    }}
-                  >
-                    #{tag}
-                  </span>
-                ))}
+                {suggestedTags.map((tag, index) => {
+                  const isActive = activeTagFilters.includes(tag);
+                  return (
+                    <span
+                      key={index}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: isActive ? '#4a9eff' : '#2a2a2a',
+                        border: `1px solid ${isActive ? '#4a9eff' : '#444'}`,
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        color: isActive ? '#000' : '#ccc',
+                        cursor: 'pointer',
+                        fontWeight: isActive ? '600' : 'normal',
+                        transition: 'all 0.2s'
+                      }}
+                      onClick={() => {
+                        setActiveTagFilters(prev =>
+                          prev.includes(tag)
+                            ? prev.filter(t => t !== tag)
+                            : [...prev, tag]
+                        );
+                        // Reload conversations with tag filter
+                        loadConversations();
+                      }}
+                      title={isActive ? `Click to remove "${tag}" filter` : `Click to filter by "${tag}"`}
+                    >
+                      #{tag}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 {
-  "version": "1.3.3",
-  "commit": "46adb1c",
-  "lastUpdated": "2025-10-23T20:00:00.000Z",
-  "changelog": "Enhanced cost display to show HOURLY/DAILY/MONTHLY in minimal format. Turns RED when ANY limit exceeded (>=100%). Shows v1.3.3@commit for full deployment tracking."
+  "version": "1.4.0",
+  "commit": "d1e819c",
+  "lastUpdated": "2025-10-23T20:40:00.000Z",
+  "changelog": "🎨 UI/UX REDESIGN: Fixed duplicate Projects section, created dedicated Recent Chats section, implemented functional tag filtering with visual indicators and 'Clear filters' button. Sidebar now properly organized with separate sections for Recent Chats and Projects."
 }
