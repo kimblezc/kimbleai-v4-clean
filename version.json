@@ -1,5 +1,5 @@
 {
-  "version": "1.2.1",
-  "lastUpdated": "2025-10-23T15:59:13.375Z",
-  "changelog": "Added deployment verification rule to .claude.md - Claude will now automatically verify deployments are live on www.kimbleai.com using WebFetch to confirm version indicator shows correct version and git hash before reporting success"
+  "version": "1.2.2",
+  "lastUpdated": "2025-10-23T16:06:55.610Z",
+  "changelog": "Added parallel agent deployment and proactive recommendations rules to .claude.md - Claude will now deploy separate agents for parallel tasks and continuously provide improvement recommendations (performance, security, UX, cost optimization) without being asked"
 }
