@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
-  "lastUpdated": "2025-10-23T00:00:00Z",
-  "changelog": "Initial semantic versioning setup"
+  "version": "1.1.0",
+  "lastUpdated": "2025-10-23T15:42:41.754Z",
+  "changelog": "Added automatic test-and-deploy rule to .claude.md - Claude will now automatically test locally, bump version, and deploy to kimbleai.com after completing tasks without being asked"
 }
