@@ -7,11 +7,9 @@
 **Vercel Project:** kimbleai-v4-clean
 **Current Deployment:** https://kimbleai-v4-clean-gjad3vigq-kimblezcs-projects.vercel.app
 
-**Desired Domains:**
+**Active Domains:**
 - ✅ kimbleai.com (apex)
 - ✅ www.kimbleai.com
-- ❌ ai.kimbleai.com (REMOVE)
-- ❌ app.kimbleai.com (REMOVE)
 
 ---
 
@@ -61,13 +59,7 @@ Proxy status: DNS only (gray cloud, NOT proxied)
    https://kimbleai-v4-clean-gjad3vigq-kimblezcs-projects.vercel.app/api/auth/callback/google
    ```
 
-4. **Remove these (if present):**
-   ```
-   https://ai.kimbleai.com/api/auth/callback/google
-   https://app.kimbleai.com/api/auth/callback/google
-   ```
-
-5. **Click "Save"**
+4. **Click "Save"**
 
 ---
 
@@ -213,11 +205,10 @@ https://kimbleai-v4-clean-gjad3vigq-kimblezcs-projects.vercel.app/api/auth/callb
 NEXTAUTH_URL=https://www.kimbleai.com
 ```
 
-**Remember:**
+**Configuration:**
 - ✅ Use ONLY kimbleai.com and www.kimbleai.com
-- ❌ DO NOT use ai.kimbleai.com or app.kimbleai.com
 - ⚡ Keep Cloudflare proxy OFF for these domains
-- 🔒 Vercel will handle SSL certificates
+- 🔒 Vercel handles SSL certificates automatically
 
 ---
 

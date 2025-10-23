@@ -95,15 +95,13 @@ User visits → www.kimbleai.com or kimbleai.com
 
 ## 🔒 Security Note
 
-**IMPORTANT:** You said:
-> "I never want ai.kimbleai.com or app.kimbleai.com. IT is always always always kimbleai.com or www.kimbleai.com."
+**IMPORTANT:** User preference:
+> "ONLY use www.kimbleai.com or kimbleai.com. Never use subdomains."
 
-**Current configuration respects this:**
+**Current configuration:**
 - ✅ ONLY using `kimbleai.com` and `www.kimbleai.com`
-- ❌ NOT using `ai.kimbleai.com`
-- ❌ NOT using `app.kimbleai.com`
-
-Vercel keeps trying to create SSL for those subdomains, but we're **not** using them in any configuration.
+- ✅ All references to subdomains have been removed
+- ✅ All systems use main domain only
 
 ---
 

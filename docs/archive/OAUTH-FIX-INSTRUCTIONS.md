@@ -22,8 +22,6 @@ Google OAuth is showing `redirect_uri_mismatch` error because:
    https://kimbleai-v4-clean-gjad3vigq-kimblezcs-projects.vercel.app/api/auth/callback/google
    https://www.kimbleai.com/api/auth/callback/google
    https://kimbleai.com/api/auth/callback/google
-   https://app.kimbleai.com/api/auth/callback/google
-   https://ai.kimbleai.com/api/auth/callback/google
    ```
 
 4. **Save Changes**
@@ -39,9 +37,6 @@ npx vercel domains add www.kimbleai.com
 
 # Or add kimbleai.com
 npx vercel domains add kimbleai.com
-
-# Or add app.kimbleai.com
-npx vercel domains add app.kimbleai.com
 ```
 
 #### Step 2: Update DNS Records
@@ -64,13 +59,6 @@ Value: 76.76.21.21
 Type: AAAA
 Name: @
 Value: 2606:4700:4700::1111
-```
-
-**For app.kimbleai.com:**
-```
-Type: CNAME
-Name: app
-Value: cname.vercel-dns.com
 ```
 
 #### Step 3: Wait for DNS Propagation
@@ -148,9 +136,9 @@ https://www.kimbleai.com
 https://kimbleai-v4-clean-gjad3vigq-kimblezcs-projects.vercel.app
 ```
 
-**Custom Domains (SSL pending):**
-- app.kimbleai.com
-- ai.kimbleai.com
+**Custom Domains Configured:**
+- www.kimbleai.com
+- kimbleai.com
 
 ---
 

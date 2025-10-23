@@ -3,13 +3,12 @@
 # Last updated: 2025-10-23 08:24:00 (Test 3)
 
 ## Test History
-- Test 1: COMPLETED - Git push successful, Vercel deploy successful (11s), kimbleai.com verified
-  - Note: Subdomains ai.kimbleai.com and app.kimbleai.com have DNS issues (not deployment issues)
-- Test 2: COMPLETED - Git push successful, Vercel deploy successful (4s), kimbleai.com verified
-- Test 3: COMPLETED - Git push successful, Vercel deploy successful (5s), kimbleai.com verified
+- Test 1: COMPLETED - Git push successful, Vercel deploy successful (11s), www.kimbleai.com verified
+- Test 2: COMPLETED - Git push successful, Vercel deploy successful (4s), www.kimbleai.com verified
+- Test 3: COMPLETED - Git push successful, Vercel deploy successful (5s), www.kimbleai.com verified
 
 ## Summary
 - All 3 deployments successful (100% success rate)
 - Average deployment time: 6.67 seconds
 - All builds completed without errors
-- Main domain (kimbleai.com) verified working on all tests
+- Main domain (www.kimbleai.com) verified working on all tests

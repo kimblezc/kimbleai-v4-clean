@@ -213,16 +213,14 @@ All in repository root:
 
 ## 💡 Important Reminders
 
-### Domain Preferences (YOU SAID THIS - CRITICAL)
-**"I never want ai.kimbleai.com or app.kimbleai.com. IT is always always always kimbleai.com or www.kimbleai.com. think very hard ad remember this"**
+### Domain Preferences
+**User requirement:** ONLY use www.kimbleai.com or kimbleai.com.
 
-**Only use:**
+**Approved domains:**
 - ✅ kimbleai.com
 - ✅ www.kimbleai.com
 
-**Never use:**
-- ❌ ai.kimbleai.com
-- ❌ app.kimbleai.com
+**All subdomain references have been removed from the codebase.**
 
 ### HTTPS Reminder
 **"use https://fpr everything . youve already done it but forget"**
