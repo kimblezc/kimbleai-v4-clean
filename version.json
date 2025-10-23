@@ -1,5 +1,5 @@
 {
-  "version": "1.2.2",
-  "lastUpdated": "2025-10-23T16:06:55.610Z",
-  "changelog": "Added parallel agent deployment and proactive recommendations rules to .claude.md - Claude will now deploy separate agents for parallel tasks and continuously provide improvement recommendations (performance, security, UX, cost optimization) without being asked"
+  "version": "1.2.3",
+  "lastUpdated": "2025-10-23T16:17:30.372Z",
+  "changelog": "Added specialized agent generation rules and comprehensive Archie configuration - Created ARCHIE_CONFIG.md with task priority system, execution guidelines, and best practices. Updated .claude.md with project-specific agent generation using latest tools (Claude Sonnet 4, GPT-4o, Vercel AI SDK)"
 }
