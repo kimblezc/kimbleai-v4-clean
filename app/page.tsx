@@ -2627,20 +2627,26 @@ export default function Home() {
             alignItems: 'center'
           }}>
             {/* Version Badge */}
-            <div style={{
-              padding: '4px 8px',
-              backgroundColor: '#1a1a1a',
-              border: '1px solid #10b981',
-              borderRadius: '4px',
-              fontSize: '10px',
-              color: '#10b981',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
+            <div
+              style={{
+                padding: '4px 8px',
+                backgroundColor: '#1a1a1a',
+                border: '1px solid #10b981',
+                borderRadius: '4px',
+                fontSize: '10px',
+                color: '#10b981',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+              title={`Version ${versionInfo.version} - Commit ${versionInfo.commit}\nUpdated: ${new Date(versionInfo.lastUpdated).toLocaleString()}`}
+            >
               <span style={{ fontSize: '10px' }}>✨</span>
               <span>v{versionInfo.version}</span>
+              <span style={{ color: '#666', fontWeight: '400' }}>@</span>
+              <span style={{ fontSize: '9px', color: '#10b981', opacity: 0.8 }}>{versionInfo.commit}</span>
             </div>
 
             {/* Minimalist Cost Display */}

@@ -1,5 +1,6 @@
 {
-  "version": "1.3.1",
-  "lastUpdated": "2025-10-23T19:45:00.000Z",
-  "changelog": "Added visible version badge in header (top-right) to verify deployments. Previous fixes: Transcription timeout (2min), Cost API UUID support for string user IDs. Database migration completed successfully."
+  "version": "1.3.2",
+  "commit": "39b7192",
+  "lastUpdated": "2025-10-23T19:48:00.000Z",
+  "changelog": "Enhanced version badge to show git commit hash for full traceability. Display format: v1.3.2@39b7192. Previous fixes: Transcription timeout, Cost API UUID support, Database migration completed."
 }
