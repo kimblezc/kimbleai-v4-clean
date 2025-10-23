@@ -1,6 +1,6 @@
 {
   "version": "1.4.0",
-  "commit": "d1e819c",
+  "commit": "a7057ac",
   "lastUpdated": "2025-10-23T20:40:00.000Z",
   "changelog": "🎨 UI/UX REDESIGN: Fixed duplicate Projects section, created dedicated Recent Chats section, implemented functional tag filtering with visual indicators and 'Clear filters' button. Sidebar now properly organized with separate sections for Recent Chats and Projects."
 }
