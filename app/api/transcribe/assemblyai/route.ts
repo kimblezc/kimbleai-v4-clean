@@ -368,6 +368,26 @@ export async function POST(request: NextRequest) {
         startTime: Date.now()
       });
 
+      // Create initial database record BEFORE returning response
+      // This ensures cross-instance polling can find the job
+      const { error: insertError } = await supabase
+        .from('audio_transcriptions')
+        .insert({
+          job_id: jobId,
+          user_id: userId,
+          project_id: projectId || 'general',
+          filename: filename,
+          file_size: fileSize,
+          text: '',
+          status: 'starting',
+          progress: 25,
+          metadata: {}
+        });
+
+      if (insertError) {
+        console.error('[ASSEMBLYAI] Failed to create database record:', insertError);
+      }
+
       // Process in background with pre-uploaded URL
       processAssemblyAIFromUrl(audioUrl, filename, fileSize, userId, projectId || 'general', jobId);
 
@@ -475,21 +495,7 @@ export async function POST(request: NextRequest) {
 // New function for pre-uploaded URLs (bypasses Vercel upload limits)
 async function processAssemblyAIFromUrl(audioUrl: string, filename: string, fileSize: number, userId: string, projectId: string, jobId: string) {
   try {
-    // Create job record in database immediately for cross-instance tracking
-    await supabase
-      .from('audio_transcriptions')
-      .insert({
-        job_id: jobId,
-        user_id: userId,
-        project_id: projectId,
-        filename: filename,
-        file_size: fileSize,
-        text: '', // Will be updated when complete
-        status: 'starting',
-        progress: 30,
-        metadata: {}
-      });
-
+    // Database record already created in POST handler before this function is called
     // Update: Starting transcription (skip upload since it's already done)
     updateJobStatus(jobId, 30, 'starting_transcription');
 

@@ -1819,11 +1819,6 @@ export default function Home() {
           </button>
         )}
 
-        {/* KimbleAI Logo */}
-        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-          <KimbleAILogo />
-        </div>
-
         {/* User Selector */}
         <div style={{ marginBottom: '16px' }}>
           <select
