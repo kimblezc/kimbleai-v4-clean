@@ -3099,7 +3099,13 @@ export default function Home() {
                 <button
                   onClick={() => {
                     setIsTranscribingAudio(false);
-                    setAudioProgress({ progress: 0, eta: 0, status: 'idle' });
+                    setAudioProgress({ progress: 0, eta: 0, status: 'idle', jobId: undefined });
+                    localStorage.removeItem('kimbleai_audio_progress');
+                    // Clear polling interval
+                    if (pollingIntervalRef.current) {
+                      clearInterval(pollingIntervalRef.current);
+                      pollingIntervalRef.current = null;
+                    }
                   }}
                   style={{
                     background: 'none',

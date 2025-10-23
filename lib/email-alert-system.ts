@@ -32,7 +32,7 @@ export class EmailAlertSystem {
   private initialized = false;
 
   private constructor() {
-    this.initializeTransporter();
+    // Don't initialize transporter in constructor - lazy initialization on first use
   }
 
   public static getInstance(): EmailAlertSystem {
@@ -42,7 +42,11 @@ export class EmailAlertSystem {
     return EmailAlertSystem.instance;
   }
 
-  private async initializeTransporter() {
+  private async ensureTransporter() {
+    if (this.initialized && this.transporter) {
+      return;
+    }
+
     try {
       this.transporter = nodemailer.createTransporter({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -64,6 +68,7 @@ export class EmailAlertSystem {
     } catch (error) {
       console.error('[EMAIL] Failed to initialize SMTP transporter:', error);
       this.initialized = false;
+      throw error;
     }
   }
 
