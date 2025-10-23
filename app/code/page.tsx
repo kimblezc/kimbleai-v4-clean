@@ -56,11 +56,17 @@ export default function CodePage() {
       if (!session?.user?.email) return;
 
       try {
-        const response = await fetch('/api/costs/stats');
+        // Use currentUser for cost tracking (same as main page)
+        const response = await fetch(`/api/costs?action=summary&userId=${currentUser}`);
         const data = await response.json();
 
-        if (data.success) {
-          setCostStats(data.stats);
+        if (data.error) {
+          console.error('[CostTracker] Error loading costs:', data.error);
+          return;
+        }
+
+        if (!data.error) {
+          setCostStats({ daily: data.daily });
         }
       } catch (error) {
         console.error('Error loading cost stats:', error);
@@ -73,7 +79,7 @@ export default function CodePage() {
       const interval = setInterval(loadCostStats, 30000);
       return () => clearInterval(interval);
     }
-  }, [session]);
+  }, [session, currentUser]);
 
   if (status === 'loading') {
     return (
