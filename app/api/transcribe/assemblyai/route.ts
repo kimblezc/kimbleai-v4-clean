@@ -1209,8 +1209,29 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Job not found - might be very new or on different instance
+    // Job not found - check if it's been too long
     console.log(`[ASSEMBLYAI] Job ${jobId} not found in database or memory`);
+
+    // Extract timestamp from jobId (format: assemblyai_{timestamp}_{random})
+    const timestampMatch = jobId.match(/assemblyai_(\d+)_/);
+    const jobCreatedTime = timestampMatch ? parseInt(timestampMatch[1]) : Date.now();
+    const timeSinceCreation = Date.now() - jobCreatedTime;
+
+    // If job not found after 2 minutes, it likely failed to create
+    if (timeSinceCreation > 120000) { // 2 minutes
+      console.error(`[ASSEMBLYAI] Job ${jobId} not found after ${Math.round(timeSinceCreation/1000)}s - likely failed to create`);
+      return NextResponse.json({
+        success: false,
+        jobId,
+        progress: 0,
+        eta: 0,
+        status: 'error',
+        result: null,
+        error: 'Transcription job not found. It may have failed to start. Please try uploading again.'
+      });
+    }
+
+    // Job is new (< 2 minutes), assume it's still starting
     return NextResponse.json({
       success: true,
       jobId,

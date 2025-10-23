@@ -1,5 +1,5 @@
 {
-  "version": "1.2.3",
-  "lastUpdated": "2025-10-23T16:17:30.372Z",
-  "changelog": "Added specialized agent generation rules and comprehensive Archie configuration - Created ARCHIE_CONFIG.md with task priority system, execution guidelines, and best practices. Updated .claude.md with project-specific agent generation using latest tools (Claude Sonnet 4, GPT-4o, Vercel AI SDK)"
+  "version": "1.3.0",
+  "lastUpdated": "2025-10-23T16:34:44.133Z",
+  "changelog": "CRITICAL BUG FIXES: Fixed transcription infinite polling issue (jobs not found timeout after 2min) and cost API UUID/email mismatch error. Created database migration (fix-cost-tracking-user-id.sql) to support string user IDs. See MIGRATION_INSTRUCTIONS.md for database update steps."
 }
