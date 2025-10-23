@@ -74,6 +74,13 @@ export class EmailAlertSystem {
 
   // Send email alert
   async sendAlert(alert: EmailAlert): Promise<boolean> {
+    try {
+      await this.ensureTransporter();
+    } catch (error) {
+      console.error('[EMAIL] Failed to ensure transporter:', error);
+      return false;
+    }
+
     if (!this.initialized || !this.transporter) {
       console.error('[EMAIL] Transporter not initialized');
       return false;
@@ -562,6 +569,13 @@ View detailed analytics: ${process.env.NEXT_PUBLIC_APP_URL}/dashboard/cost-monit
 
   // Test email configuration
   async testConfiguration(): Promise<boolean> {
+    try {
+      await this.ensureTransporter();
+    } catch (error) {
+      console.error('[EMAIL] Failed to ensure transporter:', error);
+      return false;
+    }
+
     if (!this.transporter) {
       return false;
     }
