@@ -67,10 +67,10 @@ export interface NotificationOptions {
 
 export class NotificationManager {
   private static instance: NotificationManager;
-  private emailSystem: EmailAlertSystem;
+  private emailSystem: EmailAlertSystem | null = null;
 
   private constructor() {
-    this.emailSystem = EmailAlertSystem.getInstance();
+    // Lazy initialization - don't create email system until needed
   }
 
   public static getInstance(): NotificationManager {
@@ -78,6 +78,13 @@ export class NotificationManager {
       NotificationManager.instance = new NotificationManager();
     }
     return NotificationManager.instance;
+  }
+
+  private getEmailSystem(): EmailAlertSystem {
+    if (!this.emailSystem) {
+      this.emailSystem = EmailAlertSystem.getInstance();
+    }
+    return this.emailSystem;
   }
 
   // ==================== MAIN NOTIFICATION METHODS ====================
@@ -488,7 +495,7 @@ export class NotificationManager {
         userId: options.userId,
       };
 
-      return await this.emailSystem.sendAlert(emailAlert);
+      return await this.getEmailSystem().sendAlert(emailAlert);
     } catch (error) {
       console.error('[NOTIFICATION] Failed to send email:', error);
       return false;

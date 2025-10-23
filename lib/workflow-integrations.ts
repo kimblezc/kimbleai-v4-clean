@@ -1029,10 +1029,17 @@ export class NotificationIntegration implements ServiceIntegration {
   version = '1.0.0';
   capabilities = ['send_email', 'send_in_app', 'send_push', 'schedule_notification', 'cancel_notification'];
 
-  private emailSystem: EmailAlertSystem;
+  private emailSystem: EmailAlertSystem | null = null;
 
   constructor(userId: string) {
-    this.emailSystem = new EmailAlertSystem(userId);
+    // Lazy initialization - don't create email system until needed
+  }
+
+  private getEmailSystem(): EmailAlertSystem {
+    if (!this.emailSystem) {
+      this.emailSystem = EmailAlertSystem.getInstance();
+    }
+    return this.emailSystem;
   }
 
   async executeOperation(operation: string, parameters: any, context: WorkflowContext): Promise<any> {
@@ -1134,12 +1141,15 @@ export class NotificationIntegration implements ServiceIntegration {
 
   // Private implementation methods
   private async sendEmail(parameters: any, context: WorkflowContext): Promise<any> {
-    return await this.emailSystem.sendAlert({
-      type: 'workflow_notification',
-      subject: parameters.subject,
-      message: parameters.message,
-      recipients: parameters.recipients,
-      priority: parameters.priority || 'normal'
+    return await this.getEmailSystem().sendAlert({
+      to: parameters.recipients || [],
+      subject: parameters.subject || 'Workflow Notification',
+      template: 'custom' as const,
+      data: {
+        subject: parameters.subject,
+        message: parameters.message,
+      },
+      priority: (parameters.priority || 'normal') as 'low' | 'normal' | 'high' | 'critical',
     });
   }
 
