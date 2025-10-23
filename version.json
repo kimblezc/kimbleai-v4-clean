@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
-  "lastUpdated": "2025-10-23T15:53:31.189Z",
-  "changelog": "Added comprehensive coding best practices and PLANNING.md guide based on Archie agent lessons - includes error handling, TypeScript standards, React patterns, database practices, security, testing, deployment standards, and project planning methodology across 8 categories (transcription, calendar, gmail, drive, aesthetics, cost tracker, agents)"
+  "version": "1.2.1",
+  "lastUpdated": "2025-10-23T15:59:13.375Z",
+  "changelog": "Added deployment verification rule to .claude.md - Claude will now automatically verify deployments are live on www.kimbleai.com using WebFetch to confirm version indicator shows correct version and git hash before reporting success"
 }
