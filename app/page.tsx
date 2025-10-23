@@ -9,6 +9,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import D20Dice from '../components/D20Dice';
 import UnifiedSearch from '../components/search/UnifiedSearch';
 import KimbleAILogo from '../components/KimbleAILogo';
+import { VersionIndicator } from '../components/VersionIndicator';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -3464,6 +3465,9 @@ export default function Home() {
         onClose={() => setIsSearchOpen(false)}
       />
     </div>
+
+    {/* Version Indicator */}
+    {session && <VersionIndicator />}
     </>
   );
 }
