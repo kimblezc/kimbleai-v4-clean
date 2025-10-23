@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
-  "lastUpdated": "2025-10-23T15:42:41.754Z",
-  "changelog": "Added automatic test-and-deploy rule to .claude.md - Claude will now automatically test locally, bump version, and deploy to kimbleai.com after completing tasks without being asked"
+  "version": "1.2.0",
+  "lastUpdated": "2025-10-23T15:53:31.189Z",
+  "changelog": "Added comprehensive coding best practices and PLANNING.md guide based on Archie agent lessons - includes error handling, TypeScript standards, React patterns, database practices, security, testing, deployment standards, and project planning methodology across 8 categories (transcription, calendar, gmail, drive, aesthetics, cost tracker, agents)"
 }
