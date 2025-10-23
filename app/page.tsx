@@ -80,7 +80,9 @@ export default function Home() {
   const [newProjectName, setNewProjectName] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [costStats, setCostStats] = useState<{
+    hourly: { used: number; limit: number; percentage: number };
     daily: { used: number; limit: number; percentage: number };
+    monthly: { used: number; limit: number; percentage: number };
   } | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -137,7 +139,11 @@ export default function Home() {
         }
 
         if (!data.error) {
-          setCostStats({ daily: data.daily });
+          setCostStats({
+            hourly: data.hourly,
+            daily: data.daily,
+            monthly: data.monthly
+          });
         }
       } catch (err) {
         console.error('[CostTracker] Failed to load costs:', err);
@@ -2649,53 +2655,74 @@ export default function Home() {
               <span style={{ fontSize: '9px', color: '#10b981', opacity: 0.8 }}>{versionInfo.commit}</span>
             </div>
 
-            {/* Minimalist Cost Display */}
-            {session && costStats && (
-              <div
-                className="cost-display"
-                onClick={() => window.location.href = '/costs'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 8px',
-                  backgroundColor: '#2a2a2a',
-                  border: `1px solid ${
-                    costStats.daily.percentage >= 90 ? '#ef4444' :
-                    costStats.daily.percentage >= 75 ? '#f59e0b' :
-                    costStats.daily.percentage >= 50 ? '#3b82f6' :
-                    '#10b981'
-                  }`,
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '10px',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#333';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#2a2a2a';
-                }}
-              >
-                <span style={{
-                  color: costStats.daily.percentage >= 90 ? '#ef4444' :
-                         costStats.daily.percentage >= 75 ? '#f59e0b' :
-                         costStats.daily.percentage >= 50 ? '#3b82f6' :
-                         '#10b981',
-                  fontSize: '10px'
-                }}>
-                  ●
-                </span>
-                <span style={{ color: '#ccc', fontWeight: '600' }}>
-                  ${costStats.daily.used.toFixed(2)}
-                </span>
-                <span style={{ color: '#666' }}>/</span>
-                <span style={{ color: '#888', fontSize: '9px' }}>
-                  ${costStats.daily.limit.toFixed(0)}
-                </span>
-              </div>
-            )}
+            {/* Cost Display - Hourly, Daily, Monthly */}
+            {session && costStats && (() => {
+              // Check if ANY limit is exceeded
+              const isExceeded = costStats.hourly.percentage >= 100 ||
+                                costStats.daily.percentage >= 100 ||
+                                costStats.monthly.percentage >= 100;
+
+              return (
+                <div
+                  className="cost-display"
+                  onClick={() => window.location.href = '/costs'}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1px',
+                    padding: '3px 6px',
+                    backgroundColor: isExceeded ? '#7f1d1d' : '#2a2a2a',
+                    border: `1px solid ${isExceeded ? '#ef4444' : '#10b981'}`,
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = isExceeded ? '#991b1b' : '#333';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = isExceeded ? '#7f1d1d' : '#2a2a2a';
+                  }}
+                  title={`Hourly: ${costStats.hourly.percentage.toFixed(0)}%\nDaily: ${costStats.daily.percentage.toFixed(0)}%\nMonthly: ${costStats.monthly.percentage.toFixed(0)}%`}
+                >
+                  {/* Hourly */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px' }}>
+                    <span style={{ color: '#666', width: '16px' }}>Hr</span>
+                    <span style={{ color: isExceeded ? '#fca5a5' : '#ccc', fontWeight: '600' }}>
+                      ${costStats.hourly.used.toFixed(2)}
+                    </span>
+                    <span style={{ color: '#555' }}>/</span>
+                    <span style={{ color: '#888' }}>
+                      ${costStats.hourly.limit.toFixed(0)}
+                    </span>
+                  </div>
+
+                  {/* Daily */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px' }}>
+                    <span style={{ color: '#666', width: '16px' }}>Day</span>
+                    <span style={{ color: isExceeded ? '#fca5a5' : '#ccc', fontWeight: '600' }}>
+                      ${costStats.daily.used.toFixed(2)}
+                    </span>
+                    <span style={{ color: '#555' }}>/</span>
+                    <span style={{ color: '#888' }}>
+                      ${costStats.daily.limit.toFixed(0)}
+                    </span>
+                  </div>
+
+                  {/* Monthly */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px' }}>
+                    <span style={{ color: '#666', width: '16px' }}>Mon</span>
+                    <span style={{ color: isExceeded ? '#fca5a5' : '#ccc', fontWeight: '600' }}>
+                      ${costStats.monthly.used.toFixed(2)}
+                    </span>
+                    <span style={{ color: '#555' }}>/</span>
+                    <span style={{ color: '#888' }}>
+                      ${costStats.monthly.limit.toFixed(0)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {status === 'loading' ? (
               <span style={{ color: '#888' }}>Auth...</span>

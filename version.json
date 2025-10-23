@@ -1,6 +1,6 @@
 {
-  "version": "1.3.2",
-  "commit": "39b7192",
-  "lastUpdated": "2025-10-23T19:48:00.000Z",
-  "changelog": "Enhanced version badge to show git commit hash for full traceability. Display format: v1.3.2@39b7192. Previous fixes: Transcription timeout, Cost API UUID support, Database migration completed."
+  "version": "1.3.3",
+  "commit": "46adb1c",
+  "lastUpdated": "2025-10-23T20:00:00.000Z",
+  "changelog": "Enhanced cost display to show HOURLY/DAILY/MONTHLY in minimal format. Turns RED when ANY limit exceeded (>=100%). Shows v1.3.3@commit for full deployment tracking."
 }
