@@ -9,6 +9,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import D20Dice from '../components/D20Dice';
 import UnifiedSearch from '../components/search/UnifiedSearch';
 import KimbleAILogo from '../components/KimbleAILogo';
+import versionInfo from '../version.json';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -2625,6 +2626,23 @@ export default function Home() {
             fontWeight: '500',
             alignItems: 'center'
           }}>
+            {/* Version Badge */}
+            <div style={{
+              padding: '4px 8px',
+              backgroundColor: '#1a1a1a',
+              border: '1px solid #10b981',
+              borderRadius: '4px',
+              fontSize: '10px',
+              color: '#10b981',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <span style={{ fontSize: '10px' }}>✨</span>
+              <span>v{versionInfo.version}</span>
+            </div>
+
             {/* Minimalist Cost Display */}
             {session && costStats && (
               <div

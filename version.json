@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
-  "lastUpdated": "2025-10-23T16:34:44.133Z",
-  "changelog": "CRITICAL BUG FIXES: Fixed transcription infinite polling issue (jobs not found timeout after 2min) and cost API UUID/email mismatch error. Created database migration (fix-cost-tracking-user-id.sql) to support string user IDs. See MIGRATION_INSTRUCTIONS.md for database update steps."
+  "version": "1.3.1",
+  "lastUpdated": "2025-10-23T19:45:00.000Z",
+  "changelog": "Added visible version badge in header (top-right) to verify deployments. Previous fixes: Transcription timeout (2min), Cost API UUID support for string user IDs. Database migration completed successfully."
 }
