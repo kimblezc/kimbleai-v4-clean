@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import Link from 'next/link';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -72,7 +73,7 @@ export default async function ArchieDashboard() {
     }}>
       {/* KimbleAI Logo */}
       <div style={{ width: '100%', padding: '0 20px 20px 20px' }}>
-        <div style={{
+        <Link href="/" style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: '12px',
@@ -80,13 +81,9 @@ export default async function ArchieDashboard() {
           borderRadius: '8px',
           cursor: 'pointer',
           transition: 'all 0.3s ease',
-        }}
-          onClick={() => {
-            if (typeof window !== 'undefined') {
-              window.location.href = '/';
-            }
-          }}
-        >
+          textDecoration: 'none',
+          color: 'inherit'
+        }}>
           <div style={{
             width: '40px',
             height: '40px',
@@ -123,7 +120,7 @@ export default async function ArchieDashboard() {
               ROLL FOR INSIGHT
             </span>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Header */}
