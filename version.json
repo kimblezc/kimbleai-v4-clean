@@ -1,6 +1,6 @@
 {
   "version": "1.4.1",
-  "commit": "pending",
+  "commit": "9520841",
   "lastUpdated": "2025-10-23T21:00:00.000Z",
   "changelog": "✨ ENHANCED ORGANIZATION: Added date grouping (Today/Yesterday/This Week/Older) with collapsible sections. Removed blue buttons for consistent gray theme. Recent Chats now properly grouped and sortable by date with conversation counts."
 }
