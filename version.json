@@ -1,6 +1,6 @@
 {
-  "version": "1.4.3",
-  "commit": "210ab50",
-  "lastUpdated": "2025-10-24T04:08:00.000Z",
-  "changelog": "🔧 FIX: Fixed /agent page crash caused by window object in Server Component. Converted onClick navigation to proper Next.js Link component. Archie dashboard now loads correctly."
+  "version": "1.5.0",
+  "commit": "99a5d8f",
+  "lastUpdated": "2025-10-24T04:30:00.000Z",
+  "changelog": "✨ NEW: Added conversation pinning (★), sort dropdown (Date/Name/Count), keyboard shortcuts (Cmd+K/N/B), and enhanced tag management with removable filters."
 }

@@ -91,7 +91,14 @@ export default function Home() {
     new Set(['older']) // Collapse "older" by default
   );
 
+  // NEW FEATURES: Pinning and Sorting
+  const [pinnedConversations, setPinnedConversations] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<'date-new' | 'date-old' | 'name' | 'count'>('date-new');
+  const [showManageTags, setShowManageTags] = useState(false);
+  const newChatButtonRef = React.useRef<HTMLButtonElement>(null);
+
   // Helper function to group conversations by date
+  // UPDATED: Now separates pinned conversations into a separate group
   const groupConversationsByDate = React.useCallback((conversations: any[]) => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -99,13 +106,34 @@ export default function Home() {
     const thisWeekStart = new Date(todayStart.getTime() - (now.getDay() * 86400000));
 
     const groups = {
+      pinned: [] as any[], // NEW: Pinned conversations group
       today: [] as any[],
       yesterday: [] as any[],
       thisWeek: [] as any[],
       older: [] as any[]
     };
 
+    // Separate pinned and unpinned conversations
+    const pinnedConvs: any[] = [];
+    const unpinnedConvs: any[] = [];
+
     conversations.forEach(conv => {
+      if (conv.pinned || pinnedConversations.has(conv.id)) {
+        pinnedConvs.push(conv);
+      } else {
+        unpinnedConvs.push(conv);
+      }
+    });
+
+    // Sort pinned by pinned_at date (most recent first)
+    groups.pinned = pinnedConvs.sort((a, b) => {
+      const dateA = new Date(a.pinned_at || a.updated_at || a.created_at).getTime();
+      const dateB = new Date(b.pinned_at || b.updated_at || b.created_at).getTime();
+      return dateB - dateA;
+    });
+
+    // Group unpinned conversations by date
+    unpinnedConvs.forEach(conv => {
       const convDate = new Date(conv.updated_at || conv.created_at);
       if (convDate >= todayStart) {
         groups.today.push(conv);
@@ -119,7 +147,7 @@ export default function Home() {
     });
 
     return groups;
-  }, []);
+  }, [pinnedConversations]);
 
   // Get welcome message based on time of day and user
   const welcomeMessage = React.useMemo(() => {
@@ -197,6 +225,38 @@ export default function Home() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [messages, loading]);
+
+  // NEW: Keyboard shortcuts
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+      // Cmd/Ctrl + K: Focus search
+      if (modKey && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+        // Focus will be handled by UnifiedSearch component
+      }
+
+      // Cmd/Ctrl + N: New Chat
+      if (modKey && e.key === 'n') {
+        e.preventDefault();
+        if (newChatButtonRef.current) {
+          newChatButtonRef.current.click();
+        }
+      }
+
+      // Cmd/Ctrl + B: Toggle Sidebar
+      if (modKey && e.key === 'b') {
+        e.preventDefault();
+        setIsMobileSidebarOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Removed: Deep Research & Agent Mode (non-functional, will rebuild properly)
 
@@ -560,6 +620,56 @@ export default function Home() {
     setDeletedProjects(new Set());
     localStorage.removeItem(`kimbleai_deleted_projects_${currentUser}`);
     loadConversations();
+  };
+
+  // NEW: Pin/Unpin conversation handler
+  const togglePinConversation = async (conversationId: string, currentlyPinned: boolean) => {
+    const newPinnedState = !currentlyPinned;
+
+    try {
+      // Optimistically update UI
+      setPinnedConversations(prev => {
+        const newSet = new Set(prev);
+        if (newPinnedState) {
+          newSet.add(conversationId);
+        } else {
+          newSet.delete(conversationId);
+        }
+        return newSet;
+      });
+
+      // Call API
+      const response = await fetch('/api/conversations/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId,
+          pinned: newPinnedState
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to update pin status');
+      }
+
+      // Reload conversations to get updated data from server
+      await loadConversations();
+    } catch (error: any) {
+      console.error('Error toggling pin:', error);
+      // Revert optimistic update
+      setPinnedConversations(prev => {
+        const newSet = new Set(prev);
+        if (currentlyPinned) {
+          newSet.add(conversationId);
+        } else {
+          newSet.delete(conversationId);
+        }
+        return newSet;
+      });
+      alert(`Failed to ${newPinnedState ? 'pin' : 'unpin'} conversation: ${error.message}`);
+    }
   };
 
   // Handle photo upload and analysis
@@ -1965,8 +2075,9 @@ export default function Home() {
           )}
         </div>
 
-        {/* New Chat Button */}
+        {/* New Chat Button - UPDATED: Added ref and keyboard shortcut hint */}
         <button
+          ref={newChatButtonRef}
           onClick={() => {
             setMessages([]);
             setCurrentConversationId(null);
@@ -1986,6 +2097,7 @@ export default function Home() {
             cursor: 'pointer',
             marginBottom: '12px'
           }}
+          title="New Chat (Cmd/Ctrl + N)"
         >
           + New Chat
         </button>
@@ -2043,13 +2155,14 @@ export default function Home() {
           marginBottom: '16px'
         }}></div>
 
-        {/* Recent Chats Section */}
+        {/* Recent Chats Section - UPDATED: Added sort dropdown */}
         <div style={{ marginBottom: '20px' }}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '8px'
+            marginBottom: '8px',
+            gap: '8px'
           }}>
             <h3 style={{
               fontSize: '14px',
@@ -2059,33 +2172,57 @@ export default function Home() {
             }}>
               Recent Chats
             </h3>
-            {activeTagFilters.length > 0 && (
-              <button
-                onClick={() => setActiveTagFilters([])}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {/* NEW: Sort Dropdown */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'date-new' | 'date-old' | 'name' | 'count')}
                 style={{
-                  padding: '2px 6px',
+                  padding: '3px 6px',
                   fontSize: '10px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid #666',
+                  backgroundColor: '#2a2a2a',
+                  border: '1px solid #444',
                   borderRadius: '4px',
-                  color: '#666',
+                  color: '#aaa',
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  outline: 'none'
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#4a9eff';
-                  e.currentTarget.style.color = '#4a9eff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#666';
-                  e.currentTarget.style.color = '#666';
-                }}
-                title="Clear all tag filters"
+                title="Sort conversations"
               >
-                Clear filters
-              </button>
-            )}
+                <option value="date-new">Date (Newest)</option>
+                <option value="date-old">Date (Oldest)</option>
+                <option value="name">Name (A-Z)</option>
+                <option value="count">Message Count</option>
+              </select>
+              {activeTagFilters.length > 0 && (
+                <button
+                  onClick={() => setActiveTagFilters([])}
+                  style={{
+                    padding: '2px 6px',
+                    fontSize: '10px',
+                    backgroundColor: 'transparent',
+                    border: '1px solid #666',
+                    borderRadius: '4px',
+                    color: '#666',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#4a9eff';
+                    e.currentTarget.style.color = '#4a9eff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#666';
+                    e.currentTarget.style.color = '#666';
+                  }}
+                  title="Clear all tag filters"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
           </div>
+          {/* UPDATED: Active tag filters with X button to remove */}
           {activeTagFilters.length > 0 && (
             <div style={{
               display: 'flex',
@@ -2102,10 +2239,19 @@ export default function Home() {
                     backgroundColor: '#4a9eff',
                     color: '#000',
                     borderRadius: '8px',
-                    fontWeight: '600'
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer'
                   }}
+                  onClick={() => {
+                    setActiveTagFilters(prev => prev.filter(t => t !== tag));
+                  }}
+                  title={`Remove "${tag}" filter`}
                 >
                   #{tag}
+                  <span style={{ fontSize: '10px', fontWeight: 'bold' }}>×</span>
                 </span>
               ))}
             </div>
@@ -2113,7 +2259,7 @@ export default function Home() {
           <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
             {(() => {
               // Filter conversations by tags first
-              const filteredConvs = conversationHistory.filter(conv => {
+              let filteredConvs = conversationHistory.filter(conv => {
                 if (activeTagFilters.length === 0) return true;
                 if (conv.tags && Array.isArray(conv.tags)) {
                   return conv.tags.some((tag: string) => activeTagFilters.includes(tag));
@@ -2121,58 +2267,113 @@ export default function Home() {
                 return false;
               });
 
-              // Group conversations by date
+              // NEW: Apply sorting before grouping by date
+              filteredConvs = [...filteredConvs].sort((a, b) => {
+                switch (sortBy) {
+                  case 'date-new':
+                    return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime();
+                  case 'date-old':
+                    return new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime();
+                  case 'name':
+                    return (a.title || 'Untitled').localeCompare(b.title || 'Untitled');
+                  case 'count':
+                    return (b.messageCount || 0) - (a.messageCount || 0);
+                  default:
+                    return 0;
+                }
+              });
+
+              // Group conversations by date (now includes pinned group)
               const groups = groupConversationsByDate(filteredConvs);
 
-              // Render conversation item
-              const renderConversation = (conv: any) => (
-                <div
-                  key={conv.id}
-                  onClick={() => {
-                    setCurrentConversationId(conv.id);
-                    setCurrentProject(conv.project || '');
-                    loadConversation(conv.id);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  style={{
-                    padding: '8px 12px',
-                    backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    borderLeft: `3px solid ${conv.project ? '#4a9eff' : '#666'}`,
-                    marginBottom: '4px',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentConversationId !== conv.id) {
-                      e.currentTarget.style.backgroundColor = '#1a1a1a';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentConversationId !== conv.id) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
-                >
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#ccc',
-                    fontWeight: '500',
-                    marginBottom: '2px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {conv.title || 'Untitled Chat'}
+              // UPDATED: Render conversation item with pin icon
+              const renderConversation = (conv: any) => {
+                const isPinned = conv.pinned || pinnedConversations.has(conv.id);
+
+                return (
+                  <div
+                    key={conv.id}
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      borderLeft: `3px solid ${conv.project ? '#4a9eff' : '#666'}`,
+                      marginBottom: '4px',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '8px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentConversationId !== conv.id) {
+                        e.currentTarget.style.backgroundColor = '#1a1a1a';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentConversationId !== conv.id) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  >
+                    {/* NEW: Pin icon */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePinConversation(conv.id, isPinned);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        padding: '0',
+                        marginTop: '2px',
+                        color: isPinned ? '#ffd700' : '#666',
+                        transition: 'color 0.2s'
+                      }}
+                      title={isPinned ? 'Unpin conversation' : 'Pin conversation'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#ffd700';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = isPinned ? '#ffd700' : '#666';
+                      }}
+                    >
+                      {isPinned ? '★' : '☆'}
+                    </button>
+
+                    {/* Conversation content */}
+                    <div
+                      onClick={() => {
+                        setCurrentConversationId(conv.id);
+                        setCurrentProject(conv.project || '');
+                        loadConversation(conv.id);
+                        setIsMobileSidebarOpen(false);
+                      }}
+                      style={{ flex: 1, minWidth: 0 }}
+                    >
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#ccc',
+                        fontWeight: '500',
+                        marginBottom: '2px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {conv.title || 'Untitled Chat'}
+                      </div>
+                      <div style={{
+                        fontSize: '10px',
+                        color: '#666'
+                      }}>
+                        {conv.lastMessage ? conv.lastMessage.substring(0, 30) + '...' : 'No messages'}{conv.project ? ` • ${formatProjectName(conv.project)}` : ''}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{
-                    fontSize: '10px',
-                    color: '#666'
-                  }}>
-                    {conv.lastMessage ? conv.lastMessage.substring(0, 30) + '...' : 'No messages'}{conv.project ? ` • ${formatProjectName(conv.project)}` : ''}
-                  </div>
-                </div>
-              );
+                );
+              };
 
               // Render date group
               const renderGroup = (groupName: string, groupLabel: string, conversations: any[]) => {
@@ -2234,6 +2435,8 @@ export default function Home() {
 
               return (
                 <>
+                  {/* NEW: Pinned conversations group at top */}
+                  {renderGroup('pinned', 'Pinned', groups.pinned)}
                   {renderGroup('today', 'Today', groups.today)}
                   {renderGroup('yesterday', 'Yesterday', groups.yesterday)}
                   {renderGroup('thisWeek', 'This Week', groups.thisWeek)}
