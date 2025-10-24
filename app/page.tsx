@@ -87,6 +87,39 @@ export default function Home() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
+  const [collapsedDateGroups, setCollapsedDateGroups] = useState<Set<string>>(
+    new Set(['older']) // Collapse "older" by default
+  );
+
+  // Helper function to group conversations by date
+  const groupConversationsByDate = React.useCallback((conversations: any[]) => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart.getTime() - 86400000);
+    const thisWeekStart = new Date(todayStart.getTime() - (now.getDay() * 86400000));
+
+    const groups = {
+      today: [] as any[],
+      yesterday: [] as any[],
+      thisWeek: [] as any[],
+      older: [] as any[]
+    };
+
+    conversations.forEach(conv => {
+      const convDate = new Date(conv.updated_at || conv.created_at);
+      if (convDate >= todayStart) {
+        groups.today.push(conv);
+      } else if (convDate >= yesterdayStart) {
+        groups.yesterday.push(conv);
+      } else if (convDate >= thisWeekStart) {
+        groups.thisWeek.push(conv);
+      } else {
+        groups.older.push(conv);
+      }
+    });
+
+    return groups;
+  }, []);
 
   // Get welcome message based on time of day and user
   const welcomeMessage = React.useMemo(() => {
@@ -1932,51 +1965,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Unified Search Button */}
-        <button
-          onClick={() => {
-            setIsSearchOpen(true);
-            setIsMobileSidebarOpen(false);
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 12px',
-            backgroundColor: '#1a5490',
-            border: '1px solid #2563eb',
-            borderRadius: '6px',
-            color: '#ffffff',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            marginBottom: '12px',
-            transition: 'all 0.2s',
-            width: '100%'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#2563eb';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#1a5490';
-          }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
-          <span>Search Everything</span>
-        </button>
-
         {/* New Chat Button */}
         <button
           onClick={() => {
@@ -2008,8 +1996,8 @@ export default function Home() {
           style={{
             width: '100%',
             padding: '12px',
-            backgroundColor: '#1a5490',
-            border: '1px solid #2563eb',
+            backgroundColor: '#2a2a2a',
+            border: '1px solid #444',
             borderRadius: '8px',
             color: '#ffffff',
             fontSize: '14px',
@@ -2030,8 +2018,8 @@ export default function Home() {
           style={{
             width: '100%',
             padding: '12px',
-            backgroundColor: '#1e40af',
-            border: '1px solid #2563eb',
+            backgroundColor: '#2a2a2a',
+            border: '1px solid #444',
             borderRadius: '8px',
             color: '#ffffff',
             fontSize: '14px',
@@ -2122,20 +2110,22 @@ export default function Home() {
               ))}
             </div>
           )}
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            {conversationHistory
-              .filter(conv => {
-                // If no tag filters active, show all
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {(() => {
+              // Filter conversations by tags first
+              const filteredConvs = conversationHistory.filter(conv => {
                 if (activeTagFilters.length === 0) return true;
-                // If conversation has tags, check if any match active filters
                 if (conv.tags && Array.isArray(conv.tags)) {
                   return conv.tags.some((tag: string) => activeTagFilters.includes(tag));
                 }
-                // If no tags on conversation, don't show when filters active
                 return false;
-              })
-              .slice(0, 10)
-              .map((conv) => (
+              });
+
+              // Group conversations by date
+              const groups = groupConversationsByDate(filteredConvs);
+
+              // Render conversation item
+              const renderConversation = (conv: any) => (
                 <div
                   key={conv.id}
                   onClick={() => {
@@ -2182,17 +2172,75 @@ export default function Home() {
                     {conv.lastMessage ? conv.lastMessage.substring(0, 30) + '...' : 'No messages'}{conv.project ? ` • ${formatProjectName(conv.project)}` : ''}
                   </div>
                 </div>
-              ))}
-            {conversationHistory.length === 0 && (
-              <div style={{
-                padding: '16px',
-                textAlign: 'center',
-                color: '#666',
-                fontSize: '12px'
-              }}>
-                No recent chats
-              </div>
-            )}
+              );
+
+              // Render date group
+              const renderGroup = (groupName: string, groupLabel: string, conversations: any[]) => {
+                if (conversations.length === 0) return null;
+                const isCollapsed = collapsedDateGroups.has(groupName);
+
+                return (
+                  <div key={groupName} style={{ marginBottom: '8px' }}>
+                    <div
+                      onClick={() => {
+                        setCollapsedDateGroups(prev => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(groupName)) {
+                            newSet.delete(groupName);
+                          } else {
+                            newSet.add(groupName);
+                          }
+                          return newSet;
+                        });
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        color: '#888',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}
+                    >
+                      <span style={{ fontSize: '9px' }}>{isCollapsed ? '▶' : '▼'}</span>
+                      <span>{groupLabel}</span>
+                      <span style={{ color: '#666', fontSize: '10px' }}>({conversations.length})</span>
+                    </div>
+                    {!isCollapsed && (
+                      <div style={{ marginLeft: '12px' }}>
+                        {conversations.map(renderConversation)}
+                      </div>
+                    )}
+                  </div>
+                );
+              };
+
+              if (filteredConvs.length === 0) {
+                return (
+                  <div style={{
+                    padding: '16px',
+                    textAlign: 'center',
+                    color: '#666',
+                    fontSize: '12px'
+                  }}>
+                    No recent chats
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {renderGroup('today', 'Today', groups.today)}
+                  {renderGroup('yesterday', 'Yesterday', groups.yesterday)}
+                  {renderGroup('thisWeek', 'This Week', groups.thisWeek)}
+                  {renderGroup('older', 'Older', groups.older)}
+                </>
+              );
+            })()}
           </div>
         </div>
 

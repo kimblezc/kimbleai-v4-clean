@@ -1,6 +1,6 @@
 {
-  "version": "1.4.0",
-  "commit": "a7057ac",
-  "lastUpdated": "2025-10-23T20:40:00.000Z",
-  "changelog": "🎨 UI/UX REDESIGN: Fixed duplicate Projects section, created dedicated Recent Chats section, implemented functional tag filtering with visual indicators and 'Clear filters' button. Sidebar now properly organized with separate sections for Recent Chats and Projects."
+  "version": "1.4.1",
+  "commit": "pending",
+  "lastUpdated": "2025-10-23T21:00:00.000Z",
+  "changelog": "✨ ENHANCED ORGANIZATION: Added date grouping (Today/Yesterday/This Week/Older) with collapsible sections. Removed blue buttons for consistent gray theme. Recent Chats now properly grouped and sortable by date with conversation counts."
 }
