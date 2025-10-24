@@ -1,6 +1,6 @@
 {
   "version": "1.4.3",
-  "commit": "pending",
+  "commit": "210ab50",
   "lastUpdated": "2025-10-24T04:08:00.000Z",
   "changelog": "🔧 FIX: Fixed /agent page crash caused by window object in Server Component. Converted onClick navigation to proper Next.js Link component. Archie dashboard now loads correctly."
 }
