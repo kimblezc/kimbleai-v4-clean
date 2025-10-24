@@ -1,6 +1,6 @@
 {
   "version": "1.4.2",
-  "commit": "pending",
-  "lastUpdated": "2025-10-24T03:50:00.000Z",
+  "commit": "b312268",
+  "lastUpdated": "2025-10-24T03:58:00.000Z",
   "changelog": "🔧 CRITICAL FIX: Prevented Cost API crashes from UUID errors. Added graceful error handling to prevent application-wide failures while database migration is pending. Cost monitoring will show $0 until migration is applied."
 }
