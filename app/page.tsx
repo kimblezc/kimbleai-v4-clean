@@ -71,8 +71,6 @@ export default function Home() {
     current?: string;
     status: 'idle' | 'processing' | 'completed';
   }>({ total: 0, completed: 0, status: 'idle' });
-  const [deletedProjects, setDeletedProjects] = useState<Set<string>>(new Set());
-  const [createdProjects, setCreatedProjects] = useState<Set<string>>(new Set());
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const completedJobsRef = React.useRef<Set<string>>(new Set());
   const initialProjectSetRef = React.useRef<boolean>(false);
@@ -524,42 +522,11 @@ export default function Home() {
     handleExportWithProject(projectId);
   };
 
-  // Persist deleted projects to localStorage
+  // Clear any old localStorage entries from previous deletion tracking system
   React.useEffect(() => {
-    const savedDeletedProjects = localStorage.getItem(`kimbleai_deleted_projects_${currentUser}`);
-    if (savedDeletedProjects) {
-      try {
-        const deletedArray = JSON.parse(savedDeletedProjects);
-        setDeletedProjects(new Set(deletedArray));
-      } catch (error) {
-        console.error('Error loading deleted projects:', error);
-      }
-    }
-
-    const savedCreatedProjects = localStorage.getItem(`kimbleai_created_projects_${currentUser}`);
-    if (savedCreatedProjects) {
-      try {
-        const createdArray = JSON.parse(savedCreatedProjects);
-        setCreatedProjects(new Set(createdArray));
-      } catch (error) {
-        console.error('Error loading created projects:', error);
-      }
-    }
+    localStorage.removeItem(`kimbleai_deleted_projects_${currentUser}`);
+    localStorage.removeItem(`kimbleai_created_projects_${currentUser}`);
   }, [currentUser]);
-
-  React.useEffect(() => {
-    if (deletedProjects.size > 0) {
-      const deletedArray = Array.from(deletedProjects);
-      localStorage.setItem(`kimbleai_deleted_projects_${currentUser}`, JSON.stringify(deletedArray));
-    }
-  }, [deletedProjects, currentUser]);
-
-  React.useEffect(() => {
-    if (createdProjects.size > 0) {
-      const createdArray = Array.from(createdProjects);
-      localStorage.setItem(`kimbleai_created_projects_${currentUser}`, JSON.stringify(createdArray));
-    }
-  }, [createdProjects, currentUser]);
 
   // Delete project function - completely removes project with persistent storage
   const deleteProject = async (projectId: string) => {
@@ -584,12 +551,8 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
-        // Add to local deleted projects set for immediate UI update
-        setDeletedProjects(prev => {
-          const newSet = new Set(prev);
-          newSet.add(projectId);
-          return newSet;
-        });
+        // Reload projects from database (no client-side tracking needed)
+        await loadProjects();
 
         // Switch to first available project if deleting current project
         if (currentProject === projectId) {
@@ -3705,14 +3668,12 @@ export default function Home() {
                 Existing Projects
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflow: 'auto' }}>
-                {projects.filter(p => !deletedProjects.has(p.id)).length === 0 ? (
+                {projects.length === 0 ? (
                   <div style={{ color: '#666', fontSize: '14px', padding: '16px', textAlign: 'center' }}>
                     No projects yet. Create one below!
                   </div>
                 ) : (
-                  projects
-                    .filter(p => !deletedProjects.has(p.id))
-                    .map((project) => (
+                  projects.map((project) => (
                       <button
                         key={project.id}
                         onClick={() => handleExportWithProject(project.id)}
