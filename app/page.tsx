@@ -1994,7 +1994,7 @@ export default function Home() {
         </div>
 
         {/* Search Bar */}
-        <div style={{ marginBottom: '16px' }}>
+        <div style={{ marginBottom: '12px' }}>
           <input
             type="text"
             placeholder="Search..."
@@ -2011,12 +2011,12 @@ export default function Home() {
             }}
             style={{
               width: '100%',
-              padding: '10px 12px',
+              padding: '12px',
               backgroundColor: '#2a2a2a',
               border: '1px solid #444',
-              borderRadius: '6px',
+              borderRadius: '8px',
               color: '#ffffff',
-              fontSize: '13px',
+              fontSize: '14px',
               outline: 'none'
             }}
           />
