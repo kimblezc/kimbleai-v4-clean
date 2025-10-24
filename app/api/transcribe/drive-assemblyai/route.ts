@@ -157,10 +157,14 @@ export async function POST(request: NextRequest) {
       project_id: projectId,
       filename: fileName,
       file_size: fileSize,
+      job_id: jobId,
+      assemblyai_id: jobId,
+      status: 'processing',
+      progress: 30,
       metadata: {
         source: 'google_drive',
         googleDriveFileId: fileId,
-        assemblyaiJobId: jobId,
+        mimeType: fileMetadata.data.mimeType,
         status: 'processing'
       },
       created_at: new Date().toISOString()

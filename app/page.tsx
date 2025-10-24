@@ -2102,7 +2102,7 @@ export default function Home() {
           + New Chat
         </button>
 
-        {/* Accomplishments Link */}
+        {/* Archie Link */}
         <button
           onClick={() => window.location.href = '/accomplishments'}
           style={{
@@ -2121,7 +2121,7 @@ export default function Home() {
             gap: '8px'
           }}
         >
-          🚀 Accomplishments
+          🦉 Archie
         </button>
 
         {/* Code Editor Button */}

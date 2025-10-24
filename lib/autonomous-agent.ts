@@ -361,6 +361,7 @@ Format as JSON:
 
   /**
    * Generate actionable improvement suggestions AND convert them to tasks
+   * IMPROVED: Better deduplication and strict limit to prevent flooding
    */
   private async generateImprovementSuggestions(): Promise<void> {
     try {
@@ -390,32 +391,61 @@ Format as JSON:
           insight: { type: 'documentation_update', priority: 4, category: 'deployment' }
         };
 
+        // IMPROVED: Stricter limit - max 5 new tasks per run to prevent flooding
+        const MAX_TASKS_PER_RUN = 5;
         let converted = 0;
-        for (const finding of recentFindings.slice(0, 10)) { // Convert top 10
+
+        // IMPROVED: Better similarity function for full content
+        const calculateSimilarity = (str1: string | null, str2: string | null): number => {
+          if (!str1 || !str2) return 0;
+          const s1 = str1.toLowerCase();
+          const s2 = str2.toLowerCase();
+          if (s1 === s2) return 1.0;
+          if (s1.includes(s2) || s2.includes(s1)) return 0.8;
+
+          const words1 = new Set(s1.split(/\s+/));
+          const words2 = new Set(s2.split(/\s+/));
+          const intersection = new Set([...words1].filter(x => words2.has(x)));
+          const union = new Set([...words1, ...words2]);
+          return intersection.size / union.size;
+        };
+
+        for (const finding of recentFindings) {
+          // IMPROVED: Stop if we've hit the limit
+          if (converted >= MAX_TASKS_PER_RUN) {
+            await this.log('info', `⚠️ Reached max tasks limit (${MAX_TASKS_PER_RUN}) - stopping to prevent flooding`);
+            break;
+          }
+
           const mapping = taskMapping[finding.finding_type] || taskMapping.improvement;
 
-          // FIX: Skip converting "insight" findings - they're informational only, not actionable
+          // Skip converting "insight" findings - they're informational only, not actionable
           if (finding.finding_type === 'insight') {
             await this.log('info', `⏭️ Skipping insight finding (informational only): ${finding.title}`);
             continue;
           }
 
-          // Check if this finding already has a task (prevent duplicates)
-          // FIX: Check by description content, not generic title, and check ALL statuses
-          const descriptionKey = finding.description?.substring(0, 100);
-
+          // IMPROVED: Check ALL tasks across ALL statuses with semantic similarity
           const { data: existingTasks } = await supabase
             .from('agent_tasks')
-            .select('id, status, description')
+            .select('id, status, title, description')
             .eq('task_type', mapping.type);
 
-          const isDuplicate = existingTasks?.some(t =>
-            t.description?.substring(0, 100) === descriptionKey
-          );
+          // Check for duplicates using semantic similarity
+          const isDuplicate = existingTasks?.some(t => {
+            // Check title similarity
+            const titleSimilarity = calculateSimilarity(t.title, finding.title);
+            if (titleSimilarity > 0.7) return true;
+
+            // Check description similarity on FULL content, not just first 100 chars
+            const descSimilarity = calculateSimilarity(t.description, finding.description);
+            if (descSimilarity > 0.7) return true;
+
+            return false;
+          });
 
           if (!isDuplicate) {
             // Create actionable task from finding
-            // FIX: Use description if title is generic
             const taskTitle = finding.title === 'Improvement Suggestion'
               ? finding.description?.substring(0, 100) || finding.title
               : finding.title;
@@ -442,15 +472,17 @@ Format as JSON:
                 .from('agent_findings')
                 .update({ related_task_id: newTask.id })
                 .eq('id', finding.id);
-            }
 
-            converted++;
-            await this.log('info', `✅ [${mapping.category.toUpperCase()}] Created task: ${finding.title}`);
+              converted++;
+              await this.log('info', `✅ [${mapping.category.toUpperCase()}] Created task: ${finding.title}`);
+            }
+          } else {
+            await this.log('info', `⏭️ Skipping duplicate: ${finding.title}`);
           }
         }
 
         if (converted > 0) {
-          await this.log('info', `🎯 Converted ${converted} findings to actionable tasks across all 4 categories`);
+          await this.log('info', `🎯 Converted ${converted}/${recentFindings.length} findings to tasks (limit: ${MAX_TASKS_PER_RUN})`);
         }
       }
 
@@ -1511,22 +1543,63 @@ ${filesModified.map(f => `- ${f}`).join('\n')}
   }
 
   private async createFinding(finding: AgentFinding): Promise<void> {
-    // Duplicate detection: Check if we've already created a similar finding in the last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // IMPROVED: Check last 30 days instead of 7 for better duplicate detection
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const { data: recentFindings } = await supabase
       .from('agent_findings')
       .select('title, description')
       .eq('finding_type', finding.finding_type)
-      .gte('detected_at', sevenDaysAgo.toISOString());
+      .gte('detected_at', thirtyDaysAgo.toISOString());
 
-    // Check for exact title match or very similar description
-    const isDuplicate = recentFindings?.some(f =>
-      f.title === finding.title ||
-      (f.description && finding.description &&
-       f.description.substring(0, 100) === finding.description.substring(0, 100))
-    );
+    // IMPROVED: Hash-based exact duplicate detection + semantic similarity
+    const createHash = (text: string) => {
+      // Simple hash for exact duplicate detection
+      return text.toLowerCase().trim().replace(/\s+/g, ' ');
+    };
+
+    const calculateSimilarity = (str1: string, str2: string): number => {
+      const s1 = str1.toLowerCase();
+      const s2 = str2.toLowerCase();
+
+      // Exact match
+      if (s1 === s2) return 1.0;
+
+      // Check if one contains the other (80% similarity)
+      if (s1.includes(s2) || s2.includes(s1)) return 0.8;
+
+      // Count matching words (simple approach)
+      const words1 = new Set(s1.split(/\s+/));
+      const words2 = new Set(s2.split(/\s+/));
+      const intersection = new Set([...words1].filter(x => words2.has(x)));
+      const union = new Set([...words1, ...words2]);
+
+      return intersection.size / union.size; // Jaccard similarity
+    };
+
+    const findingHash = finding.description ? createHash(finding.description) : '';
+    const titleHash = createHash(finding.title);
+
+    // Check for duplicates using multiple strategies
+    const isDuplicate = recentFindings?.some(f => {
+      // Strategy 1: Exact hash match on full description
+      if (f.description && finding.description) {
+        const existingHash = createHash(f.description);
+        if (existingHash === findingHash) return true;
+      }
+
+      // Strategy 2: Exact title match
+      if (createHash(f.title) === titleHash) return true;
+
+      // Strategy 3: High similarity on full description (>70% match)
+      if (f.description && finding.description) {
+        const similarity = calculateSimilarity(f.description, finding.description);
+        if (similarity > 0.7) return true;
+      }
+
+      return false;
+    });
 
     if (isDuplicate) {
       await this.log('info', `⏭️ Skipping duplicate finding: ${finding.title}`);
@@ -1612,14 +1685,59 @@ ${filesModified.map(f => `- ${f}`).join('\n')}
       .delete()
       .lt('timestamp', thirtyDaysAgo);
 
-    // Clean up completed tasks (keep 30 days)
-    await supabase
+    // IMPROVED: Archive old completed tasks instead of deleting (>7 days old)
+    const { data: oldCompletedTasks } = await supabase
       .from('agent_tasks')
-      .delete()
+      .select('id')
       .eq('status', 'completed')
-      .lt('completed_at', thirtyDaysAgo);
+      .lt('completed_at', sevenDaysAgo);
 
-    // FIX: Clean up findings linked to completed tasks (prevents duplicate task creation)
+    if (oldCompletedTasks && oldCompletedTasks.length > 0) {
+      // Archive them by updating metadata
+      await supabase
+        .from('agent_tasks')
+        .update({
+          metadata: { archived: true, archived_at: new Date().toISOString() }
+        })
+        .in('id', oldCompletedTasks.map(t => t.id));
+
+      await this.log('info', `📦 Archived ${oldCompletedTasks.length} old completed tasks`);
+    }
+
+    // IMPROVED: Aggressive duplicate finding removal
+    const { data: allFindings } = await supabase
+      .from('agent_findings')
+      .select('id, title, finding_type, description, detected_at')
+      .order('detected_at', { ascending: false }); // Keep newest
+
+    if (allFindings && allFindings.length > 0) {
+      const seen = new Set<string>();
+      const duplicateIds: string[] = [];
+
+      for (const finding of allFindings) {
+        // Create a unique key from title + type (exact duplicates)
+        const key = `${finding.finding_type}:${finding.title.toLowerCase().trim()}`;
+
+        if (seen.has(key)) {
+          duplicateIds.push(finding.id);
+        } else {
+          seen.add(key);
+        }
+      }
+
+      if (duplicateIds.length > 0) {
+        const { count } = await supabase
+          .from('agent_findings')
+          .delete()
+          .in('id', duplicateIds);
+
+        if (count && count > 0) {
+          await this.log('info', `🧹 Removed ${count} duplicate findings (same title+type)`);
+        }
+      }
+    }
+
+    // Clean up findings linked to completed tasks (prevents duplicate task creation)
     const { data: linkedFindings } = await supabase
       .from('agent_findings')
       .select('id, related_task_id')
@@ -1661,6 +1779,6 @@ ${filesModified.map(f => `- ${f}`).join('\n')}
       await this.log('info', `🧹 Cleaned up ${oldFindingsCount} old unlinked findings`);
     }
 
-    await this.log('info', 'Cleaned up old records');
+    await this.log('info', '✅ Aggressive cleanup complete');
   }
 }

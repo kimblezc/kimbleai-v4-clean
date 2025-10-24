@@ -8,6 +8,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// IMPROVED: Simple in-memory cache for project lists
+const projectCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 30000; // 30 seconds
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -25,12 +29,44 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'list':
+        // IMPROVED: Check cache first for project lists
+        const cacheKey = `projects_list_${userId}`;
+        const cached = projectCache.get(cacheKey);
+
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+          // Return cached data with cache indicator
+          return NextResponse.json({
+            ...cached.data,
+            cached: true,
+            cacheAge: Math.round((Date.now() - cached.timestamp) / 1000)
+          });
+        }
+
+        // Cache miss - fetch fresh data
         const projects = await projectManager.getUserProjects(userId);
-        return NextResponse.json({
+        const responseData = {
           success: true,
           projects: projects,
           total: projects.length
+        };
+
+        // Store in cache
+        projectCache.set(cacheKey, {
+          data: responseData,
+          timestamp: Date.now()
         });
+
+        // Clean up old cache entries (simple cleanup)
+        if (projectCache.size > 100) {
+          const now = Date.now();
+          for (const [key, value] of projectCache.entries()) {
+            if (now - value.timestamp > CACHE_TTL * 2) {
+              projectCache.delete(key);
+            }
+          }
+        }
+
+        return NextResponse.json(responseData);
 
       case 'get':
         if (!projectId) {
@@ -89,6 +125,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Helper function to invalidate cache for a user
+    const invalidateCache = (uid: string) => {
+      projectCache.delete(`projects_list_${uid}`);
+    };
+
     switch (action) {
       case 'create':
         if (!await userManager.hasPermission(userId, 'can_create_projects')) {
@@ -108,6 +149,9 @@ export async function POST(request: NextRequest) {
             ...projectData.metadata
           }
         });
+
+        // Invalidate cache after creating project
+        invalidateCache(userId);
 
         return NextResponse.json({
           success: true,
@@ -133,6 +177,9 @@ export async function POST(request: NextRequest) {
           }
         });
 
+        // Invalidate cache after updating project
+        invalidateCache(userId);
+
         return NextResponse.json({
           success: true,
           project: updatedProject,
@@ -147,6 +194,9 @@ export async function POST(request: NextRequest) {
         await projectManager.updateProject(projectData.id, {
           status: 'archived'
         });
+
+        // Invalidate cache after archiving project
+        invalidateCache(userId);
 
         return NextResponse.json({
           success: true,
@@ -163,6 +213,9 @@ export async function POST(request: NextRequest) {
         }
 
         await projectManager.deleteProject(projectData.id);
+
+        // Invalidate cache after deleting project
+        invalidateCache(userId);
 
         return NextResponse.json({
           success: true,

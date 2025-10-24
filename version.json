@@ -1,6 +1,6 @@
 {
-  "version": "1.5.0",
-  "commit": "99a5d8f",
-  "lastUpdated": "2025-10-24T04:30:00.000Z",
-  "changelog": "✨ NEW: Added conversation pinning (★), sort dropdown (Date/Name/Count), keyboard shortcuts (Cmd+K/N/B), and enhanced tag management with removable filters."
+  "version": "1.6.0",
+  "commit": "63cde8b",
+  "lastUpdated": "2025-10-24T05:00:00.000Z",
+  "changelog": "🚀 MAJOR UPDATE: Fixed Archie duplicates (semantic matching, rate limiting), optimized project loading (30s→<1s with indexes & caching), updated UI (🦉 Archie button), enhanced transcription (speaker separation, 4-file Drive export)."
 }

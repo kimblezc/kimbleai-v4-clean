@@ -214,16 +214,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Create organized folder structure if not specified
+    // Structure: /Transcriptions/[YYYY-MM-DD]/[Transcription-Name]/
     if (!folderId) {
-      // Use old structure for now (new structure temporarily disabled for debugging)
       try {
-        const mainFolderId = await findOrCreateFolder('kimbleai-transcriptions');
+        // Main folder: "Transcriptions"
+        const mainFolderId = await findOrCreateFolder('Transcriptions');
         if (mainFolderId) {
-          const projectName = category || transcription.project_id || 'general';
-          const projectFolderId = await findOrCreateFolder(projectName, mainFolderId);
-          if (projectFolderId) {
-            targetFolderId = projectFolderId;
-            console.log(`[SAVE-TO-DRIVE] Using folder structure: kimbleai-transcriptions/${projectName} (${projectFolderId})`);
+          // Date folder: YYYY-MM-DD
+          const date = new Date(transcription.created_at);
+          const dateFolder = date.toISOString().split('T')[0]; // YYYY-MM-DD
+          const dateFolderId = await findOrCreateFolder(dateFolder, mainFolderId);
+
+          if (dateFolderId) {
+            // Transcription-specific folder: filename (without extension)
+            const transcriptionFolderName = transcription.filename.replace(/\.[^/.]+$/, '');
+            const transcriptionFolderId = await findOrCreateFolder(transcriptionFolderName, dateFolderId);
+
+            if (transcriptionFolderId) {
+              targetFolderId = transcriptionFolderId;
+              console.log(`[SAVE-TO-DRIVE] Using folder structure: Transcriptions/${dateFolder}/${transcriptionFolderName} (${transcriptionFolderId})`);
+            }
           }
         }
       } catch (folderError) {
@@ -233,8 +243,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Helper function to upload a file to Drive
-    async function uploadFile(fileName: string, fileContent: string, mimeType: string): Promise<any> {
-      console.log(`[SAVE-TO-DRIVE] Uploading file: ${fileName}, size: ${fileContent.length} chars, mimeType: ${mimeType}`);
+    async function uploadFile(fileName: string, fileContent: string | Buffer, mimeType: string): Promise<any> {
+      console.log(`[SAVE-TO-DRIVE] Uploading file: ${fileName}, size: ${typeof fileContent === 'string' ? fileContent.length + ' chars' : fileContent.length + ' bytes'}, mimeType: ${mimeType}`);
 
       try {
         const response = await drive.files.create({
@@ -265,129 +275,166 @@ export async function POST(request: NextRequest) {
     const uploadedFiles = [];
 
     if (multiFormat) {
-      console.log('[SAVE-TO-DRIVE] Exporting in multiple formats...');
+      console.log('[SAVE-TO-DRIVE] Exporting in multiple formats (4 files: audio, full transcript, speaker-separated, metadata)...');
 
+      // FILE 1: Original audio file (download from Drive if available)
       try {
-        // 1. TXT format (with timestamps)
-        console.log('[SAVE-TO-DRIVE] Uploading TXT format...');
+        const googleDriveFileId = transcription.metadata?.googleDriveFileId;
+        if (googleDriveFileId) {
+          console.log('[SAVE-TO-DRIVE] Downloading original audio file from Drive...');
+
+          // Download the original audio file
+          const audioResponse = await drive.files.get(
+            { fileId: googleDriveFileId, alt: 'media' },
+            { responseType: 'arraybuffer' }
+          );
+
+          const audioBuffer = Buffer.from(audioResponse.data as ArrayBuffer);
+
+          // Upload to target folder
+          const audioFile = await uploadFile(
+            transcription.filename,
+            audioBuffer,
+            transcription.metadata?.mimeType || 'audio/m4a'
+          );
+          uploadedFiles.push({ format: 'Original Audio', ...audioFile });
+          console.log('[SAVE-TO-DRIVE] Original audio upload complete');
+        } else {
+          console.warn('[SAVE-TO-DRIVE] No Google Drive file ID found, skipping original audio upload');
+        }
+      } catch (error: any) {
+        console.error('[SAVE-TO-DRIVE] Audio upload failed:', error);
+        // Continue even if audio upload fails
+      }
+
+      // FILE 2: Full transcription text (plain text format)
+      try {
+        console.log('[SAVE-TO-DRIVE] Uploading full transcription (TXT)...');
         const txtFile = await uploadFile(
-          `${baseFilename}_transcript.txt`,
+          `full-transcription.txt`,
           content,
           'text/plain'
         );
-        uploadedFiles.push({ format: 'TXT', ...txtFile });
-        console.log('[SAVE-TO-DRIVE] TXT upload complete');
+        uploadedFiles.push({ format: 'Full Transcription (TXT)', ...txtFile });
+        console.log('[SAVE-TO-DRIVE] Full transcription upload complete');
       } catch (error: any) {
         console.error('[SAVE-TO-DRIVE] TXT upload failed:', error);
         throw new Error(`TXT upload failed: ${error.message}`);
       }
 
+      // FILE 3: Speaker-separated transcription
       try {
-        // 2. JSON format (full metadata)
-        console.log('[SAVE-TO-DRIVE] Uploading JSON format...');
-        const jsonContent = JSON.stringify({
-          id: transcription.id,
+        console.log('[SAVE-TO-DRIVE] Creating speaker-separated transcript...');
+        let speakerContent = `SPEAKER-SEPARATED TRANSCRIPTION: ${transcription.filename}\n`;
+        speakerContent += `Duration: ${Math.floor(transcription.duration / 60)}:${(transcription.duration % 60).toString().padStart(2, '0')}\n`;
+        speakerContent += `Date: ${new Date(transcription.created_at).toLocaleString()}\n`;
+        speakerContent += `\n${'='.repeat(80)}\n\n`;
+
+        if (utterances.length > 0) {
+          // Group by speaker for better readability
+          let currentSpeaker = null;
+          utterances.forEach((utterance: any) => {
+            if (currentSpeaker !== utterance.speaker) {
+              currentSpeaker = utterance.speaker;
+              speakerContent += `\n--- SPEAKER ${utterance.speaker} ---\n\n`;
+            }
+            const startTime = Math.floor(utterance.start / 1000);
+            const minutes = Math.floor(startTime / 60);
+            const seconds = startTime % 60;
+            const timestamp = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            speakerContent += `[${timestamp}] ${utterance.text}\n`;
+          });
+        } else {
+          speakerContent += 'No speaker separation data available.\n\n';
+          speakerContent += transcription.text;
+        }
+
+        const speakerFile = await uploadFile(
+          `speaker-separated.txt`,
+          speakerContent,
+          'text/plain'
+        );
+        uploadedFiles.push({ format: 'Speaker-Separated (TXT)', ...speakerFile });
+        console.log('[SAVE-TO-DRIVE] Speaker-separated transcript upload complete');
+      } catch (error: any) {
+        console.error('[SAVE-TO-DRIVE] Speaker-separated upload failed:', error);
+        // Continue even if this fails
+      }
+
+      // FILE 4: Metadata/summary JSON file
+      try {
+        console.log('[SAVE-TO-DRIVE] Creating metadata JSON...');
+
+        // Count speakers
+        const speakerSet = new Set(utterances.map((u: any) => u.speaker));
+        const speakerCount = speakerSet.size;
+
+        const metadataContent = JSON.stringify({
+          // Basic info
           filename: transcription.filename,
-          duration: transcription.duration,
+          transcription_id: transcription.id,
+          assemblyai_id: transcription.metadata?.assemblyai_id,
           created_at: transcription.created_at,
           project_id: transcription.project_id,
-          text: transcription.text,
-          utterances: utterances,
-          words: transcription.metadata?.words || [],
-          speaker_labels: transcription.metadata?.speaker_labels,
+
+          // Audio info
+          duration_seconds: transcription.duration,
+          duration_formatted: `${Math.floor(transcription.duration / 60)}:${(transcription.duration % 60).toString().padStart(2, '0')}`,
+          file_size_bytes: transcription.file_size,
+
+          // Transcription summary
+          word_count: transcription.text?.split(/\s+/).length || 0,
+          speaker_count: speakerCount,
+          utterance_count: utterances.length,
+
+          // Speaker breakdown
+          speakers: Array.from(speakerSet).map((speaker: any) => ({
+            speaker_id: speaker,
+            utterance_count: utterances.filter((u: any) => u.speaker === speaker).length,
+            word_count: utterances
+              .filter((u: any) => u.speaker === speaker)
+              .reduce((sum: number, u: any) => sum + (u.text?.split(/\s+/).length || 0), 0)
+          })),
+
+          // Full text
+          full_text: transcription.text,
+
+          // Utterances with timestamps
+          utterances: utterances.map((u: any) => ({
+            speaker: u.speaker,
+            start_ms: u.start,
+            end_ms: u.end,
+            start_time: `${Math.floor(u.start / 60000)}:${Math.floor((u.start % 60000) / 1000).toString().padStart(2, '0')}`,
+            end_time: `${Math.floor(u.end / 60000)}:${Math.floor((u.end % 60000) / 1000).toString().padStart(2, '0')}`,
+            text: u.text,
+            confidence: u.confidence
+          })),
+
+          // Auto-tagging results
           auto_tags: transcription.metadata?.auto_tags || [],
-          action_items: transcription.metadata?.action_items || []
+          action_items: transcription.metadata?.action_items || [],
+          key_topics: transcription.metadata?.key_topics || [],
+          sentiment: transcription.metadata?.sentiment,
+          importance_score: transcription.metadata?.importance_score,
+
+          // Export metadata
+          exported_at: new Date().toISOString(),
+          export_format_version: '2.0'
         }, null, 2);
 
-        const jsonFile = await uploadFile(
-          `${baseFilename}_transcript.json`,
-          jsonContent,
+        const metadataFile = await uploadFile(
+          `metadata.json`,
+          metadataContent,
           'application/json'
         );
-        uploadedFiles.push({ format: 'JSON', ...jsonFile });
-        console.log('[SAVE-TO-DRIVE] JSON upload complete');
+        uploadedFiles.push({ format: 'Metadata (JSON)', ...metadataFile });
+        console.log('[SAVE-TO-DRIVE] Metadata JSON upload complete');
       } catch (error: any) {
-        console.error('[SAVE-TO-DRIVE] JSON upload failed:', error);
-        throw new Error(`JSON upload failed: ${error.message}`);
+        console.error('[SAVE-TO-DRIVE] Metadata JSON upload failed:', error);
+        throw new Error(`Metadata JSON upload failed: ${error.message}`);
       }
 
-      // 3. SRT format (subtitles)
-      let srtContent = '';
-      if (utterances.length > 0) {
-        utterances.forEach((utterance: any, index: number) => {
-          const startMs = utterance.start;
-          const endMs = utterance.end;
-
-          const formatTime = (ms: number) => {
-            const totalSeconds = Math.floor(ms / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            const milliseconds = ms % 1000;
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
-          };
-
-          srtContent += `${index + 1}\n`;
-          srtContent += `${formatTime(startMs)} --> ${formatTime(endMs)}\n`;
-          srtContent += `${utterance.text}\n\n`;
-        });
-      }
-
-      if (srtContent) {
-        try {
-          console.log('[SAVE-TO-DRIVE] Uploading SRT format...');
-          const srtFile = await uploadFile(
-            `${baseFilename}_transcript.srt`,
-            srtContent,
-            'text/plain'
-          );
-          uploadedFiles.push({ format: 'SRT', ...srtFile });
-          console.log('[SAVE-TO-DRIVE] SRT upload complete');
-        } catch (error: any) {
-          console.error('[SAVE-TO-DRIVE] SRT upload failed:', error);
-          throw new Error(`SRT upload failed: ${error.message}`);
-        }
-      }
-
-      // 4. VTT format (WebVTT subtitles)
-      let vttContent = 'WEBVTT\n\n';
-      if (utterances.length > 0) {
-        utterances.forEach((utterance: any, index: number) => {
-          const startMs = utterance.start;
-          const endMs = utterance.end;
-
-          const formatTime = (ms: number) => {
-            const totalSeconds = Math.floor(ms / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            const milliseconds = ms % 1000;
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
-          };
-
-          vttContent += `${index + 1}\n`;
-          vttContent += `${formatTime(startMs)} --> ${formatTime(endMs)}\n`;
-          vttContent += `${utterance.text}\n\n`;
-        });
-      }
-
-      if (vttContent !== 'WEBVTT\n\n') {
-        try {
-          console.log('[SAVE-TO-DRIVE] Uploading VTT format...');
-          const vttFile = await uploadFile(
-            `${baseFilename}_transcript.vtt`,
-            vttContent,
-            'text/vtt'
-          );
-          uploadedFiles.push({ format: 'VTT', ...vttFile });
-          console.log('[SAVE-TO-DRIVE] VTT upload complete');
-        } catch (error: any) {
-          console.error('[SAVE-TO-DRIVE] VTT upload failed:', error);
-          throw new Error(`VTT upload failed: ${error.message}`);
-        }
-      }
-
-      console.log(`[SAVE-TO-DRIVE] Uploaded ${uploadedFiles.length} files`);
+      console.log(`[SAVE-TO-DRIVE] Uploaded ${uploadedFiles.length} files successfully`);
 
       // Log export to history
       try {
