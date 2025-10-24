@@ -424,6 +424,12 @@ async function getSpendingSince(since: Date, userId?: string): Promise<number> {
     const { data, error } = await query;
 
     if (error) {
+      // Detect UUID error specifically (database migration needed)
+      if (error.code === '22P02' && error.message?.includes('uuid')) {
+        // Silently return 0 to prevent log spam (migration needed)
+        // Warning is logged once in getUsageAnalytics
+        return 0;
+      }
       console.error('[CostMonitor] Error getting spending:', error);
       return 0;
     }
@@ -637,8 +643,39 @@ export async function getUsageAnalytics(
 
     const { data, error } = await query;
 
-    if (error || !data) {
+    if (error) {
+      // Detect UUID error specifically (database migration needed)
+      if (error.code === '22P02' && error.message?.includes('uuid')) {
+        console.warn('[CostMonitor] UUID error - database migration needed. Returning empty analytics.');
+        console.warn('[CostMonitor] Run: database/fix-cost-tracking-user-id-CORRECTED.sql');
+        // Return empty analytics to prevent crash
+        return {
+          totalCost: 0,
+          totalCalls: 0,
+          costByModel: {},
+          costByEndpoint: {},
+          costByUser: {},
+          topExpensiveCalls: [],
+          dailyAverage: 0,
+          projectedMonthly: 0,
+        };
+      }
+      console.error('[CostMonitor] Error getting usage analytics:', error);
       throw error;
+    }
+
+    if (!data) {
+      // No data, return empty analytics
+      return {
+        totalCost: 0,
+        totalCalls: 0,
+        costByModel: {},
+        costByEndpoint: {},
+        costByUser: {},
+        topExpensiveCalls: [],
+        dailyAverage: 0,
+        projectedMonthly: 0,
+      };
     }
 
     // Calculate totals

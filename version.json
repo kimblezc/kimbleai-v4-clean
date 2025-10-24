@@ -1,6 +1,6 @@
 {
-  "version": "1.4.1",
-  "commit": "9520841",
-  "lastUpdated": "2025-10-23T21:00:00.000Z",
-  "changelog": "✨ ENHANCED ORGANIZATION: Added date grouping (Today/Yesterday/This Week/Older) with collapsible sections. Removed blue buttons for consistent gray theme. Recent Chats now properly grouped and sortable by date with conversation counts."
+  "version": "1.4.2",
+  "commit": "pending",
+  "lastUpdated": "2025-10-24T03:50:00.000Z",
+  "changelog": "🔧 CRITICAL FIX: Prevented Cost API crashes from UUID errors. Added graceful error handling to prevent application-wide failures while database migration is pending. Cost monitoring will show $0 until migration is applied."
 }
