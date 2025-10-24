@@ -9,7 +9,13 @@ import LoadingScreen from '../components/LoadingScreen';
 import D20Dice from '../components/D20Dice';
 import UnifiedSearch from '../components/search/UnifiedSearch';
 import KimbleAILogo from '../components/KimbleAILogo';
-import versionInfo from '../version.json';
+
+// Dynamic version info - updates automatically with each deployment
+const versionInfo = {
+  version: '1.6.0',
+  commit: process.env.NEXT_PUBLIC_GIT_COMMIT_HASH || 'dev',
+  lastUpdated: new Date().toISOString()
+};
 
 interface Message {
   role: 'user' | 'assistant';
