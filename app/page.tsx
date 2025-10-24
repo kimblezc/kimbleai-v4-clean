@@ -2964,8 +2964,8 @@ export default function Home() {
                   title={`Hourly: ${costStats.hourly.percentage.toFixed(0)}%\nDaily: ${costStats.daily.percentage.toFixed(0)}%\nMonthly: ${costStats.monthly.percentage.toFixed(0)}%`}
                 >
                   {/* Hourly */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px' }}>
-                    <span style={{ color: '#666', width: '16px' }}>Hr</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px' }}>
+                    <span style={{ color: '#666', width: '18px' }}>Hr</span>
                     <span style={{ color: isExceeded ? '#fca5a5' : '#ccc', fontWeight: '600' }}>
                       ${costStats.hourly.used.toFixed(2)}
                     </span>
@@ -2976,8 +2976,8 @@ export default function Home() {
                   </div>
 
                   {/* Daily */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px' }}>
-                    <span style={{ color: '#666', width: '16px' }}>Day</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px' }}>
+                    <span style={{ color: '#666', width: '18px' }}>Day</span>
                     <span style={{ color: isExceeded ? '#fca5a5' : '#ccc', fontWeight: '600' }}>
                       ${costStats.daily.used.toFixed(2)}
                     </span>
@@ -2988,8 +2988,8 @@ export default function Home() {
                   </div>
 
                   {/* Monthly */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px' }}>
-                    <span style={{ color: '#666', width: '16px' }}>Mon</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px' }}>
+                    <span style={{ color: '#666', width: '18px' }}>Mon</span>
                     <span style={{ color: isExceeded ? '#fca5a5' : '#ccc', fontWeight: '600' }}>
                       ${costStats.monthly.used.toFixed(2)}
                     </span>
