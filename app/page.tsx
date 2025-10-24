@@ -260,8 +260,40 @@ export default function Home() {
 
   // Removed: Deep Research & Agent Mode (non-functional, will rebuild properly)
 
-  // Load conversations for current project
-  // Load conversations and update projects dynamically
+  // Load projects from database (separate from conversations)
+  const loadProjects = React.useCallback(async () => {
+    try {
+      const response = await fetch(`/api/projects?userId=${currentUser}&action=list`);
+      const data = await response.json();
+
+      if (data.success && data.projects) {
+        // Sort projects by conversation count and name
+        const sortedProjects = [...data.projects].sort((a, b) => {
+          // First by conversation count (descending)
+          const countDiff = (b.stats?.total_conversations || 0) - (a.stats?.total_conversations || 0);
+          if (countDiff !== 0) return countDiff;
+          // Then alphabetically by name
+          return a.name.localeCompare(b.name);
+        });
+
+        setProjects(sortedProjects);
+
+        // Set first project as current if none selected - only do this once on initial load
+        if (!initialProjectSetRef.current && sortedProjects.length > 0) {
+          setCurrentProject(sortedProjects[0].id);
+          initialProjectSetRef.current = true;
+        }
+      } else {
+        console.error('Failed to load projects:', data.error);
+        setProjects([]);
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      setProjects([]);
+    }
+  }, [currentUser]);
+
+  // Load conversations for current project (simplified - no project computation)
   const loadConversations = React.useCallback(async (projectId: string = '') => {
     setIsLoadingConversations(true);
     try {
@@ -269,72 +301,23 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
-        // Update projects based on actual conversation data
-        const projectCounts: Record<string, number> = {};
-        data.conversations.forEach((conv: any) => {
-          const project = conv.project || '';
-          if (project) { // Only count conversations with assigned projects
-            projectCounts[project] = (projectCounts[project] || 0) + 1;
-          }
-        });
-
-        // Create dynamic project list
-        const dynamicProjects = Object.entries(projectCounts).map(([id, count]) => ({
-          id,
-          name: formatProjectName(id),
-          conversations: count,
-          status: 'active'
-        }));
-
-        // Add any manually created projects that don't exist in conversation data yet
-        const existingProjectIds = new Set(dynamicProjects.map(p => p.id));
-        const createdProjectsToAdd = Array.from(createdProjects)
-          .filter(projectId => !existingProjectIds.has(projectId) && !deletedProjects.has(projectId))
-          .map(projectId => ({
-            id: projectId,
-            name: formatProjectName(projectId),
-            conversations: 0,
-            status: 'active' as const
-          }));
-
-        // Combine dynamic and created projects
-        const allProjects = [...createdProjectsToAdd, ...dynamicProjects];
-
-        // Filter out deleted projects and sort
-        const filteredProjects = allProjects.filter(project => !deletedProjects.has(project.id));
-        filteredProjects.sort((a, b) => {
-          // Created projects with 0 conversations go to top
-          if (a.conversations === 0 && b.conversations > 0) return -1;
-          if (b.conversations === 0 && a.conversations > 0) return 1;
-          return b.conversations - a.conversations;
-        });
-        setProjects(filteredProjects);
-
         // Filter conversations by project if specified
         const filteredConversations = projectId
           ? data.conversations.filter((conv: any) => conv.project === projectId)
           : data.conversations;
 
         setConversationHistory(filteredConversations.slice(0, 10));
-
-        // Set first project as current if none selected - only do this once on initial load
-        if (!projectId && !initialProjectSetRef.current && dynamicProjects.length > 0) {
-          setCurrentProject(dynamicProjects[0].id);
-          initialProjectSetRef.current = true;
-        }
       } else {
         console.error('Failed to load conversations:', data.error);
         setConversationHistory([]);
-        setProjects([]);
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
       setConversationHistory([]);
-      setProjects([]);
     } finally {
       setIsLoadingConversations(false);
     }
-  }, [currentUser, createdProjects, deletedProjects]);
+  }, [currentUser]);
 
   // Helper function to format project names
   const formatProjectName = (id: string): string => {
@@ -401,13 +384,19 @@ export default function Home() {
     }
   };
 
-  // Load conversations on initial mount and user change
-  // Note: We intentionally omit loadConversations from deps to prevent infinite loop
+  // Load projects and conversations on initial mount and user change
+  // Note: We intentionally omit loadConversations and loadProjects from deps to prevent infinite loop
   // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     initialProjectSetRef.current = false; // Reset when user changes
+    loadProjects();
     loadConversations();
   }, [currentUser]);
+
+  // Reload projects independently when needed
+  React.useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   // Persist currentProject to localStorage and restore on load
   React.useEffect(() => {
