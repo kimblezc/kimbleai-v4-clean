@@ -2955,7 +2955,7 @@ export default function Home() {
                 backgroundColor: '#1a1a1a',
                 border: '1px solid #10b981',
                 borderRadius: '4px',
-                fontSize: '10px',
+                fontSize: '12px',
                 color: '#10b981',
                 fontWeight: '600',
                 display: 'flex',
@@ -2965,10 +2965,10 @@ export default function Home() {
               }}
               title={`Version ${versionInfo.version} - Commit ${versionInfo.commit}\nUpdated: ${new Date(versionInfo.lastUpdated).toLocaleString()}`}
             >
-              <span style={{ fontSize: '10px' }}>✨</span>
+              <span style={{ fontSize: '12px' }}>✨</span>
               <span>v{versionInfo.version}</span>
               <span style={{ color: '#666', fontWeight: '400' }}>@</span>
-              <span style={{ fontSize: '9px', color: '#10b981', opacity: 0.8 }}>{versionInfo.commit}</span>
+              <span style={{ fontSize: '11px', color: '#10b981', opacity: 0.8 }}>{versionInfo.commit}</span>
             </div>
 
             {/* Cost Display - Hourly, Daily, Monthly */}
