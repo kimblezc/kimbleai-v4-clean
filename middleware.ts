@@ -28,7 +28,7 @@ const PUBLIC_PATHS = [
   '/api/cron', // Cron jobs (protected by CRON_SECRET in route)
   '/api/agent', // Archie autonomous agent (protected by CRON_SECRET in route)
   '/api/storage', // Storage monitoring endpoints
-  '/agent', // Archie dashboard (read-only public view)
+  '/archie', // Archie dashboard (read-only public view - redesigned v3.0.0)
   '/api/agent/trigger', // Manual Archie trigger (for Zapier/external crons)
   '/auth/signin',
   '/auth/error',

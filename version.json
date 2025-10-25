@@ -1,6 +1,6 @@
 {
-  "version": "3.0.0",
-  "commit": "d6fc9d3",
-  "lastUpdated": "2025-10-25T18:00:00.000Z",
-  "changelog": "✨ COMPLETE REDESIGN: Archie Dashboard rebuilt from scratch with modern UI/UX! Features: real-time activity monitoring, animated performance charts, agent status with schedules, system health monitoring, task management with visual progress, interactive metrics grid, CSS-based data visualizations, beautiful gradients and animations, responsive design, and comprehensive oversight of all 4 autonomous agents. Modern SaaS-style dashboard inspired by Vercel/Railway/Linear."
+  "version": "3.0.1",
+  "commit": "481126c",
+  "lastUpdated": "2025-10-25T18:30:00.000Z",
+  "changelog": "🔧 HOTFIX: Made redesigned /archie route publicly accessible. The v3.0.0 redesign was deployed successfully but was behind authentication - now anyone can view the beautiful new dashboard at /archie!"
 }
