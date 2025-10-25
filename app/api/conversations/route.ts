@@ -24,8 +24,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Build query for conversations - simplified for existing schema
-    const { data: conversations, error } = await supabase
+    // Build query for conversations - try with project_id first, fallback if column doesn't exist
+    let conversations;
+    let error;
+
+    // Try querying with project_id column (new schema)
+    const queryWithProject = await supabase
       .from('conversations')
       .select(`
         id,
@@ -37,6 +41,28 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userData.id)
       .order('id', { ascending: false })
       .limit(limit);
+
+    if (queryWithProject.error) {
+      // If project_id column doesn't exist, try without it (old schema)
+      console.warn('project_id column not found, using fallback query');
+      const queryWithoutProject = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          title,
+          user_id,
+          messages(id, content, role, created_at)
+        `)
+        .eq('user_id', userData.id)
+        .order('id', { ascending: false })
+        .limit(limit);
+
+      conversations = queryWithoutProject.data;
+      error = queryWithoutProject.error;
+    } else {
+      conversations = queryWithProject.data;
+      error = queryWithProject.error;
+    }
 
     if (error) {
       console.error('Conversations fetch error:', error);
@@ -79,7 +105,8 @@ export async function GET(request: NextRequest) {
       // const detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : '';
 
       // ✅ FIX: Return actual project_id from database (null = unassigned)
-      const actualProject = conv.project_id || '';
+      // Handle case where project_id column doesn't exist yet
+      const actualProject = (conv as any).project_id || '';
 
       return {
         id: conv.id,
@@ -196,7 +223,7 @@ export async function POST(request: NextRequest) {
       conversation: {
         id: conversation.id,
         title: conversation.title,
-        project: conversation.project_id || '', // ✅ FIX: Return actual project_id from database
+        project: (conversation as any).project_id || '', // ✅ FIX: Return actual project_id from database (handle missing column)
         messages: formattedMessages
       }
     });
