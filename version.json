@@ -1,6 +1,6 @@
 {
-  "version": "1.8.0",
-  "commit": "84b0e34",
-  "lastUpdated": "2025-10-25T13:15:00.000Z",
-  "changelog": "✅ FIXED: Project creation now works! Changed projects.id from UUID to TEXT to match code-generated IDs. Archived 16 unused database files (47→31 active migrations). Comprehensive type audit completed - zero mismatches remain."
+  "version": "1.9.0",
+  "commit": "9f38546",
+  "lastUpdated": "2025-10-25T14:00:00.000Z",
+  "changelog": "✨ NEW: Unified Archie Dashboard! Consolidated scattered features (Transcribe, Device Sync, Drive Intelligence) into one beautiful, cohesive dashboard. Simplified sidebar navigation. Modern card-based UI with 6 feature areas and real-time stats."
 }

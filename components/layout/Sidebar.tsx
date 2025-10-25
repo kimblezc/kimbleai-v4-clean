@@ -13,12 +13,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: '📊' },
+    { name: 'Chat', href: '/', icon: '💬' },
+    { name: 'Archie', href: '/archie', icon: '🦉', featured: true },
     { name: 'Projects', href: '/projects', icon: '📋' },
     { name: 'Files', href: '/files', icon: '📁' },
-    { name: 'Chat', href: '/', icon: '💬' },
     { name: 'Search', href: '/search', icon: '🔍' },
-    { name: 'Integrations', href: '/integrations', icon: '🔗' },
   ];
 
   const isActive = (href: string) => {
@@ -72,7 +71,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     flex items-center gap-3 px-4 py-3 rounded-lg
                     transition-all duration-200
                     ${
-                      isActive(item.href)
+                      (item as any).featured
+                        ? isActive(item.href)
+                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/30'
+                          : 'bg-gradient-to-r from-purple-600/10 to-blue-600/10 text-purple-400 border border-purple-500/30 hover:from-purple-600/20 hover:to-blue-600/20 hover:border-purple-500/50'
+                        : isActive(item.href)
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                         : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                     }
@@ -80,6 +83,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 >
                   <span className="text-xl">{item.icon}</span>
                   <span className="font-medium">{item.name}</span>
+                  {(item as any).featured && (
+                    <span className="ml-auto text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full">
+                      AI
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>
