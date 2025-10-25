@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         id,
         title,
         user_id,
+        project_id,
         messages(id, content, role, created_at)
       `)
       .eq('user_id', userData.id)
@@ -76,12 +77,14 @@ export async function GET(request: NextRequest) {
 
       // Only use auto-detected project if it hasn't been deleted
       // const detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : '';
-      const detectedProject = ''; // Always empty - no auto-assignment
+
+      // ✅ FIX: Return actual project_id from database (null = unassigned)
+      const actualProject = conv.project_id || '';
 
       return {
         id: conv.id,
         title: conv.title || 'Untitled Conversation',
-        project: detectedProject,
+        project: actualProject,
         messageCount,
         lastMessage: lastMessage ? formatTimeAgo(lastMessage.created_at) : 'No messages',
         createdAt: new Date().toISOString(),
@@ -132,14 +135,15 @@ export async function POST(request: NextRequest) {
 
     // Handle project assignment action
     if (action === 'assign_project') {
-      if (!conversationId || !projectId) {
+      if (!conversationId || projectId === undefined) {
         return NextResponse.json({ error: 'Conversation ID and Project ID required' }, { status: 400 });
       }
 
-      // Update conversation with project assignment (using title for now since no metadata column)
+      // ✅ FIX: Actually update project_id column (null = unassign)
       const { error: updateError } = await supabase
         .from('conversations')
         .update({
+          project_id: projectId || null, // Allow null to unassign from project
           updated_at: new Date().toISOString()
         })
         .eq('id', conversationId)
@@ -154,7 +158,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: 'Project assigned successfully',
+        message: projectId ? 'Project assigned successfully' : 'Project unassigned successfully',
         conversationId,
         projectId
       });
@@ -192,7 +196,7 @@ export async function POST(request: NextRequest) {
       conversation: {
         id: conversation.id,
         title: conversation.title,
-        project: '', // DISABLED auto-detection - manual assignment only
+        project: conversation.project_id || '', // ✅ FIX: Return actual project_id from database
         messages: formattedMessages
       }
     });

@@ -1038,6 +1038,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
             id: conversationId,
             user_id: userData.id,
             title: userMessage.substring(0, 50),
+            project_id: (lastMessage.projectId && lastMessage.projectId !== '') ? lastMessage.projectId : null, // Save project_id (null = unassigned)
             updated_at: new Date().toISOString()
           })
           .select()
