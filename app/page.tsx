@@ -509,10 +509,10 @@ export default function Home() {
       return;
     }
 
-    // Add to created projects
-    setCreatedProjects(prev => new Set([...prev, projectId]));
+    // Reload projects from database
+    await loadProjects();
 
-    // Reload projects
+    // Reload conversations
     loadConversations();
 
     // Clear input
@@ -2442,12 +2442,8 @@ export default function Home() {
                     return [newProject, ...prev];
                   });
 
-                  // Add to created projects set for persistence
-                  setCreatedProjects(prev => {
-                    const newSet = new Set(prev);
-                    newSet.add(projectId);
-                    return newSet;
-                  });
+                  // Reload projects from database
+                  await loadProjects();
 
                   setCurrentProject(projectId);
                   alert(`Project "${name}" created successfully!`);
