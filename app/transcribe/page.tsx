@@ -274,7 +274,7 @@ export default function TranscribePage() {
           transcriptionId,
           category: projectName,
           userId: 'zach',
-          multiFormat: true  // Export all 4 formats: TXT, JSON, SRT, VTT
+          multiFormat: true  // Export all 6 files: Audio, TXT, Speaker-Separated, SRT, VTT, JSON
         })
       });
 
@@ -661,7 +661,7 @@ export default function TranscribePage() {
                                   </button>
                                 </div>
                                 <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>
-                                  Download individual formats or export all 4 files (TXT, JSON, SRT, VTT) to Drive
+                                  Download individual formats or export all to Drive (Audio, Transcript, Speaker-Separated, SRT, VTT, JSON)
                                 </div>
                               </div>
                             )}

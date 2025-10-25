@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       folderId = null,  // Optional: specific folder ID
       category = null,   // Optional: category name to create folder
       userId = 'zach',   // User ID for Supabase token lookup
-      multiFormat = false  // Export all formats (TXT, JSON, SRT, VTT)
+      multiFormat = false  // Export all 6 files: Audio, TXT, Speaker-Separated, SRT, VTT, JSON
     } = await request.json();
 
     console.log(`[SAVE-TO-DRIVE] Starting export for transcriptionId: ${transcriptionId}`);
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
     const uploadedFiles = [];
 
     if (multiFormat) {
-      console.log('[SAVE-TO-DRIVE] Exporting in multiple formats (4 files: audio, full transcript, speaker-separated, metadata)...');
+      console.log('[SAVE-TO-DRIVE] Exporting in multiple formats (6 files: audio, TXT, speaker-separated, SRT, VTT, JSON)...');
 
       // FILE 1: Original audio file (download from Drive if available)
       try {
@@ -361,7 +361,92 @@ export async function POST(request: NextRequest) {
         // Continue even if this fails
       }
 
-      // FILE 4: Metadata/summary JSON file
+      // FILE 4: SRT subtitle file (SubRip format)
+      try {
+        console.log('[SAVE-TO-DRIVE] Creating SRT subtitle file...');
+        let srtContent = '';
+
+        if (utterances.length > 0) {
+          utterances.forEach((utterance: any, index: number) => {
+            // SRT sequence number (1-indexed)
+            srtContent += `${index + 1}\n`;
+
+            // Convert milliseconds to SRT timestamp format (HH:MM:SS,mmm)
+            const formatSrtTime = (ms: number) => {
+              const totalSeconds = Math.floor(ms / 1000);
+              const milliseconds = ms % 1000;
+              const hours = Math.floor(totalSeconds / 3600);
+              const minutes = Math.floor((totalSeconds % 3600) / 60);
+              const seconds = totalSeconds % 60;
+
+              return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')},${milliseconds.toString().padStart(3, '0')}`;
+            };
+
+            // Timestamp line (start --> end)
+            srtContent += `${formatSrtTime(utterance.start)} --> ${formatSrtTime(utterance.end)}\n`;
+
+            // Text line (with speaker label)
+            srtContent += `Speaker ${utterance.speaker}: ${utterance.text}\n\n`;
+          });
+        } else {
+          srtContent += '1\n00:00:00,000 --> 00:00:05,000\n';
+          srtContent += transcription.text.substring(0, 100) + '...\n\n';
+        }
+
+        const srtFile = await uploadFile(
+          `subtitles.srt`,
+          srtContent,
+          'text/plain'
+        );
+        uploadedFiles.push({ format: 'Subtitles (SRT)', ...srtFile });
+        console.log('[SAVE-TO-DRIVE] SRT subtitle file upload complete');
+      } catch (error: any) {
+        console.error('[SAVE-TO-DRIVE] SRT upload failed:', error);
+        // Continue even if this fails
+      }
+
+      // FILE 5: VTT subtitle file (WebVTT format)
+      try {
+        console.log('[SAVE-TO-DRIVE] Creating VTT subtitle file...');
+        let vttContent = 'WEBVTT\n\n';
+
+        if (utterances.length > 0) {
+          utterances.forEach((utterance: any) => {
+            // Convert milliseconds to VTT timestamp format (HH:MM:SS.mmm)
+            const formatVttTime = (ms: number) => {
+              const totalSeconds = Math.floor(ms / 1000);
+              const milliseconds = ms % 1000;
+              const hours = Math.floor(totalSeconds / 3600);
+              const minutes = Math.floor((totalSeconds % 3600) / 60);
+              const seconds = totalSeconds % 60;
+
+              return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+            };
+
+            // Timestamp line (start --> end)
+            vttContent += `${formatVttTime(utterance.start)} --> ${formatVttTime(utterance.end)}\n`;
+
+            // Text line with speaker voice tag
+            vttContent += `<v Speaker ${utterance.speaker}>${utterance.text}\n\n`;
+          });
+        } else {
+          vttContent += '00:00:00.000 --> 00:00:05.000\n';
+          vttContent += transcription.text.substring(0, 100) + '...\n\n';
+        }
+
+        const vttFile = await uploadFile(
+          `subtitles.vtt`,
+          vttContent,
+          'text/plain'
+        );
+        uploadedFiles.push({ format: 'Subtitles (VTT)', ...vttFile });
+        console.log('[SAVE-TO-DRIVE] VTT subtitle file upload complete');
+      } catch (error: any) {
+        console.error('[SAVE-TO-DRIVE] VTT upload failed:', error);
+        // Continue even if this fails
+      }
+
+      // FILE 6: Metadata/summary JSON file
       try {
         console.log('[SAVE-TO-DRIVE] Creating metadata JSON...');
 
