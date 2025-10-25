@@ -88,8 +88,9 @@ export default function ProjectsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...newProject,
+          action: 'create',
           userId: 'zach',
+          projectData: newProject,
         }),
       });
 
@@ -97,9 +98,14 @@ export default function ProjectsPage() {
         setShowCreateModal(false);
         setNewProject({ name: '', description: '', status: 'active', priority: 'medium' });
         loadProjects();
+      } else {
+        const error = await response.json();
+        console.error('Error creating project:', error);
+        alert(`Failed to create project: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Failed to create project:', error);
+      alert('Failed to create project. Please try again.');
     }
   };
 
