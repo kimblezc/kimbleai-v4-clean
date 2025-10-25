@@ -397,11 +397,6 @@ export default function Home() {
     loadConversations();
   }, [currentUser]);
 
-  // Reload projects independently when needed
-  React.useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
-
   // Persist currentProject to localStorage and restore on load
   React.useEffect(() => {
     const savedProject = localStorage.getItem(`kimbleai_project_${currentUser}`);
@@ -497,29 +492,60 @@ export default function Home() {
 
   // Create new project
   const handleCreateProject = async () => {
-    const projectId = newProjectName.trim().toLowerCase().replace(/\s+/g, '-');
+    const projectName = newProjectName.trim();
 
-    if (!projectId) {
+    if (!projectName) {
       alert('Please enter a project name');
       return;
     }
+
+    const projectId = projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
     if (projects.some(p => p.id === projectId)) {
       alert('A project with this name already exists');
       return;
     }
 
-    // Reload projects from database
-    await loadProjects();
+    try {
+      // Create project in database via API
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          userId: currentUser,
+          projectData: {
+            name: projectName,
+            description: '',
+            priority: 'medium',
+            status: 'active',
+            tags: [],
+            metadata: {}
+          }
+        })
+      });
 
-    // Reload conversations
-    loadConversations();
+      const data = await response.json();
 
-    // Clear input
-    setNewProjectName('');
+      if (data.success) {
+        // Reload projects from database (cache will be invalidated by API)
+        await loadProjects();
 
-    // Automatically select the new project and export
-    handleExportWithProject(projectId);
+        // Reload conversations
+        loadConversations();
+
+        // Clear input
+        setNewProjectName('');
+
+        // Automatically select the new project and export
+        handleExportWithProject(data.project.id);
+      } else {
+        throw new Error(data.error || 'Failed to create project');
+      }
+    } catch (error: any) {
+      console.error('Error creating project:', error);
+      alert('Failed to create project: ' + error.message);
+    }
   };
 
   // Clear any old localStorage entries from previous deletion tracking system
@@ -2425,28 +2451,48 @@ export default function Home() {
               onClick={async () => {
                 const name = prompt('Enter project name (e.g., "DND Campaign", "Work Projects"):');
                 if (name && name.trim()) {
-                  const projectId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                  const newProject = {
-                    id: projectId,
-                    name: name.trim(),
-                    conversations: 0,
-                    status: 'active'
-                  };
-                  setProjects(prev => {
-                    // Check if project already exists
-                    if (prev.find(p => p.id === projectId)) {
+                  try {
+                    const projectId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+                    // Check if project already exists locally
+                    if (projects.find(p => p.id === projectId)) {
                       alert('Project with this name already exists!');
-                      return prev;
+                      return;
                     }
-                    // Add new project at the top
-                    return [newProject, ...prev];
-                  });
 
-                  // Reload projects from database
-                  await loadProjects();
+                    // Create project in database via API
+                    const response = await fetch('/api/projects', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'create',
+                        userId: currentUser,
+                        projectData: {
+                          name: name.trim(),
+                          description: '',
+                          priority: 'medium',
+                          status: 'active',
+                          tags: [],
+                          metadata: {}
+                        }
+                      })
+                    });
 
-                  setCurrentProject(projectId);
-                  alert(`Project "${name}" created successfully!`);
+                    const data = await response.json();
+
+                    if (data.success) {
+                      // Reload projects from database (cache will be invalidated by API)
+                      await loadProjects();
+
+                      setCurrentProject(data.project.id);
+                      alert(`Project "${name}" created successfully!`);
+                    } else {
+                      throw new Error(data.error || 'Failed to create project');
+                    }
+                  } catch (error: any) {
+                    console.error('Error creating project:', error);
+                    alert('Failed to create project: ' + error.message);
+                  }
                 }
               }}
               style={{
