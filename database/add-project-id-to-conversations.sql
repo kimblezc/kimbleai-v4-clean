@@ -3,7 +3,7 @@
 
 -- Step 1: Add project_id column (nullable, allows existing conversations to remain unassigned)
 ALTER TABLE conversations
-ADD COLUMN IF NOT EXISTS project_id TEXT;
+ADD COLUMN IF NOT EXISTS project_id UUID;
 
 -- Step 2: Add foreign key constraint to projects table (optional, enables referential integrity)
 ALTER TABLE conversations
