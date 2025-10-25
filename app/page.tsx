@@ -12,7 +12,7 @@ import KimbleAILogo from '../components/KimbleAILogo';
 
 // Dynamic version info - updates automatically with each deployment
 const versionInfo = {
-  version: '1.6.0',
+  version: '1.9.0',
   commit: process.env.NEXT_PUBLIC_GIT_COMMIT_HASH || 'dev',
   lastUpdated: new Date().toISOString()
 };
