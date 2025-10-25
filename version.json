@@ -1,6 +1,6 @@
 {
-  "version": "3.0.3",
-  "commit": "ced02ed",
-  "lastUpdated": "2025-10-25T19:25:00.000Z",
-  "changelog": "🐛 BUG FIX: Fixed agent status showing 'Disabled' - database stores boolean true but code checked for string 'true'"
+  "version": "3.0.5",
+  "commit": "pending",
+  "lastUpdated": "2025-10-25T20:30:00.000Z",
+  "changelog": "🔒 SECURITY AGENT: Added comprehensive Security Audit Agent with 10 audit categories, 50+ security checks, Google OAuth validation, and /api/security/audit endpoint"
 }
