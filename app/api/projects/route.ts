@@ -168,10 +168,19 @@ export async function POST(request: NextRequest) {
             message: 'Project created successfully'
           });
         } catch (error: any) {
-          console.error('Project creation failed (table may not exist):', error.message);
+          console.error('Project creation failed:', error);
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            stack: error.stack
+          });
           return NextResponse.json({
             success: false,
-            error: 'Projects table not set up yet. Please create the database table first.'
+            error: `Database error: ${error.message || 'Unknown error'}`,
+            details: error.details || error.hint || 'No additional details',
+            code: error.code
           }, { status: 503 });
         }
 

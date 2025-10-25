@@ -1,6 +1,6 @@
 {
   "version": "1.6.0",
-  "commit": "63cde8b",
-  "lastUpdated": "2025-10-24T05:00:00.000Z",
-  "changelog": "🚀 MAJOR UPDATE: Fixed Archie duplicates (semantic matching, rate limiting), optimized project loading (30s→<1s with indexes & caching), updated UI (🦉 Archie button), enhanced transcription (speaker separation, 4-file Drive export)."
+  "commit": "43bafba",
+  "lastUpdated": "2025-10-25T00:00:00.000Z",
+  "changelog": "🚀 MAJOR UPDATE: Fixed Archie duplicates (semantic matching, rate limiting), optimized project loading (30s→<1s with indexes & caching), updated UI (🦉 Archie button), enhanced transcription (speaker separation, 4-file Drive export), fixed project creation API."
 }
