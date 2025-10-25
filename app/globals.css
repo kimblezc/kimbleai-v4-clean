@@ -128,7 +128,7 @@
 
   /* Adjusted sidebar */
   .sidebar {
-    @apply w-300;
+    @apply w-[300px];
   }
 
   /* Larger touch targets */
@@ -152,7 +152,7 @@
 
   /* Wider sidebar */
   .sidebar {
-    @apply w-320;
+    @apply w-[320px];
   }
 
   /* Standard button sizing */

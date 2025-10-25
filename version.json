@@ -1,6 +1,6 @@
 {
-  "version": "3.0.1",
-  "commit": "481126c",
-  "lastUpdated": "2025-10-25T18:30:00.000Z",
-  "changelog": "🔧 HOTFIX: Made redesigned /archie route publicly accessible. The v3.0.0 redesign was deployed successfully but was behind authentication - now anyone can view the beautiful new dashboard at /archie!"
+  "version": "3.0.2",
+  "commit": "7c275a4",
+  "lastUpdated": "2025-10-25T19:05:00.000Z",
+  "changelog": "🔧 CRITICAL FIX: Added missing postcss.config.mjs - Tailwind CSS was not compiling in production. Dashboard now renders with proper styling, gradients, and animations."
 }
