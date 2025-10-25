@@ -148,6 +148,216 @@ export default async function ArchieDashboard() {
           </p>
         </div>
 
+        {/* Active Agents Overview */}
+        <div style={{
+          background: 'rgba(34, 197, 94, 0.05)',
+          border: '2px solid rgba(34, 197, 94, 0.3)',
+          borderRadius: '16px',
+          padding: '30px',
+          marginBottom: '40px'
+        }}>
+          <h2 style={{
+            fontSize: '28px',
+            fontWeight: 'bold',
+            background: 'linear-gradient(to right, #22c55e, #10b981)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <span style={{ fontSize: '32px' }}>🤖</span>
+            Active Agents (4 Total)
+          </h2>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '20px'
+          }}>
+            {/* Autonomous Agent (Original Archie) */}
+            <div style={{
+              background: '#1a1a1a',
+              border: '2px solid #22c55e',
+              borderRadius: '12px',
+              padding: '20px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                boxShadow: '0 0 10px #22c55e',
+                animation: 'pulse 2s infinite'
+              }}></div>
+              <div style={{ fontSize: '36px', marginBottom: '8px' }}>🦉</div>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e', marginBottom: '8px' }}>
+                Autonomous Agent
+              </h3>
+              <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>
+                Main orchestrator • Code analysis • Self-improvement
+              </p>
+              <div style={{
+                background: 'rgba(34, 197, 94, 0.1)',
+                borderRadius: '6px',
+                padding: '8px',
+                marginBottom: '8px'
+              }}>
+                <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>Schedule</div>
+                <div style={{ fontSize: '13px', color: '#22c55e', fontWeight: 'bold' }}>Every 5 minutes</div>
+              </div>
+              <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                Endpoint: <span style={{ color: '#60a5fa' }}>/api/agent/cron</span>
+              </div>
+            </div>
+
+            {/* Archie Utility Agent */}
+            <div style={{
+              background: '#1a1a1a',
+              border: '2px solid #3b82f6',
+              borderRadius: '12px',
+              padding: '20px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: '#3b82f6',
+                boxShadow: '0 0 10px #3b82f6',
+                animation: 'pulse 2s infinite'
+              }}></div>
+              <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔍</div>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6', marginBottom: '8px' }}>
+                Archie Utility
+              </h3>
+              <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>
+                Actionable insights • Cost monitoring • Task optimization
+              </p>
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.1)',
+                borderRadius: '6px',
+                padding: '8px',
+                marginBottom: '8px'
+              }}>
+                <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>Schedule</div>
+                <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 'bold' }}>Every 15 minutes</div>
+              </div>
+              <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                Endpoint: <span style={{ color: '#60a5fa' }}>/api/cron/archie-utility</span>
+              </div>
+            </div>
+
+            {/* Drive Intelligence Agent */}
+            <div style={{
+              background: '#1a1a1a',
+              border: '2px solid #a855f7',
+              borderRadius: '12px',
+              padding: '20px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: '#a855f7',
+                boxShadow: '0 0 10px #a855f7',
+                animation: 'pulse 2s infinite'
+              }}></div>
+              <div style={{ fontSize: '36px', marginBottom: '8px' }}>📁</div>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#a855f7', marginBottom: '8px' }}>
+                Drive Intelligence
+              </h3>
+              <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>
+                File organization • Duplicate detection • Media discovery
+              </p>
+              <div style={{
+                background: 'rgba(168, 85, 247, 0.1)',
+                borderRadius: '6px',
+                padding: '8px',
+                marginBottom: '8px'
+              }}>
+                <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>Schedule</div>
+                <div style={{ fontSize: '13px', color: '#a855f7', fontWeight: 'bold' }}>Every 6 hours</div>
+              </div>
+              <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                Endpoint: <span style={{ color: '#60a5fa' }}>/api/cron/drive-intelligence</span>
+              </div>
+            </div>
+
+            {/* Device Sync Agent */}
+            <div style={{
+              background: '#1a1a1a',
+              border: '2px solid #f97316',
+              borderRadius: '12px',
+              padding: '20px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: '#f97316',
+                boxShadow: '0 0 10px #f97316',
+                animation: 'pulse 2s infinite'
+              }}></div>
+              <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔄</div>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#f97316', marginBottom: '8px' }}>
+                Device Sync
+              </h3>
+              <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>
+                Cross-device state • Conflict resolution • Continuity
+              </p>
+              <div style={{
+                background: 'rgba(249, 115, 22, 0.1)',
+                borderRadius: '6px',
+                padding: '8px',
+                marginBottom: '8px'
+              }}>
+                <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>Schedule</div>
+                <div style={{ fontSize: '13px', color: '#f97316', fontWeight: 'bold' }}>Every 2 minutes</div>
+              </div>
+              <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                Endpoint: <span style={{ color: '#60a5fa' }}>/api/cron/device-sync</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: '20px',
+            padding: '16px',
+            background: 'rgba(59, 130, 246, 0.05)',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            borderRadius: '8px'
+          }}>
+            <div style={{ fontSize: '12px', color: '#93c5fd', marginBottom: '4px', fontWeight: 'bold' }}>
+              ℹ️ Agent Status
+            </div>
+            <div style={{ fontSize: '13px', color: '#d1d5db', lineHeight: '1.6' }}>
+              All agents are <span style={{ color: '#22c55e', fontWeight: 'bold' }}>ACTIVE</span> and running on automated schedules via Vercel Cron.
+              Findings and tasks appear below as agents detect patterns in your data.
+            </div>
+          </div>
+        </div>
+
         {/* Stats */}
         <div style={{
           display: 'grid',
