@@ -1,6 +1,6 @@
 {
-  "version": "3.0.2",
-  "commit": "7c275a4",
-  "lastUpdated": "2025-10-25T19:05:00.000Z",
-  "changelog": "🔧 CRITICAL FIX: Added missing postcss.config.mjs - Tailwind CSS was not compiling in production. Dashboard now renders with proper styling, gradients, and animations."
+  "version": "3.0.3",
+  "commit": "ced02ed",
+  "lastUpdated": "2025-10-25T19:25:00.000Z",
+  "changelog": "🐛 BUG FIX: Fixed agent status showing 'Disabled' - database stores boolean true but code checked for string 'true'"
 }

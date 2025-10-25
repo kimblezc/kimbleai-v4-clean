@@ -230,7 +230,8 @@ async function getDashboardData(): Promise<DashboardData> {
 
     // Agent state
     const agentState = agentStateResult.data || [];
-    const agentEnabled = agentState.find(s => s.key === 'agent_enabled')?.value === 'true';
+    const agentEnabledValue = agentState.find(s => s.key === 'agent_enabled')?.value;
+    const agentEnabled = agentEnabledValue === true || agentEnabledValue === 'true';
     const lastHealthCheck = agentState.find(s => s.key === 'last_health_check')?.updated_at || new Date().toISOString();
     const errorRate = activityTodayResult.count
       ? ((recentLogsResult.count || 0) / activityTodayResult.count) * 100
