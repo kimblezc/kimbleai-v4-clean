@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "commit": "c2b929c",
-  "lastUpdated": "2025-10-25T15:00:00.000Z",
-  "changelog": "🔧 FIXED: Archie Dashboard now shows REAL data! Fixed table names (audio_transcriptions, agent_logs), added error handling, and user feedback panels. Dashboard displays actual Archie activity (105 tasks, 23 insights, 869 actions)."
+  "version": "3.0.0",
+  "commit": "d6fc9d3",
+  "lastUpdated": "2025-10-25T18:00:00.000Z",
+  "changelog": "✨ COMPLETE REDESIGN: Archie Dashboard rebuilt from scratch with modern UI/UX! Features: real-time activity monitoring, animated performance charts, agent status with schedules, system health monitoring, task management with visual progress, interactive metrics grid, CSS-based data visualizations, beautiful gradients and animations, responsive design, and comprehensive oversight of all 4 autonomous agents. Modern SaaS-style dashboard inspired by Vercel/Railway/Linear."
 }
