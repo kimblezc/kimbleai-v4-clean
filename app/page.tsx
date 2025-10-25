@@ -496,7 +496,7 @@ export default function Home() {
   };
 
   // Create new project
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     const projectId = newProjectName.trim().toLowerCase().replace(/\s+/g, '-');
 
     if (!projectId) {
@@ -2422,7 +2422,7 @@ export default function Home() {
               Projects
             </h3>
             <button
-              onClick={() => {
+              onClick={async () => {
                 const name = prompt('Enter project name (e.g., "DND Campaign", "Work Projects"):');
                 if (name && name.trim()) {
                   const projectId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
