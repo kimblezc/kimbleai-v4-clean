@@ -1977,6 +1977,33 @@ export default function Home() {
           </select>
         </div>
 
+        {/* New Chat Button - UPDATED: Added ref and keyboard shortcut hint */}
+        <button
+          ref={newChatButtonRef}
+          onClick={() => {
+            setMessages([]);
+            setCurrentConversationId(null);
+            setConversationTitle('');
+            setSuggestedTags([]);
+            setShowTags(false);
+            setIsMobileSidebarOpen(false);
+          }}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#2a2a2a',
+            border: '1px solid #444',
+            borderRadius: '8px',
+            color: '#ffffff',
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginBottom: '12px'
+          }}
+          title="New Chat (Cmd/Ctrl + N)"
+        >
+          + New Chat
+        </button>
+
         {/* Search Bar */}
         <div style={{ marginBottom: '12px' }}>
           <input
@@ -2059,85 +2086,351 @@ export default function Home() {
           )}
         </div>
 
-        {/* New Chat Button - UPDATED: Added ref and keyboard shortcut hint */}
-        <button
-          ref={newChatButtonRef}
-          onClick={() => {
-            setMessages([]);
-            setCurrentConversationId(null);
-            setConversationTitle('');
-            setSuggestedTags([]);
-            setShowTags(false);
-            setIsMobileSidebarOpen(false);
-          }}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: '#2a2a2a',
-            border: '1px solid #444',
-            borderRadius: '8px',
-            color: '#ffffff',
-            fontSize: '14px',
-            cursor: 'pointer',
+        {/* Projects Section */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: '12px'
-          }}
-          title="New Chat (Cmd/Ctrl + N)"
-        >
-          + New Chat
-        </button>
+          }}>
+            <h3 style={{
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#aaa',
+              margin: 0
+            }}>
+              Projects
+            </h3>
+            <button
+              onClick={async () => {
+                const name = prompt('Enter project name (e.g., "DND Campaign", "Work Projects"):');
+                if (name && name.trim()) {
+                  try {
+                    const projectId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-        {/* Archie Link */}
-        <button
-          onClick={() => window.location.href = '/accomplishments'}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: '#2a2a2a',
-            border: '1px solid #444',
-            borderRadius: '8px',
-            color: '#ffffff',
-            fontSize: '14px',
-            cursor: 'pointer',
-            marginBottom: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
-          }}
-        >
-          🦉 Archie
-        </button>
+                    // Check if project already exists locally
+                    if (projects.find(p => p.id === projectId)) {
+                      alert('Project with this name already exists!');
+                      return;
+                    }
 
-        {/* Code Editor Button */}
-        <button
-          onClick={() => window.location.href = '/code'}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: '#2a2a2a',
-            border: '1px solid #444',
-            borderRadius: '8px',
-            color: '#ffffff',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
-          }}
-        >
-          <span style={{ fontSize: '16px' }}>💻</span>
-          Code Editor
-        </button>
+                    // Create project in database via API
+                    const response = await fetch('/api/projects', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'create',
+                        userId: currentUser,
+                        projectData: {
+                          name: name.trim(),
+                          description: '',
+                          priority: 'medium',
+                          status: 'active',
+                          tags: [],
+                          metadata: {}
+                        }
+                      })
+                    });
 
-        {/* Spacer to separate from other sections */}
-        <div style={{
-          height: '1px',
-          backgroundColor: '#333',
-          marginBottom: '16px'
-        }}></div>
+                    const data = await response.json();
+
+                    if (data.success) {
+                      // Reload projects from database (cache will be invalidated by API)
+                      await loadProjects();
+
+                      setCurrentProject(data.project.id);
+                      alert(`Project "${name}" created successfully!`);
+                    } else {
+                      throw new Error(data.error || 'Failed to create project');
+                    }
+                  } catch (error: any) {
+                    console.error('Error creating project:', error);
+                    alert('Failed to create project: ' + error.message);
+                  }
+                }
+              }}
+              style={{
+                background: 'none',
+                border: '1px solid #444',
+                borderRadius: '4px',
+                color: '#888',
+                cursor: 'pointer',
+                fontSize: '12px',
+                padding: '2px 6px'
+              }}
+            >
+              +
+            </button>
+          </div>
+
+          <div style={{
+            maxHeight: '200px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#666 #2a2a2a',
+            marginBottom: '12px'
+          }}>
+            {projects.map((project) => {
+              const isExpanded = expandedProjects.has(project.id);
+              const projectConversations = conversationHistory.filter(
+                conv => conv.project === project.id
+              );
+
+              return (
+                <div key={project.id} style={{ marginBottom: '8px' }}>
+                  {/* Project Header */}
+                  <div
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: currentProject === project.id ? '#2a2a2a' : '#1a1a1a',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      color: currentProject === project.id ? '#fff' : '#ccc',
+                      border: currentProject === project.id ? '1px solid #4a9eff' : '1px solid transparent',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                      {/* Expand/Collapse toggle */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedProjects(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(project.id)) {
+                              newSet.delete(project.id);
+                            } else {
+                              newSet.add(project.id);
+                            }
+                            return newSet;
+                          });
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#888',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                          padding: '2px'
+                        }}
+                      >
+                        {isExpanded ? '▼' : '▶'}
+                      </button>
+
+                      <div
+                        onClick={() => {
+                          handleProjectChange(project.id);
+                          setMessages([]);
+                          setCurrentConversationId(null);
+                          setConversationTitle('');
+                        }}
+                        style={{
+                          flex: 1,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <span style={{ fontWeight: '500' }}>{project.name}</span>
+                        <span style={{
+                          fontSize: '10px',
+                          color: '#666',
+                          backgroundColor: '#333',
+                          padding: '2px 6px',
+                          borderRadius: '10px'
+                        }}>
+                          {project.conversations}
+                        </span>
+                      </div>
+
+                      {/* Delete button */}
+                      <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteProject(project.id);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#666',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            padding: '4px',
+                            borderRadius: '4px'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#ff4444';
+                            e.currentTarget.style.backgroundColor = '#2a1a1a';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#666';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                          title={`Delete ${project.name} project`}
+                        >
+                          🗑️
+                        </button>
+                    </div>
+                  </div>
+
+                  {/* Nested Conversations */}
+                  {isExpanded && projectConversations.length > 0 && (
+                    <div style={{
+                      marginTop: '4px',
+                      marginLeft: '20px',
+                      borderLeft: '2px solid #333',
+                      paddingLeft: '8px'
+                    }}>
+                      {projectConversations.slice(0, 10).map((conv) => (
+                        <div
+                          key={conv.id}
+                          style={{
+                            position: 'relative',
+                            marginBottom: '3px'
+                          }}
+                        >
+                          <div
+                            onClick={() => {
+                              setCurrentConversationId(conv.id);
+                              setCurrentProject(conv.project || 'general');
+                              loadConversation(conv.id);
+                            }}
+                            style={{
+                              padding: '6px 8px',
+                              backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              borderLeft: currentConversationId === conv.id ? '2px solid #4a9eff' : '2px solid transparent',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                fontSize: '11px',
+                                color: currentConversationId === conv.id ? '#fff' : '#aaa',
+                                fontWeight: currentConversationId === conv.id ? '500' : '400',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {conv.title}
+                              </div>
+                              <div style={{
+                                fontSize: '9px',
+                                color: '#666',
+                                marginTop: '2px'
+                              }}>
+                                {conv.lastMessage}
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowProjectDropdown(showProjectDropdown === conv.id ? null : conv.id);
+                              }}
+                              style={{
+                                padding: '4px 6px',
+                                backgroundColor: '#1a1a1a',
+                                border: '1px solid #444',
+                                borderRadius: '4px',
+                                color: '#888',
+                                fontSize: '10px',
+                                cursor: 'pointer',
+                                marginLeft: '8px',
+                                flexShrink: 0
+                              }}
+                              title="Move to Project"
+                            >
+                              📁
+                            </button>
+                          </div>
+                          {showProjectDropdown === conv.id && (
+                            <div style={{
+                              position: 'absolute',
+                              right: 0,
+                              top: '100%',
+                              zIndex: 1000,
+                              backgroundColor: '#1a1a1a',
+                              border: '1px solid #444',
+                              borderRadius: '4px',
+                              padding: '8px',
+                              minWidth: '150px',
+                              maxHeight: '200px',
+                              overflowY: 'auto',
+                              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+                            }}>
+                              <div style={{
+                                fontSize: '10px',
+                                color: '#888',
+                                marginBottom: '6px',
+                                fontWeight: '600'
+                              }}>
+                                Move to Project:
+                              </div>
+                              {projects.map((project) => (
+                                <div
+                                  key={project.id}
+                                  onClick={() => moveConversationToProject(conv.id, project.id)}
+                                  style={{
+                                    padding: '6px 8px',
+                                    backgroundColor: conv.project === project.id ? '#2a2a2a' : 'transparent',
+                                    borderRadius: '3px',
+                                    cursor: 'pointer',
+                                    fontSize: '11px',
+                                    color: '#ccc',
+                                    marginBottom: '2px'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#2a2a2a';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = conv.project === project.id ? '#2a2a2a' : 'transparent';
+                                  }}
+                                >
+                                  {formatProjectName(project.id)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Current Project Info */}
+          <div style={{
+            padding: '10px',
+            backgroundColor: '#0a0a0a',
+            borderRadius: '6px',
+            border: '1px solid #333'
+          }}>
+            <div style={{
+              fontSize: '11px',
+              color: '#888',
+              marginBottom: '4px'
+            }}>
+              Current Project
+            </div>
+            <div style={{
+              fontSize: '13px',
+              color: '#4a9eff',
+              fontWeight: '600'
+            }}>
+              {projects.find(p => p.id === currentProject)?.name || 'No Project'}
+            </div>
+          </div>
+        </div>
 
         {/* Recent Chats Section - UPDATED: Added sort dropdown */}
         <div style={{ marginBottom: '20px' }}>
@@ -2431,351 +2724,58 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Projects Section */}
-        <div style={{ flex: 1 }}>
-          <div style={{
+        {/* Divider */}
+        <div style={{
+          height: '1px',
+          backgroundColor: '#333',
+          marginBottom: '16px'
+        }}></div>
+
+        {/* Archie Link */}
+        <button
+          onClick={() => window.location.href = '/accomplishments'}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#2a2a2a',
+            border: '1px solid #444',
+            borderRadius: '8px',
+            color: '#ffffff',
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginBottom: '12px',
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '12px'
-          }}>
-            <h3 style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#aaa',
-              margin: 0
-            }}>
-              Projects
-            </h3>
-            <button
-              onClick={async () => {
-                const name = prompt('Enter project name (e.g., "DND Campaign", "Work Projects"):');
-                if (name && name.trim()) {
-                  try {
-                    const projectId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          🦉 Archie
+        </button>
 
-                    // Check if project already exists locally
-                    if (projects.find(p => p.id === projectId)) {
-                      alert('Project with this name already exists!');
-                      return;
-                    }
-
-                    // Create project in database via API
-                    const response = await fetch('/api/projects', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        action: 'create',
-                        userId: currentUser,
-                        projectData: {
-                          name: name.trim(),
-                          description: '',
-                          priority: 'medium',
-                          status: 'active',
-                          tags: [],
-                          metadata: {}
-                        }
-                      })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                      // Reload projects from database (cache will be invalidated by API)
-                      await loadProjects();
-
-                      setCurrentProject(data.project.id);
-                      alert(`Project "${name}" created successfully!`);
-                    } else {
-                      throw new Error(data.error || 'Failed to create project');
-                    }
-                  } catch (error: any) {
-                    console.error('Error creating project:', error);
-                    alert('Failed to create project: ' + error.message);
-                  }
-                }
-              }}
-              style={{
-                background: 'none',
-                border: '1px solid #444',
-                borderRadius: '4px',
-                color: '#888',
-                cursor: 'pointer',
-                fontSize: '12px',
-                padding: '2px 6px'
-              }}
-            >
-              +
-            </button>
-          </div>
-
-          <div style={{
-            maxHeight: '400px',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            scrollbarWidth: 'thin',
-            scrollbarColor: '#666 #2a2a2a'
-          }}>
-            {projects.map((project) => {
-              const isExpanded = expandedProjects.has(project.id);
-              const projectConversations = conversationHistory.filter(
-                conv => conv.project === project.id
-              );
-
-              return (
-                <div key={project.id} style={{ marginBottom: '8px' }}>
-                  {/* Project Header */}
-                  <div
-                    style={{
-                      padding: '8px 12px',
-                      backgroundColor: currentProject === project.id ? '#2a2a2a' : '#1a1a1a',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      color: currentProject === project.id ? '#fff' : '#ccc',
-                      border: currentProject === project.id ? '1px solid #4a9eff' : '1px solid transparent',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
-                      {/* Expand/Collapse toggle */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setExpandedProjects(prev => {
-                            const newSet = new Set(prev);
-                            if (newSet.has(project.id)) {
-                              newSet.delete(project.id);
-                            } else {
-                              newSet.add(project.id);
-                            }
-                            return newSet;
-                          });
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#888',
-                          cursor: 'pointer',
-                          fontSize: '10px',
-                          padding: '2px'
-                        }}
-                      >
-                        {isExpanded ? '▼' : '▶'}
-                      </button>
-
-                      <div
-                        onClick={() => {
-                          handleProjectChange(project.id);
-                          setMessages([]);
-                          setCurrentConversationId(null);
-                          setConversationTitle('');
-                        }}
-                        style={{
-                          flex: 1,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <span style={{ fontWeight: '500' }}>{project.name}</span>
-                        <span style={{
-                          fontSize: '10px',
-                          color: '#666',
-                          backgroundColor: '#333',
-                          padding: '2px 6px',
-                          borderRadius: '10px'
-                        }}>
-                          {project.conversations}
-                        </span>
-                      </div>
-
-                      {/* Delete button */}
-                      <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteProject(project.id);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#666',
-                            cursor: 'pointer',
-                            fontSize: '11px',
-                            padding: '4px',
-                            borderRadius: '4px'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = '#ff4444';
-                            e.currentTarget.style.backgroundColor = '#2a1a1a';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = '#666';
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                          title={`Delete ${project.name} project`}
-                        >
-                          🗑️
-                        </button>
-                    </div>
-                  </div>
-
-                  {/* Nested Conversations */}
-                  {isExpanded && projectConversations.length > 0 && (
-                    <div style={{
-                      marginTop: '4px',
-                      marginLeft: '20px',
-                      borderLeft: '2px solid #333',
-                      paddingLeft: '8px'
-                    }}>
-                      {projectConversations.slice(0, 10).map((conv) => (
-                        <div
-                          key={conv.id}
-                          style={{
-                            position: 'relative',
-                            marginBottom: '3px'
-                          }}
-                        >
-                          <div
-                            onClick={() => {
-                              setCurrentConversationId(conv.id);
-                              setCurrentProject(conv.project || 'general');
-                              loadConversation(conv.id);
-                            }}
-                            style={{
-                              padding: '6px 8px',
-                              backgroundColor: currentConversationId === conv.id ? '#2a2a2a' : 'transparent',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              borderLeft: currentConversationId === conv.id ? '2px solid #4a9eff' : '2px solid transparent',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
-                            }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{
-                                fontSize: '11px',
-                                color: currentConversationId === conv.id ? '#fff' : '#aaa',
-                                fontWeight: currentConversationId === conv.id ? '500' : '400',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {conv.title}
-                              </div>
-                              <div style={{
-                                fontSize: '9px',
-                                color: '#666',
-                                marginTop: '2px'
-                              }}>
-                                {conv.lastMessage}
-                              </div>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowProjectDropdown(showProjectDropdown === conv.id ? null : conv.id);
-                              }}
-                              style={{
-                                padding: '4px 6px',
-                                backgroundColor: '#1a1a1a',
-                                border: '1px solid #444',
-                                borderRadius: '4px',
-                                color: '#888',
-                                fontSize: '10px',
-                                cursor: 'pointer',
-                                marginLeft: '8px',
-                                flexShrink: 0
-                              }}
-                              title="Move to Project"
-                            >
-                              📁
-                            </button>
-                          </div>
-                          {showProjectDropdown === conv.id && (
-                            <div style={{
-                              position: 'absolute',
-                              right: 0,
-                              top: '100%',
-                              zIndex: 1000,
-                              backgroundColor: '#1a1a1a',
-                              border: '1px solid #444',
-                              borderRadius: '4px',
-                              padding: '8px',
-                              minWidth: '150px',
-                              maxHeight: '200px',
-                              overflowY: 'auto',
-                              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
-                            }}>
-                              <div style={{
-                                fontSize: '10px',
-                                color: '#888',
-                                marginBottom: '6px',
-                                fontWeight: '600'
-                              }}>
-                                Move to Project:
-                              </div>
-                              {projects.map((project) => (
-                                <div
-                                  key={project.id}
-                                  onClick={() => moveConversationToProject(conv.id, project.id)}
-                                  style={{
-                                    padding: '6px 8px',
-                                    backgroundColor: conv.project === project.id ? '#2a2a2a' : 'transparent',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer',
-                                    fontSize: '11px',
-                                    color: '#ccc',
-                                    marginBottom: '2px'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#2a2a2a';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = conv.project === project.id ? '#2a2a2a' : 'transparent';
-                                  }}
-                                >
-                                  {formatProjectName(project.id)}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Current Project Info */}
-          <div style={{
-            marginTop: '16px',
-            padding: '10px',
-            backgroundColor: '#0a0a0a',
-            borderRadius: '6px',
-            border: '1px solid #333'
-          }}>
-            <div style={{
-              fontSize: '11px',
-              color: '#888',
-              marginBottom: '4px'
-            }}>
-              Current Project
-            </div>
-            <div style={{
-              fontSize: '13px',
-              color: '#4a9eff',
-              fontWeight: '600'
-            }}>
-              {projects.find(p => p.id === currentProject)?.name || 'No Project'}
-            </div>
-          </div>
-        </div>
+        {/* Code Editor Button */}
+        <button
+          onClick={() => window.location.href = '/code'}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#2a2a2a',
+            border: '1px solid #444',
+            borderRadius: '8px',
+            color: '#ffffff',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          <span style={{ fontSize: '16px' }}>💻</span>
+          Code Editor
+        </button>
 
         {/* Google Workspace - Minimal Status */}
         <div style={{
