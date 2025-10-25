@@ -33,55 +33,88 @@ export const metadata = {
 async function getDashboardStats() {
   const userId = 'zach'; // Default user
 
-  // Get transcription stats
-  const { data: transcriptions } = await supabase
-    .from('transcriptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'completed');
+  try {
+    // Get transcription stats - use audio_transcriptions table (the actual table name)
+    const { count: transcriptionCount, error: transcriptionError } = await supabase
+      .from('audio_transcriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
 
-  const transcriptionCount = transcriptions || 0;
+    if (transcriptionError) {
+      console.error('Error fetching transcriptions:', transcriptionError);
+    }
 
-  // Get device stats
-  const { data: devices } = await supabase
-    .from('device_sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('is_active', true);
+    // Get device stats
+    const { count: deviceCount, error: deviceError } = await supabase
+      .from('device_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_active', true);
 
-  const deviceCount = devices || 0;
+    if (deviceError) {
+      console.error('Error fetching devices:', deviceError);
+    }
 
-  // Get agent tasks stats
-  const { data: pendingTasks } = await supabase
-    .from('agent_tasks')
-    .select('*', { count: 'exact', head: true })
-    .in('status', ['pending', 'in_progress']);
+    // Get agent tasks stats - get ALL tasks (not just pending)
+    const { count: allTasksCount, error: allTasksError } = await supabase
+      .from('agent_tasks')
+      .select('*', { count: 'exact', head: true });
 
-  const taskCount = pendingTasks || 0;
+    if (allTasksError) {
+      console.error('Error fetching all tasks:', allTasksError);
+    }
 
-  // Get insights/findings stats
-  const { data: insights } = await supabase
-    .from('agent_findings')
-    .select('*', { count: 'exact', head: true })
-    .gte('detected_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+    // Get pending tasks count separately
+    const { count: pendingTasksCount, error: pendingTasksError } = await supabase
+      .from('agent_tasks')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['pending', 'in_progress']);
 
-  const insightCount = insights || 0;
+    if (pendingTasksError) {
+      console.error('Error fetching pending tasks:', pendingTasksError);
+    }
 
-  // Get recent activity count (last 24h)
-  const { data: recentLogs } = await supabase
-    .from('agent_logs')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+    // Get insights/findings stats
+    const { count: insightCount, error: insightError } = await supabase
+      .from('agent_findings')
+      .select('*', { count: 'exact', head: true })
+      .gte('detected_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
-  const activityCount = recentLogs || 0;
+    if (insightError) {
+      console.error('Error fetching insights:', insightError);
+    }
 
-  return {
-    transcriptions: transcriptionCount,
-    devices: deviceCount,
-    tasks: taskCount,
-    insights: insightCount,
-    activity: activityCount
-  };
+    // Get recent activity count (last 24h)
+    const { count: activityCount, error: activityError } = await supabase
+      .from('agent_logs')
+      .select('*', { count: 'exact', head: true })
+      .gte('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+    if (activityError) {
+      console.error('Error fetching activity logs:', activityError);
+    }
+
+    return {
+      transcriptions: transcriptionCount ?? 0,
+      devices: deviceCount ?? 0,
+      tasks: pendingTasksCount ?? 0,
+      allTasks: allTasksCount ?? 0,
+      insights: insightCount ?? 0,
+      activity: activityCount ?? 0,
+      hasErrors: !!(transcriptionError || deviceError || allTasksError || insightError || activityError)
+    };
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return {
+      transcriptions: 0,
+      devices: 0,
+      tasks: 0,
+      allTasks: 0,
+      insights: 0,
+      activity: 0,
+      hasErrors: true
+    };
+  }
 }
 
 export default async function ArchieDashboard() {
@@ -101,17 +134,17 @@ export default async function ArchieDashboard() {
             color="blue"
           />
           <StatusBadge
-            label="Devices"
+            label="Active Devices"
             value={stats.devices}
             color="orange"
           />
           <StatusBadge
-            label="Active Tasks"
+            label="Pending Tasks"
             value={stats.tasks}
             color="green"
           />
           <StatusBadge
-            label="Insights"
+            label="Recent Insights"
             value={stats.insights}
             color="purple"
           />
@@ -121,6 +154,64 @@ export default async function ArchieDashboard() {
             color="blue"
           />
         </div>
+
+        {/* Data Status Info */}
+        {stats.hasErrors && (
+          <div className="bg-red-500/5 border-2 border-red-500/20 rounded-2xl p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">⚠️</div>
+              <div>
+                <h3 className="text-lg font-bold text-red-400 mb-2">
+                  Database Connection Issues
+                </h3>
+                <p className="text-gray-400">
+                  Some stats could not be loaded. Check the server logs for details.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No Data Message */}
+        {!stats.hasErrors && stats.transcriptions === 0 && stats.allTasks === 0 && stats.insights === 0 && (
+          <div className="bg-blue-500/5 border-2 border-blue-500/20 rounded-2xl p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">📭</div>
+              <div>
+                <h3 className="text-lg font-bold text-blue-400 mb-2">
+                  Getting Started with Archie
+                </h3>
+                <p className="text-gray-400 mb-3">
+                  Archie is running, but there's no data yet. Here's how to get started:
+                </p>
+                <ul className="text-gray-400 space-y-2 list-disc list-inside">
+                  <li>Upload audio files to Google Drive and Archie will auto-transcribe them</li>
+                  <li>Start chatting and Archie will create tasks automatically</li>
+                  <li>Connect devices to enable seamless cross-device sync</li>
+                  <li>Archie runs on a schedule - give it a few minutes to detect new content</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Message for Real Data */}
+        {stats.allTasks > 0 && (
+          <div className="bg-green-500/5 border-2 border-green-500/20 rounded-2xl p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">✅</div>
+              <div>
+                <h3 className="text-lg font-bold text-green-400 mb-2">
+                  Archie is Active
+                </h3>
+                <p className="text-gray-400">
+                  Archie has completed {stats.allTasks} tasks total. {stats.insights} insights discovered in the last 7 days.
+                  {stats.activity > 0 && ` ${stats.activity} actions in the last 24 hours.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Feature Grid */}
         <div className="mb-12">

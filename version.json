@@ -1,6 +1,6 @@
 {
-  "version": "1.9.0",
-  "commit": "8b7c444",
-  "lastUpdated": "2025-10-25T14:00:00.000Z",
-  "changelog": "✨ NEW: Unified Archie Dashboard! Consolidated scattered features (Transcribe, Device Sync, Drive Intelligence) into one beautiful, cohesive dashboard. Simplified sidebar navigation. Modern card-based UI with 6 feature areas and real-time stats."
+  "version": "2.0.0",
+  "commit": "c2b929c",
+  "lastUpdated": "2025-10-25T15:00:00.000Z",
+  "changelog": "🔧 FIXED: Archie Dashboard now shows REAL data! Fixed table names (audio_transcriptions, agent_logs), added error handling, and user feedback panels. Dashboard displays actual Archie activity (105 tasks, 23 insights, 869 actions)."
 }
