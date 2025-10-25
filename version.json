@@ -1,6 +1,6 @@
 {
-  "version": "1.7.0",
-  "commit": "bc0a3f1",
-  "lastUpdated": "2025-10-25T10:47:00.000Z",
-  "changelog": "🔍 DEBUG UPDATE: Improved project creation error reporting to expose actual database errors (column names, constraint violations, type mismatches) for diagnosing 503 failures. Added VERIFY_PROJECTS_SCHEMA.sql verification script."
+  "version": "1.8.0",
+  "commit": "84b0e34",
+  "lastUpdated": "2025-10-25T13:15:00.000Z",
+  "changelog": "✅ FIXED: Project creation now works! Changed projects.id from UUID to TEXT to match code-generated IDs. Archived 16 unused database files (47→31 active migrations). Comprehensive type audit completed - zero mismatches remain."
 }
