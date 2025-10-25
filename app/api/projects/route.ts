@@ -43,7 +43,15 @@ export async function GET(request: NextRequest) {
         }
 
         // Cache miss - fetch fresh data
-        const projects = await projectManager.getUserProjects(userId);
+        let projects = [];
+        try {
+          projects = await projectManager.getUserProjects(userId);
+        } catch (error: any) {
+          // If projects table doesn't exist, return empty array
+          console.warn('Projects table query failed (table may not exist):', error.message);
+          projects = [];
+        }
+
         const responseData = {
           success: true,
           projects: projects,
@@ -136,28 +144,36 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
         }
 
-        const newProject = await projectManager.createProject({
-          name: projectData.name,
-          description: projectData.description,
-          owner_id: userId,
-          priority: projectData.priority || 'medium',
-          status: 'active',
-          tags: projectData.tags || [],
-          metadata: {
-            created_at: new Date().toISOString(),
-            created_by: userId,
-            ...projectData.metadata
-          }
-        });
+        try {
+          const newProject = await projectManager.createProject({
+            name: projectData.name,
+            description: projectData.description,
+            owner_id: userId,
+            priority: projectData.priority || 'medium',
+            status: 'active',
+            tags: projectData.tags || [],
+            metadata: {
+              created_at: new Date().toISOString(),
+              created_by: userId,
+              ...projectData.metadata
+            }
+          });
 
-        // Invalidate cache after creating project
-        invalidateCache(userId);
+          // Invalidate cache after creating project
+          invalidateCache(userId);
 
-        return NextResponse.json({
-          success: true,
-          project: newProject,
-          message: 'Project created successfully'
-        });
+          return NextResponse.json({
+            success: true,
+            project: newProject,
+            message: 'Project created successfully'
+          });
+        } catch (error: any) {
+          console.error('Project creation failed (table may not exist):', error.message);
+          return NextResponse.json({
+            success: false,
+            error: 'Projects table not set up yet. Please create the database table first.'
+          }, { status: 503 });
+        }
 
       case 'update':
         if (!projectData.id) {
