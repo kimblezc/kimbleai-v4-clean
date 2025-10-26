@@ -30,6 +30,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@octokit/rest": "^22.0.0",
     "@prisma/client": "^6.16.3",
+    "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-switch": "^1.2.6",
     "@supabase/supabase-js": "^2.57.4",
     "@types/nodemailer": "^7.0.2",
