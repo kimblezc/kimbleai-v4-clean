@@ -21,6 +21,7 @@ import { PerformanceCharts } from '@/components/archie/PerformanceCharts';
 import { SystemHealth } from '@/components/archie/SystemHealth';
 import { QuickActions } from '@/components/archie/QuickActions';
 import { PerformanceDashboard } from '@/components/archie/PerformanceDashboard';
+import { MCPServerMonitoring } from '@/components/archie/MCPServerMonitoring';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -392,6 +393,11 @@ export default async function ArchieDashboard() {
           {/* PERFORMANCE ANALYTICS DASHBOARD - Featured Section */}
           <div className="mb-8">
             <PerformanceDashboard />
+          </div>
+
+          {/* MCP SERVER MONITORING - Integration Status */}
+          <div className="mb-8">
+            <MCPServerMonitoring />
           </div>
 
           {/* Quick Actions */}
