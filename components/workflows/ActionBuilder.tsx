@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card-shadcn';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input-shadcn';
+import { Textarea } from '@/components/ui/textarea-shadcn';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select-shadcn';
+import { Button } from '@/components/ui/button-shadcn';
 import { Badge } from '@/components/ui/badge';
 import {
   Mail,
