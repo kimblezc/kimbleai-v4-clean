@@ -18,8 +18,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRealtimeVoice, RealtimeEvent } from '@/lib/realtime-voice-client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button-shadcn';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card-shadcn';
 import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Settings, Trash2 } from 'lucide-react';
 
 interface Message {
