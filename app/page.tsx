@@ -11,10 +11,10 @@ import UnifiedSearch from '../components/search/UnifiedSearch';
 import KimbleAILogo from '../components/KimbleAILogo';
 import versionData from '../version.json';
 
-// Dynamic version info - always synced with version.json
+// Dynamic version info - commit hash auto-generated from Vercel environment
 const versionInfo = {
   version: versionData.version,
-  commit: versionData.commit,
+  commit: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || versionData.commit || 'dev',
   lastUpdated: versionData.lastUpdated
 };
 
