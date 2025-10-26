@@ -13,6 +13,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { logAgentActivity, logTaskStart, logTaskProgress, logTaskComplete, logTaskError } from '@/lib/activity-stream';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,6 +54,10 @@ export class ArchieUtilityAgent {
     executionTime: number;
   }> {
     const startTime = Date.now();
+    const taskId = this.sessionId;
+
+    // Broadcast task start
+    logTaskStart(taskId, 'utility_analysis', 'Utility Agent', 'Beginning utility analysis sweep across workspace', 'task_processing');
     await this.log('info', '🔧 Archie Utility Agent starting execution');
 
     const findings: UtilityFinding[] = [];
@@ -60,30 +65,37 @@ export class ArchieUtilityAgent {
 
     try {
       // 1. Detect actionable conversations
+      logAgentActivity('Utility Agent', 'Scanning conversations for actionable items', 'info', 'task_processing', 'Analyzing recent conversations for task candidates');
       const conversationFindings = await this.detectActionableConversations();
       findings.push(...conversationFindings);
 
       // 2. Find stale projects
+      logTaskProgress(taskId, 'utility_analysis', 'Utility Agent', 'Checking for stale projects requiring attention', 'task_processing', 20);
       const staleProjects = await this.findStaleProjects();
       findings.push(...staleProjects);
 
       // 3. Monitor API costs
+      logTaskProgress(taskId, 'utility_analysis', 'Utility Agent', 'Monitoring API costs for unusual spikes', 'task_processing', 40);
       const costFindings = await this.monitorCostSpikes();
       findings.push(...costFindings);
 
       // 4. Detect failed transcriptions
+      logTaskProgress(taskId, 'utility_analysis', 'Utility Agent', 'Detecting failed transcriptions for retry', 'task_processing', 60);
       const transcriptionFindings = await this.detectFailedTranscriptions();
       findings.push(...transcriptionFindings);
 
       // 5. Find duplicate tasks
+      logTaskProgress(taskId, 'utility_analysis', 'Utility Agent', 'Hunting for duplicate tasks to merge', 'task_processing', 75);
       const duplicateFindings = await this.findDuplicateTasks();
       findings.push(...duplicateFindings);
 
       // 6. Suggest project organization
+      logTaskProgress(taskId, 'utility_analysis', 'Utility Agent', 'Analyzing project organization patterns', 'task_processing', 90);
       const organizationFindings = await this.suggestProjectOrganization();
       findings.push(...organizationFindings);
 
       // Create tasks for high-severity findings
+      logAgentActivity('Utility Agent', `Creating tasks from ${findings.filter(f => f.severity === 'high' && f.actionable).length} high-severity findings`, 'info', 'task_processing');
       for (const finding of findings.filter(f => f.severity === 'high' && f.actionable)) {
         const created = await this.createTaskFromFinding(finding);
         if (created) tasksCreated++;
@@ -95,9 +107,13 @@ export class ArchieUtilityAgent {
         findingsByType: this.groupFindingsByType(findings)
       });
 
+      // Broadcast completion
+      logTaskComplete(taskId, 'utility_analysis', 'Utility Agent', `Analysis complete: discovered ${findings.length} findings and created ${tasksCreated} tasks`, 'task_processing', executionTime);
+
       return { findings, tasksCreated, executionTime };
     } catch (error: any) {
       await this.log('error', 'Utility Agent execution failed', { error: error.message });
+      logTaskError(taskId, 'utility_analysis', 'Utility Agent', 'Utility analysis failed', 'task_processing', error.message);
       throw error;
     }
   }
@@ -165,6 +181,9 @@ export class ArchieUtilityAgent {
       }
 
       await this.log('info', `Found ${findings.length} actionable conversations`);
+      if (findings.length > 0) {
+        logAgentActivity('Utility Agent', `Found ${findings.length} actionable conversations that could become tasks`, 'success', 'task_processing', `Detected conversations with action keywords: ${findings.map(f => f.title).slice(0, 3).join(', ')}...`);
+      }
       return findings;
     } catch (error: any) {
       await this.log('error', 'Failed to detect actionable conversations', { error: error.message });
@@ -214,6 +233,9 @@ export class ArchieUtilityAgent {
       }
 
       await this.log('info', `Found ${findings.length} stale projects`);
+      if (findings.length > 0) {
+        logAgentActivity('Utility Agent', `Discovered ${findings.length} stale projects gathering dust`, 'warn', 'task_processing', `Projects without activity: ${findings.map(f => f.title.replace('Stale project: ', '')).slice(0, 3).join(', ')}`);
+      }
       return findings;
     } catch (error: any) {
       await this.log('error', 'Failed to find stale projects', { error: error.message });

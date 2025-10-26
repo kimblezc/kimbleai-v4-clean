@@ -15,10 +15,12 @@ import { MetricsGrid } from '@/components/archie/MetricsGrid';
 import { AgentStatus } from '@/components/archie/AgentStatus';
 import { ActivityFeed } from '@/components/archie/ActivityFeed';
 import { LiveActivityFeed } from '@/components/archie/LiveActivityFeed';
+import { TaskQueueVisualization } from '@/components/archie/TaskQueueVisualization';
 import { TasksOverview } from '@/components/archie/TasksOverview';
 import { PerformanceCharts } from '@/components/archie/PerformanceCharts';
 import { SystemHealth } from '@/components/archie/SystemHealth';
 import { QuickActions } from '@/components/archie/QuickActions';
+import { PerformanceDashboard } from '@/components/archie/PerformanceDashboard';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -335,6 +337,17 @@ export default async function ArchieDashboard() {
             <LiveActivityFeed maxItems={100} autoScroll={true} showFilters={true} />
           </div>
 
+          {/* TASK QUEUE VISUALIZATION - Featured Section */}
+          <div className="mb-8">
+            <TaskQueueVisualization
+              maxItems={100}
+              showStats={true}
+              showFilters={true}
+              autoRefresh={true}
+              refreshInterval={10000}
+            />
+          </div>
+
           {/* Main Grid Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
             {/* Left Column - Metrics & Charts (8 cols) */}
@@ -374,6 +387,11 @@ export default async function ArchieDashboard() {
                 findings={data.findings.recent}
               />
             </div>
+          </div>
+
+          {/* PERFORMANCE ANALYTICS DASHBOARD - Featured Section */}
+          <div className="mb-8">
+            <PerformanceDashboard />
           </div>
 
           {/* Quick Actions */}

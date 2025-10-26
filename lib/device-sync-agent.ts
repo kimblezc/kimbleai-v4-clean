@@ -13,6 +13,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { logAgentActivity, logTaskStart, logTaskProgress, logTaskComplete, logTaskError } from '@/lib/activity-stream';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -88,31 +89,55 @@ export class DeviceSyncAgent {
     executionTime: number;
   }> {
     const startTime = Date.now();
+    const taskId = this.sessionId;
+
+    // Broadcast task start
+    logTaskStart(taskId, 'device_sync', 'Device Sync Agent', 'Initiating cross-device synchronization sweep', 'device_monitoring');
     await this.log('info', '🔄 Device Sync Agent starting', { userId });
 
     try {
       // 1. Get all active devices
+      logTaskProgress(taskId, 'device_sync', 'Device Sync Agent', 'Scanning for active devices', 'device_monitoring', 10);
       const devices = await this.getActiveDevices(userId);
       await this.log('info', `Found ${devices.length} active devices`);
+      logAgentActivity('Device Sync Agent', `Detected ${devices.length} active devices`, 'info', 'device_monitoring', `Devices: ${devices.map(d => d.deviceName).join(', ')}`);
 
       // 2. Process pending sync tasks
+      logTaskProgress(taskId, 'device_sync', 'Device Sync Agent', 'Processing pending sync tasks', 'device_monitoring', 30);
       const syncsProcessed = await this.processPendingSyncs(userId);
+      if (syncsProcessed > 0) {
+        logAgentActivity('Device Sync Agent', `Synchronized ${syncsProcessed} pending tasks across devices`, 'success', 'device_monitoring');
+      }
 
       // 3. Detect conflicts
+      logTaskProgress(taskId, 'device_sync', 'Device Sync Agent', 'Detecting sync conflicts', 'device_monitoring', 50);
       const conflicts = await this.detectConflicts(userId);
       await this.log('info', `Detected ${conflicts.length} conflicts`);
+      if (conflicts.length > 0) {
+        logAgentActivity('Device Sync Agent', `Found ${conflicts.length} sync conflicts requiring resolution`, 'warn', 'device_monitoring', `Conflict types: ${conflicts.map(c => c.type).join(', ')}`);
+      }
 
       // 4. Resolve conflicts
+      logTaskProgress(taskId, 'device_sync', 'Device Sync Agent', 'Resolving detected conflicts', 'device_monitoring', 65);
       const resolvedConflicts = await this.resolveConflicts(conflicts);
+      if (resolvedConflicts > 0) {
+        logAgentActivity('Device Sync Agent', `Resolved ${resolvedConflicts} conflicts (kept latest changes)`, 'success', 'device_monitoring');
+      }
 
       // 5. Generate continuity suggestions
+      logTaskProgress(taskId, 'device_sync', 'Device Sync Agent', 'Generating continuity suggestions', 'device_monitoring', 75);
       const suggestions = await this.generateContinuitySuggestions(userId, devices);
       await this.log('info', `Generated ${suggestions.length} continuity suggestions`);
+      if (suggestions.length > 0) {
+        logAgentActivity('Device Sync Agent', `Generated ${suggestions.length} cross-device continuity suggestions`, 'info', 'device_monitoring');
+      }
 
       // 6. Sync conversation state
+      logTaskProgress(taskId, 'device_sync', 'Device Sync Agent', 'Syncing conversation state', 'device_monitoring', 85);
       await this.syncConversationState(userId, devices);
 
       // 7. Sync settings and preferences
+      logTaskProgress(taskId, 'device_sync', 'Device Sync Agent', 'Syncing settings and preferences', 'device_monitoring', 95);
       await this.syncSettings(userId, devices);
 
       // 8. Clean up old sync tasks
@@ -126,6 +151,16 @@ export class DeviceSyncAgent {
         suggestions: suggestions.length
       });
 
+      // Broadcast completion
+      logTaskComplete(
+        taskId,
+        'device_sync',
+        'Device Sync Agent',
+        `Sync complete: ${syncsProcessed} tasks synced, ${resolvedConflicts} conflicts resolved, ${suggestions.length} continuity suggestions generated`,
+        'device_monitoring',
+        executionTime
+      );
+
       return {
         syncsProcessed,
         conflictsDetected: conflicts.length,
@@ -134,6 +169,7 @@ export class DeviceSyncAgent {
       };
     } catch (error: any) {
       await this.log('error', 'Device Sync execution failed', { error: error.message });
+      logTaskError(taskId, 'device_sync', 'Device Sync Agent', 'Device synchronization failed', 'device_monitoring', error.message);
       throw error;
     }
   }
@@ -457,6 +493,9 @@ export class DeviceSyncAgent {
           winner,
           resolution: 'keep_latest'
         });
+
+        // Broadcast conflict resolution
+        logAgentActivity('Device Sync Agent', `Resolved ${conflict.type} conflict on ${conflict.resourceId}`, 'info', 'device_monitoring', `Kept latest change from device ${winner} (${conflict.deviceA} vs ${conflict.deviceB})`);
 
         // Log conflict resolution
         await supabase.from('agent_findings').insert({

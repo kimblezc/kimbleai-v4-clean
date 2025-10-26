@@ -14,6 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { google, drive_v3 } from 'googleapis';
+import { logAgentActivity, logTaskStart, logTaskProgress, logTaskComplete, logTaskError } from '@/lib/activity-stream';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -74,35 +75,47 @@ export class DriveIntelligenceAgent {
    */
   async run(userId: string, accessToken: string): Promise<DriveCleanupReport> {
     const startTime = Date.now();
+    const taskId = this.sessionId;
+
+    // Broadcast task start
+    logTaskStart(taskId, 'drive_sync', 'Drive Intelligence Agent', 'Initiating Drive intelligence sweep', 'drive_sync');
     await this.log('info', '📁 Drive Intelligence Agent starting analysis', { userId });
 
     try {
       // Initialize Drive API
       this.drive = this.initializeDriveAPI(accessToken);
+      logAgentActivity('Drive Intelligence Agent', 'Connected to Google Drive API', 'success', 'drive_sync', 'Authentication successful');
 
       // Get all files from Drive
+      logTaskProgress(taskId, 'drive_sync', 'Drive Intelligence Agent', 'Scanning Drive for files and folders', 'drive_sync', 10);
       const files = await this.getAllDriveFiles();
       await this.log('info', `Found ${files.length} files in Drive`);
+      logAgentActivity('Drive Intelligence Agent', `Discovered ${files.length} files in Drive`, 'info', 'drive_sync', `Total storage analyzed: ${this.formatFileSize(files.reduce((sum, f) => sum + f.size, 0))}`);
 
       const findings: DriveIntelligenceFinding[] = [];
 
       // 1. Detect duplicate files
+      logTaskProgress(taskId, 'drive_sync', 'Drive Intelligence Agent', 'Hunting for duplicate files', 'drive_sync', 25);
       const duplicates = await this.detectDuplicateFiles(files);
       findings.push(...duplicates);
 
       // 2. Find transcription-ready audio files
+      logTaskProgress(taskId, 'drive_sync', 'Drive Intelligence Agent', 'Searching for audio files ready for transcription', 'drive_sync', 40);
       const transcriptionCandidates = await this.findTranscriptionReadyFiles(files, userId);
       findings.push(...transcriptionCandidates);
 
       // 3. Detect naming inconsistencies
+      logTaskProgress(taskId, 'drive_sync', 'Drive Intelligence Agent', 'Analyzing file naming patterns', 'drive_sync', 60);
       const namingIssues = await this.detectNamingIssues(files);
       findings.push(...namingIssues);
 
       // 4. Generate organization suggestions
+      logTaskProgress(taskId, 'drive_sync', 'Drive Intelligence Agent', 'Generating organization suggestions', 'drive_sync', 75);
       const orgSuggestions = await this.generateOrganizationSuggestions(files, userId);
       findings.push(...orgSuggestions);
 
       // 5. Identify large files
+      logTaskProgress(taskId, 'drive_sync', 'Drive Intelligence Agent', 'Identifying large files consuming storage', 'drive_sync', 90);
       const largeFiles = await this.identifyLargeFiles(files);
       findings.push(...largeFiles);
 
@@ -140,9 +153,20 @@ export class DriveIntelligenceAgent {
         transcriptionCandidates: transcriptionCount
       });
 
+      // Broadcast completion
+      logTaskComplete(
+        taskId,
+        'drive_sync',
+        'Drive Intelligence Agent',
+        `Drive analysis complete: ${findings.length} findings discovered (${duplicatesCount} duplicates, ${transcriptionCount} transcription candidates, ${estimatedSpaceSavings > 0 ? this.formatFileSize(estimatedSpaceSavings) + ' potential savings' : 'no duplicates to clean'})`,
+        'drive_sync',
+        executionTime
+      );
+
       return report;
     } catch (error: any) {
       await this.log('error', 'Drive Intelligence execution failed', { error: error.message });
+      logTaskError(taskId, 'drive_sync', 'Drive Intelligence Agent', 'Drive analysis failed', 'drive_sync', error.message);
       throw error;
     }
   }
@@ -200,6 +224,10 @@ export class DriveIntelligenceAgent {
     }
 
     await this.log('info', `Found ${findings.length} duplicate file groups`);
+    if (findings.length > 0) {
+      const totalDupes = findings.reduce((sum, f) => sum + f.files.length, 0);
+      logAgentActivity('Drive Intelligence Agent', `Located ${findings.length} duplicate file groups (${totalDupes} total duplicates)`, 'warn', 'drive_sync', `Example duplicates: ${findings.slice(0, 2).map(f => f.files[0].name).join(', ')}`);
+    }
     return findings;
   }
 
@@ -289,6 +317,9 @@ export class DriveIntelligenceAgent {
     }
 
     await this.log('info', `Found ${candidates.length} transcription candidates`);
+    if (candidates.length > 0) {
+      logAgentActivity('Drive Intelligence Agent', `Found ${candidates.length} audio/video files ready for transcription`, 'success', 'drive_sync', `Files include: ${candidates.slice(0, 3).map(f => f.name).join(', ')}`);
+    }
     return findings;
   }
 
