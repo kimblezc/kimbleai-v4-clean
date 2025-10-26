@@ -1,6 +1,6 @@
 {
-  "version": "3.0.5",
+  "version": "3.0.6",
   "commit": "pending",
-  "lastUpdated": "2025-10-25T20:30:00.000Z",
-  "changelog": "🔒 SECURITY AGENT: Added comprehensive Security Audit Agent with 10 audit categories, 50+ security checks, Google OAuth validation, and /api/security/audit endpoint"
+  "lastUpdated": "2025-10-25T20:40:00.000Z",
+  "changelog": "🔗 FIX: Archie button on main page now correctly points to /archie dashboard (was pointing to /accomplishments)"
 }

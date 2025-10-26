@@ -2734,7 +2734,7 @@ export default function Home() {
 
         {/* Archie Link */}
         <button
-          onClick={() => window.location.href = '/accomplishments'}
+          onClick={() => window.location.href = '/archie'}
           style={{
             width: '100%',
             padding: '12px',
