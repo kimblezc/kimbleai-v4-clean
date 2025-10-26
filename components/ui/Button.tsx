@@ -1,39 +1,124 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import React from 'react';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-  size?: "default" | "sm" | "lg" | "icon"
+interface ButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  fullWidth?: boolean;
+  icon?: string;
+  loading?: boolean;
+  className?: string;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", ...props }, ref) => {
-    return (
-      <button
-        className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-          {
-            "bg-primary text-primary-foreground hover:bg-primary/90": variant === "default",
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90": variant === "destructive",
-            "border border-input bg-background hover:bg-accent hover:text-accent-foreground": variant === "outline",
-            "bg-secondary text-secondary-foreground hover:bg-secondary/80": variant === "secondary",
-            "hover:bg-accent hover:text-accent-foreground": variant === "ghost",
-            "text-primary underline-offset-4 hover:underline": variant === "link",
-          },
-          {
-            "h-10 px-4 py-2": size === "default",
-            "h-9 rounded-md px-3": size === "sm",
-            "h-11 rounded-md px-8": size === "lg",
-            "h-10 w-10": size === "icon",
-          },
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    )
-  }
-)
-Button.displayName = "Button"
+export function Button({
+  children,
+  onClick,
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  fullWidth = false,
+  icon,
+  loading = false,
+  className = '',
+}: ButtonProps) {
+  const baseClasses = 'font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2';
 
-export { Button }
+  const variantClasses = {
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 disabled:bg-blue-800 disabled:text-blue-300',
+    secondary: 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 disabled:bg-gray-900 disabled:text-gray-600',
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20 disabled:bg-red-800 disabled:text-red-300',
+    ghost: 'bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white disabled:text-gray-600',
+  };
+
+  const sizeClasses = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2 text-base',
+    lg: 'px-6 py-3 text-lg',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={`
+        ${baseClasses}
+        ${variantClasses[variant]}
+        ${sizeClasses[size]}
+        ${fullWidth ? 'w-full' : ''}
+        ${disabled || loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+        ${className}
+      `}
+    >
+      {loading && (
+        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+      )}
+      {!loading && icon && <span>{icon}</span>}
+      {children}
+    </button>
+  );
+}
+
+interface IconButtonProps {
+  icon: string;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  tooltip?: string;
+  className?: string;
+}
+
+export function IconButton({
+  icon,
+  onClick,
+  variant = 'ghost',
+  size = 'md',
+  disabled = false,
+  tooltip,
+  className = '',
+}: IconButtonProps) {
+  const variantClasses = {
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    secondary: 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700',
+    danger: 'bg-red-600 hover:bg-red-700 text-white',
+    ghost: 'bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white',
+  };
+
+  const sizeClasses = {
+    sm: 'p-1.5 text-sm',
+    md: 'p-2 text-base',
+    lg: 'p-3 text-lg',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={tooltip}
+      className={`
+        rounded-lg transition-all duration-200
+        ${variantClasses[variant]}
+        ${sizeClasses[size]}
+        ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+        ${className}
+      `}
+    >
+      {icon}
+    </button>
+  );
+}
+
+interface ButtonGroupProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function ButtonGroup({ children, className = '' }: ButtonGroupProps) {
+  return (
+    <div className={`flex items-center gap-2 ${className}`}>
+      {children}
+    </div>
+  );
+}
