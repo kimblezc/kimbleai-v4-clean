@@ -27,6 +27,7 @@
     "@googleapis/drive": "^17.0.0",
     "@googleapis/gmail": "^15.0.0",
     "@helicone/helicone": "^3.1.2",
+    "@modelcontextprotocol/sdk": "^1.20.2",
     "@monaco-editor/react": "^4.7.0",
     "@octokit/rest": "^22.0.0",
     "@prisma/client": "^6.16.3",
@@ -45,6 +46,7 @@
     "googleapis": "^160.0.0",
     "lucide-react": "^0.546.0",
     "mammoth": "^1.11.0",
+    "mcp-handler": "^1.0.3",
     "mime-types": "^3.0.1",
     "next": "^15.5.3",
     "next-auth": "^4.24.11",
@@ -63,7 +65,8 @@
     "remark-gfm": "^4.0.1",
     "sharp": "^0.34.4",
     "tailwind-merge": "^3.3.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
