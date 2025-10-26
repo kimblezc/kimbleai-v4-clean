@@ -11,6 +11,7 @@ import { embeddingCache } from '@/lib/embedding-cache';
 import { costMonitor } from '@/lib/cost-monitor';
 import { PromptCache } from '@/lib/prompt-cache';
 import { getMCPToolsForChat, invokeMCPToolFromChat, getMCPSystemPrompt } from '@/lib/mcp/chat-integration';
+import { ClaudeClient, type ClaudeModel, type ClaudeMessage } from '@/lib/claude-client';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,6 +20,18 @@ const supabase = createClient(
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!
+});
+
+// Initialize Claude client for multi-model AI support
+const claudeClient = new ClaudeClient({
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
+  defaultModel: 'claude-sonnet-4-5',
+  maxTokens: 4096,
+  temperature: 1.0,
+  enableCaching: true,
+  onCost: async (cost, model) => {
+    console.log(`[Claude] API call cost: $${cost.toFixed(4)} (${model})`);
+  }
 });
 
 // PERFORMANCE OPTIMIZED: Use embedding cache instead of direct API calls
@@ -45,7 +58,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'OK',
     service: 'KimbleAI Chat API',
-    version: '4.2',
+    version: '4.3',
     features: {
       rag: true,
       vectorSearch: true,
@@ -56,7 +69,13 @@ export async function GET() {
       gmailAccess: true,
       driveAccess: true,
       mcpIntegration: true,
-      mcpToolsAvailable: mcpToolsCount
+      mcpToolsAvailable: mcpToolsCount,
+      multiModelAI: true,
+      claudeIntegration: true,
+      models: {
+        openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-5-flash', 'gpt-5'],
+        claude: ['opus-4-1', 'sonnet-4-5', 'haiku-4-5', '3-5-haiku', '3-haiku']
+      }
     },
     functions: [
       'get_recent_emails',
@@ -106,7 +125,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { messages, userId = 'zach', conversationId = 'default', mode, agent } = requestData;
+    const { messages, userId = 'zach', conversationId = 'default', mode, agent, preferredModel } = requestData;
 
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'No messages provided' }, { status: 400 });
@@ -382,8 +401,27 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       userPreference: 'quality' // Could be user setting
     };
 
-    const selectedModel = ModelSelector.selectModel(taskContext);
-    console.log(`[MODEL] ${ModelSelector.getModelExplanation(selectedModel, taskContext)}`);
+    // Use preferred model if provided, otherwise auto-select
+    let selectedModel = preferredModel ? { model: preferredModel } : ModelSelector.selectModel(taskContext);
+    console.log(`[MODEL] Selected: ${selectedModel.model} ${preferredModel ? '(user preference)' : '(auto-selected)'}`);
+
+    // Detect if this is a Claude model
+    const isClaudeModel = selectedModel.model.startsWith('claude-') ||
+      ['claude-opus-4-1', 'claude-4-sonnet', 'claude-sonnet-4-5', 'claude-haiku-4-5', 'claude-3-5-haiku', 'claude-3-haiku'].includes(selectedModel.model);
+
+    console.log(`[MODEL] Provider: ${isClaudeModel ? 'Claude (Anthropic)' : 'GPT (OpenAI)'}`);
+
+    // For Claude models, use automatic task-based selection if no specific model provided
+    let claudeModelToUse: ClaudeModel | null = null;
+    if (isClaudeModel) {
+      if (!preferredModel) {
+        // Auto-select best Claude model for the task
+        claudeModelToUse = claudeClient.selectModelForTask(currentUserMessage, 'quality');
+        console.log(`[Claude] Auto-selected: ${claudeModelToUse}`);
+      } else {
+        claudeModelToUse = selectedModel.model as ClaudeModel;
+      }
+    }
 
     // Fetch MCP tools and merge with built-in tools
     let mcpTools: any[] = [];
@@ -691,13 +729,74 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
 
     // Get AI response with improved error handling
     let completion;
+    let aiResponse = '';
     let openaiStartTime = 0;
     let openaiEndTime = 0;
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let cost = 0;
 
-    try {
-      openaiStartTime = Date.now();
-      console.log(`[OpenAI] Calling API with model: ${selectedModel.model}`);
-      console.log(`⏱️ [Performance] Elapsed time before OpenAI call: ${openaiStartTime - requestStartTime}ms`);
+    // CLAUDE API ROUTE
+    if (isClaudeModel && claudeModelToUse) {
+      try {
+        openaiStartTime = Date.now();
+        console.log(`[Claude] Calling API with model: ${claudeModelToUse}`);
+        console.log(`⏱️ [Performance] Elapsed time before Claude call: ${openaiStartTime - requestStartTime}ms`);
+
+        // Check timeout before expensive Claude call
+        const remainingTime = getRemainingTime();
+        if (remainingTime < 10000) {
+          console.error('[Timeout] Insufficient time for Claude call');
+          return NextResponse.json({
+            error: 'Request timeout',
+            details: 'Not enough time remaining to process your request',
+            suggestion: 'Try a simpler query or break your request into smaller parts'
+          }, { status: 504 });
+        }
+
+        // Convert messages to Claude format
+        const claudeMessages: ClaudeMessage[] = messages.map((msg: any) => ({
+          role: msg.role === 'system' ? 'user' : msg.role,
+          content: msg.content
+        }));
+
+        // Call Claude API
+        const claudeResponse = await claudeClient.sendMessage(claudeMessages, {
+          model: claudeModelToUse,
+          system: systemMessageContent,
+          maxTokens: 4096,
+          temperature: 1.0
+        });
+
+        openaiEndTime = Date.now();
+        console.log(`⏱️ [Performance] Claude API call completed in ${openaiEndTime - openaiStartTime}ms`);
+
+        aiResponse = claudeResponse.content[0].text;
+        inputTokens = claudeResponse.usage.inputTokens;
+        outputTokens = claudeResponse.usage.outputTokens;
+        cost = claudeResponse.cost;
+
+        console.log(`[Claude] Response received: ${aiResponse.substring(0, 100)}...`);
+        console.log(`[Claude] Tokens: ${inputTokens} in + ${outputTokens} out = $${cost.toFixed(4)}`);
+
+      } catch (apiError: any) {
+        console.error('[Claude] API call failed:', apiError);
+        console.error('[Claude] Model:', claudeModelToUse);
+        console.error('[Claude] Error details:', apiError.message);
+
+        return NextResponse.json({
+          error: 'Claude AI service temporarily unavailable',
+          details: `Failed to get response from Claude: ${apiError.message}`,
+          model: claudeModelToUse
+        }, { status: 503 });
+      }
+    }
+    // OPENAI API ROUTE
+    else {
+      try {
+        openaiStartTime = Date.now();
+        console.log(`[OpenAI] Calling API with model: ${selectedModel.model}`);
+        console.log(`⏱️ [Performance] Elapsed time before OpenAI call: ${openaiStartTime - requestStartTime}ms`);
 
       // Check timeout before expensive OpenAI call
       const remainingTime = getRemainingTime();
@@ -734,49 +833,54 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
         throw new Error('Invalid response structure from OpenAI API');
       }
 
-      openaiEndTime = Date.now();
-      console.log(`⏱️ [Performance] OpenAI API call completed in ${openaiEndTime - openaiStartTime}ms`);
+        openaiEndTime = Date.now();
+        console.log(`⏱️ [Performance] OpenAI API call completed in ${openaiEndTime - openaiStartTime}ms`);
 
-      // Log if content is null/empty
-      if (!completion.choices[0].message.content) {
-        console.warn('[OpenAI] Received null/empty content from API');
-        console.warn('[OpenAI] Tool calls present:', !!completion.choices[0].message.tool_calls);
-        console.warn('[OpenAI] Full message:', JSON.stringify(completion.choices[0].message));
-      }
-    } catch (apiError: any) {
-      console.error('[OpenAI] API call failed:', apiError);
-      console.error('[OpenAI] Model:', selectedModel.model);
-      console.error('[OpenAI] Error details:', apiError.message);
-      console.error('[OpenAI] Error code:', apiError.code);
+        // Log if content is null/empty
+        if (!completion.choices[0].message.content) {
+          console.warn('[OpenAI] Received null/empty content from API');
+          console.warn('[OpenAI] Tool calls present:', !!completion.choices[0].message.tool_calls);
+          console.warn('[OpenAI] Full message:', JSON.stringify(completion.choices[0].message));
+        }
 
-      // Check if it was a timeout error
-      if (apiError.message === 'OpenAI API call timeout') {
+        // Extract response data
+        aiResponse = completion.choices[0].message.content || 'I apologize, but I could not generate a response.';
+        inputTokens = completion.usage?.prompt_tokens || 0;
+        outputTokens = completion.usage?.completion_tokens || 0;
+        cost = costMonitor.calculateCost(selectedModel.model, inputTokens, outputTokens);
+
+        console.log(`[OpenAI] Response received: ${aiResponse.substring(0, 100)}...`);
+        console.log(`[OpenAI] Tokens: ${inputTokens} in + ${outputTokens} out = $${cost.toFixed(4)}`);
+
+      } catch (apiError: any) {
+        console.error('[OpenAI] API call failed:', apiError);
+        console.error('[OpenAI] Model:', selectedModel.model);
+        console.error('[OpenAI] Error details:', apiError.message);
+        console.error('[OpenAI] Error code:', apiError.code);
+
+        // Check if it was a timeout error
+        if (apiError.message === 'OpenAI API call timeout') {
+          return NextResponse.json({
+            error: 'Request timeout',
+            details: 'The AI model took too long to respond. Your query may be too complex.',
+            suggestion: 'Try breaking your request into smaller, more specific questions',
+            model: selectedModel.model
+          }, { status: 504 });
+        }
+
         return NextResponse.json({
-          error: 'Request timeout',
-          details: 'The AI model took too long to respond. Your query may be too complex.',
-          suggestion: 'Try breaking your request into smaller, more specific questions',
-          model: selectedModel.model
-        }, { status: 504 });
+          error: 'AI service temporarily unavailable',
+          details: `Failed to get response from AI model: ${apiError.message}`,
+          model: selectedModel.model,
+          errorCode: apiError.code
+        }, { status: 503 });
       }
+    } // End of OpenAI/Claude conditional
 
-      return NextResponse.json({
-        error: 'AI service temporarily unavailable',
-        details: `Failed to get response from AI model: ${apiError.message}`,
-        model: selectedModel.model,
-        errorCode: apiError.code
-      }, { status: 503 });
-    }
-
-    let aiResponse = completion.choices[0].message.content || 'I apologize, but I could not generate a response.';
-
-    // COST TRACKING: Track OpenAI API call
-    const inputTokens = completion.usage?.prompt_tokens || 0;
-    const outputTokens = completion.usage?.completion_tokens || 0;
-    const cost = costMonitor.calculateCost(selectedModel.model, inputTokens, outputTokens);
-
+    // COST TRACKING: Track API call (works for both OpenAI and Claude)
     await costMonitor.trackAPICall({
       user_id: userData.id,
-      model: selectedModel.model,
+      model: isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model,
       endpoint: '/api/chat',
       input_tokens: inputTokens,
       output_tokens: outputTokens,
@@ -784,15 +888,16 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       timestamp: new Date().toISOString(),
       metadata: {
         conversation_id: conversationId,
+        provider: isClaudeModel ? 'Claude' : 'OpenAI',
         reasoning_level: selectedModel.reasoningLevel || 'none',
         has_function_calls: false,
       },
     });
 
-    console.log(`[CostMonitor] Tracked chat API call: ${selectedModel.model} - $${cost.toFixed(4)} (${inputTokens} in + ${outputTokens} out)`);
+    console.log(`[CostMonitor] Tracked chat API call: ${isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model} - $${cost.toFixed(4)} (${inputTokens} in + ${outputTokens} out)`);
 
-    // Handle function calls if the AI wants to call Gmail/Drive functions
-    const toolCalls = completion.choices[0].message.tool_calls;
+    // Handle function calls if the AI wants to call Gmail/Drive functions (OpenAI only for now)
+    const toolCalls = !isClaudeModel && completion ? completion.choices[0].message.tool_calls : null;
     if (toolCalls && toolCalls.length > 0) {
       console.log(`🔧 AI requested ${toolCalls.length} function call(s)`);
 
@@ -1208,10 +1313,16 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       allMessagesRetrieved: allUserMessages?.length || 0,
       factsExtracted: facts.length,
       modelUsed: {
-        model: selectedModel.model,
+        model: isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model,
+        provider: isClaudeModel ? 'Claude (Anthropic)' : 'OpenAI',
         reasoningLevel: selectedModel.reasoningLevel || 'none',
         costMultiplier: selectedModel.costMultiplier,
-        explanation: ModelSelector.getModelExplanation(selectedModel, taskContext)
+        explanation: isClaudeModel && claudeModelToUse
+          ? `Using Claude ${claudeModelToUse} for high-quality responses`
+          : ModelSelector.getModelExplanation(selectedModel, taskContext),
+        inputTokens,
+        outputTokens,
+        cost
       }
     });
 
