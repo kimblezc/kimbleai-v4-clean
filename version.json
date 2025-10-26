@@ -1,6 +1,6 @@
 {
-  "version": "3.0.7",
+  "version": "3.0.8",
   "commit": "auto",
-  "lastUpdated": "2025-10-26T08:00:00.000Z",
-  "changelog": "⚙️ DYNAMIC: Commit hash now auto-generated from Vercel environment (VERCEL_GIT_COMMIT_SHA)"
+  "lastUpdated": "2025-10-26T09:00:00.000Z",
+  "changelog": "🔄 NEW: Comprehensive ChatGPT Transition Agent with intelligent project matching and migration"
 }

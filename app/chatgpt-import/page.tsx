@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Upload, Search, Database, Loader2, CheckCircle, XCircle, Download } from 'lucide-react';
+import { Upload, Search, Database, Loader2, CheckCircle, XCircle, Download, RefreshCw, ArrowRight } from 'lucide-react';
 
 interface ImportStats {
   totalConversations: number;
@@ -33,7 +33,7 @@ interface SearchResult {
 
 export default function ChatGPTImportPage() {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<'upload' | 'search' | 'stats'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'search' | 'stats' | 'transition'>('upload');
 
   // Upload state
   const [file, setFile] = useState<File | null>(null);
@@ -52,6 +52,21 @@ export default function ChatGPTImportPage() {
   // Stats state
   const [stats, setStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+
+  // Transition state
+  const [transitioning, setTransitioning] = useState(false);
+  const [transitionOptions, setTransitionOptions] = useState({
+    autoCreateProjects: true,
+    minMatchConfidence: 0.7,
+    migrateToMainSystem: true,
+    preserveChatGPTData: true,
+    generateEmbeddings: false,
+    analyzeSentiment: false,
+    extractKeywords: true,
+    groupByTopic: true,
+    dryRun: false,
+  });
+  const [transitionResult, setTransitionResult] = useState<any>(null);
 
   // Load stats on mount
   useEffect(() => {
@@ -152,6 +167,36 @@ export default function ChatGPTImportPage() {
     }
   };
 
+  const handleTransition = async () => {
+    setTransitioning(true);
+    setTransitionResult(null);
+
+    try {
+      const response = await fetch('/api/chatgpt/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transitionOptions)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Transition failed');
+      }
+
+      setTransitionResult(data.data);
+
+    } catch (error: any) {
+      console.error('Transition failed:', error);
+      setTransitionResult({
+        success: false,
+        error: error.message
+      });
+    } finally {
+      setTransitioning(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -209,6 +254,17 @@ export default function ChatGPTImportPage() {
             >
               <Database className="inline-block w-5 h-5 mr-2" />
               Statistics
+            </button>
+            <button
+              onClick={() => setActiveTab('transition')}
+              className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${
+                activeTab === 'transition'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <RefreshCw className="inline-block w-5 h-5 mr-2" />
+              Transition
             </button>
           </div>
         </div>
@@ -473,6 +529,251 @@ export default function ChatGPTImportPage() {
                 No data imported yet. Upload your ChatGPT export to get started.
               </div>
             )}
+          </div>
+        )}
+
+        {/* Transition Tab */}
+        {activeTab === 'transition' && (
+          <div className="bg-white rounded-lg shadow-sm p-8">
+            <h2 className="text-xl font-semibold mb-4">ChatGPT to KimbleAI Transition</h2>
+
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+              <h3 className="font-medium text-blue-900 mb-2 flex items-center">
+                <ArrowRight className="w-5 h-5 mr-2" />
+                Intelligent Project Matching & Migration
+              </h3>
+              <p className="text-sm text-blue-800 mb-2">
+                This comprehensive transition agent will analyze all your ChatGPT conversations and intelligently:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-blue-800">
+                <li>Match conversations to existing KimbleAI projects using multi-factor analysis</li>
+                <li>Create new projects for unmatched conversations grouped by topic</li>
+                <li>Migrate all conversations and messages to your main KimbleAI system</li>
+                <li>Generate detailed transition reports with confidence scores</li>
+              </ul>
+            </div>
+
+            <div className="space-y-6">
+              {/* Configuration Options */}
+              <div className="border border-gray-200 rounded-lg p-6 space-y-4">
+                <h3 className="font-medium text-gray-900 mb-3">Transition Options</h3>
+
+                <label className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={transitionOptions.autoCreateProjects}
+                    onChange={(e) => setTransitionOptions({...transitionOptions, autoCreateProjects: e.target.checked})}
+                    disabled={transitioning}
+                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Auto-create projects for unmatched conversations</span>
+                    <p className="text-xs text-gray-500">Automatically group and create projects using GPT-4 topic analysis</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={transitionOptions.migrateToMainSystem}
+                    onChange={(e) => setTransitionOptions({...transitionOptions, migrateToMainSystem: e.target.checked})}
+                    disabled={transitioning}
+                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Migrate to main conversation system</span>
+                    <p className="text-xs text-gray-500">Move conversations from chatgpt_* tables to main conversations table</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={transitionOptions.preserveChatGPTData}
+                    onChange={(e) => setTransitionOptions({...transitionOptions, preserveChatGPTData: e.target.checked})}
+                    disabled={transitioning}
+                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Preserve original ChatGPT data</span>
+                    <p className="text-xs text-gray-500">Keep original chatgpt_* tables intact (recommended)</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={transitionOptions.extractKeywords}
+                    onChange={(e) => setTransitionOptions({...transitionOptions, extractKeywords: e.target.checked})}
+                    disabled={transitioning}
+                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Extract keywords for better matching</span>
+                    <p className="text-xs text-gray-500">Analyze conversation content to extract relevant keywords</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={transitionOptions.groupByTopic}
+                    onChange={(e) => setTransitionOptions({...transitionOptions, groupByTopic: e.target.checked})}
+                    disabled={transitioning}
+                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Group conversations by topic (GPT-4)</span>
+                    <p className="text-xs text-gray-500">Use AI to intelligently group related conversations</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={transitionOptions.generateEmbeddings}
+                    onChange={(e) => setTransitionOptions({...transitionOptions, generateEmbeddings: e.target.checked})}
+                    disabled={transitioning}
+                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Generate embeddings for semantic search</span>
+                    <p className="text-xs text-gray-500">Enable AI-powered semantic search (costs ~$0.05 per 100 conversations)</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={transitionOptions.dryRun}
+                    onChange={(e) => setTransitionOptions({...transitionOptions, dryRun: e.target.checked})}
+                    disabled={transitioning}
+                    className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Dry run (test mode)</span>
+                    <p className="text-xs text-gray-500">Preview results without making actual database changes</p>
+                  </div>
+                </label>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Minimum match confidence: {Math.round(transitionOptions.minMatchConfidence * 100)}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={transitionOptions.minMatchConfidence * 100}
+                    onChange={(e) => setTransitionOptions({...transitionOptions, minMatchConfidence: parseInt(e.target.value) / 100})}
+                    disabled={transitioning}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Higher values require stronger matches (recommended: 70%)
+                  </p>
+                </div>
+              </div>
+
+              {/* Run Transition Button */}
+              <button
+                onClick={handleTransition}
+                disabled={transitioning}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2 shadow-lg"
+              >
+                {transitioning ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Running Transition...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5" />
+                    <span>Start Comprehensive Transition</span>
+                  </>
+                )}
+              </button>
+
+              {/* Transition Results */}
+              {transitionResult && (
+                <div className={`p-6 rounded-lg ${transitionResult.success ? 'bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'}`}>
+                  <div className="flex items-start space-x-3">
+                    {transitionResult.success ? (
+                      <CheckCircle className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-6 h-6 text-red-600 mt-0.5 flex-shrink-0" />
+                    )}
+                    <div className="flex-1">
+                      <h3 className={`font-semibold text-lg mb-2 ${transitionResult.success ? 'text-green-900' : 'text-red-900'}`}>
+                        {transitionResult.success ? 'Transition Completed Successfully!' : 'Transition Failed'}
+                      </h3>
+
+                      {transitionResult.success && transitionResult.stats && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="bg-white rounded-lg p-3 shadow-sm">
+                              <div className="text-2xl font-bold text-blue-900">{transitionResult.stats.conversationsProcessed}</div>
+                              <div className="text-xs text-gray-600">Conversations</div>
+                            </div>
+                            <div className="bg-white rounded-lg p-3 shadow-sm">
+                              <div className="text-2xl font-bold text-green-900">{transitionResult.stats.projectsMatched}</div>
+                              <div className="text-xs text-gray-600">Matched</div>
+                            </div>
+                            <div className="bg-white rounded-lg p-3 shadow-sm">
+                              <div className="text-2xl font-bold text-purple-900">{transitionResult.stats.projectsCreated}</div>
+                              <div className="text-xs text-gray-600">Created</div>
+                            </div>
+                            <div className="bg-white rounded-lg p-3 shadow-sm">
+                              <div className="text-2xl font-bold text-orange-900">{transitionResult.stats.conversationsMigrated}</div>
+                              <div className="text-xs text-gray-600">Migrated</div>
+                            </div>
+                          </div>
+
+                          {transitionResult.matches && transitionResult.matches.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="font-medium text-gray-900 mb-2">Project Matches:</h4>
+                              <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {transitionResult.matches.slice(0, 10).map((match: any, idx: number) => (
+                                  <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                                    <div className="flex justify-between items-start mb-1">
+                                      <span className="font-medium text-sm text-gray-900">{match.conversation.title}</span>
+                                      <span className="text-xs font-semibold text-blue-600">
+                                        {Math.round(match.confidence * 100)}%
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      → {match.project?.name || 'New Project'}
+                                    </div>
+                                    {match.reasons && match.reasons.length > 0 && (
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        {match.reasons[0]}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                                {transitionResult.matches.length > 10 && (
+                                  <div className="text-xs text-gray-500 text-center py-2">
+                                    + {transitionResult.matches.length - 10} more matches...
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="text-xs text-gray-600 mt-3">
+                            Execution time: {transitionResult.executionTime || 0}ms
+                          </div>
+                        </div>
+                      )}
+
+                      {!transitionResult.success && (
+                        <p className="text-sm text-red-800">{transitionResult.error}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
