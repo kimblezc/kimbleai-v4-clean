@@ -14,6 +14,7 @@ import { DashboardHeader } from '@/components/archie/DashboardHeader';
 import { MetricsGrid } from '@/components/archie/MetricsGrid';
 import { AgentStatus } from '@/components/archie/AgentStatus';
 import { ActivityFeed } from '@/components/archie/ActivityFeed';
+import { LiveActivityFeed } from '@/components/archie/LiveActivityFeed';
 import { TasksOverview } from '@/components/archie/TasksOverview';
 import { PerformanceCharts } from '@/components/archie/PerformanceCharts';
 import { SystemHealth } from '@/components/archie/SystemHealth';
@@ -328,6 +329,11 @@ export default async function ArchieDashboard() {
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <DashboardHeader stats={data.stats} />
+
+          {/* LIVE ACTIVITY STREAM - Featured Section */}
+          <div className="mb-8">
+            <LiveActivityFeed maxItems={100} autoScroll={true} showFilters={true} />
+          </div>
 
           {/* Main Grid Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">

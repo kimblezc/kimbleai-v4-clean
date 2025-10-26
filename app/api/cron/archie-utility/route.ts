@@ -6,9 +6,14 @@ export const maxDuration = 300; // 5 minutes
 
 export async function GET(request: Request) {
   try {
-    // Verify cron secret for security
+    // Allow manual trigger with ?trigger=manual
+    const url = new URL(request.url);
+    const manualTrigger = url.searchParams.get('trigger');
+    const isManual = manualTrigger === 'manual';
+
+    // Verify cron secret for security (skip for manual triggers)
     const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!isManual && process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -25,6 +30,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       agent: 'archie-utility',
+      triggerType: isManual ? 'manual' : 'cron',
       timestamp: new Date().toISOString(),
       ...result
     });
@@ -37,4 +43,9 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }
+}
+
+// Also support POST for manual triggers from dashboard buttons
+export async function POST(request: Request) {
+  return GET(request);
 }

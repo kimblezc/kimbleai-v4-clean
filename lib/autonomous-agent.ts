@@ -341,12 +341,16 @@ Format as JSON:
       suggestions.push('Add indexes on frequently queried columns');
       suggestions.push('Review Supabase row count to stay under free tier limits');
 
-      // Create findings for each suggestion
+      // Create findings for each suggestion with better titles
       for (const suggestion of suggestions.slice(0, 3)) { // Top 3 suggestions
+        // Use first sentence or first 80 chars as title
+        const title = suggestion.split(/[.!?]/)[0]?.substring(0, 80)?.trim() ||
+                      suggestion.substring(0, 80);
+
         await this.createFinding({
           finding_type: 'improvement',
           severity: 'low',
-          title: suggestion.substring(0, 100), // FIX: Use actual suggestion as title
+          title: title,
           description: suggestion,
           detection_method: 'proactive_code_analysis'
         });
@@ -445,9 +449,10 @@ Format as JSON:
           });
 
           if (!isDuplicate) {
-            // Create actionable task from finding
-            const taskTitle = finding.title === 'Improvement Suggestion'
-              ? finding.description?.substring(0, 100) || finding.title
+            // Create actionable task from finding with better title
+            // If title is generic, use first sentence of description (up to 100 chars)
+            const taskTitle = (finding.title === 'Improvement Suggestion' || finding.title.length < 10)
+              ? (finding.description?.split(/[.!?]/)[0]?.substring(0, 100)?.trim() || finding.title)
               : finding.title;
 
             const newTask = await this.createTask({

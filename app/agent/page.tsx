@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { AgentTriggerButtons } from '@/components/AgentTriggerButtons';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,12 +24,13 @@ export const metadata = {
 };
 
 async function getData() {
-  // Fetch ALL tasks by status (not limited to 50)
+  // Fetch recent tasks with proper limits
   const { data: completedTasks } = await supabase
     .from('agent_tasks')
     .select('*')
     .eq('status', 'completed')
-    .order('completed_at', { ascending: false });
+    .order('completed_at', { ascending: false })
+    .limit(20); // Last 20 completed
 
   const { data: inProgressTasks } = await supabase
     .from('agent_tasks')
@@ -42,11 +44,29 @@ async function getData() {
     .eq('status', 'pending')
     .order('priority', { ascending: false });
 
-  // Fetch findings
+  // Fetch recent findings
   const { data: findings } = await supabase
     .from('agent_findings')
     .select('*')
-    .order('detected_at', { ascending: false });
+    .order('detected_at', { ascending: false })
+    .limit(50); // Last 50 findings
+
+  // Fetch recent logs to show agent activity
+  const { data: recentLogs } = await supabase
+    .from('agent_logs')
+    .select('*')
+    .order('timestamp', { ascending: false })
+    .limit(20);
+
+  // Get total counts
+  const { count: totalCompleted } = await supabase
+    .from('agent_tasks')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'completed');
+
+  const { count: totalFindings } = await supabase
+    .from('agent_findings')
+    .select('*', { count: 'exact', head: true });
 
   return {
     completed: completedTasks || [],
@@ -56,7 +76,12 @@ async function getData() {
       f.finding_type === 'improvement' ||
       f.finding_type === 'optimization' ||
       f.severity === 'low'
-    ) || []
+    ) || [],
+    allFindings: findings || [],
+    recentLogs: recentLogs || [],
+    totalCompleted: totalCompleted || 0,
+    totalFindings: totalFindings || 0,
+    lastActivity: recentLogs?.[0]?.timestamp || null
   };
 }
 
@@ -344,17 +369,114 @@ export default async function ArchieDashboard() {
           <div style={{
             marginTop: '20px',
             padding: '16px',
-            background: 'rgba(59, 130, 246, 0.05)',
-            border: '1px solid rgba(59, 130, 246, 0.2)',
+            background: data.lastActivity && (Date.now() - new Date(data.lastActivity).getTime()) < 3600000
+              ? 'rgba(34, 197, 94, 0.1)'
+              : 'rgba(239, 68, 68, 0.1)',
+            border: data.lastActivity && (Date.now() - new Date(data.lastActivity).getTime()) < 3600000
+              ? '1px solid rgba(34, 197, 94, 0.3)'
+              : '1px solid rgba(239, 68, 68, 0.3)',
             borderRadius: '8px'
           }}>
-            <div style={{ fontSize: '12px', color: '#93c5fd', marginBottom: '4px', fontWeight: 'bold' }}>
-              ℹ️ Agent Status
+            <div style={{ fontSize: '12px', color: '#93c5fd', marginBottom: '8px', fontWeight: 'bold' }}>
+              🔴 LIVE AGENT STATUS
             </div>
-            <div style={{ fontSize: '13px', color: '#d1d5db', lineHeight: '1.6' }}>
-              All agents are <span style={{ color: '#22c55e', fontWeight: 'bold' }}>ACTIVE</span> and running on automated schedules via Vercel Cron.
-              Findings and tasks appear below as agents detect patterns in your data.
+            <div style={{ fontSize: '14px', color: '#d1d5db', lineHeight: '1.6', marginBottom: '8px' }}>
+              {data.lastActivity ? (
+                <>
+                  <strong>Last Activity:</strong>{' '}
+                  {new Date(data.lastActivity).toLocaleString()}{' '}
+                  ({Math.round((Date.now() - new Date(data.lastActivity).getTime()) / 60000)} minutes ago)
+                </>
+              ) : (
+                <strong style={{ color: '#ef4444' }}>⚠️ No recent activity detected</strong>
+              )}
             </div>
+            <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+              <strong>Total Work Done:</strong> {data.totalCompleted} tasks completed • {data.totalFindings} findings discovered
+            </div>
+          </div>
+        </div>
+
+        {/* MANUAL TRIGGER BUTTONS */}
+        <AgentTriggerButtons
+          agents={[
+            { name: 'Autonomous Agent', endpoint: '/api/agent/cron?trigger=archie-now', color: '#22c55e' },
+            { name: 'Archie Utility', endpoint: '/api/cron/archie-utility?trigger=manual', color: '#3b82f6' },
+            { name: 'Drive Intelligence', endpoint: '/api/cron/drive-intelligence?trigger=manual', color: '#a855f7' },
+            { name: 'Device Sync', endpoint: '/api/cron/device-sync?trigger=manual', color: '#f97316' }
+          ]}
+        />
+
+        {/* RECENT LOGS / ACTIVITY FEED */}
+        <div style={{
+          background: '#1a1a1a',
+          border: '3px solid #3b82f6',
+          borderRadius: '12px',
+          padding: '24px',
+          marginBottom: '40px'
+        }}>
+          <h2 style={{
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#3b82f6',
+            marginBottom: '20px',
+            borderBottom: '2px solid rgba(59, 130, 246, 0.3)',
+            paddingBottom: '12px'
+          }}>
+            📝 RECENT AGENT ACTIVITY ({data.recentLogs.length})
+          </h2>
+
+          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            {data.recentLogs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+                <div style={{ fontSize: '48px', marginBottom: '10px' }}>📭</div>
+                <p>No recent agent activity</p>
+              </div>
+            ) : (
+              data.recentLogs.map((log: any, i: number) => (
+                <div key={i} style={{
+                  background: log.log_level === 'error' ? 'rgba(239, 68, 68, 0.1)' : '#0f0f0f',
+                  border: log.log_level === 'error' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  marginBottom: '8px',
+                  fontSize: '13px',
+                  lineHeight: '1.5'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{
+                      color: log.log_level === 'error' ? '#ef4444' : log.log_level === 'warn' ? '#f59e0b' : '#22c55e',
+                      fontWeight: 'bold',
+                      fontSize: '11px',
+                      textTransform: 'uppercase'
+                    }}>
+                      {log.log_level}
+                    </span>
+                    <span style={{ color: '#6b7280', fontSize: '11px' }}>
+                      {new Date(log.timestamp).toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ color: '#d1d5db' }}>
+                    {log.message}
+                  </div>
+                  {log.details && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      color: '#9ca3af',
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}>
+                      {JSON.stringify(log.details, null, 2)}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -373,9 +495,9 @@ export default async function ArchieDashboard() {
             textAlign: 'center'
           }}>
             <div style={{ fontSize: '36px', color: '#22c55e', fontWeight: 'bold' }}>
-              {data.completed.length}
+              {data.totalCompleted}
             </div>
-            <div style={{ color: '#86efac', fontSize: '14px' }}>✅ Completed</div>
+            <div style={{ color: '#86efac', fontSize: '14px' }}>✅ Completed (showing last 20)</div>
           </div>
 
           <div style={{
@@ -412,9 +534,9 @@ export default async function ArchieDashboard() {
             textAlign: 'center'
           }}>
             <div style={{ fontSize: '36px', color: '#a855f7', fontWeight: 'bold' }}>
-              {data.suggestions.length}
+              {data.totalFindings}
             </div>
-            <div style={{ color: '#d8b4fe', fontSize: '14px' }}>💡 Suggestions</div>
+            <div style={{ color: '#d8b4fe', fontSize: '14px' }}>💡 All Findings</div>
           </div>
         </div>
 
@@ -471,20 +593,23 @@ export default async function ArchieDashboard() {
                       P{task.priority}
                     </div>
                     <h3 style={{
-                      fontSize: '16px',
+                      fontSize: '15px',
                       fontWeight: 'bold',
-                      marginBottom: '8px',
-                      color: 'white'
+                      marginBottom: '10px',
+                      color: 'white',
+                      lineHeight: '1.4'
                     }}>
                       {task.title}
                     </h3>
                     <p style={{
-                      fontSize: '13px',
-                      color: '#9ca3af',
-                      lineHeight: '1.5',
-                      marginBottom: '12px'
+                      fontSize: '14px',
+                      color: '#d1d5db',
+                      lineHeight: '1.6',
+                      marginBottom: '12px',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
                     }}>
-                      {task.description}
+                      {task.description || 'No description provided'}
                     </p>
                     <div style={{
                       width: '100%',
@@ -570,20 +695,23 @@ export default async function ArchieDashboard() {
                         P{task.priority} • ACTIVE
                       </div>
                       <h3 style={{
-                        fontSize: '16px',
+                        fontSize: '15px',
                         fontWeight: 'bold',
-                        marginBottom: '8px',
-                        color: 'white'
+                        marginBottom: '10px',
+                        color: 'white',
+                        lineHeight: '1.4'
                       }}>
                         {task.title}
                       </h3>
                       <p style={{
-                        fontSize: '13px',
-                        color: '#9ca3af',
-                        lineHeight: '1.5',
-                        marginBottom: '12px'
+                        fontSize: '14px',
+                        color: '#d1d5db',
+                        lineHeight: '1.6',
+                        marginBottom: '12px',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
                       }}>
-                        {task.description}
+                        {task.description || 'No description provided'}
                       </p>
 
                       {/* Progress Bar */}
@@ -683,19 +811,22 @@ export default async function ArchieDashboard() {
                       P{task.priority} • QUEUED
                     </div>
                     <h3 style={{
-                      fontSize: '16px',
+                      fontSize: '15px',
                       fontWeight: 'bold',
-                      marginBottom: '8px',
-                      color: 'white'
+                      marginBottom: '10px',
+                      color: 'white',
+                      lineHeight: '1.4'
                     }}>
                       {task.title}
                     </h3>
                     <p style={{
-                      fontSize: '13px',
-                      color: '#9ca3af',
-                      lineHeight: '1.5'
+                      fontSize: '14px',
+                      color: '#d1d5db',
+                      lineHeight: '1.6',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
                     }}>
-                      {task.description}
+                      {task.description || 'No description provided'}
                     </p>
                   </div>
                 ))
@@ -703,7 +834,7 @@ export default async function ArchieDashboard() {
             </div>
           </div>
 
-          {/* SUGGESTIONS */}
+          {/* ALL FINDINGS */}
           <div style={{
             background: '#1a1a1a',
             border: '3px solid #a855f7',
@@ -718,17 +849,17 @@ export default async function ArchieDashboard() {
               borderBottom: '2px solid rgba(168, 85, 247, 0.3)',
               paddingBottom: '12px'
             }}>
-              💡 SUGGESTIONS ({data.suggestions.length})
+              💡 ALL FINDINGS ({data.allFindings.length})
             </h2>
 
             <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-              {data.suggestions.length === 0 ? (
+              {data.allFindings.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
                   <div style={{ fontSize: '48px', marginBottom: '10px' }}>💡</div>
                   <p>Archie is analyzing...</p>
                 </div>
               ) : (
-                data.suggestions.map((suggestion: any, i: number) => {
+                data.allFindings.map((suggestion: any, i: number) => {
                   // Determine implementation approach based on type
                   const getImplementation = () => {
                     if (suggestion.finding_type === 'optimization') {
@@ -770,20 +901,23 @@ export default async function ArchieDashboard() {
                         {suggestion.finding_type?.toUpperCase() || 'SUGGESTION'}
                       </div>
                       <h3 style={{
-                        fontSize: '16px',
+                        fontSize: '15px',
                         fontWeight: 'bold',
-                        marginBottom: '8px',
-                        color: 'white'
+                        marginBottom: '10px',
+                        color: 'white',
+                        lineHeight: '1.4'
                       }}>
                         {suggestion.title}
                       </h3>
                       <p style={{
-                        fontSize: '13px',
-                        color: '#9ca3af',
-                        lineHeight: '1.5',
-                        marginBottom: '10px'
+                        fontSize: '14px',
+                        color: '#d1d5db',
+                        lineHeight: '1.6',
+                        marginBottom: '12px',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
                       }}>
-                        {suggestion.description}
+                        {suggestion.description || 'No description provided'}
                       </p>
 
                       {/* Implementation Guidance */}
