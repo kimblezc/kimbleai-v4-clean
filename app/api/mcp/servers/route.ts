@@ -1,0 +1,415 @@
+/**
+ * MCP Servers Management API
+ *
+ * CRUD operations for managing MCP server configurations.
+ *
+ * @route GET /api/mcp/servers - List all servers
+ * @route POST /api/mcp/servers - Create a new server
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { getMCPServerManager } from '@/lib/mcp/mcp-server-manager';
+import type { MCPServerConfig, MCPServerRecord } from '@/lib/mcp/types';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+/**
+ * GET /api/mcp/servers
+ * List all MCP servers (both from database and runtime state)
+ *
+ * Query parameters:
+ * - enabled: Filter by enabled status (true/false)
+ * - transport: Filter by transport type (stdio/sse/http)
+ * - tag: Filter by tag
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const enabledFilter = searchParams.get('enabled');
+    const transportFilter = searchParams.get('transport');
+    const tagFilter = searchParams.get('tag');
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Build query
+    let query = supabase.from('mcp_servers').select('*').order('priority', { ascending: false });
+
+    if (enabledFilter !== null) {
+      query = query.eq('enabled', enabledFilter === 'true');
+    }
+
+    if (transportFilter) {
+      query = query.eq('transport', transportFilter);
+    }
+
+    if (tagFilter) {
+      query = query.contains('tags', [tagFilter]);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    // Get runtime state from manager
+    const manager = getMCPServerManager();
+    const runtimeServers = manager.getAllServers();
+
+    // Merge database records with runtime state
+    const servers = (data as MCPServerRecord[]).map((record) => {
+      const runtimeServer = runtimeServers.find((s) => s.id === record.id);
+
+      return {
+        id: record.id,
+        name: record.name,
+        description: record.description,
+        transport: record.transport,
+        command: record.command,
+        args: record.args,
+        url: record.url,
+        env: record.env,
+        capabilities: record.capabilities,
+        timeout: record.timeout,
+        retryAttempts: record.retry_attempts,
+        retryDelay: record.retry_delay,
+        healthCheckInterval: record.health_check_interval,
+        healthCheckTimeout: record.health_check_timeout,
+        enabled: record.enabled,
+        priority: record.priority,
+        tags: record.tags,
+        createdAt: record.created_at,
+        updatedAt: record.updated_at,
+        // Runtime state
+        status: runtimeServer?.status || 'disconnected',
+        isConnected: runtimeServer?.status === 'connected',
+        connectedAt: runtimeServer?.connectedAt?.toISOString(),
+        lastHealthCheck: runtimeServer?.lastHealthCheck?.toISOString(),
+        lastError: runtimeServer?.lastError
+          ? {
+              message: runtimeServer.lastError.message,
+              code: (runtimeServer.lastError as any).code,
+            }
+          : null,
+        metrics: runtimeServer?.metrics || {
+          totalRequests: 0,
+          successfulRequests: 0,
+          failedRequests: 0,
+          averageResponseTime: 0,
+        },
+        toolsCount: runtimeServer?.availableTools?.length || 0,
+        resourcesCount: runtimeServer?.availableResources?.length || 0,
+        promptsCount: runtimeServer?.availablePrompts?.length || 0,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      servers,
+      total: servers.length,
+      connected: servers.filter((s) => s.isConnected).length,
+      disconnected: servers.filter((s) => !s.isConnected).length,
+    });
+  } catch (error: any) {
+    console.error('Error fetching servers:', error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch servers',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/mcp/servers
+ * Create a new MCP server configuration
+ *
+ * Request body: MCPServerConfig (without id, createdAt, updatedAt)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    // Validate required fields
+    const requiredFields = ['name', 'transport', 'priority'];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Field '${field}' is required`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate transport-specific requirements
+    if (body.transport === 'stdio' && !body.command) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Command is required for stdio transport',
+        },
+        { status: 400 }
+      );
+    }
+
+    if ((body.transport === 'sse' || body.transport === 'http') && !body.url) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'URL is required for SSE/HTTP transport',
+        },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Insert server configuration
+    const { data, error } = await supabase
+      .from('mcp_servers')
+      .insert({
+        name: body.name,
+        description: body.description || null,
+        transport: body.transport,
+        command: body.command || null,
+        args: body.args || [],
+        url: body.url || null,
+        env: body.env || {},
+        capabilities: body.capabilities || {},
+        timeout: body.timeout || 30000,
+        retry_attempts: body.retryAttempts || 3,
+        retry_delay: body.retryDelay || 1000,
+        health_check_interval: body.healthCheckInterval || 60000,
+        health_check_timeout: body.healthCheckTimeout || 5000,
+        enabled: body.enabled !== undefined ? body.enabled : true,
+        priority: body.priority,
+        tags: body.tags || [],
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Add server to manager if enabled
+    if (data.enabled) {
+      const manager = getMCPServerManager();
+      const config: MCPServerConfig = {
+        id: data.id,
+        name: data.name,
+        description: data.description || undefined,
+        transport: data.transport as any,
+        enabled: data.enabled,
+        priority: data.priority,
+        command: data.command || undefined,
+        args: data.args || undefined,
+        url: data.url || undefined,
+        env: data.env || undefined,
+        capabilities: data.capabilities || undefined,
+        timeout: data.timeout,
+        retryAttempts: data.retry_attempts,
+        retryDelay: data.retry_delay,
+        healthCheckInterval: data.health_check_interval,
+        healthCheckTimeout: data.health_check_timeout,
+        tags: data.tags || undefined,
+      };
+
+      await manager.addServer(config);
+
+      // Auto-connect if enabled
+      try {
+        await manager.connectServer(data.id);
+      } catch (error) {
+        console.warn(`Failed to auto-connect server ${data.name}:`, error);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      server: data,
+    });
+  } catch (error: any) {
+    console.error('Error creating server:', error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create server',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT /api/mcp/servers
+ * Update an existing MCP server configuration
+ *
+ * Request body: Partial<MCPServerConfig> with required id
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    if (!body.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Server ID is required',
+        },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Build update object (only include provided fields)
+    const updates: any = {};
+
+    if (body.name !== undefined) updates.name = body.name;
+    if (body.description !== undefined) updates.description = body.description;
+    if (body.transport !== undefined) updates.transport = body.transport;
+    if (body.command !== undefined) updates.command = body.command;
+    if (body.args !== undefined) updates.args = body.args;
+    if (body.url !== undefined) updates.url = body.url;
+    if (body.env !== undefined) updates.env = body.env;
+    if (body.capabilities !== undefined) updates.capabilities = body.capabilities;
+    if (body.timeout !== undefined) updates.timeout = body.timeout;
+    if (body.retryAttempts !== undefined)
+      updates.retry_attempts = body.retryAttempts;
+    if (body.retryDelay !== undefined) updates.retry_delay = body.retryDelay;
+    if (body.healthCheckInterval !== undefined)
+      updates.health_check_interval = body.healthCheckInterval;
+    if (body.healthCheckTimeout !== undefined)
+      updates.health_check_timeout = body.healthCheckTimeout;
+    if (body.enabled !== undefined) updates.enabled = body.enabled;
+    if (body.priority !== undefined) updates.priority = body.priority;
+    if (body.tags !== undefined) updates.tags = body.tags;
+
+    // Update in database
+    const { data, error } = await supabase
+      .from('mcp_servers')
+      .update(updates)
+      .eq('id', body.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update in manager
+    const manager = getMCPServerManager();
+    const server = manager.getServer(body.id);
+
+    if (server) {
+      // If enabled status changed
+      if (body.enabled !== undefined && body.enabled !== server.config.enabled) {
+        if (body.enabled) {
+          // Reconnect server
+          try {
+            await manager.connectServer(body.id);
+          } catch (error) {
+            console.warn(`Failed to reconnect server ${data.name}:`, error);
+          }
+        } else {
+          // Disconnect server
+          await manager.disconnectServer(body.id);
+        }
+      } else if (server.status === 'connected') {
+        // If other settings changed and server is connected, reconnect
+        await manager.disconnectServer(body.id);
+        try {
+          await manager.connectServer(body.id);
+        } catch (error) {
+          console.warn(`Failed to reconnect server ${data.name}:`, error);
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      server: data,
+    });
+  } catch (error: any) {
+    console.error('Error updating server:', error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update server',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/mcp/servers
+ * Delete an MCP server configuration
+ *
+ * Query parameter: id
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const serverId = searchParams.get('id');
+
+    if (!serverId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Server ID is required',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Remove from manager first
+    const manager = getMCPServerManager();
+    try {
+      await manager.removeServer(serverId);
+    } catch (error) {
+      console.warn('Server not in manager:', error);
+    }
+
+    // Delete from database
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { error } = await supabase
+      .from('mcp_servers')
+      .delete()
+      .eq('id', serverId);
+
+    if (error) throw error;
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      message: `Server ${serverId} deleted successfully`,
+    });
+  } catch (error: any) {
+    console.error('Error deleting server:', error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to delete server',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}
