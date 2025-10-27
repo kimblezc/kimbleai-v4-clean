@@ -9,6 +9,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import D20Dice from '../components/D20Dice';
 import UnifiedSearch from '../components/search/UnifiedSearch';
 import KimbleAILogo from '../components/KimbleAILogo';
+import { ModelSelector, type AIModel } from '../components/model-selector/ModelSelector';
 import versionData from '../version.json';
 
 // Dynamic version info - commit hash auto-generated from Vercel environment
@@ -101,6 +102,10 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<'date-new' | 'date-old' | 'name' | 'count'>('date-new');
   const [showManageTags, setShowManageTags] = useState(false);
   const newChatButtonRef = React.useRef<HTMLButtonElement>(null);
+
+  // AI Model Selection
+  const [selectedModel, setSelectedModel] = useState<AIModel>('gpt-4o');
+  const [showModelSelector, setShowModelSelector] = useState(false);
 
   // Helper function to group conversations by date
   // UPDATED: Now separates pinned conversations into a separate group
@@ -1689,7 +1694,8 @@ export default function Home() {
           messages: newMessages,
           userId: currentUser,
           projectId: currentProject,
-          conversationId: currentConversationId || `conv_${Date.now()}`
+          conversationId: currentConversationId || `conv_${Date.now()}`,
+          preferredModel: selectedModel
         }),
       });
 
@@ -1976,6 +1982,52 @@ export default function Home() {
             <option value="zach">🎲 Zachary (DM)</option>
             <option value="rebecca">✨ Rebecca (Player)</option>
           </select>
+        </div>
+
+        {/* AI Model Selector Button */}
+        <div style={{ marginBottom: '16px' }}>
+          <button
+            onClick={() => setShowModelSelector(!showModelSelector)}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              color: '#ffffff',
+              fontSize: '13px',
+              fontWeight: '600',
+              outline: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#333';
+              e.currentTarget.style.borderColor = '#666';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#2a2a2a';
+              e.currentTarget.style.borderColor = '#444';
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {selectedModel.startsWith('gpt') ? '⚡' : '🧠'}
+              <span>{
+                selectedModel === 'gpt-4o' ? 'GPT-4o' :
+                selectedModel === 'gpt-4o-mini' ? 'GPT-4o mini' :
+                selectedModel === 'claude-opus-4-1' ? 'Claude Opus 4.1' :
+                selectedModel === 'claude-sonnet-4-5' ? 'Claude Sonnet 4.5' :
+                selectedModel === 'claude-haiku-4-5' ? 'Claude Haiku 4.5' :
+                selectedModel === 'claude-3-5-haiku' ? 'Claude 3.5 Haiku' :
+                selectedModel === 'claude-3-haiku' ? 'Claude 3 Haiku' :
+                selectedModel
+              }</span>
+            </span>
+            <span style={{ fontSize: '10px', color: '#888' }}>▼</span>
+          </button>
         </div>
 
         {/* New Chat Button - UPDATED: Added ref and keyboard shortcut hint */}
@@ -3268,6 +3320,50 @@ export default function Home() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
+          {/* Active Model Indicator */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '12px',
+            padding: '8px 12px',
+            backgroundColor: '#0a0a0a',
+            borderRadius: '8px',
+            border: '1px solid #333',
+            fontSize: '12px',
+            color: '#888'
+          }}>
+            <span style={{ fontSize: '16px' }}>
+              {selectedModel.startsWith('gpt') ? '⚡' : '🧠'}
+            </span>
+            <span style={{ color: '#aaa', fontWeight: '500' }}>
+              Using:
+            </span>
+            <span style={{
+              color: selectedModel.startsWith('gpt') ? '#10b981' : '#a855f7',
+              fontWeight: '600'
+            }}>
+              {
+                selectedModel === 'gpt-4o' ? 'GPT-4o' :
+                selectedModel === 'gpt-4o-mini' ? 'GPT-4o mini' :
+                selectedModel === 'claude-opus-4-1' ? 'Claude Opus 4.1' :
+                selectedModel === 'claude-sonnet-4-5' ? 'Claude Sonnet 4.5' :
+                selectedModel === 'claude-haiku-4-5' ? 'Claude Haiku 4.5' :
+                selectedModel === 'claude-3-5-haiku' ? 'Claude 3.5 Haiku' :
+                selectedModel === 'claude-3-haiku' ? 'Claude 3 Haiku' :
+                selectedModel
+              }
+            </span>
+            <span style={{
+              marginLeft: 'auto',
+              fontSize: '11px',
+              color: '#666',
+              fontStyle: 'italic'
+            }}>
+              {selectedModel.startsWith('gpt') ? 'OpenAI' : 'Anthropic'}
+            </span>
+          </div>
+
           {/* Drag overlay indicator */}
           {isDragging && (
             <div style={{
@@ -3835,6 +3931,85 @@ export default function Home() {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Model Selector Modal */}
+      {showModelSelector && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(4px)',
+            padding: '20px'
+          }}
+          onClick={() => setShowModelSelector(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#0f0f0f',
+              border: '1px solid #333',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '1200px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{
+                margin: 0,
+                fontSize: '24px',
+                fontWeight: 'bold',
+                background: 'linear-gradient(to right, #a855f7, #ec4899)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                Select AI Model
+              </h2>
+              <button
+                onClick={() => setShowModelSelector(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#888',
+                  fontSize: '28px',
+                  cursor: 'pointer',
+                  padding: '0',
+                  lineHeight: '1',
+                  transition: 'color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#888'}
+              >
+                ×
+              </button>
+            </div>
+            <ModelSelector
+              selectedModel={selectedModel}
+              onSelect={(model) => {
+                setSelectedModel(model);
+                setShowModelSelector(false);
+              }}
+              estimatedTokens={{ input: 1000, output: 500 }}
+            />
           </div>
         </div>
       )}

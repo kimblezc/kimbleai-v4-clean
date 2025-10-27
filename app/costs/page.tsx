@@ -97,17 +97,25 @@ export default function CostsPage() {
     <div style={{ minHeight: '100vh', backgroundColor: '#0f0f0f', color: '#fff', padding: '2rem' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Cost Monitoring</h1>
             <p style={{ color: '#9ca3af' }}>Real-time API usage and budget tracking</p>
           </div>
-          <button
-            onClick={() => window.location.href = '/'}
-            style={{ padding: '0.5rem 1rem', backgroundColor: '#374151', border: '1px solid #4b5563', borderRadius: '0.375rem', color: '#fff', cursor: 'pointer' }}
-          >
-            ← Back
-          </button>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              onClick={() => window.location.href = '/costs/models'}
+              style={{ padding: '0.5rem 1rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '0.375rem', color: '#fff', cursor: 'pointer', fontWeight: '600' }}
+            >
+              Model Comparison
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              style={{ padding: '0.5rem 1rem', backgroundColor: '#374151', border: '1px solid #4b5563', borderRadius: '0.375rem', color: '#fff', cursor: 'pointer' }}
+            >
+              ← Back
+            </button>
+          </div>
         </div>
 
         {error && (

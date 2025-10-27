@@ -3,14 +3,15 @@
 /**
  * Model Selector Component
  *
- * Allows users to choose between GPT-4 and Claude models with
+ * Allows users to choose between GPT-5, GPT-4, and Claude models with
  * real-time cost comparison and capability visualization.
  *
  * Features:
- * - GPT-4o / GPT-4o mini
+ * - GPT-5 (Full, Medium, Low, Mini, Nano) - Latest OpenAI models with advanced reasoning
+ * - GPT-4o / GPT-4o mini - Vision and multimodal capabilities
  * - Claude Opus 4.1 / Sonnet 4.5 / Haiku 4.5 / Haiku 3.5 / Haiku 3
- * - Real-time cost comparison
- * - Capability ratings (speed, quality, cost)
+ * - Real-time cost comparison across all 12 models
+ * - Capability ratings (speed, quality, reasoning, coding)
  * - Automatic model recommendations
  * - Dark D&D themed design
  */
@@ -21,6 +22,11 @@ import { Button } from '@/components/ui/button-shadcn';
 import { Zap, Brain, DollarSign, Star, TrendingUp, Check } from 'lucide-react';
 
 export type AIModel =
+  | 'gpt-5'
+  | 'gpt-5-medium'
+  | 'gpt-5-low'
+  | 'gpt-5-mini'
+  | 'gpt-5-nano'
   | 'gpt-4o'
   | 'gpt-4o-mini'
   | 'claude-opus-4-1'
@@ -50,11 +56,66 @@ interface ModelInfo {
 }
 
 const MODELS: Record<AIModel, ModelInfo> = {
+  'gpt-5': {
+    id: 'gpt-5',
+    name: 'GPT-5',
+    provider: 'OpenAI',
+    description: 'Most advanced GPT model with maximum reasoning capabilities',
+    pricing: { input: 1.25, output: 10 },
+    capabilities: { speed: 7, quality: 10, reasoning: 10, coding: 10 },
+    bestFor: ['Complex reasoning', 'Advanced analysis', 'Research', 'Strategic planning'],
+    icon: '🚀',
+    color: 'from-blue-600 to-cyan-600',
+  },
+  'gpt-5-medium': {
+    id: 'gpt-5-medium',
+    name: 'GPT-5 Medium',
+    provider: 'OpenAI',
+    description: 'GPT-5 with medium reasoning for balanced performance',
+    pricing: { input: 1.0, output: 8 },
+    capabilities: { speed: 8, quality: 9, reasoning: 9, coding: 9 },
+    bestFor: ['Code generation', 'Technical writing', 'Project planning'],
+    icon: '⚡',
+    color: 'from-blue-500 to-cyan-500',
+  },
+  'gpt-5-low': {
+    id: 'gpt-5-low',
+    name: 'GPT-5 Low',
+    provider: 'OpenAI',
+    description: 'GPT-5 with low reasoning for faster responses',
+    pricing: { input: 0.75, output: 6 },
+    capabilities: { speed: 9, quality: 8, reasoning: 8, coding: 8 },
+    bestFor: ['General chat', 'Quick questions', 'Creative writing'],
+    icon: '💨',
+    color: 'from-blue-400 to-cyan-400',
+  },
+  'gpt-5-mini': {
+    id: 'gpt-5-mini',
+    name: 'GPT-5 Mini',
+    provider: 'OpenAI',
+    description: 'Faster, cost-effective GPT-5 variant',
+    pricing: { input: 0.3, output: 3 },
+    capabilities: { speed: 10, quality: 8, reasoning: 7, coding: 8 },
+    bestFor: ['Routine tasks', 'File processing', 'Quick answers'],
+    icon: '⚡',
+    color: 'from-blue-300 to-cyan-300',
+  },
+  'gpt-5-nano': {
+    id: 'gpt-5-nano',
+    name: 'GPT-5 Nano',
+    provider: 'OpenAI',
+    description: 'Lightweight GPT-5 for simple tasks',
+    pricing: { input: 0.1, output: 1 },
+    capabilities: { speed: 10, quality: 7, reasoning: 6, coding: 7 },
+    bestFor: ['Categorization', 'Simple extraction', 'Basic chat'],
+    icon: '💡',
+    color: 'from-blue-200 to-cyan-200',
+  },
   'gpt-4o': {
     id: 'gpt-4o',
     name: 'GPT-4o',
     provider: 'OpenAI',
-    description: 'Most capable GPT model with vision and real-time capabilities',
+    description: 'Most capable GPT-4 model with vision and real-time capabilities',
     pricing: { input: 2.5, output: 10 },
     capabilities: { speed: 8, quality: 9, reasoning: 9, coding: 9 },
     bestFor: ['Multimodal tasks', 'Vision analysis', 'Real-time chat'],

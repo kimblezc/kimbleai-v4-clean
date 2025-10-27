@@ -896,6 +896,36 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
 
     console.log(`[CostMonitor] Tracked chat API call: ${isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model} - $${cost.toFixed(4)} (${inputTokens} in + ${outputTokens} out)`);
 
+    // PERFORMANCE TRACKING: Track model performance metrics
+    const responseTime = openaiEndTime - openaiStartTime;
+    const taskTypes = taskContext ? ModelSelector['detectTaskType'](taskContext) : ['general_chat'];
+    const complexity = taskContext ? ModelSelector['analyzeComplexity'](taskContext.messageContent) : 'medium';
+
+    try {
+      await supabase.from('model_performance_metrics').insert({
+        model: isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model,
+        provider: isClaudeModel ? 'anthropic' : 'openai',
+        task_type: taskTypes[0] || 'general_chat',
+        task_complexity: complexity,
+        response_time_ms: responseTime,
+        tokens_used: inputTokens + outputTokens,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        success: true,
+        conversation_id: conversationId,
+        user_id: userData.id,
+        metadata: {
+          task_types: taskTypes,
+          has_function_calls: false,
+          reasoning_level: selectedModel.reasoningLevel || 'none',
+        },
+      });
+      console.log(`[PerformanceTracking] Logged metrics: ${responseTime}ms, ${taskTypes[0]}, ${complexity}`);
+    } catch (perfError) {
+      console.error('[PerformanceTracking] Failed to log metrics:', perfError);
+      // Don't fail the request if performance tracking fails
+    }
+
     // Handle function calls if the AI wants to call Gmail/Drive functions (OpenAI only for now)
     const toolCalls = !isClaudeModel && completion ? completion.choices[0].message.tool_calls : null;
     if (toolCalls && toolCalls.length > 0) {
