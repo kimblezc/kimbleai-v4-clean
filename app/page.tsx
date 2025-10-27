@@ -570,14 +570,13 @@ export default function Home() {
     }
 
     try {
-      // Call the API to properly delete the project from database
-      const response = await fetch('/api/projects', {
+      // FIXED: Call the dedicated deletion endpoint that handles conversation reassignment
+      const response = await fetch('/api/projects/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'delete',
-          userId: currentUser,
-          projectData: { id: projectId }
+          projectId: projectId,
+          userId: currentUser
         })
       });
 
@@ -596,7 +595,7 @@ export default function Home() {
         // Reload conversations to get updated data from server
         setTimeout(() => loadConversations(), 200);
 
-        alert(`Project "${projectName}" deleted successfully!\n${data.conversationsMoved} conversations moved to unassigned.`);
+        alert(`Project "${projectName}" deleted successfully!\n${data.conversationsMoved || 0} conversations moved to unassigned.`);
       } else {
         throw new Error(data.error || 'Failed to delete project');
       }
@@ -607,9 +606,15 @@ export default function Home() {
   };
 
   // Function to restore deleted projects (for debugging)
+  // NOTE: This function is deprecated - projects are now managed in database
+  // Kept for backward compatibility with old localStorage entries
   const restoreDeletedProjects = () => {
-    setDeletedProjects(new Set());
+    // Clean up any old localStorage entries from previous deletion tracking system
     localStorage.removeItem(`kimbleai_deleted_projects_${currentUser}`);
+    localStorage.removeItem(`kimbleai_created_projects_${currentUser}`);
+
+    // Reload data from database (single source of truth)
+    loadProjects();
     loadConversations();
   };
 
