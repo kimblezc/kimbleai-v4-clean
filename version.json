@@ -1,6 +1,6 @@
 {
-  "version": "6.0.0",
-  "commit": "auto",
-  "lastUpdated": "2025-10-27T15:00:00.000Z",
-  "changelog": "🎊 ALL 6 PHASES COMPLETE: Multi-Model AI (12 models), Family Intelligence Hub, Integration Hub, Cost Analytics, Performance Tracking, MCP Integration, Voice Interface, Archie Transparency - Full Production System Ready"
+  "version": "6.0.1",
+  "commit": "3036d81",
+  "lastUpdated": "2025-10-27T16:45:00.000Z",
+  "changelog": "🔧 Bug Fix: Project deletion now works correctly + Added task completion documentation rule to claude.md"
 }
