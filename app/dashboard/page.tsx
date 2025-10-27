@@ -6,6 +6,7 @@ import { StatCard, ProjectCard } from '../../components/ui/Card';
 import { Button, ButtonGroup } from '../../components/ui/Button';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from '../../components/LoadingScreen';
+import TimeZoneDisplay from '@/components/TimeZoneDisplay';
 
 interface DashboardStats {
   totalProjects: number;
@@ -96,6 +97,11 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {/* Time Zone Display */}
+        <div className="flex justify-center mb-4">
+          <TimeZoneDisplay />
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

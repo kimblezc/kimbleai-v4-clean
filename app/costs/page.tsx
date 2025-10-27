@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import TimeZoneDisplay from '@/components/TimeZoneDisplay';
 
 interface CostStats {
   hourly: { used: number; limit: number; percentage: number };
@@ -96,6 +97,11 @@ export default function CostsPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f0f0f', color: '#fff', padding: '2rem' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Time Zone Display */}
+        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+          <TimeZoneDisplay />
+        </div>
+
         {/* Header */}
         <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>

@@ -10,6 +10,7 @@ import D20Dice from '../components/D20Dice';
 import UnifiedSearch from '../components/search/UnifiedSearch';
 import KimbleAILogo from '../components/KimbleAILogo';
 import { ModelSelector, type AIModel } from '../components/model-selector/ModelSelector';
+import TimeZoneDisplay from '../components/TimeZoneDisplay';
 import versionData from '../version.json';
 
 // Dynamic version info - commit hash auto-generated from Vercel environment
@@ -2999,6 +3000,16 @@ export default function Home() {
             }}>
               KimbleAI
             </span>
+          </div>
+
+          {/* Time Zone Display - Below Logo */}
+          <div style={{
+            position: 'absolute',
+            left: '24px',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <TimeZoneDisplay />
           </div>
 
           {/* System Status & Cost Monitor - Top Right */}
