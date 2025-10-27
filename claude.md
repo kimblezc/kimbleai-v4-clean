@@ -51,3 +51,47 @@ Without centralized visibility, agents can:
 - Fail silently without alerting the team
 
 Archie's dashboard provides a single pane of glass for monitoring all autonomous activity, ensuring transparency and accountability in the AI-driven workflow.
+
+---
+
+## Task Completion Documentation
+
+**Rule: Always Include Version and Commit Information**
+
+When completing any task (either in Claude Code or at kimbleai.com), ALWAYS include:
+
+### Required Information:
+1. **Current Version** - The version number from `version.json` or `package.json`
+2. **Commit Hash** - The git commit hash (short form: first 7 characters)
+3. **What Changed** - Brief description of the changes made
+4. **Status** - Whether it's committed, deployed, or pending
+
+### Format Example:
+```
+✅ Task completed
+Version: v6.0.1
+Commit: f0370be
+Changes: Fixed project deletion endpoint to actually delete records
+Status: Deployed to https://kimbleai.com
+```
+
+### When to Include:
+- At the end of any feature implementation
+- When fixing bugs
+- After deploying to production
+- When creating or updating documentation
+- During code reviews or testing
+
+### Rationale:
+This practice ensures:
+- **Traceability**: Every change can be traced to a specific commit
+- **Version Control**: Clear understanding of what version includes which features
+- **Debugging**: Easy to identify when a feature was added or bug was fixed
+- **Documentation**: Automatic creation of change log
+- **Accountability**: Clear record of all modifications
+
+### Version Numbering:
+Follow semantic versioning (MAJOR.MINOR.PATCH):
+- **MAJOR**: Breaking changes or complete phase completions
+- **MINOR**: New features, non-breaking changes
+- **PATCH**: Bug fixes, small improvements
