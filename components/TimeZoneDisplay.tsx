@@ -24,9 +24,9 @@ export default function TimeZoneDisplay() {
   };
 
   const timeZones = [
-    { name: 'CET', zone: 'Europe/Paris', color: 'text-blue-400' },
-    { name: 'EST', zone: 'America/New_York', color: 'text-green-400' },
-    { name: 'PST', zone: 'America/Los_Angeles', color: 'text-purple-400' }
+    { name: 'Germany', zone: 'Europe/Paris', color: 'text-blue-400' },
+    { name: 'NC', zone: 'America/New_York', color: 'text-green-400' },
+    { name: 'Nevada', zone: 'America/Los_Angeles', color: 'text-purple-400' }
   ];
 
   return (
