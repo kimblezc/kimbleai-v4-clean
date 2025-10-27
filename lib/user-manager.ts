@@ -249,7 +249,19 @@ export class UserManager {
    */
   async hasPermission(userId: string, permission: keyof User['permissions']): Promise<boolean> {
     const user = await this.getUser(userId);
-    if (!user) return false;
+
+    // FALLBACK: If users table doesn't exist yet, grant admin permissions to Zach
+    if (!user) {
+      // Grant full permissions to Zach (admin) until users table is migrated
+      if (userId === 'zach' || userId === 'zach-admin-001' || userId.toLowerCase() === 'zach') {
+        return true; // Zach has all permissions
+      }
+      // Grant create permission to Rebecca, but not delete/admin permissions
+      if (userId === 'rebecca' || userId.toLowerCase() === 'rebecca') {
+        return permission === 'can_create_projects';
+      }
+      return false;
+    }
 
     return user.permissions[permission] === true;
   }
