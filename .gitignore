@@ -92,3 +92,4 @@ postgresql-18.0-2-windows-x64.exe
 
 # Archie backup files
 .archie-backups/
+nul
