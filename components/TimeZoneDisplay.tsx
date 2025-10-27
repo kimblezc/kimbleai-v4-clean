@@ -26,7 +26,7 @@ export default function TimeZoneDisplay() {
   const timeZones = [
     { name: 'Germany', zone: 'Europe/Paris', color: 'text-blue-400' },
     { name: 'NC', zone: 'America/New_York', color: 'text-green-400' },
-    { name: 'Nevada', zone: 'America/Los_Angeles', color: 'text-purple-400' }
+    { name: 'NV', zone: 'America/Los_Angeles', color: 'text-purple-400' }
   ];
 
   return (
