@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS session_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
   -- Session metadata
   session_id TEXT NOT NULL UNIQUE,
@@ -88,19 +88,19 @@ ALTER TABLE session_logs ENABLE ROW LEVEL SECURITY;
 
 -- Users can only see their own sessions
 CREATE POLICY session_logs_select_own ON session_logs
-  FOR SELECT USING (user_id = current_setting('app.user_id', true)::TEXT);
+  FOR SELECT USING (user_id = current_setting('app.user_id', true)::UUID);
 
 -- Users can only insert their own sessions
 CREATE POLICY session_logs_insert_own ON session_logs
-  FOR INSERT WITH CHECK (user_id = current_setting('app.user_id', true)::TEXT);
+  FOR INSERT WITH CHECK (user_id = current_setting('app.user_id', true)::UUID);
 
 -- Users can only update their own sessions
 CREATE POLICY session_logs_update_own ON session_logs
-  FOR UPDATE USING (user_id = current_setting('app.user_id', true)::TEXT);
+  FOR UPDATE USING (user_id = current_setting('app.user_id', true)::UUID);
 
 -- Users can only delete their own sessions
 CREATE POLICY session_logs_delete_own ON session_logs
-  FOR DELETE USING (user_id = current_setting('app.user_id', true)::TEXT);
+  FOR DELETE USING (user_id = current_setting('app.user_id', true)::UUID);
 
 -- Comments for documentation
 COMMENT ON TABLE session_logs IS 'Stores Claude Code session logs for seamless platform switching';
