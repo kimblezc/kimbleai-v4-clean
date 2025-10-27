@@ -571,12 +571,13 @@ export default function Home() {
 
     try {
       // Call the API to properly delete the project from database
-      const response = await fetch('/api/projects/delete', {
+      const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId,
-          userId: currentUser
+          action: 'delete',
+          userId: currentUser,
+          projectData: { id: projectId }
         })
       });
 

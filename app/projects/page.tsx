@@ -113,17 +113,27 @@ export default function ProjectsPage() {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      const response = await fetch('/api/projects/delete', {
+      // Use the proper REST endpoint that actually deletes the project record
+      const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, userId: 'zach' }),
+        body: JSON.stringify({
+          action: 'delete',
+          userId: 'zach-admin-001',
+          projectData: { id: projectId }
+        }),
       });
 
       if (response.ok) {
         loadProjects();
+      } else {
+        const data = await response.json();
+        console.error('Delete failed:', data.error);
+        alert(`Failed to delete project: ${data.error}`);
       }
     } catch (error) {
       console.error('Failed to delete project:', error);
+      alert('Failed to delete project. Please try again.');
     }
   };
 
