@@ -10,7 +10,7 @@
  */
 
 import { getMCPServerManager } from './mcp-server-manager';
-import { broadcastActivity } from '../activity-stream';
+import { activityStream } from '../activity-stream';
 import type {
   ToolInvocationRequest,
   ToolInvocationResult,
@@ -92,11 +92,12 @@ export class MCPToolExecutor {
         0
       );
 
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Tool Executor',
         category: 'system',
         level: 'info',
         message: `Discovered ${totalTools} tools across ${results.length} MCP servers`,
-        context: {
+        metadata: {
           serversWithTools: results.length,
           totalTools,
         },
@@ -202,11 +203,12 @@ export class MCPToolExecutor {
 
         // Broadcast error
         if (this.config.broadcastActivity) {
-          await broadcastActivity({
+          activityStream.broadcast({
+            agent: 'MCP Tool Executor',
             category: 'system',
             level: 'error',
             message: `Tool not found: ${request.toolName}`,
-            context: {
+            metadata: {
               toolName: request.toolName,
             },
           });
@@ -228,11 +230,12 @@ export class MCPToolExecutor {
 
     // Broadcast invocation start
     if (this.config.broadcastActivity) {
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Tool Executor',
         category: 'task_processing',
         level: 'info',
         message: `Invoking MCP tool: ${request.toolName}`,
-        context: {
+        metadata: {
           toolName: request.toolName,
           serverId,
         },
@@ -252,13 +255,14 @@ export class MCPToolExecutor {
 
     // Broadcast result
     if (this.config.broadcastActivity) {
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Tool Executor',
         category: 'task_processing',
         level: result.success ? 'info' : 'error',
         message: result.success
           ? `Tool invocation completed: ${request.toolName}`
           : `Tool invocation failed: ${request.toolName}`,
-        context: {
+        metadata: {
           toolName: request.toolName,
           serverId,
           success: result.success,

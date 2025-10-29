@@ -43,7 +43,7 @@ foreach ($varName in $requiredVars) {
     if ($envVars.ContainsKey($varName)) {
         $value = $envVars[$varName]
         Write-Host "  Setting $varName..." -ForegroundColor Gray
-        & railway variables set "$varName=$value"
+        & railway variables --set "$varName=$value"
     } else {
         Write-Host "  ⚠️  Warning: $varName not found in .env.production" -ForegroundColor Yellow
     }
@@ -51,7 +51,7 @@ foreach ($varName in $requiredVars) {
 
 # Set additional Railway-specific variables
 Write-Host "  Setting NODE_ENV..." -ForegroundColor Gray
-& railway variables set "NODE_ENV=production"
+& railway variables --set "NODE_ENV=production"
 
 Write-Host ""
 Write-Host "✅ Environment variables set successfully!" -ForegroundColor Green
