@@ -66,8 +66,21 @@ export async function GET(request: NextRequest) {
     // Get runtime state from manager
     console.log('[MCP-LIST] Getting runtime state from manager...');
     const manager = getMCPServerManager();
-    const runtimeServers = manager.getAllServers();
-    console.log('[MCP-LIST] Runtime servers:', runtimeServers.length);
+
+    // Check if manager needs initialization (serverless cold start)
+    let runtimeServers = manager.getAllServers();
+    if (runtimeServers.length === 0 && data && data.length > 0) {
+      console.log('[MCP-LIST] Manager empty but DB has servers, initializing...');
+      try {
+        await manager.initialize();
+        runtimeServers = manager.getAllServers();
+        console.log('[MCP-LIST] Manager initialized with', runtimeServers.length, 'servers');
+      } catch (initError: any) {
+        console.warn('[MCP-LIST] Manager initialization warning:', initError.message);
+      }
+    } else {
+      console.log('[MCP-LIST] Runtime servers:', runtimeServers.length);
+    }
 
     // Merge database records with runtime state
     const servers = (data as MCPServerRecord[]).map((record) => {
@@ -244,6 +257,21 @@ export async function POST(request: NextRequest) {
     if (data.enabled) {
       console.log('[MCP-INSTALL] Server is enabled, adding to manager...');
       const manager = getMCPServerManager();
+
+      // Check if manager is initialized (has servers loaded)
+      const existingServers = manager.getAllServers();
+      console.log('[MCP-INSTALL] Manager has', existingServers.length, 'servers currently');
+
+      // If manager is empty, it needs initialization (serverless cold start)
+      if (existingServers.length === 0) {
+        console.log('[MCP-INSTALL] Manager is empty, initializing...');
+        try {
+          await manager.initialize();
+          console.log('[MCP-INSTALL] Manager initialized successfully');
+        } catch (initError: any) {
+          console.warn('[MCP-INSTALL] Manager initialization warning:', initError.message);
+        }
+      }
       const config: MCPServerConfig = {
         id: data.id,
         name: data.name,
