@@ -1,6 +1,9 @@
 /**
  * Fix MCP Server Arguments
  * One-time endpoint to add required directory path for filesystem server
+ *
+ * WARNING: This endpoint is intentionally unauthenticated for initial setup.
+ * Remove or protect after MCP is working.
  */
 
 import { NextResponse } from 'next/server';
@@ -12,6 +15,7 @@ const supabase = createClient(
 );
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST() {
   try {
