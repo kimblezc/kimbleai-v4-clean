@@ -31,19 +31,100 @@ export const metadata = {
 
 async function getAgentOverview() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/archie/overview`,
-      {
-        cache: 'no-store',
-        next: { revalidate: 0 }
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Fetch data directly from Supabase (avoid network fetch during build)
+    const [
+      archieActiveTasksResult,
+      archieTodayTasksResult,
+      archieCompletedTodayResult,
+      archieFailedResult,
+      butlerActivityResult,
+      sessionsTodayResult,
+      activeSessionResult,
+      recentErrorsResult
+    ] = await Promise.all([
+      supabase.from('agent_tasks').select('*', { count: 'exact', head: true }).in('status', ['pending', 'in_progress']),
+      supabase.from('agent_tasks').select('*', { count: 'exact', head: true }).gte('created_at', oneDayAgo.toISOString()),
+      supabase.from('agent_tasks').select('*', { count: 'exact', head: true }).eq('status', 'completed').gte('completed_at', oneDayAgo.toISOString()),
+      supabase.from('agent_tasks').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
+      supabase.from('agent_logs').select('*', { count: 'exact', head: true }).ilike('activity', '%reference%').gte('timestamp', oneDayAgo.toISOString()),
+      supabase.from('session_logs').select('*', { count: 'exact', head: true }).gte('started_at', oneDayAgo.toISOString()),
+      supabase.from('session_logs').select('*').is('ended_at', null).order('started_at', { ascending: false }).limit(1).single(),
+      supabase.from('agent_logs').select('*', { count: 'exact', head: true }).in('log_level', ['error', 'critical']).gte('timestamp', oneDayAgo.toISOString())
+    ]);
+
+    // Determine agent statuses
+    const archieStatus = archieActiveTasksResult.count! > 0 ? 'active' : 'idle';
+    const butlerStatus = butlerActivityResult.count! > 0 ? 'active' : 'idle';
+    const sessionStatus = activeSessionResult.data ? 'active' : 'idle';
+    const mcpStatus = 'disabled'; // MCP requires API call, skip for now
+
+    return {
+      success: true,
+      timestamp: now.toISOString(),
+      agents: {
+        archie: {
+          name: 'Archie',
+          icon: '🤖',
+          description: 'Autonomous Task Agent',
+          status: archieStatus,
+          currentActivity: archieActiveTasksResult.count! > 0 ? `Processing ${archieActiveTasksResult.count} task${archieActiveTasksResult.count === 1 ? '' : 's'}` : undefined,
+          metrics: [
+            { label: 'Active Tasks', value: archieActiveTasksResult.count || 0, trend: 'neutral' as const },
+            { label: 'Completed Today', value: archieCompletedTodayResult.count || 0, trend: 'up' as const },
+            { label: 'Failed', value: archieFailedResult.count || 0, trend: archieFailedResult.count! > 0 ? 'down' as const : 'neutral' as const },
+            { label: 'Tasks Today', value: archieTodayTasksResult.count || 0, trend: 'neutral' as const }
+          ],
+          detailsUrl: '/archie/tasks',
+          error: archieFailedResult.count! > 0 ? `${archieFailedResult.count} failed tasks need attention` : undefined
+        },
+        butler: {
+          name: 'AutoReferenceButler',
+          icon: '📚',
+          description: 'Reference Management',
+          status: butlerStatus,
+          currentActivity: butlerActivityResult.count! > 0 ? `Referenced ${butlerActivityResult.count} items today` : undefined,
+          metrics: [
+            { label: 'References Today', value: butlerActivityResult.count || 0, trend: 'neutral' as const },
+            { label: 'Status', value: 'Monitoring', trend: 'neutral' as const }
+          ],
+          detailsUrl: '/archie/references'
+        },
+        sessions: {
+          name: 'Session Logger',
+          icon: '🔄',
+          description: 'Device Switching',
+          status: sessionStatus,
+          currentActivity: activeSessionResult.data ? `Active on ${activeSessionResult.data.device_name}` : undefined,
+          metrics: [
+            { label: 'Sessions Today', value: sessionsTodayResult.count || 0, trend: 'neutral' as const },
+            { label: 'Current Device', value: activeSessionResult.data?.device_name || 'None', trend: 'neutral' as const }
+          ],
+          detailsUrl: '/sessions'
+        },
+        mcp: {
+          name: 'MCP Servers',
+          icon: '🔌',
+          description: 'Model Context Protocol',
+          status: mcpStatus,
+          metrics: [
+            { label: 'Connected', value: 0, trend: 'neutral' as const },
+            { label: 'Total Servers', value: 0, trend: 'neutral' as const },
+            { label: 'Available Tools', value: 0, trend: 'neutral' as const },
+            { label: 'Resources', value: 0, trend: 'neutral' as const }
+          ],
+          detailsUrl: '/archie/mcp'
+        }
+      },
+      systemHealth: {
+        healthy: recentErrorsResult.count! === 0,
+        errors24h: recentErrorsResult.count || 0,
+        activeAgents: [archieStatus === 'active', butlerStatus === 'active', sessionStatus === 'active'].filter(Boolean).length,
+        totalAgents: 4
       }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch agent overview');
-    }
-
-    return await response.json();
+    };
   } catch (error) {
     console.error('[Agent Command Center] Error fetching overview:', error);
     return null;
