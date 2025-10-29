@@ -1,6 +1,6 @@
 {
-  "version": "6.0.4",
-  "commit": "5da98da",
-  "lastUpdated": "2025-10-29T05:20:00.000Z",
-  "changelog": "📋 Documentation: Added deployment verification tracking to CLAUDE.md with mandatory version/commit checkpoints"
+  "version": "6.0.5",
+  "commit": "[pending]",
+  "lastUpdated": "2025-10-29T05:35:00.000Z",
+  "changelog": "🐛 Fix: Project deletion now properly cascades to delete related tasks, collaborators, and update conversations"
 }

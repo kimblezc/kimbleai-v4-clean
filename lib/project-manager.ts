@@ -159,23 +159,69 @@ export class ProjectManager {
   }
 
   /**
-   * Delete a project
+   * Delete a project with cascade (deletes related records first)
    */
   async deleteProject(projectId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
+      console.log(`[ProjectManager] Starting deletion of project: ${projectId}`);
+
+      // Step 1: Delete related project_tasks
+      const { error: tasksError } = await supabase
+        .from('project_tasks')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (tasksError) {
+        console.error('[ProjectManager] Error deleting project tasks:', tasksError);
+        // Continue anyway - tasks might not exist
+      } else {
+        console.log('[ProjectManager] Deleted project tasks');
+      }
+
+      // Step 2: Delete related project_collaborators
+      const { error: collaboratorsError } = await supabase
+        .from('project_collaborators')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (collaboratorsError) {
+        console.error('[ProjectManager] Error deleting project collaborators:', collaboratorsError);
+        // Continue anyway
+      } else {
+        console.log('[ProjectManager] Deleted project collaborators');
+      }
+
+      // Step 3: Update conversations to remove project_id (set to null instead of deleting)
+      const { error: conversationsError } = await supabase
+        .from('conversations')
+        .update({ project_id: null })
+        .eq('project_id', projectId);
+
+      if (conversationsError) {
+        console.error('[ProjectManager] Error updating conversations:', conversationsError);
+        // Continue anyway
+      } else {
+        console.log('[ProjectManager] Updated conversations (removed project_id)');
+      }
+
+      // Step 4: Finally delete the project itself
+      const { error: projectError } = await supabase
         .from('projects')
         .delete()
         .eq('id', projectId);
 
-      if (error) {
-        console.error('Error deleting project:', error);
+      if (projectError) {
+        console.error('[ProjectManager] Error deleting project:', projectError);
+        console.error('[ProjectManager] Error code:', projectError.code);
+        console.error('[ProjectManager] Error details:', projectError.details);
+        console.error('[ProjectManager] Error hint:', projectError.hint);
         return false;
       }
 
+      console.log(`[ProjectManager] Successfully deleted project: ${projectId}`);
       return true;
     } catch (error) {
-      console.error('Failed to delete project:', error);
+      console.error('[ProjectManager] Failed to delete project:', error);
       return false;
     }
   }
