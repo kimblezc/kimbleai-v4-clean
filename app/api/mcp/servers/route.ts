@@ -26,10 +26,12 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('[MCP-LIST] Fetching MCP servers list');
     const { searchParams } = new URL(request.url);
     const enabledFilter = searchParams.get('enabled');
     const transportFilter = searchParams.get('transport');
     const tagFilter = searchParams.get('tag');
+    console.log('[MCP-LIST] Filters:', { enabledFilter, transportFilter, tagFilter });
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -48,13 +50,24 @@ export async function GET(request: NextRequest) {
       query = query.contains('tags', [tagFilter]);
     }
 
+    console.log('[MCP-LIST] Querying database...');
     const { data, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('[MCP-LIST] Database query failed');
+      console.error('[MCP-LIST] Error:', error);
+      console.error('[MCP-LIST] Error message:', error.message);
+      console.error('[MCP-LIST] Error code:', error.code);
+      throw error;
+    }
+
+    console.log('[MCP-LIST] Database query successful, found', data?.length || 0, 'servers');
 
     // Get runtime state from manager
+    console.log('[MCP-LIST] Getting runtime state from manager...');
     const manager = getMCPServerManager();
     const runtimeServers = manager.getAllServers();
+    console.log('[MCP-LIST] Runtime servers:', runtimeServers.length);
 
     // Merge database records with runtime state
     const servers = (data as MCPServerRecord[]).map((record) => {
@@ -103,6 +116,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    console.log('[MCP-LIST] Successfully merged data, returning', servers.length, 'servers');
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
@@ -112,7 +126,11 @@ export async function GET(request: NextRequest) {
       disconnected: servers.filter((s) => !s.isConnected).length,
     });
   } catch (error: any) {
-    console.error('Error fetching servers:', error);
+    console.error('[MCP-LIST] Failed to fetch servers');
+    console.error('[MCP-LIST] Error:', error);
+    console.error('[MCP-LIST] Error message:', error.message);
+    console.error('[MCP-LIST] Error stack:', error.stack);
+    console.error('[MCP-LIST] Error name:', error.name);
 
     return NextResponse.json(
       {

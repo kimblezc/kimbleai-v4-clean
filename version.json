@@ -1,6 +1,6 @@
 {
-  "version": "6.0.7",
-  "commit": "01cd251",
-  "lastUpdated": "2025-10-29T13:00:00.000Z",
-  "changelog": "🔍 Debug: Added comprehensive error logging for project deletion and MCP server installation endpoints"
+  "version": "6.0.8",
+  "commit": "pending",
+  "lastUpdated": "2025-10-29T13:15:00.000Z",
+  "changelog": "🔍 Debug: Added error logging to MCP servers GET endpoint to debug 500 error"
 }
