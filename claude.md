@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v6.0.9
-Latest Commit: fa7ff80
+Latest Version: v6.0.10
+Latest Commit: b8770c5
 Last Updated: 2025-10-29
 Status: 🚀 Deploying to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **b8770c5** (v6.0.10) - Fixed MCP manager timeouts by adding initializeWithoutConnect method
 - **fa7ff80** (v6.0.9) - Fixed MCP manager auto-initialization on serverless cold starts
 - **069cb1a** (v6.0.8) - Added error logging to MCP servers GET endpoint to debug 500 error
 - **755f924** (v6.0.7) - Added comprehensive error logging for project deletion and MCP installation debugging
