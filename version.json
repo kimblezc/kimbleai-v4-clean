@@ -1,6 +1,6 @@
 {
-  "version": "6.0.1",
-  "commit": "48bf251",
-  "lastUpdated": "2025-10-27T17:15:00.000Z",
-  "changelog": "🔧 Bug Fix: Project deletion permission fallback allows deletion before database migration"
+  "version": "6.0.3",
+  "commit": "a9b4ac0",
+  "lastUpdated": "2025-10-29T04:35:00.000Z",
+  "changelog": "✨ Feature: Agent Command Center with all 5 agents, Session Logger, /archie dashboard"
 }
