@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v6.0.6
-Latest Commit: 7ed63ae
+Latest Version: v6.0.7
+Latest Commit: 755f924
 Last Updated: 2025-10-29
-Status: ✅ Deployed to Production
+Status: 🚀 Deploying to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **755f924** (v6.0.7) - Added comprehensive error logging for project deletion and MCP installation debugging
 - **7ed63ae** (v6.0.6) - Fixed MCP filesystem server installation (process.cwd() browser error)
 - **94c34db** (v6.0.5) - Fixed project deletion with cascading deletes for related records
 - **24fa879** (v6.0.4) - Updated CLAUDE.md with final deployment status
