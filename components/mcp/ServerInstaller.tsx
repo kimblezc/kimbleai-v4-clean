@@ -51,7 +51,7 @@ const SERVER_TEMPLATES: ServerTemplate[] = [
     icon: '📁',
     transport: 'stdio',
     command: 'npx',
-    args: ['@modelcontextprotocol/server-filesystem'],
+    args: ['-y', '@modelcontextprotocol/server-filesystem', process.cwd()],
     capabilities: { tools: true, resources: true, prompts: false },
     priority: 9,
     tags: ['files', 'storage', 'local'],
