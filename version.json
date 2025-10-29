@@ -1,12 +1,21 @@
 {
   "version": "6.1.0",
-  "commit": "1b8a853",
-  "lastUpdated": "2025-10-29T08:56:00.000Z",
-  "changelog": "🚂 Railway Migration Complete: Live deployment with MCP stdio support - Fixed all build errors, configured environment, deployed successfully to https://kimbleai-production-efed.up.railway.app",
+  "commit": "000c9b3",
+  "lastUpdated": "2025-10-29T13:52:00.000Z",
+  "changelog": "✅ Railway Migration SUCCESS: MCP stdio transport fully operational - 3/3 servers connected (Filesystem, GitHub, Memory) via stdio child process spawning. Health checks passing. DNS propagating to kimbleai.com.",
   "platform": "Railway",
   "deployment": {
     "railwayUrl": "https://kimbleai-production-efed.up.railway.app",
+    "primaryDomain": "kimbleai.com",
     "projectId": "f0e9b8ac-8bea-4201-87c5-598979709394",
     "serviceId": "194fb05e-f9fe-4f9f-a023-3b49adf4bc66"
+  },
+  "mcpStatus": {
+    "transport": "stdio",
+    "serversConnected": 3,
+    "filesystemServer": "connected",
+    "githubServer": "connected",
+    "memoryServer": "connected",
+    "lastHealthCheck": "2025-10-29T14:52:32.000Z"
   }
 }
