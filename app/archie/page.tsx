@@ -166,34 +166,58 @@ export default async function AgentCommandCenter() {
 
       <div className="relative z-10">
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header Section */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-                  <span className="text-5xl">🎛️</span>
-                  Agent Command Center
-                </h1>
-                <p className="text-slate-400 text-lg">
-                  Unified monitoring and control for all autonomous agents
-                </p>
+          {/* Archie Overwatch Header */}
+          <div className="mb-12 text-center">
+            {/* Animated Owl with Glow */}
+            <div className="relative inline-block mb-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 via-emerald-500/30 to-teal-500/30 blur-3xl animate-pulse" />
+              <div className="relative text-9xl filter drop-shadow-2xl animate-float">
+                🦉
               </div>
+              {/* Active status pulse */}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full animate-ping" />
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full" />
+            </div>
 
-              {/* Quick Nav */}
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/archie/tasks"
-                  className="px-4 py-2 bg-indigo-600/20 border border-indigo-500/40 rounded-lg text-indigo-300 hover:bg-indigo-600/30 transition-colors text-sm font-semibold"
-                >
-                  Task Queue →
-                </Link>
-                <Link
-                  href="/sessions"
-                  className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-300 hover:bg-slate-800/70 transition-colors text-sm font-semibold"
-                >
-                  Sessions →
-                </Link>
-              </div>
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent mb-4">
+              ARCHIE
+            </h1>
+            <p className="text-2xl font-semibold text-slate-300 mb-2">
+              Autonomous Agent Overwatch
+            </p>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              Monitoring and coordinating all autonomous agents • Running 24/7 • Every 5 minutes
+            </p>
+          </div>
+
+          {/* System Health & Quick Nav */}
+          <div className="mb-8">
+            {/* Quick Nav */}
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <Link
+                href="/archie/tasks"
+                className="px-6 py-3 bg-green-600/20 border border-green-500/40 rounded-lg text-green-300 hover:bg-green-600/30 transition-colors font-semibold"
+              >
+                📋 Task Queue
+              </Link>
+              <Link
+                href="/archie/references"
+                className="px-6 py-3 bg-purple-600/20 border border-purple-500/40 rounded-lg text-purple-300 hover:bg-purple-600/30 transition-colors font-semibold"
+              >
+                📚 References
+              </Link>
+              <Link
+                href="/archie/mcp"
+                className="px-6 py-3 bg-blue-600/20 border border-blue-500/40 rounded-lg text-blue-300 hover:bg-blue-600/30 transition-colors font-semibold"
+              >
+                🔌 MCP Servers
+              </Link>
+              <Link
+                href="/sessions"
+                className="px-6 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-300 hover:bg-slate-800/70 transition-colors font-semibold"
+              >
+                🔄 Sessions
+              </Link>
             </div>
 
             {/* System Health Bar */}
@@ -246,9 +270,17 @@ export default async function AgentCommandCenter() {
             </div>
           </div>
 
-          {/* Agent Cards Grid */}
+          {/* Subordinate Agents - Under Archie's Watch */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-slate-200 mb-4 flex items-center gap-3">
+              <span className="text-green-400">▼</span>
+              Managed Agents
+              <span className="text-sm font-normal text-slate-500">(Under Archie's Supervision)</span>
+            </h2>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6 mb-8">
-            {/* Archie - Autonomous Task Agent */}
+            {/* Task Management */}
             <AgentCard {...agents.archie} />
 
             {/* AutoReferenceButler */}
