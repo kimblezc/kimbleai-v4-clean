@@ -6,13 +6,15 @@
 
 ```
 Latest Version: v6.0.4
-Latest Commit: 0a90959
+Latest Commit: cc3f71e
 Last Updated: 2025-10-29
-Status: ✅ Committed (pending deployment)
+Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **cc3f71e** (v6.0.4) - Updated version.json with deployment verification tracking
+- **5da98da** (v6.0.4) - Updated claude.md with commit hash
 - **0a90959** (v6.0.4) - Added deployment verification section to CLAUDE.md with version/commit tracking
 - **6db8dc5** (v6.0.3) - MCP end-to-end proof of functionality documentation
 - **75bccd8** (v6.0.3) - MCP server installation fix (added -y flag and directory path)
