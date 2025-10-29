@@ -72,7 +72,19 @@ export async function POST(
     }
 
     // Connect to server
-    await manager.connectServer(serverId);
+    console.log(`[MCP-CONNECT] Attempting to connect to server: ${server.config.name}`);
+    try {
+      await manager.connectServer(serverId);
+      console.log(`[MCP-CONNECT] Successfully connected to: ${server.config.name}`);
+    } catch (connectError: any) {
+      console.error(`[MCP-CONNECT] Connection failed:`, {
+        serverId,
+        serverName: server.config.name,
+        error: connectError.message,
+        stack: connectError.stack
+      });
+      throw connectError;
+    }
 
     // Get updated state
     const updatedServer = manager.getServer(serverId);
