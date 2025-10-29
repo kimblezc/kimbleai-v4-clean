@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { initializeMCPServerManager, getMCPServerManager } from '@/lib/mcp/mcp-server-manager';
-import { broadcastActivity } from '@/lib/activity-stream';
+import { activityStream } from '@/lib/activity-stream';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,11 +40,12 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔮 MCP Initialization: Starting...');
 
-    await broadcastActivity({
+    activityStream.broadcast({
+      agent: 'MCP Init',
       category: 'system',
       level: 'info',
       message: 'MCP System: Starting initialization',
-      context: { timestamp: new Date().toISOString() },
+      metadata: { timestamp: new Date().toISOString() },
     });
 
     // Step 1: Verify database tables exist
@@ -116,11 +117,12 @@ export async function POST(request: NextRequest) {
 
       console.log('✅ MCP Server Manager initialized');
 
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Init',
         category: 'system',
         level: 'info',
         message: `MCP Server Manager initialized with ${existingServers?.length || 0} servers`,
-        context: {
+        metadata: {
           serverCount: existingServers?.length || 0,
         },
       });
@@ -167,11 +169,12 @@ export async function POST(request: NextRequest) {
 
     console.log(`📊 Connection summary: ${connectedCount}/${enabledCount} enabled servers connected`);
 
-    await broadcastActivity({
+    activityStream.broadcast({
+      agent: 'MCP Init',
       category: 'system',
       level: 'info',
       message: `MCP initialization complete: ${connectedCount}/${enabledCount} servers connected`,
-      context: {
+      metadata: {
         connectedServers: connectedCount,
         totalServers: servers.length,
         enabledServers: enabledCount,
@@ -201,11 +204,12 @@ export async function POST(request: NextRequest) {
 
     results.errors.push(error.message);
 
-    await broadcastActivity({
+    activityStream.broadcast({
+      agent: 'MCP Init',
       category: 'system',
       level: 'error',
       message: 'MCP initialization failed',
-      context: {
+      metadata: {
         error: error.message,
       },
     });

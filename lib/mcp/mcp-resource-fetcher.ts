@@ -10,7 +10,7 @@
  */
 
 import { getMCPServerManager } from './mcp-server-manager';
-import { broadcastActivity } from '../activity-stream';
+import { activityStream } from '../activity-stream';
 import type {
   ResourceAccessRequest,
   ResourceAccessResult,
@@ -89,11 +89,12 @@ export class MCPResourceFetcher {
         0
       );
 
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Resource Fetcher',
         category: 'system',
         level: 'info',
         message: `Discovered ${totalResources} resources across ${results.length} MCP servers`,
-        context: {
+        metadata: {
           serversWithResources: results.length,
           totalResources,
         },
@@ -198,11 +199,12 @@ export class MCPResourceFetcher {
 
         // Broadcast error
         if (this.config.broadcastActivity) {
-          await broadcastActivity({
+          activityStream.broadcast({
+            agent: 'MCP Resource Fetcher',
             category: 'system',
             level: 'error',
             message: `Resource not found: ${request.uri}`,
-            context: {
+            metadata: {
               uri: request.uri,
             },
           });
@@ -224,11 +226,12 @@ export class MCPResourceFetcher {
 
     // Broadcast access start
     if (this.config.broadcastActivity) {
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Resource Fetcher',
         category: 'task_processing',
         level: 'info',
         message: `Accessing MCP resource: ${request.uri}`,
-        context: {
+        metadata: {
           uri: request.uri,
           serverId,
         },
@@ -249,13 +252,14 @@ export class MCPResourceFetcher {
 
     // Broadcast result
     if (this.config.broadcastActivity) {
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Resource Fetcher',
         category: 'task_processing',
         level: result.success ? 'info' : 'error',
         message: result.success
           ? `Resource access completed: ${request.uri}`
           : `Resource access failed: ${request.uri}`,
-        context: {
+        metadata: {
           uri: request.uri,
           serverId,
           success: result.success,
