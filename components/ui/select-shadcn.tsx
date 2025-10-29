@@ -21,4 +21,10 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 )
 Select.displayName = "Select"
 
-export { Select }
+// Stub exports for compatibility (workflows use these)
+const SelectTrigger = Select
+const SelectValue = ({ children, ...props }: any) => <span {...props}>{children}</span>
+const SelectContent = ({ children, ...props }: any) => <>{children}</>
+const SelectItem = ({ children, value, ...props }: any) => <option value={value} {...props}>{children}</option>
+
+export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem }

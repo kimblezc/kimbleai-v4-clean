@@ -33,8 +33,20 @@ export async function POST(
 
     const manager = getMCPServerManager();
 
-    // Check if server exists
-    const server = manager.getServer(serverId);
+    // Check if manager needs initialization (serverless cold start)
+    let server = manager.getServer(serverId);
+    if (!server) {
+      console.log('[MCP-CONNECT] Server not found in manager, initializing without auto-connect...');
+      try {
+        await manager.initializeWithoutConnect();
+        server = manager.getServer(serverId);
+        console.log('[MCP-CONNECT] Manager initialized, server found:', !!server);
+      } catch (initError: any) {
+        console.warn('[MCP-CONNECT] Manager initialization warning:', initError.message);
+      }
+    }
+
+    // Check if server exists after initialization attempt
     if (!server) {
       return NextResponse.json(
         {
@@ -117,8 +129,20 @@ export async function DELETE(
 
     const manager = getMCPServerManager();
 
-    // Check if server exists
-    const server = manager.getServer(serverId);
+    // Check if manager needs initialization (serverless cold start)
+    let server = manager.getServer(serverId);
+    if (!server) {
+      console.log('[MCP-CONNECT] Server not found in manager, initializing without auto-connect...');
+      try {
+        await manager.initializeWithoutConnect();
+        server = manager.getServer(serverId);
+        console.log('[MCP-CONNECT] Manager initialized, server found:', !!server);
+      } catch (initError: any) {
+        console.warn('[MCP-CONNECT] Manager initialization warning:', initError.message);
+      }
+    }
+
+    // Check if server exists after initialization attempt
     if (!server) {
       return NextResponse.json(
         {

@@ -1,6 +1,21 @@
 {
-  "version": "6.0.4",
-  "commit": "bba6bea",
-  "lastUpdated": "2025-10-29T14:35:00.000Z",
-  "changelog": "🐛 Fix: MCP servers now properly load tools by storing persistent client instances"
+  "version": "6.1.1",
+  "commit": "73e3875",
+  "lastUpdated": "2025-10-29T14:40:00.000Z",
+  "changelog": "🐛 Fix: MCP servers now properly load tools by storing persistent MCPClient instances (fixed 0 tools bug)",
+  "platform": "Railway",
+  "deployment": {
+    "railwayUrl": "https://kimbleai-production-efed.up.railway.app",
+    "primaryDomain": "kimbleai.com",
+    "projectId": "f0e9b8ac-8bea-4201-87c5-598979709394",
+    "serviceId": "194fb05e-f9fe-4f9f-a023-3b49adf4bc66"
+  },
+  "mcpStatus": {
+    "transport": "stdio",
+    "serversConnected": 3,
+    "filesystemServer": "connected",
+    "githubServer": "connected",
+    "memoryServer": "connected",
+    "lastHealthCheck": "2025-10-29T14:52:32.000Z"
+  }
 }

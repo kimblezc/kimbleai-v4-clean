@@ -8,7 +8,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { broadcastActivity } from '../activity-stream';
+import { activityStream } from '../activity-stream';
 import { getMCPServerManager } from '../mcp/mcp-server-manager';
 
 const supabase = createClient(
@@ -37,11 +37,12 @@ export class MCPMonitoringAgent {
   async run(): Promise<void> {
     console.log('🔮 MCP Monitoring Agent: Starting health check...');
 
-    await broadcastActivity({
+    activityStream.broadcast({
+      agent: 'MCP Monitoring Agent',
       category: 'system',
       level: 'info',
       message: 'MCP Monitoring Agent: Starting server health check',
-      context: {
+      metadata: {
         timestamp: new Date().toISOString(),
       },
     });
@@ -67,11 +68,12 @@ export class MCPMonitoringAgent {
       await this.saveFindings();
 
       // Broadcast completion
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Monitoring Agent',
         category: 'system',
         level: 'info',
         message: `MCP health check complete: ${this.findings.length} findings generated`,
-        context: {
+        metadata: {
           totalServers: servers.length,
           connectedServers: servers.filter((s) => s.status === 'connected').length,
           findings: this.findings.length,
@@ -82,11 +84,12 @@ export class MCPMonitoringAgent {
     } catch (error: any) {
       console.error('❌ MCP Monitoring Agent error:', error);
 
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Monitoring Agent',
         category: 'system',
         level: 'error',
         message: 'MCP Monitoring Agent failed',
-        context: {
+        metadata: {
           error: error.message,
         },
       });
@@ -119,11 +122,12 @@ export class MCPMonitoringAgent {
         },
       });
 
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Monitoring Agent',
         category: 'system',
         level: 'error',
         message: `MCP server ${config.name} is in error state`,
-        context: {
+        metadata: {
           serverId: server.id,
           error: lastError?.message,
         },
@@ -144,11 +148,12 @@ export class MCPMonitoringAgent {
         },
       });
 
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Monitoring Agent',
         category: 'system',
         level: 'warning',
         message: `MCP server ${config.name} is disconnected`,
-        context: {
+        metadata: {
           serverId: server.id,
         },
       });
@@ -235,11 +240,12 @@ export class MCPMonitoringAgent {
         },
       });
 
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Monitoring Agent',
         category: 'system',
         level: 'error',
         message: 'CRITICAL: No MCP servers connected',
-        context: {
+        metadata: {
           enabledServers: enabled.length,
         },
       });
@@ -280,11 +286,12 @@ export class MCPMonitoringAgent {
 
     // Info: All systems operational
     if (enabled.length > 0 && connected.length === enabled.length && errored.length === 0) {
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Monitoring Agent',
         category: 'system',
         level: 'info',
         message: `All MCP servers operational (${connected.length}/${enabled.length})`,
-        context: {
+        metadata: {
           connectedServers: connected.map((s) => s.config.name),
         },
       });

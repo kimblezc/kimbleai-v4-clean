@@ -26,10 +26,12 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('[MCP-LIST] Fetching MCP servers list');
     const { searchParams } = new URL(request.url);
     const enabledFilter = searchParams.get('enabled');
     const transportFilter = searchParams.get('transport');
     const tagFilter = searchParams.get('tag');
+    console.log('[MCP-LIST] Filters:', { enabledFilter, transportFilter, tagFilter });
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -48,13 +50,37 @@ export async function GET(request: NextRequest) {
       query = query.contains('tags', [tagFilter]);
     }
 
+    console.log('[MCP-LIST] Querying database...');
     const { data, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('[MCP-LIST] Database query failed');
+      console.error('[MCP-LIST] Error:', error);
+      console.error('[MCP-LIST] Error message:', error.message);
+      console.error('[MCP-LIST] Error code:', error.code);
+      throw error;
+    }
+
+    console.log('[MCP-LIST] Database query successful, found', data?.length || 0, 'servers');
 
     // Get runtime state from manager
+    console.log('[MCP-LIST] Getting runtime state from manager...');
     const manager = getMCPServerManager();
-    const runtimeServers = manager.getAllServers();
+
+    // Check if manager needs initialization (serverless cold start)
+    let runtimeServers = manager.getAllServers();
+    if (runtimeServers.length === 0 && data && data.length > 0) {
+      console.log('[MCP-LIST] Manager empty but DB has servers, initializing without auto-connect...');
+      try {
+        await manager.initializeWithoutConnect();
+        runtimeServers = manager.getAllServers();
+        console.log('[MCP-LIST] Manager initialized with', runtimeServers.length, 'servers');
+      } catch (initError: any) {
+        console.warn('[MCP-LIST] Manager initialization warning:', initError.message);
+      }
+    } else {
+      console.log('[MCP-LIST] Runtime servers:', runtimeServers.length);
+    }
 
     // Merge database records with runtime state
     const servers = (data as MCPServerRecord[]).map((record) => {
@@ -103,6 +129,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    console.log('[MCP-LIST] Successfully merged data, returning', servers.length, 'servers');
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
@@ -112,7 +139,11 @@ export async function GET(request: NextRequest) {
       disconnected: servers.filter((s) => !s.isConnected).length,
     });
   } catch (error: any) {
-    console.error('Error fetching servers:', error);
+    console.error('[MCP-LIST] Failed to fetch servers');
+    console.error('[MCP-LIST] Error:', error);
+    console.error('[MCP-LIST] Error message:', error.message);
+    console.error('[MCP-LIST] Error stack:', error.stack);
+    console.error('[MCP-LIST] Error name:', error.name);
 
     return NextResponse.json(
       {
@@ -135,6 +166,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('[MCP-INSTALL] Received server installation request');
+    console.log('[MCP-INSTALL] Server name:', body.name);
+    console.log('[MCP-INSTALL] Transport:', body.transport);
+    console.log('[MCP-INSTALL] Command:', body.command);
+    console.log('[MCP-INSTALL] Args:', body.args);
 
     // Validate required fields
     const requiredFields = ['name', 'transport', 'priority'];
@@ -173,7 +209,17 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Process args - replace __WORKING_DIR__ placeholder with actual working directory
+    let processedArgs = body.args || [];
+    if (Array.isArray(processedArgs)) {
+      processedArgs = processedArgs.map((arg: string) =>
+        arg === '__WORKING_DIR__' ? process.cwd() : arg
+      );
+    }
+    console.log('[MCP-INSTALL] Processed args:', processedArgs);
+
     // Insert server configuration
+    console.log('[MCP-INSTALL] Inserting server into database...');
     const { data, error } = await supabase
       .from('mcp_servers')
       .insert({
@@ -181,7 +227,7 @@ export async function POST(request: NextRequest) {
         description: body.description || null,
         transport: body.transport,
         command: body.command || null,
-        args: body.args || [],
+        args: processedArgs,
         url: body.url || null,
         env: body.env || {},
         capabilities: body.capabilities || {},
@@ -197,11 +243,35 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[MCP-INSTALL] Database insert failed');
+      console.error('[MCP-INSTALL] Error:', error);
+      console.error('[MCP-INSTALL] Error message:', error.message);
+      console.error('[MCP-INSTALL] Error code:', error.code);
+      throw error;
+    }
+
+    console.log('[MCP-INSTALL] Database insert successful, server ID:', data.id);
 
     // Add server to manager if enabled
     if (data.enabled) {
+      console.log('[MCP-INSTALL] Server is enabled, adding to manager...');
       const manager = getMCPServerManager();
+
+      // Check if manager is initialized (has servers loaded)
+      const existingServers = manager.getAllServers();
+      console.log('[MCP-INSTALL] Manager has', existingServers.length, 'servers currently');
+
+      // If manager is empty, it needs initialization (serverless cold start)
+      if (existingServers.length === 0) {
+        console.log('[MCP-INSTALL] Manager is empty, initializing without auto-connect...');
+        try {
+          await manager.initializeWithoutConnect();
+          console.log('[MCP-INSTALL] Manager initialized successfully');
+        } catch (initError: any) {
+          console.warn('[MCP-INSTALL] Manager initialization warning:', initError.message);
+        }
+      }
       const config: MCPServerConfig = {
         id: data.id,
         name: data.name,
@@ -222,23 +292,42 @@ export async function POST(request: NextRequest) {
         tags: data.tags || undefined,
       };
 
-      await manager.addServer(config);
+      try {
+        await manager.addServer(config);
+        console.log('[MCP-INSTALL] Server added to manager successfully');
+      } catch (error: any) {
+        console.error('[MCP-INSTALL] Failed to add server to manager');
+        console.error('[MCP-INSTALL] Error:', error);
+        console.error('[MCP-INSTALL] Error message:', error.message);
+        console.error('[MCP-INSTALL] Error stack:', error.stack);
+        throw error;
+      }
 
       // Auto-connect if enabled
+      console.log('[MCP-INSTALL] Attempting to auto-connect server...');
       try {
         await manager.connectServer(data.id);
-      } catch (error) {
-        console.warn(`Failed to auto-connect server ${data.name}:`, error);
+        console.log('[MCP-INSTALL] Server auto-connected successfully');
+      } catch (error: any) {
+        console.error('[MCP-INSTALL] Failed to auto-connect server');
+        console.error('[MCP-INSTALL] Error:', error);
+        console.error('[MCP-INSTALL] Error message:', error.message);
+        console.error('[MCP-INSTALL] Error stack:', error.stack);
       }
     }
 
+    console.log('[MCP-INSTALL] Server installation completed successfully');
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       server: data,
     });
   } catch (error: any) {
-    console.error('Error creating server:', error);
+    console.error('[MCP-INSTALL] Server installation failed');
+    console.error('[MCP-INSTALL] Error:', error);
+    console.error('[MCP-INSTALL] Error message:', error.message);
+    console.error('[MCP-INSTALL] Error stack:', error.stack);
+    console.error('[MCP-INSTALL] Error name:', error.name);
 
     return NextResponse.json(
       {

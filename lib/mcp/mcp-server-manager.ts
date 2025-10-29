@@ -11,7 +11,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { MCPClient } from './mcp-client';
-import { broadcastActivity } from '../activity-stream';
+import { activityStream } from '../activity-stream';
 import type {
   MCPServerConfig,
   MCPServerInstance,
@@ -64,6 +64,30 @@ export class MCPServerManager {
   }
 
   /**
+   * Initialize manager and load servers from database (without auto-connecting)
+   * Use this for serverless environments to avoid timeouts
+   */
+  async initializeWithoutConnect(): Promise<void> {
+    console.log('🚀 Initializing MCP Server Manager (no auto-connect)...');
+
+    try {
+      // Load server configurations from database
+      const configs = await this.loadServerConfigs();
+      console.log(`📦 Loaded ${configs.length} server configurations`);
+
+      // Initialize server instances (but don't connect)
+      for (const config of configs) {
+        await this.addServer(config);
+      }
+
+      console.log('✅ MCP Server Manager initialized successfully (no connections made)');
+    } catch (error: any) {
+      console.error('❌ Failed to initialize MCP Server Manager:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize manager and load servers from database
    */
   async initialize(): Promise<void> {
@@ -85,11 +109,12 @@ export class MCPServerManager {
       }
 
       // Broadcast initialization
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Server Manager',
         category: 'system',
         level: 'info',
         message: `MCP Server Manager initialized with ${configs.length} servers`,
-        context: {
+        metadata: {
           serversLoaded: configs.length,
           autoConnect: this.config.autoConnect,
         },
@@ -251,11 +276,12 @@ export class MCPServerManager {
       });
 
       // Broadcast activity
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Server Manager',
         category: 'system',
         level: 'info',
         message: `Connected to MCP server: ${instance.config.name}`,
-        context: {
+        metadata: {
           serverId,
           serverName: instance.config.name,
           transport: instance.config.transport,
@@ -276,11 +302,12 @@ export class MCPServerManager {
       });
 
       // Broadcast error
-      await broadcastActivity({
+      activityStream.broadcast({
+        agent: 'MCP Server Manager',
         category: 'system',
         level: 'error',
         message: `Failed to connect to MCP server: ${instance.config.name}`,
-        context: {
+        metadata: {
           serverId,
           serverName: instance.config.name,
           error: error.message,
