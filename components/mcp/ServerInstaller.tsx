@@ -8,6 +8,7 @@
 'use client';
 
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Card } from '@/components/ui/Card';
 
 interface ServerTemplate {
@@ -153,7 +154,9 @@ export function ServerInstaller({ onInstalled, onClose }: ServerInstallerProps) 
       if (template.requiresEnv && template.requiresEnv.length > 0) {
         const missingVars = template.requiresEnv.filter((key) => !envVars[key]);
         if (missingVars.length > 0) {
-          alert(`Missing required environment variables: ${missingVars.join(', ')}`);
+          toast.error(`Missing required environment variables: ${missingVars.join(', ')}`, {
+            duration: 5000,
+          });
           setInstalling(false);
           return;
         }
@@ -183,16 +186,25 @@ export function ServerInstaller({ onInstalled, onClose }: ServerInstallerProps) 
       const data = await response.json();
 
       if (data.success) {
-        alert(`✅ ${template.name} server installed successfully!`);
+        toast.success(`${template.name} server installed successfully!`, {
+          duration: 3000,
+          icon: '✅',
+        });
         setSelectedTemplate(null);
         setEnvVars({});
         onInstalled();
         onClose();
       } else {
-        alert(`Failed to install server: ${data.error}`);
+        console.error('MCP server installation error:', data.error);
+        toast.error(`Failed to install server: ${data.error}`, {
+          duration: 5000,
+        });
       }
     } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      console.error('MCP server installation exception:', error);
+      toast.error(`Installation error: ${error.message}`, {
+        duration: 5000,
+      });
     } finally {
       setInstalling(false);
     }

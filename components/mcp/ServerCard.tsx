@@ -8,6 +8,7 @@
 'use client';
 
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Card } from '@/components/ui/Card';
 
 interface ServerCardProps {
@@ -105,11 +106,20 @@ export function ServerCard({ server, onRefresh }: ServerCardProps) {
       if (data.success) {
         // Refresh server list
         onRefresh();
+        toast.success(`Successfully ${server.isConnected ? 'disconnected from' : 'connected to'} ${server.name}`, {
+          duration: 3000,
+        });
       } else {
-        alert(`Failed to ${server.isConnected ? 'disconnect from' : 'connect to'} server: ${data.error}`);
+        console.error('MCP server connection error:', data.error);
+        toast.error(`Failed to ${server.isConnected ? 'disconnect from' : 'connect to'} server: ${data.error}`, {
+          duration: 5000,
+        });
       }
     } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      console.error('MCP server connection exception:', error);
+      toast.error(`Connection error: ${error.message}`, {
+        duration: 5000,
+      });
     } finally {
       setIsConnecting(false);
     }

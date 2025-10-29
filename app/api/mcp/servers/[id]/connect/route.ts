@@ -73,17 +73,46 @@ export async function POST(
 
     // Connect to server
     console.log(`[MCP-CONNECT] Attempting to connect to server: ${server.config.name}`);
+    console.log(`[MCP-CONNECT] Server config:`, {
+      id: server.config.id,
+      name: server.config.name,
+      transport: server.config.transport,
+      command: server.config.command,
+      args: server.config.args,
+      hasEnv: !!server.config.env,
+    });
+
     try {
       await manager.connectServer(serverId);
       console.log(`[MCP-CONNECT] Successfully connected to: ${server.config.name}`);
     } catch (connectError: any) {
-      console.error(`[MCP-CONNECT] Connection failed:`, {
+      console.error(`[MCP-CONNECT] Connection failed for ${server.config.name}`);
+      console.error(`[MCP-CONNECT] Error details:`, {
         serverId,
         serverName: server.config.name,
-        error: connectError.message,
-        stack: connectError.stack
+        transport: server.config.transport,
+        command: server.config.command,
+        errorMessage: connectError.message,
+        errorCode: connectError.code,
+        errorName: connectError.name,
+        stack: connectError.stack,
       });
-      throw connectError;
+
+      // Provide more helpful error messages
+      let userFriendlyError = connectError.message;
+      if (connectError.message?.includes('ENOENT') || connectError.message?.includes('command not found')) {
+        userFriendlyError = `Command '${server.config.command}' not found. Make sure MCP server packages are installed.`;
+      } else if (connectError.message?.includes('timeout')) {
+        userFriendlyError = 'Connection timeout. The MCP server took too long to respond.';
+      } else if (connectError.message?.includes('EACCES')) {
+        userFriendlyError = 'Permission denied. Check server process permissions.';
+      }
+
+      // Create enhanced error
+      const enhancedError = new Error(userFriendlyError);
+      (enhancedError as any).code = connectError.code;
+      (enhancedError as any).originalError = connectError;
+      throw enhancedError;
     }
 
     // Get updated state
