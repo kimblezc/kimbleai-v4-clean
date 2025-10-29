@@ -36,9 +36,9 @@ export async function POST(
     // Check if manager needs initialization (serverless cold start)
     let server = manager.getServer(serverId);
     if (!server) {
-      console.log('[MCP-CONNECT] Server not found in manager, attempting initialization...');
+      console.log('[MCP-CONNECT] Server not found in manager, initializing without auto-connect...');
       try {
-        await manager.initialize();
+        await manager.initializeWithoutConnect();
         server = manager.getServer(serverId);
         console.log('[MCP-CONNECT] Manager initialized, server found:', !!server);
       } catch (initError: any) {
@@ -132,9 +132,9 @@ export async function DELETE(
     // Check if manager needs initialization (serverless cold start)
     let server = manager.getServer(serverId);
     if (!server) {
-      console.log('[MCP-CONNECT] Server not found in manager, attempting initialization...');
+      console.log('[MCP-CONNECT] Server not found in manager, initializing without auto-connect...');
       try {
-        await manager.initialize();
+        await manager.initializeWithoutConnect();
         server = manager.getServer(serverId);
         console.log('[MCP-CONNECT] Manager initialized, server found:', !!server);
       } catch (initError: any) {

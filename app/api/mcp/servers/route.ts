@@ -70,9 +70,9 @@ export async function GET(request: NextRequest) {
     // Check if manager needs initialization (serverless cold start)
     let runtimeServers = manager.getAllServers();
     if (runtimeServers.length === 0 && data && data.length > 0) {
-      console.log('[MCP-LIST] Manager empty but DB has servers, initializing...');
+      console.log('[MCP-LIST] Manager empty but DB has servers, initializing without auto-connect...');
       try {
-        await manager.initialize();
+        await manager.initializeWithoutConnect();
         runtimeServers = manager.getAllServers();
         console.log('[MCP-LIST] Manager initialized with', runtimeServers.length, 'servers');
       } catch (initError: any) {
@@ -264,9 +264,9 @@ export async function POST(request: NextRequest) {
 
       // If manager is empty, it needs initialization (serverless cold start)
       if (existingServers.length === 0) {
-        console.log('[MCP-INSTALL] Manager is empty, initializing...');
+        console.log('[MCP-INSTALL] Manager is empty, initializing without auto-connect...');
         try {
-          await manager.initialize();
+          await manager.initializeWithoutConnect();
           console.log('[MCP-INSTALL] Manager initialized successfully');
         } catch (initError: any) {
           console.warn('[MCP-INSTALL] Manager initialization warning:', initError.message);

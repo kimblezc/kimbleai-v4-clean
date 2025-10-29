@@ -64,6 +64,30 @@ export class MCPServerManager {
   }
 
   /**
+   * Initialize manager and load servers from database (without auto-connecting)
+   * Use this for serverless environments to avoid timeouts
+   */
+  async initializeWithoutConnect(): Promise<void> {
+    console.log('🚀 Initializing MCP Server Manager (no auto-connect)...');
+
+    try {
+      // Load server configurations from database
+      const configs = await this.loadServerConfigs();
+      console.log(`📦 Loaded ${configs.length} server configurations`);
+
+      // Initialize server instances (but don't connect)
+      for (const config of configs) {
+        await this.addServer(config);
+      }
+
+      console.log('✅ MCP Server Manager initialized successfully (no connections made)');
+    } catch (error: any) {
+      console.error('❌ Failed to initialize MCP Server Manager:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize manager and load servers from database
    */
   async initialize(): Promise<void> {
