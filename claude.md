@@ -5,14 +5,16 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v6.0.10
-Latest Commit: b8770c5
+Latest Version: v6.1.0
+Latest Commit: 4559253
 Last Updated: 2025-10-29
-Status: 🚀 Deploying to Production
-Live URL: https://www.kimbleai.com
+Status: 🚂 Railway Migration Prepared (Vercel Active)
+Live URL: https://www.kimbleai.com (Vercel)
+Railway URL: Pending deployment
 ```
 
 ### Recent Changes:
+- **4559253** (v6.1.0) - Railway migration preparation: Configuration, scripts, and documentation for MCP stdio support
 - **b8770c5** (v6.0.10) - Fixed MCP manager timeouts by adding initializeWithoutConnect method
 - **fa7ff80** (v6.0.9) - Fixed MCP manager auto-initialization on serverless cold starts
 - **069cb1a** (v6.0.8) - Added error logging to MCP servers GET endpoint to debug 500 error
@@ -23,9 +25,6 @@ Live URL: https://www.kimbleai.com
 - **cc3f71e** (v6.0.4) - Updated version.json with deployment verification tracking
 - **5da98da** (v6.0.4) - Updated claude.md with commit hash
 - **0a90959** (v6.0.4) - Added deployment verification section to CLAUDE.md with version/commit tracking
-- **6db8dc5** (v6.0.3) - MCP end-to-end proof of functionality documentation
-- **75bccd8** (v6.0.3) - MCP server installation fix (added -y flag and directory path)
-- **0abc9aa** (v6.0.3) - Archie page redesign with animated owl and overwatch positioning
 
 **Purpose**: This section serves as a checkpoint to ensure all changes are properly versioned, committed, and deployed. Every modification to the codebase must update this section with the new version and commit hash.
 
