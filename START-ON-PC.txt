@@ -1,0 +1,62 @@
+================================================================
+TRANSITION TO PC - SIMPLE STEPS
+================================================================
+
+DATE: 2025-10-29
+STATUS: Railway migration in progress - MCP bug needs fixing
+
+================================================================
+STEP 1: Pull Latest Code
+================================================================
+
+Open any terminal and run:
+
+cd C:\Users\zachk\OneDrive\Documents\kimbleai-v4-clean
+git pull origin master
+
+(This gets you commit f8b8748 with HANDOFF.md)
+
+================================================================
+STEP 2: Read The Handoff
+================================================================
+
+Open HANDOFF.md in Claude Code or any editor
+
+It contains EVERYTHING:
+- What we accomplished (Railway migration)
+- The bug we found (MCP client not connecting)
+- How to fix it (persistent client connections)
+- All deployment info
+- Next steps
+
+================================================================
+STEP 3: Setup Railway CLI
+================================================================
+
+railway login
+railway link
+  -> Select: kimbleai
+  -> Select: production
+
+================================================================
+STEP 4: Tell Claude Code
+================================================================
+
+Open Claude Code and say:
+
+"Read HANDOFF.md and let's continue fixing the MCP client bug.
+The issue is in lib/mcp/mcp-server-manager.ts line 411-421.
+We need to implement persistent client connections."
+
+================================================================
+THAT'S IT!
+================================================================
+
+The ONE file you need: HANDOFF.md
+It has everything for context continuity.
+
+Latest commit: f8b8748
+Railway URL: https://kimbleai-production-efed.up.railway.app
+Main domain: kimbleai.com (DNS propagating)
+
+================================================================
