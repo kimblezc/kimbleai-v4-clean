@@ -1,6 +1,6 @@
 {
-  "version": "6.0.3",
-  "commit": "a9b4ac0",
-  "lastUpdated": "2025-10-29T04:35:00.000Z",
-  "changelog": "✨ Feature: Agent Command Center with all 5 agents, Session Logger, /archie dashboard"
+  "version": "6.0.4",
+  "commit": "5da98da",
+  "lastUpdated": "2025-10-29T05:20:00.000Z",
+  "changelog": "📋 Documentation: Added deployment verification tracking to CLAUDE.md with mandatory version/commit checkpoints"
 }
