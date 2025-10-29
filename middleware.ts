@@ -32,6 +32,7 @@ const PUBLIC_PATHS = [
   '/api/archie', // Archie agent APIs (overview, tasks, references, etc.)
   '/api/agent/trigger', // Manual Archie trigger (for Zapier/external crons)
   '/api/mcp/fix-args', // TEMPORARY: MCP database fix endpoint (remove after setup)
+  '/api/test-fs', // TEMPORARY: Filesystem test endpoint
   '/auth/signin',
   '/auth/error',
   '/auth/signout',
