@@ -6,14 +6,17 @@
 
 ```
 Latest Version: v6.1.0
-Latest Commit: 4559253
+Latest Commit: 1b8a853
 Last Updated: 2025-10-29
-Status: 🚂 Railway Migration Prepared (Vercel Active)
-Live URL: https://www.kimbleai.com (Vercel)
-Railway URL: Pending deployment
+Status: ✅ Deployed to Railway (MCP stdio support enabled)
+Live URL: https://kimbleai-production-efed.up.railway.app
+Legacy URL: https://www.kimbleai.com (Vercel - will be deprecated)
 ```
 
 ### Recent Changes:
+- **1b8a853** (v6.1.0) - Railway migration complete: Fixed broadcastActivity imports, deployed successfully with MCP stdio support
+- **4fd5c74** (v6.1.0) - Fixed Select component exports for workflow compatibility
+- **ef3c114** (v6.1.0) - Fixed initial broadcastActivity import errors in mcp-tool-executor
 - **4559253** (v6.1.0) - Railway migration preparation: Configuration, scripts, and documentation for MCP stdio support
 - **b8770c5** (v6.0.10) - Fixed MCP manager timeouts by adding initializeWithoutConnect method
 - **fa7ff80** (v6.0.9) - Fixed MCP manager auto-initialization on serverless cold starts
