@@ -1,6 +1,6 @@
 {
-  "version": "6.0.5",
-  "commit": "94c34db",
-  "lastUpdated": "2025-10-29T05:35:00.000Z",
-  "changelog": "🐛 Fix: Project deletion now properly cascades to delete related tasks, collaborators, and update conversations"
+  "version": "6.0.6",
+  "commit": "pending",
+  "lastUpdated": "2025-10-29T12:00:00.000Z",
+  "changelog": "🔧 Fix: MCP filesystem server installation - replaced client-side process.cwd() with server-side __WORKING_DIR__ placeholder"
 }

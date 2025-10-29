@@ -173,6 +173,14 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Process args - replace __WORKING_DIR__ placeholder with actual working directory
+    let processedArgs = body.args || [];
+    if (Array.isArray(processedArgs)) {
+      processedArgs = processedArgs.map((arg: string) =>
+        arg === '__WORKING_DIR__' ? process.cwd() : arg
+      );
+    }
+
     // Insert server configuration
     const { data, error } = await supabase
       .from('mcp_servers')
@@ -181,7 +189,7 @@ export async function POST(request: NextRequest) {
         description: body.description || null,
         transport: body.transport,
         command: body.command || null,
-        args: body.args || [],
+        args: processedArgs,
         url: body.url || null,
         env: body.env || {},
         capabilities: body.capabilities || {},

@@ -119,6 +119,9 @@ export async function POST(request: NextRequest) {
 
     // FIXED: Actually delete the project from the projects table
     // This was missing - projects would stay in the database even after "deletion"
+    console.log('[PROJECT-DELETE] Attempting to delete project:', projectId);
+    console.log('[PROJECT-DELETE] User ID:', userData.id);
+
     const { error: projectDeleteError } = await supabase
       .from('projects')
       .delete()
@@ -126,8 +129,16 @@ export async function POST(request: NextRequest) {
       .eq('user_id', userData.id);
 
     if (projectDeleteError) {
-      console.error('Error deleting project from database:', projectDeleteError);
+      console.error('[PROJECT-DELETE] Failed to delete project from database');
+      console.error('[PROJECT-DELETE] Project ID:', projectId);
+      console.error('[PROJECT-DELETE] User ID:', userData.id);
+      console.error('[PROJECT-DELETE] Error:', projectDeleteError);
+      console.error('[PROJECT-DELETE] Error message:', projectDeleteError.message);
+      console.error('[PROJECT-DELETE] Error code:', projectDeleteError.code);
       // Log but don't fail - conversations have been moved successfully
+    } else {
+      console.log('[PROJECT-DELETE] Successfully deleted project from database');
+      console.log('[PROJECT-DELETE] Project ID:', projectId);
     }
 
     return NextResponse.json({
