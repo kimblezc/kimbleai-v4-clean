@@ -1,6 +1,6 @@
 {
-  "version": "6.0.1",
-  "commit": "48bf251",
-  "lastUpdated": "2025-10-27T17:15:00.000Z",
-  "changelog": "🔧 Bug Fix: Project deletion permission fallback allows deletion before database migration"
+  "version": "6.0.4",
+  "commit": "bba6bea",
+  "lastUpdated": "2025-10-29T14:35:00.000Z",
+  "changelog": "🐛 Fix: MCP servers now properly load tools by storing persistent client instances"
 }
