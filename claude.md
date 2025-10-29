@@ -5,14 +5,16 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v6.0.4
-Latest Commit: cc3f71e
+Latest Version: v6.0.5
+Latest Commit: 94c34db
 Last Updated: 2025-10-29
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **94c34db** (v6.0.5) - Fixed project deletion with cascading deletes for related records
+- **24fa879** (v6.0.4) - Updated CLAUDE.md with final deployment status
 - **cc3f71e** (v6.0.4) - Updated version.json with deployment verification tracking
 - **5da98da** (v6.0.4) - Updated claude.md with commit hash
 - **0a90959** (v6.0.4) - Added deployment verification section to CLAUDE.md with version/commit tracking
