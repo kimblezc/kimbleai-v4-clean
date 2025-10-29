@@ -1,6 +1,12 @@
 {
   "version": "6.1.0",
-  "commit": "4559253",
-  "lastUpdated": "2025-10-29T14:30:00.000Z",
-  "changelog": "🚂 Migration: Railway deployment setup for MCP stdio support - configuration files, scripts, and documentation ready for migration"
+  "commit": "1b8a853",
+  "lastUpdated": "2025-10-29T08:56:00.000Z",
+  "changelog": "🚂 Railway Migration Complete: Live deployment with MCP stdio support - Fixed all build errors, configured environment, deployed successfully to https://kimbleai-production-efed.up.railway.app",
+  "platform": "Railway",
+  "deployment": {
+    "railwayUrl": "https://kimbleai-production-efed.up.railway.app",
+    "projectId": "f0e9b8ac-8bea-4201-87c5-598979709394",
+    "serviceId": "194fb05e-f9fe-4f9f-a023-3b49adf4bc66"
+  }
 }
