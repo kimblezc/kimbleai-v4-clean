@@ -1,6 +1,6 @@
 {
   "version": "6.0.9",
-  "commit": "pending",
+  "commit": "fa7ff80",
   "lastUpdated": "2025-10-29T13:30:00.000Z",
   "changelog": "🔧 Fix: Auto-initialize MCP manager on serverless cold starts"
 }
