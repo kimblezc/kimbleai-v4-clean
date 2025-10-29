@@ -232,8 +232,8 @@ export class MCPServerManager {
       const client = new MCPClient(instance.config);
       await client.connect();
 
-      // Update instance
-      instance.client = client.getClient();
+      // Store the MCPClient wrapper (not the raw client)
+      instance.client = client;
       instance.status = 'connected';
       instance.connectedAt = new Date();
 
@@ -314,9 +314,10 @@ export class MCPServerManager {
       // Stop health checks
       this.stopHealthCheck(serverId);
 
-      // Disconnect client
-      const client = new MCPClient(instance.config);
-      await client.disconnect();
+      // Disconnect client if available
+      if (instance.client) {
+        await instance.client.disconnect();
+      }
 
       // Update instance
       instance.client = null;
@@ -383,10 +384,11 @@ export class MCPServerManager {
    */
   private async loadServerCapabilities(serverId: string): Promise<void> {
     const instance = this.servers.get(serverId);
-    if (!instance) return;
+    if (!instance || !instance.client) return;
 
     try {
-      const client = new MCPClient(instance.config);
+      // Use the stored, connected MCPClient instance
+      const client = instance.client;
 
       // Load tools
       if (instance.config.capabilities?.tools !== false) {
@@ -452,12 +454,13 @@ export class MCPServerManager {
    */
   private async performHealthCheck(serverId: string): Promise<void> {
     const instance = this.servers.get(serverId);
-    if (!instance) return;
+    if (!instance || !instance.client) return;
 
     const startTime = Date.now();
 
     try {
-      const client = new MCPClient(instance.config);
+      // Use the stored, connected MCPClient instance
+      const client = instance.client;
       const healthy = await client.ping();
 
       const responseTime = Date.now() - startTime;
@@ -590,11 +593,12 @@ export class MCPServerManager {
       throw new Error(`Server ${request.serverId} not found`);
     }
 
-    if (instance.status !== 'connected') {
+    if (instance.status !== 'connected' || !instance.client) {
       throw new Error(`Server ${instance.config.name} is not connected`);
     }
 
-    const client = new MCPClient(instance.config);
+    // Use the stored, connected MCPClient instance
+    const client = instance.client;
     const result = await client.invokeTool(request);
 
     // Update metrics
@@ -617,11 +621,12 @@ export class MCPServerManager {
       throw new Error(`Server ${request.serverId} not found`);
     }
 
-    if (instance.status !== 'connected') {
+    if (instance.status !== 'connected' || !instance.client) {
       throw new Error(`Server ${instance.config.name} is not connected`);
     }
 
-    const client = new MCPClient(instance.config);
+    // Use the stored, connected MCPClient instance
+    const client = instance.client;
     return await client.accessResource(request);
   }
 

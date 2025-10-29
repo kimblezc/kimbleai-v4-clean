@@ -10,6 +10,7 @@
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { Tool, Resource, Prompt } from '@modelcontextprotocol/sdk/types.js';
+import type { MCPClient } from './mcp-client';
 
 // ================================================================
 // Server Configuration Types
@@ -117,8 +118,8 @@ export interface MCPServerInstance {
   /** Server configuration */
   config: MCPServerConfig;
 
-  /** MCP client instance (null if disconnected) */
-  client: Client | null;
+  /** MCP client wrapper instance (null if disconnected) */
+  client: MCPClient | null;
 
   /** Current connection status */
   status: MCPServerStatus;
