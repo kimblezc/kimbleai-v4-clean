@@ -135,6 +135,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('[MCP-INSTALL] Received server installation request');
+    console.log('[MCP-INSTALL] Server name:', body.name);
+    console.log('[MCP-INSTALL] Transport:', body.transport);
+    console.log('[MCP-INSTALL] Command:', body.command);
+    console.log('[MCP-INSTALL] Args:', body.args);
 
     // Validate required fields
     const requiredFields = ['name', 'transport', 'priority'];
@@ -180,8 +185,10 @@ export async function POST(request: NextRequest) {
         arg === '__WORKING_DIR__' ? process.cwd() : arg
       );
     }
+    console.log('[MCP-INSTALL] Processed args:', processedArgs);
 
     // Insert server configuration
+    console.log('[MCP-INSTALL] Inserting server into database...');
     const { data, error } = await supabase
       .from('mcp_servers')
       .insert({
@@ -205,10 +212,19 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[MCP-INSTALL] Database insert failed');
+      console.error('[MCP-INSTALL] Error:', error);
+      console.error('[MCP-INSTALL] Error message:', error.message);
+      console.error('[MCP-INSTALL] Error code:', error.code);
+      throw error;
+    }
+
+    console.log('[MCP-INSTALL] Database insert successful, server ID:', data.id);
 
     // Add server to manager if enabled
     if (data.enabled) {
+      console.log('[MCP-INSTALL] Server is enabled, adding to manager...');
       const manager = getMCPServerManager();
       const config: MCPServerConfig = {
         id: data.id,
@@ -230,23 +246,42 @@ export async function POST(request: NextRequest) {
         tags: data.tags || undefined,
       };
 
-      await manager.addServer(config);
+      try {
+        await manager.addServer(config);
+        console.log('[MCP-INSTALL] Server added to manager successfully');
+      } catch (error: any) {
+        console.error('[MCP-INSTALL] Failed to add server to manager');
+        console.error('[MCP-INSTALL] Error:', error);
+        console.error('[MCP-INSTALL] Error message:', error.message);
+        console.error('[MCP-INSTALL] Error stack:', error.stack);
+        throw error;
+      }
 
       // Auto-connect if enabled
+      console.log('[MCP-INSTALL] Attempting to auto-connect server...');
       try {
         await manager.connectServer(data.id);
-      } catch (error) {
-        console.warn(`Failed to auto-connect server ${data.name}:`, error);
+        console.log('[MCP-INSTALL] Server auto-connected successfully');
+      } catch (error: any) {
+        console.error('[MCP-INSTALL] Failed to auto-connect server');
+        console.error('[MCP-INSTALL] Error:', error);
+        console.error('[MCP-INSTALL] Error message:', error.message);
+        console.error('[MCP-INSTALL] Error stack:', error.stack);
       }
     }
 
+    console.log('[MCP-INSTALL] Server installation completed successfully');
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       server: data,
     });
   } catch (error: any) {
-    console.error('Error creating server:', error);
+    console.error('[MCP-INSTALL] Server installation failed');
+    console.error('[MCP-INSTALL] Error:', error);
+    console.error('[MCP-INSTALL] Error message:', error.message);
+    console.error('[MCP-INSTALL] Error stack:', error.stack);
+    console.error('[MCP-INSTALL] Error name:', error.name);
 
     return NextResponse.json(
       {

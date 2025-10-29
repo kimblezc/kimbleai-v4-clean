@@ -1,7 +1,9 @@
 # MCP Setup Status Report
 
 **Date**: 2025-10-29
-**Status**: ✅ **BOTH ENVIRONMENTS CONFIGURED**
+**Status**: ✅ **BOTH ENVIRONMENTS CONFIGURED & FIXED**
+**Latest Version**: v6.0.6
+**Latest Commit**: 7ed63ae
 
 ---
 
@@ -9,7 +11,17 @@
 
 I've successfully configured MCP (Model Context Protocol) for both environments:
 1. ✅ **Claude Code (VS Code)** - Ready to use immediately
-2. ✅ **kimbleai.com** - Fix deployed, ready for testing
+2. ✅ **kimbleai.com** - Bug fixed and deployed (v6.0.6)
+
+### Critical Bug Fix (v6.0.6):
+**Problem**: Installation failed with "failed to create server" error
+- ServerInstaller.tsx was calling `process.cwd()` in browser (Node.js API not available)
+- This caused JavaScript error when trying to install filesystem server
+
+**Solution**:
+- Use `__WORKING_DIR__` placeholder in client-side template
+- Replace placeholder with actual `process.cwd()` on server-side (API route)
+- Works in both browser and server environments
 
 ---
 

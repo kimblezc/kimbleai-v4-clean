@@ -1,6 +1,6 @@
 {
-  "version": "6.0.6",
-  "commit": "7ed63ae",
-  "lastUpdated": "2025-10-29T12:00:00.000Z",
-  "changelog": "🔧 Fix: MCP filesystem server installation - replaced client-side process.cwd() with server-side __WORKING_DIR__ placeholder"
+  "version": "6.0.7",
+  "commit": "pending",
+  "lastUpdated": "2025-10-29T13:00:00.000Z",
+  "changelog": "🔍 Debug: Added comprehensive error logging for project deletion and MCP server installation endpoints"
 }
