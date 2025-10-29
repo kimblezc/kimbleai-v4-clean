@@ -1,6 +1,6 @@
 {
-  "version": "6.0.10",
-  "commit": "b8770c5",
-  "lastUpdated": "2025-10-29T13:45:00.000Z",
-  "changelog": "🔧 Fix: MCP manager initialization without auto-connect to prevent timeouts"
+  "version": "6.1.0",
+  "commit": "pending",
+  "lastUpdated": "2025-10-29T14:30:00.000Z",
+  "changelog": "🚂 Migration: Railway deployment setup for MCP stdio support - configuration files, scripts, and documentation ready for migration"
 }

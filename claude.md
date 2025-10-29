@@ -135,6 +135,10 @@ Follow semantic versioning (MAJOR.MINOR.PATCH):
 
 After implementing any feature, bug fix, or change to the codebase, follow this process:
 
+### Deployment Platform: Railway
+
+**Important**: We migrated from Vercel to Railway to support MCP stdio transport (child processes).
+
 ### 1. Pre-Deployment Checks
 ```bash
 # Verify build succeeds
@@ -147,7 +151,7 @@ git status
 npm test
 ```
 
-### 2. Commit and Push
+### 2. Commit Changes
 ```bash
 # Stage all changes
 git add -A
@@ -155,93 +159,203 @@ git add -A
 # Commit with descriptive message
 git commit -m "feat: Description of what changed"
 
-# Push to master (triggers auto-deploy)
+# Push to repository
 git push origin master
 ```
 
-### 3. Verify Deployment
+### 3. Deploy to Railway
 ```bash
-# Run deployment verification script
-npx tsx scripts/test-deployment.ts
+# Deploy current directory to Railway
+railway up
+
+# Or trigger deployment from git
+railway up --detach
+```
+
+### 4. Monitor Deployment
+```bash
+# Watch logs in real-time
+railway logs --tail
+
+# Or view in Railway dashboard
+railway open
+```
+
+### 5. Verify Deployment
+```bash
+# Get Railway URL
+railway domain
+
+# Run comprehensive test suite
+npx tsx scripts/test-railway-deployment.ts <railway-url>
 ```
 
 Or manually:
-1. Wait 3-5 minutes for Vercel to build and deploy
-2. Hard refresh production site (Ctrl+Shift+R or Cmd+Shift+R)
-3. Test new endpoints/features directly
-4. Check Vercel dashboard for "Ready" status
+1. Visit Railway URL in browser
+2. Test health endpoint: `https://your-url.railway.app/api/health`
+3. Verify all features work
+4. Check for console errors
 
 ### Deployment Timeline
-- **Git push → Vercel builds**: 2-4 minutes
-- **Build → Live**: 10-30 seconds
-- **Live → Visible (hard refresh)**: Instant
-- **Live → Visible (natural cache)**: 5-15 minutes
+- **railway up → Build starts**: Instant
+- **Build process**: 3-5 minutes
+- **Deployment → Live**: 10-30 seconds
+- **Total**: 4-6 minutes
 
-**Total with hard refresh**: 3-5 minutes
-**Total without refresh**: 8-20 minutes
+### Railway Configuration
+
+**Configuration File**: `railway.toml`
+- **Builder**: NIXPACKS (auto-detects Next.js)
+- **Node Version**: 22.x
+- **Build Command**: `npm run build`
+- **Start Command**: `npm start`
+- **Health Check**: `/api/health`
+
+**Environment Variables**: Set via CLI or dashboard
+```bash
+# Set individual variable
+railway variables set KEY=value
+
+# Or use automated script
+.\scripts\setup-railway-env.ps1  # Windows
+./scripts/setup-railway-env.sh   # Linux/Mac
+```
+
+### Required Environment Variables
+All environment variables from `.env.production`:
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
+- NEXTAUTH_SECRET
+- NEXTAUTH_URL
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- OPENAI_API_KEY
+- ASSEMBLYAI_API_KEY
+- ZAPIER_WEBHOOK_URL
+- ZAPIER_MEMORY_WEBHOOK_URL
+- ZAPIER_WEBHOOK_SECRET
+- NODE_ENV
 
 ### Troubleshooting Deployments
 
-**"Changes aren't showing"**:
-- Solution: Hard refresh browser (Ctrl+Shift+R)
-- Reason: Browser/CDN cache
-
 **"Build failed"**:
-- Check Vercel dashboard build logs
+- Check Railway logs: `railway logs`
 - Run `npm run build` locally to reproduce
-- Fix errors and push again
+- Verify all dependencies are in `package.json`
+- Check Node version matches (22.x)
 
-**"Vercel not deploying"**:
-- Check GitHub webhook in Vercel settings
-- Verify Vercel project is linked to repo
-- Check Vercel dashboard for deployment errors
+**"Changes aren't showing"**:
+- Hard refresh browser (Ctrl+Shift+R)
+- Check Railway deployment status: `railway status`
+- Verify build completed successfully
 
-### Vercel Configuration
-- **Branch**: master (auto-deploy enabled)
-- **Framework**: Next.js 15.5.3
-- **Node Version**: 22.x
-- **Build Command**: `npm run build`
-- **Output Directory**: `.next`
+**"Environment variables missing"**:
+- Verify with: `railway variables`
+- Re-run setup script if needed
+- Check Railway dashboard
 
-### Required Environment Variables (Vercel)
-All environment variables from `.env.production` must be configured in Vercel dashboard:
-- NEXT_PUBLIC_SUPABASE_URL
-- SUPABASE_SERVICE_ROLE_KEY
-- NEXT_PUBLIC_ANTHROPIC_API_KEY
-- (See .env.production for complete list)
+**"MCP servers won't connect"**:
+- This was the Vercel issue - should work on Railway
+- Check logs for process spawn errors
+- Verify `npx` is available: `railway run which npx`
+- Test manual connection: `railway run npx @modelcontextprotocol/server-filesystem`
 
 ### Deployment Verification Script
-Use `scripts/test-deployment.ts` for comprehensive verification:
+
+Use `scripts/test-railway-deployment.ts` for comprehensive verification:
 
 ```bash
-npx tsx scripts/test-deployment.ts
+npx tsx scripts/test-railway-deployment.ts https://your-url.railway.app
 ```
 
 Tests performed:
-1. ✅ Git status (clean tree)
-2. ✅ Package version
-3. ✅ Build success
-4. ✅ Production URL accessibility
-5. ✅ Endpoint functionality
-6. ⏳ Vercel deployment status (if credentials available)
+1. ✅ Health endpoint
+2. ✅ Home page loads
+3. ✅ NextAuth configured
+4. ✅ API accessibility
+5. ✅ MCP endpoints accessible
+6. ✅ Environment variables present
+7. ✅ Database connection
 
 ### Cache Management
-- **HTML**: Cached by browser (invalidate with hard refresh)
-- **API responses**: Not cached (revalidate: 0)
-- **Static assets**: Cached by CDN (~5 minutes)
-- **Images**: Cached aggressively (hours)
+- **Server-side**: No caching (Railway serves fresh content)
+- **Client-side**: Browser cache (hard refresh to clear)
+- **Static assets**: Served from Railway's CDN
 
 To force cache invalidation:
 - Hard refresh: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
-- Or wait 15-20 minutes for natural cache expiration
 
 ### Success Criteria
 Deployment is successful when:
-1. ✅ Vercel dashboard shows "Ready"
-2. ✅ Build completed without errors
-3. ✅ Production URL loads (200 OK)
-4. ✅ New features/endpoints are accessible
-5. ✅ Version number updated (if changed)
+1. ✅ Railway build completes without errors
+2. ✅ Health endpoint returns 200 OK
+3. ✅ Production URL loads correctly
+4. ✅ All features accessible
+5. ✅ MCP stdio servers can connect
+6. ✅ Version number updated (if changed)
+
+### Railway Dashboard
+- **URL**: https://railway.app
+- **Project**: kimbleai
+- **View logs**: `railway logs`
+- **Open dashboard**: `railway open`
+- **Check status**: `railway status`
+
+### Railway CLI Commands
+
+```bash
+# Authentication
+railway login              # Login to Railway
+railway whoami             # Check authentication
+
+# Project management
+railway init               # Initialize new project
+railway link               # Link to existing project
+railway unlink             # Unlink project
+
+# Deployment
+railway up                 # Deploy current directory
+railway up --detach        # Deploy in background
+
+# Monitoring
+railway logs               # View recent logs
+railway logs --tail        # Stream logs in real-time
+railway status             # Check deployment status
+railway open               # Open Railway dashboard
+
+# Environment variables
+railway variables          # List all variables
+railway variables set      # Set variable
+railway variables delete   # Remove variable
+
+# Domain management
+railway domain             # Show current domain
+railway domain add         # Add custom domain
+```
+
+### Migration from Vercel
+
+**Why we migrated**: Vercel's serverless environment cannot spawn child processes, which MCP stdio transport requires. Railway runs a persistent Node.js server that fully supports this.
+
+**Complete migration guide**: See `RAILWAY_MIGRATION_GUIDE.md`
+
+**Key differences**:
+- ✅ MCP stdio transport works on Railway
+- ✅ Persistent server (not serverless functions)
+- ✅ Better support for long-running processes
+- ✅ More predictable resource allocation
+- 💰 Cost: ~$5/mo (vs Vercel's free tier)
+
+### Cron Jobs on Railway
+
+Railway doesn't have built-in cron scheduling like Vercel. Options:
+
+1. **External cron service**: Use cron-job.org or similar
+2. **Node-cron**: Implement in-process scheduling
+3. **Railway Cron plugin**: Use Railway's cron service (if available)
+
+Current approach: Keep Vercel cron endpoints active, point them to Railway URLs.
 
 ### Rationale
 Consistent deployment process ensures:
@@ -249,4 +363,5 @@ Consistent deployment process ensures:
 - **Traceability**: Every deployment linked to commit
 - **Quality**: Build errors caught before going live
 - **Speed**: Automated process takes minutes
-- **Confidence**: Verification confirms success
+- **MCP Support**: Stdio transport works correctly
+- **Confidence**: Comprehensive testing verifies success
