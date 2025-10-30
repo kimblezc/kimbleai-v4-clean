@@ -1,7 +1,7 @@
 {
   "version": "7.5.6",
-  "commit": "pending",
-  "lastUpdated": "2025-10-30T18:32:00.000Z",
+  "commit": "38e311d",
+  "lastUpdated": "2025-10-30T18:35:00.000Z",
   "changelog": "✨ UX: Added timestamps to conversation sidebar + sorted conversations newest to oldest - Shows relative time (e.g., '2h ago') for each chat, conversations now properly sorted within each group",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
