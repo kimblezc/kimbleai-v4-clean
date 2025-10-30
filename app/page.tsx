@@ -29,6 +29,10 @@ export default function Home() {
   const [showGoogleServices, setShowGoogleServices] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showTags, setShowTags] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [costStats, setCostStats] = useState<{
     hourly: { used: number; limit: number; percentage: number };
     daily: { used: number; limit: number; percentage: number };
@@ -98,7 +102,7 @@ export default function Home() {
     await sendMessage(messageContent, {
       selectedModel,
       currentProject,
-      suggestedTags: [],
+      suggestedTags: activeTagFilters,
       conversationTitle: '',
     });
   };
@@ -294,8 +298,101 @@ export default function Home() {
             alignItems: 'center',
           }}
         >
-          <h1 style={{ fontSize: '20px', fontWeight: '700' }}>KimbleAI</h1>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <D20Dice size={48} spinning={true} />
+            <h1 style={{ fontSize: '20px', fontWeight: '700' }}>KimbleAI</h1>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {/* Project Selector */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: '#2a2a2a',
+                  border: '1px solid #444',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                📁 {projects.find(p => p.id === currentProject)?.name || 'General'}
+                <span style={{ fontSize: '10px' }}>▼</span>
+              </button>
+              {showProjectDropdown && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '4px',
+                    backgroundColor: '#1a1a1a',
+                    border: '1px solid #444',
+                    borderRadius: '8px',
+                    minWidth: '200px',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    zIndex: 100,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  <div
+                    onClick={() => {
+                      selectProject('');
+                      setShowProjectDropdown(false);
+                    }}
+                    style={{
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      backgroundColor: !currentProject ? '#2a2a2a' : 'transparent',
+                      borderBottom: '1px solid #333',
+                      fontSize: '13px'
+                    }}
+                  >
+                    📁 General
+                  </div>
+                  {projects.map(project => (
+                    <div
+                      key={project.id}
+                      onClick={() => {
+                        selectProject(project.id);
+                        setShowProjectDropdown(false);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        cursor: 'pointer',
+                        backgroundColor: currentProject === project.id ? '#2a2a2a' : 'transparent',
+                        borderBottom: '1px solid #333',
+                        fontSize: '13px'
+                      }}
+                    >
+                      📁 {project.name}
+                    </div>
+                  ))}
+                  <div
+                    onClick={() => {
+                      const name = prompt('Enter project name:');
+                      if (name) {
+                        projectsHook.createProject({ name, status: 'active' });
+                      }
+                      setShowProjectDropdown(false);
+                    }}
+                    style={{
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      color: '#4a9eff',
+                      fontSize: '13px'
+                    }}
+                  >
+                    ➕ Create New Project
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setIsSearchOpen(true)}
               style={{
@@ -340,9 +437,6 @@ export default function Home() {
         >
           {messages.length === 0 ? (
             <div style={{ textAlign: 'center', marginTop: '100px', color: '#666' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                <D20Dice size={96} spinning={true} />
-              </div>
               <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Start a conversation</div>
               <div style={{ fontSize: '14px' }}>Ask me anything!</div>
             </div>
@@ -382,7 +476,7 @@ export default function Home() {
 
         {/* Input Area */}
         <div style={{ padding: '16px', borderTop: '1px solid #333' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
             <input
               type="text"
               value={input}
@@ -407,6 +501,21 @@ export default function Home() {
               }}
             />
             <button
+              onClick={() => setShowTags(!showTags)}
+              style={{
+                padding: '12px',
+                backgroundColor: showTags ? '#8b5cf6' : '#2a2a2a',
+                border: '1px solid #444',
+                borderRadius: '8px',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
+              title="Toggle tags"
+            >
+              🏷️
+            </button>
+            <button
               onClick={handleSendMessage}
               disabled={!input.trim() || sending}
               style={{
@@ -423,6 +532,64 @@ export default function Home() {
               {sending ? '⏳' : '➤'}
             </button>
           </div>
+
+          {/* Tag Input/Display */}
+          {showTags && (
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>
+                Add tags for this conversation:
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {activeTagFilters.map((tag, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      padding: '4px 8px',
+                      backgroundColor: '#8b5cf6',
+                      border: '1px solid #8b5cf6',
+                      borderRadius: '12px',
+                      fontSize: '11px',
+                      color: '#000',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    onClick={() => {
+                      setActiveTagFilters(prev => prev.filter(t => t !== tag));
+                    }}
+                  >
+                    #{tag}
+                    <span style={{ fontSize: '10px' }}>✕</span>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  placeholder="Add tag..."
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      const tag = e.currentTarget.value.trim().toLowerCase();
+                      if (tag && !activeTagFilters.includes(tag)) {
+                        setActiveTagFilters(prev => [...prev, tag]);
+                      }
+                      e.currentTarget.value = '';
+                    }
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: '#2a2a2a',
+                    border: '1px solid #444',
+                    borderRadius: '12px',
+                    fontSize: '11px',
+                    color: '#fff',
+                    outline: 'none',
+                    minWidth: '100px'
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
