@@ -1,8 +1,8 @@
 {
-  "version": "7.0.0",
-  "commit": "51ee164",
-  "lastUpdated": "2025-10-30T12:00:00.000Z",
-  "changelog": "🎯 MAJOR: Complete MCP infrastructure removal - Return to superior RAG/vector search system",
+  "version": "7.0.1",
+  "commit": "269acbd",
+  "lastUpdated": "2025-10-30T14:30:00.000Z",
+  "changelog": "🔧 PATCH: Fixed project deletion - Now properly validates ownership and returns errors on failure",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
