@@ -102,7 +102,12 @@ export class MCPClient {
         throw new Error('Stdio transport requires command');
       }
 
-      return new StdioClientTransport({
+      console.log(`[MCP-CLIENT] Creating stdio transport for ${this.config.name}`);
+      console.log(`[MCP-CLIENT] Command: ${this.config.command}`);
+      console.log(`[MCP-CLIENT] Args:`, this.config.args);
+      console.log(`[MCP-CLIENT] Working directory:`, process.cwd());
+
+      const transport = new StdioClientTransport({
         command: this.config.command,
         args: this.config.args || [],
         env: {
@@ -110,6 +115,26 @@ export class MCPClient {
           ...this.config.env,
         },
       });
+
+      // Log stderr output from the child process
+      if (transport as any).stderr) {
+        (transport as any).stderr.on('data', (data: Buffer) => {
+          console.error(`[MCP-STDIO-STDERR] ${this.config.name}:`, data.toString());
+        });
+      }
+
+      // Log process exit
+      if ((transport as any).process) {
+        (transport as any).process.on('exit', (code: number, signal: string) => {
+          console.log(`[MCP-STDIO-EXIT] ${this.config.name} process exited with code ${code}, signal ${signal}`);
+        });
+
+        (transport as any).process.on('error', (error: Error) => {
+          console.error(`[MCP-STDIO-PROCESS-ERROR] ${this.config.name}:`, error);
+        });
+      }
+
+      return transport;
     }
 
     // SSE and HTTP transports will be added in future iterations
