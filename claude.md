@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.3.5
-Latest Commit: 4487124
+Latest Version: v7.4.0
+Latest Commit: 265e08e
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **265e08e** (v7.4.0) - Smart model selection system + Tags feature + MCP cleanup (see full details below)
 - **4487124** (v7.3.5) - Added SSE streaming to chat API - messages now display in real-time with typing animation
 - **323d5b3** (v7.3.4) - Switched default model back to Claude Sonnet 4.5 after Anthropic credits added
 - **5b9e36e** (v7.3.3) - Fixed chat API request format - useMessages now sends correct messages array
@@ -34,6 +35,34 @@ Live URL: https://www.kimbleai.com
 - **755f924** (v6.0.7) - Added comprehensive error logging for project deletion and MCP installation debugging
 - **7ed63ae** (v6.0.6) - Fixed MCP filesystem server installation (process.cwd() browser error)
 - **94c34db** (v6.0.5) - Fixed project deletion with cascading deletes for related records
+
+### v7.4.0 Detailed Feature Breakdown:
+**Smart Model Selection System:**
+- Intelligent model selector with task complexity analysis (simple/medium/complex)
+- Automatic task type detection (coding, analysis, creative, reasoning, file_processing)
+- User preference support (cost/speed/quality optimization)
+- Integrated Claude (Sonnet 4.5, Haiku, Opus) and GPT models
+- Performance tracking and cost monitoring per model
+- Automatic fallback handling for unavailable models
+
+**Tags System:**
+- Full CRUD API for tags (/api/tags, /api/tags/stats)
+- Tags management UI at /app/tags
+- Tag utilities library (lib/tag-utils.ts)
+- Database migration (add-tags-table.sql)
+- Tag associations for conversations and projects
+
+**React Hooks & Utilities:**
+- useConversations.ts - Conversation management hook
+- useMessages.ts - Message handling hook
+- useProjects.ts - Project operations hook
+- lib/chat-utils.ts - Chat utility functions
+
+**MCP System Cleanup:**
+- Archived all MCP docs to docs/archive/mcp-removed-2025-10-30/
+- Removed deprecated MCP endpoints and components
+- Database cleanup script (cleanup-mcp.sql)
+- Preserved documentation for future reference
 
 **Purpose**: This section serves as a checkpoint to ensure all changes are properly versioned, committed, and deployed. Every modification to the codebase must update this section with the new version and commit hash.
 
