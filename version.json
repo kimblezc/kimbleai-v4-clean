@@ -1,8 +1,8 @@
 {
-  "version": "7.4.4",
-  "commit": "2076386",
-  "lastUpdated": "2025-10-30T15:00:00.000Z",
-  "changelog": "✅ FIXED: Project delete 403 error - corrected column name user_id -> owner_id in authorization check",
+  "version": "7.4.5",
+  "commit": "78ee567",
+  "lastUpdated": "2025-10-30T15:30:00.000Z",
+  "changelog": "✅ COMPREHENSIVE FIX: Added flexible user ID mapper to handle UUIDs, friendly IDs, and names - eliminates recurring UUID mismatch errors",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

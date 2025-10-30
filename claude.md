@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.4.4
-Latest Commit: 2076386
+Latest Version: v7.4.5
+Latest Commit: 78ee567
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **78ee567** (v7.4.5) - COMPREHENSIVE FIX: Added flexible user ID mapper (mapUserIdentifier) to handle UUIDs, friendly IDs, and names - eliminates recurring UUID mismatch errors across entire codebase
 - **2076386** (v7.4.4) - FIXED: Project delete returning 403 Forbidden - corrected column name from user_id to owner_id in /api/projects/delete authorization check
 - **a88ca85** (v7.4.3) - CRITICAL FIX: Added ANTHROPIC_API_KEY fallback to prevent 503 errors when Claude models selected without credentials
 - **d4d6069** (v7.4.2) - CRITICAL FIX: ModelSelector error handling - Fixed 503 errors by adding robust fallback logic
