@@ -1,8 +1,8 @@
 {
-  "version": "7.0.2",
-  "commit": "18762b3",
-  "lastUpdated": "2025-10-30T15:00:00.000Z",
-  "changelog": "✨ FEATURE: Complete tag management system with CRUD API, analytics, and auto-categorization",
+  "version": "7.1.0",
+  "commit": "d82312e",
+  "lastUpdated": "2025-10-30T16:00:00.000Z",
+  "changelog": "🎨 MINOR: Tag management UI - Full-featured dashboard with analytics, search, and sync",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
