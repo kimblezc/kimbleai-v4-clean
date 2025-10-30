@@ -1,8 +1,8 @@
 {
-  "version": "7.0.1",
-  "commit": "269acbd",
-  "lastUpdated": "2025-10-30T14:30:00.000Z",
-  "changelog": "🔧 PATCH: Fixed project deletion - Now properly validates ownership and returns errors on failure",
+  "version": "7.0.2",
+  "commit": "18762b3",
+  "lastUpdated": "2025-10-30T15:00:00.000Z",
+  "changelog": "✨ FEATURE: Complete tag management system with CRUD API, analytics, and auto-categorization",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
