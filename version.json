@@ -1,8 +1,8 @@
 {
-  "version": "7.5.4",
-  "commit": "5322b57",
-  "lastUpdated": "2025-10-30T17:00:00.000Z",
-  "changelog": "✅ CONVERSATION LOADING FIX: Fixed userId parameter passing in useMessages + added chronological sorting (newest first) + created cleanup script for orphaned conversations",
+  "version": "7.5.5",
+  "commit": "60b37e5",
+  "lastUpdated": "2025-10-30T18:00:00.000Z",
+  "changelog": "✅ HOTFIX: Improved error handling and fallback for conversations endpoint - Added detailed logging, minimal field fallback, JS-based sorting backup, fixed 500 error on page load",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
