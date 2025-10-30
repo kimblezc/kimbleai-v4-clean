@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.5.3
-Latest Commit: af78dbf
+Latest Version: v7.5.4
+Latest Commit: 5322b57
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **5322b57** (v7.5.4) - FINAL FIX: Removed ALL hardcoded user lookups + fixed userId dependency + chronological sorting - Fixed useMessages dependency array, replaced all hardcoded user queries with getUserByIdentifier in conversations & chat APIs, added full timestamps with newest-first sorting, created cleanup script for orphaned conversations
 - **af78dbf** (v7.5.3) - FIX: Added robust error handling and filtered test conversations - Graceful 404 handling, removed test data from sidebar
 - **d459cd0** (v7.5.2) - FIX: Added GET method to conversations API - Eliminates 405 errors, enables proper conversation loading with messages
 - **1f0b147** (v7.5.1) - CRITICAL HOTFIX: Fixed circular dependency causing "Cannot access 'c' before initialization" - Moved useEffect after function definitions
