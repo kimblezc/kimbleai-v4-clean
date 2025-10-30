@@ -673,9 +673,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
             }
           }
         }
-      },
-      // Merge MCP tools into the tools array
-      ...mcpTools
+      }
     ];
 
     // Prepare model parameters (GPT-5 specific requirements)

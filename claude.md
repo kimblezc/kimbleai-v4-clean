@@ -5,14 +5,16 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.3.0
-Latest Commit: 44b1e9f
+Latest Version: v7.3.2
+Latest Commit: pending
 Last Updated: 2025-10-30
-Status: ✅ Deployed to Production
+Status: 🚀 Deploying Bug Fix
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **pending** (v7.3.2) - Fixed critical chat endpoint crash caused by undefined mcpTools reference
+- **58b17b7** (v7.3.1) - Added project rename and delete with inline action buttons (✏️ 🗑️)
 - **44b1e9f** (v7.3.0) - Version tracking update for integrated features
 - **4cd2712** (v7.3.0) - Integrated tag and project systems with D20 in header - Full CRUD + tag management UI
 - **8e79aca** (v7.2.0) - Complete page.tsx refactoring: 4,041 → 430 lines (89% reduction) with custom hooks
