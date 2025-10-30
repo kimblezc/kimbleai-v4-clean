@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { isResourceOwner } from '@/lib/user-utils';
+import { isResourceOwner, getUserByIdentifier } from '@/lib/user-utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,12 +17,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get user data
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user data using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
       return NextResponse.json({
@@ -266,12 +262,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || 'zach';
 
-    // Get user data
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user data using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
       return NextResponse.json({

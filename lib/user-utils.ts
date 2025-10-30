@@ -133,3 +133,54 @@ export function getCanonicalName(identifier: string): string | null {
   const lower = identifier.toLowerCase().trim();
   return USER_MAPPINGS[lower] || null;
 }
+
+/**
+ * Get user from database by any identifier
+ * This is the centralized function that ALL API endpoints should use
+ *
+ * @param identifier - Can be: UUID, friendly ID (zach-admin-001), or name (zach, Zach)
+ * @param supabaseClient - Supabase client instance
+ * @returns User record with id, name, and other fields, or null if not found
+ */
+export async function getUserByIdentifier(
+  identifier: string,
+  supabaseClient: any
+): Promise<{ id: string; name: string; [key: string]: any } | null> {
+  if (!identifier) return null;
+
+  const normalized = normalizeUserIdentifier(identifier);
+
+  // Try to get user by UUID if it's a UUID
+  if (normalized.type === 'uuid') {
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', normalized.normalized)
+      .single();
+
+    if (!error && data) return data;
+  }
+
+  // Try to get user by name (works for names and friendly IDs)
+  const canonicalName = getCanonicalName(identifier);
+  if (canonicalName) {
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .ilike('name', canonicalName)
+      .single();
+
+    if (!error && data) return data;
+  }
+
+  // Last resort: try the identifier as-is (case-insensitive name match)
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select('*')
+    .ilike('name', identifier.trim())
+    .single();
+
+  if (!error && data) return data;
+
+  return null;
+}

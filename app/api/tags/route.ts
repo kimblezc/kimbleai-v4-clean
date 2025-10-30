@@ -7,6 +7,7 @@ import {
   getTagColor,
   TAG_CATEGORIES
 } from '@/lib/tag-utils';
+import { getUserByIdentifier, isResourceOwner } from '@/lib/user-utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,12 +34,8 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'usage_count';
     const order = searchParams.get('order') || 'desc';
 
-    // Get user data
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user data using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
       return NextResponse.json({
@@ -112,12 +109,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get user data
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user data using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
       return NextResponse.json({
@@ -204,12 +197,8 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get user data
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user data using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
       return NextResponse.json({
@@ -230,7 +219,8 @@ export async function PUT(request: NextRequest) {
       }, { status: 404 });
     }
 
-    if (existingTag.user_id !== userData.id) {
+    // Use isResourceOwner for flexible comparison
+    if (!isResourceOwner(userId, existingTag.user_id, userData)) {
       return NextResponse.json({
         error: 'Unauthorized'
       }, { status: 403 });
@@ -304,12 +294,8 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get user data
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user data using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
       return NextResponse.json({
@@ -330,7 +316,8 @@ export async function DELETE(request: NextRequest) {
       }, { status: 404 });
     }
 
-    if (existingTag.user_id !== userData.id) {
+    // Use isResourceOwner for flexible comparison
+    if (!isResourceOwner(userId, existingTag.user_id, userData)) {
       return NextResponse.json({
         error: 'Unauthorized'
       }, { status: 403 });
