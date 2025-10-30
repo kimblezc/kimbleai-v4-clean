@@ -274,81 +274,115 @@ export class ModelSelector {
   }
 
   public static selectModel(context: TaskContext): ModelConfig {
-    const complexity = this.analyzeComplexity(context.messageContent);
-    const taskTypes = this.detectTaskType(context);
-    const userPref = context.userPreference || 'quality';
+    try {
+      const complexity = this.analyzeComplexity(context.messageContent);
+      const taskTypes = this.detectTaskType(context);
+      const userPref = context.userPreference || 'quality';
 
-    console.log(`[ModelSelector] Complexity: ${complexity}, Tasks: ${taskTypes.join(', ')}, Preference: ${userPref}`);
+      console.log(`[ModelSelector] Complexity: ${complexity}, Tasks: ${taskTypes.join(', ')}, Preference: ${userPref}`);
 
-    // === COST-OPTIMIZED SELECTION ===
-    if (userPref === 'cost') {
-      if (complexity === 'simple') {
-        return AVAILABLE_MODELS['claude-3-5-haiku']; // Most cost-effective
+      let selectedModel: ModelConfig | undefined;
+
+      // === COST-OPTIMIZED SELECTION ===
+      if (userPref === 'cost') {
+        if (complexity === 'simple') {
+          selectedModel = AVAILABLE_MODELS['claude-3-5-haiku']; // Most cost-effective
+        } else {
+          selectedModel = AVAILABLE_MODELS['gpt-4o-mini']; // Good balance for medium tasks
+        }
       }
-      return AVAILABLE_MODELS['gpt-4o-mini']; // Good balance for medium tasks
-    }
 
-    // === SPEED-OPTIMIZED SELECTION ===
-    if (userPref === 'speed') {
-      if (complexity === 'simple' || taskTypes.includes('file_processing')) {
-        return AVAILABLE_MODELS['claude-3-5-haiku']; // Fastest for simple tasks
+      // === SPEED-OPTIMIZED SELECTION ===
+      else if (userPref === 'speed') {
+        if (complexity === 'simple' || taskTypes.includes('file_processing')) {
+          selectedModel = AVAILABLE_MODELS['claude-3-5-haiku']; // Fastest for simple tasks
+        } else {
+          selectedModel = AVAILABLE_MODELS['gpt-4o-mini']; // Fast enough for most tasks
+        }
       }
-      return AVAILABLE_MODELS['gpt-4o-mini']; // Fast enough for most tasks
-    }
 
-    // === TASK-SPECIFIC SELECTION ===
+      // === TASK-SPECIFIC SELECTION ===
 
-    // REASONING & MATH: o1/GPT-5 models excel at complex reasoning
-    if (taskTypes.includes('reasoning')) {
-      if (complexity === 'complex') {
-        return AVAILABLE_MODELS['gpt-5'] || AVAILABLE_MODELS['o1']; // Best for complex multi-step reasoning
+      // REASONING & MATH: o1/GPT-5 models excel at complex reasoning
+      else if (taskTypes.includes('reasoning')) {
+        if (complexity === 'complex') {
+          selectedModel = AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['o1'] ?? AVAILABLE_MODELS['claude-sonnet-4-5'];
+        } else {
+          selectedModel = AVAILABLE_MODELS['gpt-5-mini'] ?? AVAILABLE_MODELS['o1-mini'] ?? AVAILABLE_MODELS['gpt-4o'];
+        }
       }
-      return AVAILABLE_MODELS['gpt-5-mini'] || AVAILABLE_MODELS['o1-mini']; // Good for medium reasoning
-    }
 
-    // CODING TASKS: GPT-5/o1-mini for complex, gpt-4o for standard
-    if (taskTypes.includes('coding')) {
-      if (complexity === 'complex') {
-        return AVAILABLE_MODELS['gpt-5'] || AVAILABLE_MODELS['o1-mini']; // Advanced reasoning for complex code
+      // CODING TASKS: GPT-5/o1-mini for complex, gpt-4o for standard
+      else if (taskTypes.includes('coding')) {
+        if (complexity === 'complex') {
+          selectedModel = AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['o1-mini'] ?? AVAILABLE_MODELS['gpt-4o'];
+        } else {
+          selectedModel = AVAILABLE_MODELS['gpt-4o'];
+        }
       }
-      return AVAILABLE_MODELS['gpt-4o']; // Good for standard coding tasks
-    }
 
-    // CREATIVE WRITING: Claude excels at creative content
-    if (taskTypes.includes('creative')) {
-      if (complexity === 'complex') {
-        return AVAILABLE_MODELS['claude-sonnet-4-5']; // Best for creative writing
+      // CREATIVE WRITING: Claude excels at creative content
+      else if (taskTypes.includes('creative')) {
+        if (complexity === 'complex') {
+          selectedModel = AVAILABLE_MODELS['claude-sonnet-4-5'];
+        } else {
+          selectedModel = AVAILABLE_MODELS['claude-3-5-haiku'];
+        }
       }
-      return AVAILABLE_MODELS['claude-3-5-haiku']; // Good for simple creative tasks
-    }
 
-    // ANALYSIS: Claude for nuanced, o1 for technical
-    if (taskTypes.includes('analysis')) {
-      const isTechnicalAnalysis = context.messageContent.toLowerCase().includes('technical') ||
-                                   context.messageContent.toLowerCase().includes('scientific');
-      if (complexity === 'complex' && isTechnicalAnalysis) {
-        return AVAILABLE_MODELS['o1']; // Best for technical analysis
-      } else if (complexity === 'complex') {
-        return AVAILABLE_MODELS['claude-sonnet-4-5']; // Best for nuanced analysis
+      // ANALYSIS: Claude for nuanced, o1 for technical
+      else if (taskTypes.includes('analysis')) {
+        const isTechnicalAnalysis = context.messageContent.toLowerCase().includes('technical') ||
+                                     context.messageContent.toLowerCase().includes('scientific');
+        if (complexity === 'complex' && isTechnicalAnalysis) {
+          selectedModel = AVAILABLE_MODELS['o1'] ?? AVAILABLE_MODELS['claude-sonnet-4-5'];
+        } else if (complexity === 'complex') {
+          selectedModel = AVAILABLE_MODELS['claude-sonnet-4-5'];
+        } else {
+          selectedModel = AVAILABLE_MODELS['gpt-4o-mini'];
+        }
       }
-      return AVAILABLE_MODELS['gpt-4o-mini']; // Good for medium analysis
-    }
 
-    // FILE PROCESSING: Fast models preferred
-    if (taskTypes.includes('file_processing')) {
-      return AVAILABLE_MODELS['claude-3-5-haiku']; // Fast and cost-effective
-    }
+      // FILE PROCESSING: Fast models preferred
+      else if (taskTypes.includes('file_processing')) {
+        selectedModel = AVAILABLE_MODELS['claude-3-5-haiku'];
+      }
 
-    // === DEFAULT SELECTION BY COMPLEXITY ===
-    switch (complexity) {
-      case 'simple':
-        return AVAILABLE_MODELS['claude-3-5-haiku']; // Fast and cheap for simple tasks
-      case 'medium':
-        return AVAILABLE_MODELS['gpt-5-mini'] || AVAILABLE_MODELS['gpt-4o-mini']; // Balanced for medium tasks
-      case 'complex':
-        return AVAILABLE_MODELS['gpt-5'] || AVAILABLE_MODELS['claude-sonnet-4-5']; // Best quality for complex tasks
-      default:
-        return AVAILABLE_MODELS['gpt-4o-mini']; // Safe fallback
+      // === DEFAULT SELECTION BY COMPLEXITY ===
+      else {
+        switch (complexity) {
+          case 'simple':
+            selectedModel = AVAILABLE_MODELS['claude-3-5-haiku'];
+            break;
+          case 'medium':
+            selectedModel = AVAILABLE_MODELS['gpt-5-mini'] ?? AVAILABLE_MODELS['gpt-4o-mini'];
+            break;
+          case 'complex':
+            selectedModel = AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['claude-sonnet-4-5'];
+            break;
+          default:
+            selectedModel = AVAILABLE_MODELS['gpt-4o-mini'];
+        }
+      }
+
+      // Guaranteed safe fallback if somehow nothing was selected
+      if (!selectedModel) {
+        console.warn('[ModelSelector] No model selected, using fallback: claude-sonnet-4-5');
+        selectedModel = AVAILABLE_MODELS['claude-sonnet-4-5'];
+      }
+
+      return selectedModel;
+    } catch (error) {
+      console.error('[ModelSelector] Error in selectModel:', error);
+      // Return guaranteed safe fallback on any error
+      return AVAILABLE_MODELS['claude-sonnet-4-5'] ?? {
+        model: 'claude-sonnet-4-5',
+        maxTokens: 8096,
+        temperature: 1.0,
+        description: 'Claude Sonnet 4.5 (emergency fallback)',
+        useCases: [],
+        costMultiplier: 8
+      };
     }
   }
 

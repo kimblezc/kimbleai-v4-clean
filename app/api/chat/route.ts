@@ -385,16 +385,18 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       userPreference: 'quality' // Could be user setting
     };
 
-    // TEMPORARY: Bypass model selector to debug 503 error
-    let selectedModel = preferredModel ? { model: preferredModel } : {
-      model: 'claude-sonnet-4-5',
-      maxTokens: 4096,
-      temperature: 1.0,
-      description: 'Claude Sonnet 4.5 (fallback)',
-      useCases: [],
-      costMultiplier: 8
-    };
-    console.log(`[MODEL] Selected: ${selectedModel.model} ${preferredModel ? '(user preference)' : '(HARDCODED FALLBACK)'}`);
+    // Use preferred model if provided, otherwise auto-select using ModelSelector
+    let selectedModel = preferredModel
+      ? {
+          model: preferredModel,
+          maxTokens: 4096,
+          temperature: 1.0,
+          description: `User preferred: ${preferredModel}`,
+          useCases: [],
+          costMultiplier: 1
+        }
+      : ModelSelector.selectModel(taskContext);
+    console.log(`[MODEL] Selected: ${selectedModel.model} ${preferredModel ? '(user preference)' : '(auto-selected)'}`);
 
     // Detect if this is a Claude model
     const isClaudeModel = selectedModel.model.startsWith('claude-') ||
