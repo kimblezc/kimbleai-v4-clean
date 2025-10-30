@@ -119,7 +119,7 @@ export default function ProjectsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'delete',
-          userId: 'zach', // Changed from 'zach-admin-001' to 'zach' to match getUser lookup
+          userId: 'zach-admin-001', // UserManager now handles friendly IDs via mapUserIdentifier
           projectData: { id: projectId }
         }),
       });

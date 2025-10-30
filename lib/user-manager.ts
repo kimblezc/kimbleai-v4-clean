@@ -202,20 +202,49 @@ export class UserManager {
   /**
    * Get user by ID or name with full profile
    */
+  /**
+   * Map friendly IDs to actual database lookups
+   * Handles: UUIDs, friendly IDs (zach-admin-001), and names (zach)
+   */
+  private mapUserIdentifier(identifier: string): { type: 'id' | 'name'; value: string } {
+    // Special case: Map friendly IDs to names for lookup
+    const friendlyIdMap: Record<string, string> = {
+      'zach-admin-001': 'Zach',
+      'rebecca-user-001': 'Rebecca',
+      'zach': 'Zach',
+      'rebecca': 'Rebecca',
+    };
+
+    const lowerIdentifier = identifier.toLowerCase();
+    if (friendlyIdMap[lowerIdentifier]) {
+      return { type: 'name', value: friendlyIdMap[lowerIdentifier] };
+    }
+
+    // Check if it looks like a UUID (contains hyphens and hex chars)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(identifier)) {
+      return { type: 'id', value: identifier };
+    }
+
+    // Default to name lookup
+    return { type: 'name', value: identifier };
+  }
+
   async getUser(identifier: string): Promise<User | null> {
+    const lookup = this.mapUserIdentifier(identifier);
+
     let query = supabase.from('users').select('*');
 
-    // Check if identifier is an ID or name
-    if (identifier.includes('-')) {
-      query = query.eq('id', identifier);
+    if (lookup.type === 'id') {
+      query = query.eq('id', lookup.value);
     } else {
-      query = query.ilike('name', identifier);
+      query = query.ilike('name', lookup.value);
     }
 
     const { data, error } = await query.single();
 
     if (error) {
-      console.error('Failed to get user:', error);
+      console.error(`Failed to get user (${lookup.type}=${lookup.value}):`, error.message);
       return null;
     }
 
