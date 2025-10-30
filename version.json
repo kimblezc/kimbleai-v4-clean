@@ -1,8 +1,8 @@
 {
-  "version": "7.3.5",
-  "commit": "4487124",
-  "lastUpdated": "2025-10-30T19:45:00.000Z",
-  "changelog": "🔧 BUGFIX: Added SSE streaming to chat API - messages now display in real-time",
+  "version": "7.4.1",
+  "commit": "0342d07",
+  "lastUpdated": "2025-10-30T12:00:00.000Z",
+  "changelog": "🚀 MAJOR UPDATE: Smart model selection + Tags system + MCP cleanup | 🔧 BUGFIX: Removed duplicate route files causing 503 errors",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
