@@ -1,8 +1,8 @@
 {
-  "version": "7.3.0",
-  "commit": "4cd2712",
-  "lastUpdated": "2025-10-30T18:00:00.000Z",
-  "changelog": "✨ FEATURE: Integrated tag and project systems with D20 in header - Full CRUD + tag management UI",
+  "version": "7.3.1",
+  "commit": "58b17b7",
+  "lastUpdated": "2025-10-30T18:30:00.000Z",
+  "changelog": "✨ FEATURE: Added project rename and delete with inline action buttons",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
