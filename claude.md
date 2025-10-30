@@ -5,15 +5,17 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v6.1.3
-Latest Commit: aa6a1e4
-Last Updated: 2025-10-29
-Status: ✅ Deployed to Railway (MCP popup errors fixed)
+Latest Version: v6.1.4
+Latest Commit: 72c26ab
+Last Updated: 2025-10-30
+Status: 🚀 Deploying to Railway (Enhanced MCP logging + auth redirect fix)
 Live URL: https://kimbleai-production-efed.up.railway.app
-Legacy URL: https://www.kimbleai.com (Vercel - will be deprecated)
+Legacy URL: https://www.kimbleai.com (Vercel - DO NOT USE - No MCP support)
 ```
 
 ### Recent Changes:
+- **72c26ab** (v6.1.4) - Fixed syntax error in MCP stdio logging, updated NEXTAUTH_URL to Railway
+- **d34f2f0** (v6.1.4) - Added enhanced stdio process logging for MCP debugging (had syntax error)
 - **aa6a1e4** (v6.1.3) - Fixed MCP popup errors: Replaced alert() with toast notifications, added detailed error logging
 - **1b8a853** (v6.1.0) - Railway migration complete: Fixed broadcastActivity imports, deployed successfully with MCP stdio support
 - **4fd5c74** (v6.1.0) - Fixed Select component exports for workflow compatibility
