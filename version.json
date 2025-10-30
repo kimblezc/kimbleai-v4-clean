@@ -1,8 +1,8 @@
 {
-  "version": "7.2.0",
-  "commit": "8e79aca",
-  "lastUpdated": "2025-10-30T17:00:00.000Z",
-  "changelog": "♻️ REFACTOR: Complete page.tsx modernization - Reduced from 4,041 to 430 lines with custom hooks",
+  "version": "7.3.0",
+  "commit": "4cd2712",
+  "lastUpdated": "2025-10-30T18:00:00.000Z",
+  "changelog": "✨ FEATURE: Integrated tag and project systems with D20 in header - Full CRUD + tag management UI",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
