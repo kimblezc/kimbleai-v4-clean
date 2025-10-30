@@ -1,7 +1,7 @@
 {
   "version": "7.5.7",
-  "commit": "pending",
-  "lastUpdated": "2025-10-30T18:48:00.000Z",
+  "commit": "7ce3fa4",
+  "lastUpdated": "2025-10-30T18:49:00.000Z",
   "changelog": "🔧 HOTFIX: Fixed TypeError in conversation sorting - Added defensive null checks for conversations without timestamps, prevents 'Cannot read properties of undefined (reading getTime)' error",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
