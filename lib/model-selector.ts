@@ -40,33 +40,33 @@ export const AVAILABLE_MODELS: Record<string, ModelConfig> = {
 
   // === GPT MODELS (OpenAI) ===
 
-  // GPT-5 Models (Future/Early Access)
+  // GPT-5 Models (Released August 2025)
   'gpt-5': {
     model: 'gpt-5',
     reasoningLevel: 'high',
-    maxTokens: 8096,
+    maxTokens: 128000, // 128K output, 272K input
     temperature: 1.0,
-    description: 'GPT-5 - Next generation model with maximum reasoning',
-    useCases: ['complex analysis', 'advanced reasoning', 'research', 'deep technical questions'],
-    costMultiplier: 20 // Estimated pricing
-  },
-  'gpt-5-turbo': {
-    model: 'gpt-5-turbo',
-    reasoningLevel: 'medium',
-    maxTokens: 8096,
-    temperature: 1.0,
-    description: 'GPT-5 Turbo - Balanced next-gen performance',
-    useCases: ['code generation', 'detailed explanations', 'project planning'],
-    costMultiplier: 12 // Estimated pricing
+    description: 'GPT-5 - Smartest model with maximum reasoning',
+    useCases: ['complex analysis', 'advanced reasoning', 'research', 'deep technical questions', 'coding'],
+    costMultiplier: 16.67 // $1.25/$10 per million tokens
   },
   'gpt-5-mini': {
     model: 'gpt-5-mini',
-    reasoningLevel: 'low',
-    maxTokens: 4096,
+    reasoningLevel: 'medium',
+    maxTokens: 128000,
     temperature: 1.0,
-    description: 'GPT-5 Mini - Fast and efficient next-gen model',
-    useCases: ['general chat', 'quick answers', 'routine tasks'],
-    costMultiplier: 4 // Estimated pricing
+    description: 'GPT-5 Mini - Balanced next-gen performance at lower cost',
+    useCases: ['general chat', 'quick answers', 'routine tasks', 'code generation'],
+    costMultiplier: 3.33 // $0.25/$2 per million tokens
+  },
+  'gpt-5-nano': {
+    model: 'gpt-5-nano',
+    reasoningLevel: 'low',
+    maxTokens: 128000,
+    temperature: 1.0,
+    description: 'GPT-5 Nano - Fastest and most cost-effective GPT-5 variant',
+    useCases: ['simple queries', 'basic tasks', 'high-volume applications'],
+    costMultiplier: 0.67 // $0.05/$0.40 per million tokens
   },
 
   // o1 Reasoning Models
@@ -301,16 +301,15 @@ export class ModelSelector {
     // REASONING & MATH: o1/GPT-5 models excel at complex reasoning
     if (taskTypes.includes('reasoning')) {
       if (complexity === 'complex') {
-        // Try GPT-5 if available, otherwise o1
         return AVAILABLE_MODELS['gpt-5'] || AVAILABLE_MODELS['o1']; // Best for complex multi-step reasoning
       }
-      return AVAILABLE_MODELS['gpt-5-turbo'] || AVAILABLE_MODELS['o1-mini']; // Good for medium reasoning
+      return AVAILABLE_MODELS['gpt-5-mini'] || AVAILABLE_MODELS['o1-mini']; // Good for medium reasoning
     }
 
     // CODING TASKS: GPT-5/o1-mini for complex, gpt-4o for standard
     if (taskTypes.includes('coding')) {
       if (complexity === 'complex') {
-        return AVAILABLE_MODELS['gpt-5-turbo'] || AVAILABLE_MODELS['o1-mini']; // Advanced reasoning for complex code
+        return AVAILABLE_MODELS['gpt-5'] || AVAILABLE_MODELS['o1-mini']; // Advanced reasoning for complex code
       }
       return AVAILABLE_MODELS['gpt-4o']; // Good for standard coding tasks
     }
