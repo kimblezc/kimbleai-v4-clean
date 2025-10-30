@@ -180,6 +180,27 @@ export class MCPClient {
       const response = await this.client.listTools();
       return response.tools;
     } catch (error: any) {
+      // Handle Zod schema validation errors - try to extract raw tools anyway
+      if (error.name === 'ZodError' && error.issues) {
+        console.warn(`⚠️  Schema validation error for ${this.config.name}, attempting to extract raw tools:`, error.issues);
+
+        // Try to get the raw response before validation
+        try {
+          // The client likely has the raw response cached
+          const rawResponse = await this.client.request(
+            { method: 'tools/list' },
+            {} as any
+          );
+
+          if (rawResponse && (rawResponse as any).tools) {
+            console.log(`✅ Extracted ${(rawResponse as any).tools.length} tools from ${this.config.name} (bypassing schema validation)`);
+            return (rawResponse as any).tools;
+          }
+        } catch (rawError) {
+          console.error(`Failed to extract raw tools:`, rawError);
+        }
+      }
+
       console.error(`Error listing tools from ${this.config.name}:`, error);
       throw error;
     }
