@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.5.6
-Latest Commit: 38e311d
+Latest Version: v7.5.7
+Latest Commit: 7ce3fa4
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **7ce3fa4** (v7.5.7) - HOTFIX: Fixed TypeError in conversation sorting - Added defensive null checks for conversations without timestamps, prevents 'Cannot read properties of undefined (reading getTime)' error
 - **38e311d** (v7.5.6) - UX: Added timestamps to conversation sidebar + sorted conversations newest to oldest - Shows relative time (e.g., '2h ago') for each chat, conversations now properly sorted within each group
 - **60b37e5** (v7.5.5) - HOTFIX: Fixed 500 error on page load - Improved error handling with detailed logging, added minimal field fallback query, JavaScript-based sorting backup, resilient timestamp handling using message timestamps when conversation timestamps missing
 - **5322b57** (v7.5.4) - FINAL FIX: Removed ALL hardcoded user lookups + fixed userId dependency + chronological sorting - Fixed useMessages dependency array, replaced all hardcoded user queries with getUserByIdentifier in conversations & chat APIs, added full timestamps with newest-first sorting, created cleanup script for orphaned conversations

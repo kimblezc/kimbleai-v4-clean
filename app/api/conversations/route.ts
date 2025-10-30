@@ -124,16 +124,16 @@ export async function GET(request: NextRequest) {
         project: actualProject,
         messageCount,
         lastMessage: lastMessage ? formatTimeAgo(lastMessage.created_at) : 'No messages',
-        createdAt,
-        updatedAt,
+        created_at: createdAt,
+        updated_at: updatedAt,
         is_pinned: (conv as any).is_pinned || false,
         preview: lastMessage?.content?.substring(0, 100) + '...' || ''
       };
     }) || [];
 
-    // Sort by updatedAt in JavaScript if database ordering failed
+    // Sort by updated_at in JavaScript if database ordering failed
     formattedConversations.sort((a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     );
 
     // Group by project if needed

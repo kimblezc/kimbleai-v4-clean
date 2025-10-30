@@ -1,8 +1,8 @@
 {
-  "version": "7.5.7",
-  "commit": "7ce3fa4",
-  "lastUpdated": "2025-10-30T18:49:00.000Z",
-  "changelog": "🔧 HOTFIX: Fixed TypeError in conversation sorting - Added defensive null checks for conversations without timestamps, prevents 'Cannot read properties of undefined (reading getTime)' error",
+  "version": "7.5.8",
+  "commit": "pending",
+  "lastUpdated": "2025-10-30T19:05:00.000Z",
+  "changelog": "🔧 FIX: Timestamps now display on conversations + auto-refresh on 404 - Fixed API field names (snake_case), timestamps now show correctly, conversation list auto-refreshes when clicking deleted chats",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

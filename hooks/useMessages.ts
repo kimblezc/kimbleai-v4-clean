@@ -22,7 +22,11 @@ export interface Message {
   };
 }
 
-export function useMessages(conversationId: string | null, userId: string) {
+export function useMessages(
+  conversationId: string | null,
+  userId: string,
+  onNotFound?: () => void
+) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -57,9 +61,13 @@ export function useMessages(conversationId: string | null, userId: string) {
           setMessages([]);
         }
       } else if (response.status === 404) {
-        // Conversation not found - clear messages
+        // Conversation not found - clear messages and trigger refresh
         console.warn('Conversation not found:', convId);
         setMessages([]);
+        // Trigger conversation list refresh to remove stale entry
+        if (onNotFound) {
+          onNotFound();
+        }
       } else {
         // Other error
         console.error('Failed to load conversation:', response.status);
@@ -71,7 +79,7 @@ export function useMessages(conversationId: string | null, userId: string) {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, onNotFound]);
 
   const sendMessage = useCallback(
     async (
