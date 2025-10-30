@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.3.2
-Latest Commit: 927777e
+Latest Version: v7.3.3
+Latest Commit: 5b9e36e
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **5b9e36e** (v7.3.3) - Fixed chat API request format - useMessages now sends correct messages array
 - **927777e** (v7.3.2) - Fixed critical chat endpoint crash caused by undefined mcpTools reference
 - **58b17b7** (v7.3.1) - Added project rename and delete with inline action buttons (✏️ 🗑️)
 - **44b1e9f** (v7.3.0) - Version tracking update for integrated features
