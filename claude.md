@@ -402,3 +402,4 @@ Consistent deployment process ensures:
 - **Speed**: Automated process takes minutes
 - **MCP Support**: Stdio transport works correctly
 - **Confidence**: Comprehensive testing verifies success
+- openai chatgpt5 models exist.
