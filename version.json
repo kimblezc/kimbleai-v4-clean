@@ -1,8 +1,8 @@
 {
-  "version": "7.4.2",
-  "commit": "d4d6069",
-  "lastUpdated": "2025-10-30T12:48:00.000Z",
-  "changelog": "✅ FIXED: Chat endpoint 503 errors caused by ModelSelector - Added robust error handling with guaranteed fallback",
+  "version": "7.4.3",
+  "commit": "a88ca85",
+  "lastUpdated": "2025-10-30T14:30:00.000Z",
+  "changelog": "✅ CRITICAL FIX: Added ANTHROPIC_API_KEY fallback to prevent 503 errors when Claude models selected without credentials",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
