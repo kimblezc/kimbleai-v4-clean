@@ -1,8 +1,8 @@
 {
-  "version": "7.4.3",
-  "commit": "a88ca85",
-  "lastUpdated": "2025-10-30T14:30:00.000Z",
-  "changelog": "✅ CRITICAL FIX: Added ANTHROPIC_API_KEY fallback to prevent 503 errors when Claude models selected without credentials",
+  "version": "7.4.4",
+  "commit": "2076386",
+  "lastUpdated": "2025-10-30T15:00:00.000Z",
+  "changelog": "✅ FIXED: Project delete 403 error - corrected column name user_id -> owner_id in authorization check",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

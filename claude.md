@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.4.3
-Latest Commit: a88ca85
+Latest Version: v7.4.4
+Latest Commit: 2076386
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **2076386** (v7.4.4) - FIXED: Project delete returning 403 Forbidden - corrected column name from user_id to owner_id in /api/projects/delete authorization check
 - **a88ca85** (v7.4.3) - CRITICAL FIX: Added ANTHROPIC_API_KEY fallback to prevent 503 errors when Claude models selected without credentials
 - **d4d6069** (v7.4.2) - CRITICAL FIX: ModelSelector error handling - Fixed 503 errors by adding robust fallback logic
 - **c358233** (v7.4.1) - DEBUG: Temporarily bypassed ModelSelector to isolate 503 cause
