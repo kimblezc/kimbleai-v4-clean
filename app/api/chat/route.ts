@@ -21,9 +21,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!
 });
 
-// Initialize Claude client for multi-model AI support
-const claudeClient = new ClaudeClient({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
+// Initialize Claude client for multi-model AI support (only if API key is available)
+const claudeClient = process.env.ANTHROPIC_API_KEY ? new ClaudeClient({
+  apiKey: process.env.ANTHROPIC_API_KEY,
   defaultModel: 'claude-sonnet-4-5',
   maxTokens: 4096,
   temperature: 1.0,
@@ -31,7 +31,13 @@ const claudeClient = new ClaudeClient({
   onCost: async (cost, model) => {
     console.log(`[Claude] API call cost: $${cost.toFixed(4)} (${model})`);
   }
-});
+}) : null;
+
+// Log Claude availability
+console.log(`[Claude] Client initialized: ${claudeClient ? 'YES' : 'NO (missing ANTHROPIC_API_KEY)'}`);
+if (!claudeClient) {
+  console.log('[Claude] Will fallback to OpenAI models only');
+}
 
 // PERFORMANCE OPTIMIZED: Use embedding cache instead of direct API calls
 async function generateEmbedding(text: string): Promise<number[] | null> {
@@ -87,6 +93,8 @@ const OPENAI_TIMEOUT_MS = 40000;
 
 export async function POST(request: NextRequest) {
   const requestStartTime = Date.now();
+  console.log('[CHAT] ========== NEW REQUEST ==========');
+  console.log(`[CHAT] Request started at ${new Date().toISOString()}`);
 
   // Helper function to check if we're approaching timeout
   const isNearTimeout = () => {
@@ -101,6 +109,7 @@ export async function POST(request: NextRequest) {
   };
 
   try {
+    console.log('[CHAT] Entered try block');
     let requestData;
     try {
       requestData = await request.json();
@@ -386,27 +395,49 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     };
 
     // Use preferred model if provided, otherwise auto-select using ModelSelector
-    let selectedModel = preferredModel
-      ? {
-          model: preferredModel,
-          maxTokens: 4096,
-          temperature: 1.0,
-          description: `User preferred: ${preferredModel}`,
-          useCases: [],
-          costMultiplier: 1
-        }
-      : ModelSelector.selectModel(taskContext);
-    console.log(`[MODEL] Selected: ${selectedModel.model} ${preferredModel ? '(user preference)' : '(auto-selected)'}`);
+    console.log('[CHAT] About to select model, preferredModel:', preferredModel);
+    let selectedModel;
+    try {
+      selectedModel = preferredModel
+        ? {
+            model: preferredModel,
+            maxTokens: 4096,
+            temperature: 1.0,
+            description: `User preferred: ${preferredModel}`,
+            useCases: [],
+            costMultiplier: 1
+          }
+        : ModelSelector.selectModel(taskContext);
+      console.log(`[MODEL] Successfully selected: ${selectedModel.model} ${preferredModel ? '(user preference)' : '(auto-selected)'}`);
+    } catch (modelError) {
+      console.error('[MODEL] ERROR selecting model:', modelError);
+      throw new Error(`Model selection failed: ${modelError}`);
+    }
 
     // Detect if this is a Claude model
-    const isClaudeModel = selectedModel.model.startsWith('claude-') ||
+    let isClaudeModel = selectedModel.model.startsWith('claude-') ||
       ['claude-opus-4-1', 'claude-4-sonnet', 'claude-sonnet-4-5', 'claude-haiku-4-5', 'claude-3-5-haiku', 'claude-3-haiku'].includes(selectedModel.model);
 
+    // CRITICAL: If Claude model selected but no API key available, fallback to OpenAI
+    if (isClaudeModel && !claudeClient) {
+      console.warn('[Claude] Model selected but ANTHROPIC_API_KEY not available, falling back to OpenAI');
+      selectedModel = {
+        model: 'gpt-4o-mini',
+        maxTokens: 4096,
+        temperature: 0.7,
+        description: 'GPT-4o Mini (fallback due to missing Claude API key)',
+        useCases: ['fallback'],
+        costMultiplier: 1
+      };
+      isClaudeModel = false; // Update flag since we're now using OpenAI
+    }
+
     console.log(`[MODEL] Provider: ${isClaudeModel ? 'Claude (Anthropic)' : 'GPT (OpenAI)'}`);
+    console.log(`[MODEL] Final selected model: ${selectedModel.model}`);
 
     // For Claude models, use automatic task-based selection if no specific model provided
     let claudeModelToUse: ClaudeModel | null = null;
-    if (isClaudeModel) {
+    if (isClaudeModel && claudeClient) {
       if (!preferredModel) {
         // Auto-select best Claude model for the task
         claudeModelToUse = claudeClient.selectModelForTask(currentUserMessage, 'quality');
@@ -717,8 +748,8 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     let outputTokens = 0;
     let cost = 0;
 
-    // CLAUDE API ROUTE
-    if (isClaudeModel && claudeModelToUse) {
+    // CLAUDE API ROUTE (only if Claude client is available)
+    if (isClaudeModel && claudeModelToUse && claudeClient) {
       try {
         openaiStartTime = Date.now();
         console.log(`[Claude] Calling API with model: ${claudeModelToUse}`);
