@@ -187,8 +187,8 @@ export default function Home() {
 
             // Sort conversations within group by updated_at (newest first)
             const sortedConvs = [...convs].sort((a, b) => {
-              const dateA = new Date(a.updated_at || a.created_at).getTime();
-              const dateB = new Date(b.updated_at || b.created_at).getTime();
+              const dateA = (a?.updated_at || a?.created_at) ? new Date(a.updated_at || a.created_at).getTime() : 0;
+              const dateB = (b?.updated_at || b?.created_at) ? new Date(b.updated_at || b.created_at).getTime() : 0;
               return dateB - dateA; // Newest first
             });
 
@@ -217,9 +217,11 @@ export default function Home() {
                     <div style={{ fontWeight: 500, marginBottom: '4px' }}>
                       {conv.title || 'Untitled conversation'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#888' }}>
-                      {formatRelativeTime(conv.updated_at || conv.created_at)}
-                    </div>
+                    {(conv.updated_at || conv.created_at) && (
+                      <div style={{ fontSize: '11px', color: '#888' }}>
+                        {formatRelativeTime(conv.updated_at || conv.created_at)}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
