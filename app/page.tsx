@@ -23,7 +23,7 @@ const versionInfo = {
 export default function Home() {
   const { data: session, status } = useSession();
   const [currentUser, setCurrentUser] = useState<'zach' | 'rebecca'>('zach');
-  const [selectedModel, setSelectedModel] = useState<AIModel>('gpt-4o');
+  const [selectedModel, setSelectedModel] = useState<AIModel>('claude-sonnet-4-5');
   const [input, setInput] = useState('');
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showGoogleServices, setShowGoogleServices] = useState(false);
