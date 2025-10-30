@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.3.4
-Latest Commit: 323d5b3
+Latest Version: v7.3.5
+Latest Commit: 4487124
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **4487124** (v7.3.5) - Added SSE streaming to chat API - messages now display in real-time with typing animation
 - **323d5b3** (v7.3.4) - Switched default model back to Claude Sonnet 4.5 after Anthropic credits added
 - **5b9e36e** (v7.3.3) - Fixed chat API request format - useMessages now sends correct messages array
 - **927777e** (v7.3.2) - Fixed critical chat endpoint crash caused by undefined mcpTools reference
