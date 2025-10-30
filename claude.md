@@ -6,14 +6,14 @@
 
 ```
 Latest Version: v7.3.2
-Latest Commit: pending
+Latest Commit: 927777e
 Last Updated: 2025-10-30
-Status: 🚀 Deploying Bug Fix
+Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
-- **pending** (v7.3.2) - Fixed critical chat endpoint crash caused by undefined mcpTools reference
+- **927777e** (v7.3.2) - Fixed critical chat endpoint crash caused by undefined mcpTools reference
 - **58b17b7** (v7.3.1) - Added project rename and delete with inline action buttons (✏️ 🗑️)
 - **44b1e9f** (v7.3.0) - Version tracking update for integrated features
 - **4cd2712** (v7.3.0) - Integrated tag and project systems with D20 in header - Full CRUD + tag management UI
