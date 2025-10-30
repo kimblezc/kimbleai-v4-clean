@@ -63,6 +63,34 @@ export function useProjects(userId: string) {
     [userId, loadProjects]
   );
 
+  const updateProject = useCallback(
+    async (projectId: string, updates: { name?: string; description?: string; status?: string }) => {
+      try {
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update',
+            projectId,
+            userId,
+            updates,
+          }),
+        });
+
+        if (response.ok) {
+          await loadProjects();
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to update project');
+        }
+      } catch (error) {
+        console.error('Failed to update project:', error);
+        throw error;
+      }
+    },
+    [userId, loadProjects]
+  );
+
   const deleteProject = useCallback(
     async (projectId: string) => {
       try {
@@ -110,6 +138,7 @@ export function useProjects(userId: string) {
     currentProject,
     loadProjects,
     createProject,
+    updateProject,
     deleteProject,
     selectProject,
     clearProject,

@@ -81,7 +81,7 @@ export default function Home() {
   const { messages, sending, messagesEndRef, sendMessage, clearMessages } = messagesHook;
 
   const projectsHook = useProjects(currentUser);
-  const { projects, currentProject, selectProject } = projectsHook;
+  const { projects, currentProject, selectProject, updateProject, deleteProject } = projectsHook;
 
   // Show loading screen while checking authentication
   if (status === 'loading' || status === 'unauthenticated') {
@@ -358,19 +358,70 @@ export default function Home() {
                   {projects.map(project => (
                     <div
                       key={project.id}
-                      onClick={() => {
-                        selectProject(project.id);
-                        setShowProjectDropdown(false);
-                      }}
                       style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
                         padding: '10px 12px',
-                        cursor: 'pointer',
                         backgroundColor: currentProject === project.id ? '#2a2a2a' : 'transparent',
                         borderBottom: '1px solid #333',
                         fontSize: '13px'
                       }}
                     >
-                      📁 {project.name}
+                      <div
+                        onClick={() => {
+                          selectProject(project.id);
+                          setShowProjectDropdown(false);
+                        }}
+                        style={{
+                          flex: 1,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📁 {project.name}
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newName = prompt('Enter new project name:', project.name);
+                            if (newName && newName !== project.name) {
+                              updateProject(project.id, { name: newName });
+                            }
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#888',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            padding: '2px 4px'
+                          }}
+                          title="Rename project"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Delete project "${project.name}"? This will also delete all associated conversations.`)) {
+                              deleteProject(project.id);
+                              setShowProjectDropdown(false);
+                            }
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#ff4444',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            padding: '2px 4px'
+                          }}
+                          title="Delete project"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
                   ))}
                   <div
