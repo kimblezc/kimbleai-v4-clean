@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.4.6
-Latest Commit: 5dd16a4
+Latest Version: v7.4.7
+Latest Commit: 72da669
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **72da669** (v7.4.7) - CRITICAL FIX: Use user.id UUID instead of userId string in projects API - Fixed 500 errors by using actual UUID from user object for owner_id, created_by, assigned_to fields
 - **5dd16a4** (v7.4.6) - COMPREHENSIVE FIX: Complete UUID handling across all API endpoints - Added getUserByIdentifier() helper, fixed delete/edit authorization on projects/tags, eliminated all UUID errors
 - **78ee567** (v7.4.5) - COMPREHENSIVE FIX: Added flexible user ID mapper (mapUserIdentifier) to handle UUIDs, friendly IDs, and names - eliminates recurring UUID mismatch errors across entire codebase
 - **2076386** (v7.4.4) - FIXED: Project delete returning 403 Forbidden - corrected column name from user_id to owner_id in /api/projects/delete authorization check
