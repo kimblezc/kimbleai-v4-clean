@@ -12,37 +12,105 @@ export interface ModelConfig {
 }
 
 export const AVAILABLE_MODELS: Record<string, ModelConfig> = {
+  // === CLAUDE MODELS (Anthropic) ===
+  'claude-sonnet-4-5': {
+    model: 'claude-sonnet-4-5',
+    maxTokens: 8096,
+    temperature: 1.0,
+    description: 'Claude Sonnet 4.5 - Best overall quality, creative writing, complex analysis',
+    useCases: ['creative writing', 'complex analysis', 'detailed research', 'nuanced reasoning', 'long-form content'],
+    costMultiplier: 8 // $3/$15 per million tokens
+  },
+  'claude-3-5-haiku': {
+    model: 'claude-3-5-haiku',
+    maxTokens: 8096,
+    temperature: 1.0,
+    description: 'Claude 3.5 Haiku - Fast, cost-effective, great for simple tasks',
+    useCases: ['quick answers', 'simple questions', 'basic chat', 'file processing', 'categorization'],
+    costMultiplier: 2 // $1/$5 per million tokens - most cost-effective
+  },
+  'claude-opus-4': {
+    model: 'claude-opus-4',
+    maxTokens: 8096,
+    temperature: 1.0,
+    description: 'Claude Opus 4 - Most powerful model for hardest tasks',
+    useCases: ['extremely complex analysis', 'advanced research', 'multi-step reasoning', 'expert-level tasks'],
+    costMultiplier: 15 // $15/$75 per million tokens - most expensive
+  },
+
+  // === GPT MODELS (OpenAI) ===
+
+  // GPT-5 Models (Future/Early Access)
+  'gpt-5': {
+    model: 'gpt-5',
+    reasoningLevel: 'high',
+    maxTokens: 8096,
+    temperature: 1.0,
+    description: 'GPT-5 - Next generation model with maximum reasoning',
+    useCases: ['complex analysis', 'advanced reasoning', 'research', 'deep technical questions'],
+    costMultiplier: 20 // Estimated pricing
+  },
+  'gpt-5-turbo': {
+    model: 'gpt-5-turbo',
+    reasoningLevel: 'medium',
+    maxTokens: 8096,
+    temperature: 1.0,
+    description: 'GPT-5 Turbo - Balanced next-gen performance',
+    useCases: ['code generation', 'detailed explanations', 'project planning'],
+    costMultiplier: 12 // Estimated pricing
+  },
+  'gpt-5-mini': {
+    model: 'gpt-5-mini',
+    reasoningLevel: 'low',
+    maxTokens: 4096,
+    temperature: 1.0,
+    description: 'GPT-5 Mini - Fast and efficient next-gen model',
+    useCases: ['general chat', 'quick answers', 'routine tasks'],
+    costMultiplier: 4 // Estimated pricing
+  },
+
+  // o1 Reasoning Models
+  'o1': {
+    model: 'o1',
+    maxTokens: 100000,
+    temperature: 1.0,
+    description: 'GPT o1 - Advanced reasoning model for complex problem solving',
+    useCases: ['complex math', 'advanced coding', 'scientific reasoning', 'multi-step logic', 'research'],
+    costMultiplier: 25 // $15/$60 per million tokens
+  },
+  'o1-mini': {
+    model: 'o1-mini',
+    maxTokens: 65536,
+    temperature: 1.0,
+    description: 'GPT o1-mini - Fast reasoning model for coding and STEM',
+    useCases: ['code generation', 'debugging', 'math problems', 'STEM questions', 'quick reasoning'],
+    costMultiplier: 5 // $3/$12 per million tokens
+  },
+  'o1-preview': {
+    model: 'o1-preview',
+    maxTokens: 128000,
+    temperature: 1.0,
+    description: 'GPT o1-preview - Preview of advanced reasoning capabilities',
+    useCases: ['experimental reasoning', 'complex problem solving', 'research tasks'],
+    costMultiplier: 20 // $15/$60 per million tokens
+  },
+
+  // GPT-4 Models
   'gpt-4o': {
     model: 'gpt-4o',
     maxTokens: 4096,
     temperature: 0.7,
-    description: 'OpenAI GPT-4o - Most capable model for complex reasoning',
-    useCases: ['complex analysis', 'advanced reasoning', 'research', 'deep technical questions'],
-    costMultiplier: 10 // Most expensive but most capable
+    description: 'OpenAI GPT-4o - Excellent for code generation and technical reasoning',
+    useCases: ['code generation', 'debugging', 'technical explanations', 'structured output', 'API integration'],
+    costMultiplier: 6 // $2.50/$10 per million tokens
   },
   'gpt-4o-mini': {
     model: 'gpt-4o-mini',
     maxTokens: 4096,
     temperature: 0.7,
-    description: 'OpenAI GPT-4o Mini - Balanced performance and cost',
-    useCases: ['code generation', 'detailed explanations', 'project planning'],
-    costMultiplier: 3
-  },
-  'gpt-4-turbo': {
-    model: 'gpt-4-turbo',
-    maxTokens: 4096,
-    temperature: 0.7,
-    description: 'GPT-4 Turbo - Fast and efficient for most tasks',
-    useCases: ['general chat', 'simple questions', 'creative writing'],
-    costMultiplier: 6
-  },
-  'gpt-3.5-turbo': {
-    model: 'gpt-3.5-turbo',
-    maxTokens: 4096,
-    temperature: 0.7,
-    description: 'GPT-3.5 Turbo - Cost-effective for simple tasks',
-    useCases: ['routine tasks', 'file processing', 'quick answers', 'basic chat'],
-    costMultiplier: 1 // Baseline cost
+    description: 'OpenAI GPT-4o Mini - Balanced performance for general tasks',
+    useCases: ['general chat', 'project planning', 'summaries', 'data extraction'],
+    costMultiplier: 1 // $0.15/$0.60 per million tokens - baseline
   }
 };
 
@@ -210,42 +278,78 @@ export class ModelSelector {
     const taskTypes = this.detectTaskType(context);
     const userPref = context.userPreference || 'quality';
 
-    // Priority selection logic - using GPT-5 models
-    if (userPref === 'cost' && complexity === 'simple') {
-      return GPT5_MODELS['gpt-5-nano'];
+    console.log(`[ModelSelector] Complexity: ${complexity}, Tasks: ${taskTypes.join(', ')}, Preference: ${userPref}`);
+
+    // === COST-OPTIMIZED SELECTION ===
+    if (userPref === 'cost') {
+      if (complexity === 'simple') {
+        return AVAILABLE_MODELS['claude-3-5-haiku']; // Most cost-effective
+      }
+      return AVAILABLE_MODELS['gpt-4o-mini']; // Good balance for medium tasks
     }
 
-    if (userPref === 'speed' && !taskTypes.includes('reasoning') && !taskTypes.includes('analysis')) {
-      return GPT5_MODELS['gpt-5-mini'];
+    // === SPEED-OPTIMIZED SELECTION ===
+    if (userPref === 'speed') {
+      if (complexity === 'simple' || taskTypes.includes('file_processing')) {
+        return AVAILABLE_MODELS['claude-3-5-haiku']; // Fastest for simple tasks
+      }
+      return AVAILABLE_MODELS['gpt-4o-mini']; // Fast enough for most tasks
     }
 
-    // Task-specific selection
-    if (taskTypes.includes('coding') && complexity === 'complex') {
-      return GPT5_MODELS['gpt-5']; // Best coding performance with GPT-5
+    // === TASK-SPECIFIC SELECTION ===
+
+    // REASONING & MATH: o1/GPT-5 models excel at complex reasoning
+    if (taskTypes.includes('reasoning')) {
+      if (complexity === 'complex') {
+        // Try GPT-5 if available, otherwise o1
+        return AVAILABLE_MODELS['gpt-5'] || AVAILABLE_MODELS['o1']; // Best for complex multi-step reasoning
+      }
+      return AVAILABLE_MODELS['gpt-5-turbo'] || AVAILABLE_MODELS['o1-mini']; // Good for medium reasoning
     }
 
-    if (taskTypes.includes('reasoning') || taskTypes.includes('analysis')) {
-      return complexity === 'complex' ? GPT5_MODELS['gpt-5'] : GPT5_MODELS['gpt-5-medium'];
+    // CODING TASKS: GPT-5/o1-mini for complex, gpt-4o for standard
+    if (taskTypes.includes('coding')) {
+      if (complexity === 'complex') {
+        return AVAILABLE_MODELS['gpt-5-turbo'] || AVAILABLE_MODELS['o1-mini']; // Advanced reasoning for complex code
+      }
+      return AVAILABLE_MODELS['gpt-4o']; // Good for standard coding tasks
     }
 
-    if (taskTypes.includes('file_processing')) {
-      return GPT5_MODELS['gpt-5-mini']; // Good balance for file tasks
-    }
-
+    // CREATIVE WRITING: Claude excels at creative content
     if (taskTypes.includes('creative')) {
-      return complexity === 'simple' ? GPT5_MODELS['gpt-5-mini'] : GPT5_MODELS['gpt-5-medium'];
+      if (complexity === 'complex') {
+        return AVAILABLE_MODELS['claude-sonnet-4-5']; // Best for creative writing
+      }
+      return AVAILABLE_MODELS['claude-3-5-haiku']; // Good for simple creative tasks
     }
 
-    // Default selection based on complexity
+    // ANALYSIS: Claude for nuanced, o1 for technical
+    if (taskTypes.includes('analysis')) {
+      const isTechnicalAnalysis = context.messageContent.toLowerCase().includes('technical') ||
+                                   context.messageContent.toLowerCase().includes('scientific');
+      if (complexity === 'complex' && isTechnicalAnalysis) {
+        return AVAILABLE_MODELS['o1']; // Best for technical analysis
+      } else if (complexity === 'complex') {
+        return AVAILABLE_MODELS['claude-sonnet-4-5']; // Best for nuanced analysis
+      }
+      return AVAILABLE_MODELS['gpt-4o-mini']; // Good for medium analysis
+    }
+
+    // FILE PROCESSING: Fast models preferred
+    if (taskTypes.includes('file_processing')) {
+      return AVAILABLE_MODELS['claude-3-5-haiku']; // Fast and cost-effective
+    }
+
+    // === DEFAULT SELECTION BY COMPLEXITY ===
     switch (complexity) {
       case 'simple':
-        return GPT5_MODELS['gpt-5-nano'];
+        return AVAILABLE_MODELS['claude-3-5-haiku']; // Fast and cheap for simple tasks
       case 'medium':
-        return GPT5_MODELS['gpt-5-mini'];
+        return AVAILABLE_MODELS['gpt-5-mini'] || AVAILABLE_MODELS['gpt-4o-mini']; // Balanced for medium tasks
       case 'complex':
-        return GPT5_MODELS['gpt-5-low']; // Balance performance and cost
+        return AVAILABLE_MODELS['gpt-5'] || AVAILABLE_MODELS['claude-sonnet-4-5']; // Best quality for complex tasks
       default:
-        return GPT5_MODELS['gpt-4o-mini']; // Fallback to GPT-4 if GPT-5 fails
+        return AVAILABLE_MODELS['gpt-4o-mini']; // Safe fallback
     }
   }
 
