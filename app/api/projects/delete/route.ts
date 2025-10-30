@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     // First verify the project exists and belongs to the user
     const { data: projectData, error: projectFetchError } = await supabase
       .from('projects')
-      .select('id, user_id, name')
+      .select('id, owner_id, name')
       .eq('id', projectId)
       .single();
 
@@ -137,8 +137,9 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    if (projectData.user_id !== userData.id) {
+    if (projectData.owner_id !== userData.id) {
       console.error('[PROJECT-DELETE] User does not own this project');
+      console.error('[PROJECT-DELETE] Project owner:', projectData.owner_id, 'User:', userData.id);
       return NextResponse.json({
         error: 'Unauthorized',
         details: 'You do not have permission to delete this project'
