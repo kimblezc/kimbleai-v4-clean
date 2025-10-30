@@ -148,13 +148,13 @@ export async function POST(request: NextRequest) {
           const newProject = await projectManager.createProject({
             name: projectData.name,
             description: projectData.description,
-            owner_id: userId,
+            owner_id: user.id, // FIXED: Use actual UUID from user object
             priority: projectData.priority || 'medium',
             status: 'active',
             tags: projectData.tags || [],
             metadata: {
               created_at: new Date().toISOString(),
-              created_by: userId,
+              created_by: user.id, // FIXED: Use actual UUID
               ...projectData.metadata
             }
           });
@@ -258,11 +258,11 @@ export async function POST(request: NextRequest) {
             project_id: projectData.id,
             title: taskData.title,
             description: taskData.description,
-            assigned_to: taskData.assigned_to || userId,
+            assigned_to: taskData.assigned_to || user.id, // FIXED: Use actual UUID
             priority: taskData.priority || 'medium',
             status: 'pending',
             due_date: taskData.due_date,
-            created_by: userId,
+            created_by: user.id, // FIXED: Use actual UUID
             metadata: taskData.metadata || {}
           })
           .select()
