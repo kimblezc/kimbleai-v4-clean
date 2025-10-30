@@ -117,7 +117,7 @@ export class MCPClient {
       });
 
       // Log stderr output from the child process
-      if (transport as any).stderr) {
+      if ((transport as any).stderr) {
         (transport as any).stderr.on('data', (data: Buffer) => {
           console.error(`[MCP-STDIO-STDERR] ${this.config.name}:`, data.toString());
         });
