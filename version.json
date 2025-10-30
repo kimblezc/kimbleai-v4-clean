@@ -1,8 +1,8 @@
 {
-  "version": "7.3.3",
-  "commit": "5b9e36e",
-  "lastUpdated": "2025-10-30T19:15:00.000Z",
-  "changelog": "🐛 BUGFIX: Fixed chat API request format - useMessages now sends correct messages array",
+  "version": "7.3.4",
+  "commit": "323d5b3",
+  "lastUpdated": "2025-10-30T19:30:00.000Z",
+  "changelog": "✅ RESTORED: Switched default model back to Claude Sonnet 4.5 after Anthropic credits added",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
