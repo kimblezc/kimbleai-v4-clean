@@ -385,9 +385,16 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       userPreference: 'quality' // Could be user setting
     };
 
-    // Use preferred model if provided, otherwise auto-select
-    let selectedModel = preferredModel ? { model: preferredModel } : ModelSelector.selectModel(taskContext);
-    console.log(`[MODEL] Selected: ${selectedModel.model} ${preferredModel ? '(user preference)' : '(auto-selected)'}`);
+    // TEMPORARY: Bypass model selector to debug 503 error
+    let selectedModel = preferredModel ? { model: preferredModel } : {
+      model: 'claude-sonnet-4-5',
+      maxTokens: 4096,
+      temperature: 1.0,
+      description: 'Claude Sonnet 4.5 (fallback)',
+      useCases: [],
+      costMultiplier: 8
+    };
+    console.log(`[MODEL] Selected: ${selectedModel.model} ${preferredModel ? '(user preference)' : '(HARDCODED FALLBACK)'}`);
 
     // Detect if this is a Claude model
     const isClaudeModel = selectedModel.model.startsWith('claude-') ||
