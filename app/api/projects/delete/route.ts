@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { isResourceOwner } from '@/lib/user-utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -137,14 +138,23 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    if (projectData.owner_id !== userData.id) {
+    // Check ownership using comprehensive user identifier comparison
+    const isOwner = isResourceOwner(userId, projectData.owner_id, {
+      id: userData.id,
+      name: userData.name
+    });
+
+    if (!isOwner) {
       console.error('[PROJECT-DELETE] User does not own this project');
-      console.error('[PROJECT-DELETE] Project owner:', projectData.owner_id, 'User:', userData.id);
+      console.error('[PROJECT-DELETE] Project owner:', projectData.owner_id);
+      console.error('[PROJECT-DELETE] User ID:', userData.id, 'Name:', userData.name, 'Request userId:', userId);
       return NextResponse.json({
         error: 'Unauthorized',
         details: 'You do not have permission to delete this project'
       }, { status: 403 });
     }
+
+    console.log('[PROJECT-DELETE] Ownership verified for user:', userData.name);
 
     // Delete the project - service_role bypasses RLS, so just match by ID
     const { error: projectDeleteError, count } = await supabase
