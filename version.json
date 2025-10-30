@@ -1,8 +1,8 @@
 {
-  "version": "7.4.5",
-  "commit": "78ee567",
-  "lastUpdated": "2025-10-30T15:30:00.000Z",
-  "changelog": "✅ COMPREHENSIVE FIX: Added flexible user ID mapper to handle UUIDs, friendly IDs, and names - eliminates recurring UUID mismatch errors",
+  "version": "7.4.6",
+  "commit": "4e9dd24",
+  "lastUpdated": "2025-10-30T16:00:00.000Z",
+  "changelog": "✅ ULTIMATE FIX: Created universal user-utils library with dynamic identifier comparisons - eliminates ALL hardcoded user checks and UUID mismatches",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

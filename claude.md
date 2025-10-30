@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.4.5
-Latest Commit: 78ee567
+Latest Version: v7.4.6
+Latest Commit: 4e9dd24
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **4e9dd24** (v7.4.6) - ULTIMATE FIX: Created lib/user-utils.ts universal identifier library with isResourceOwner(), isSameUser(), normalizeUserIdentifier() - eliminates ALL hardcoded user comparisons and fixes owner_id='zach' vs UUID mismatch
 - **78ee567** (v7.4.5) - COMPREHENSIVE FIX: Added flexible user ID mapper (mapUserIdentifier) to handle UUIDs, friendly IDs, and names - eliminates recurring UUID mismatch errors across entire codebase
 - **2076386** (v7.4.4) - FIXED: Project delete returning 403 Forbidden - corrected column name from user_id to owner_id in /api/projects/delete authorization check
 - **a88ca85** (v7.4.3) - CRITICAL FIX: Added ANTHROPIC_API_KEY fallback to prevent 503 errors when Claude models selected without credentials
