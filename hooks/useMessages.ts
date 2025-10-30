@@ -28,6 +28,16 @@ export function useMessages(conversationId: string | null, userId: string) {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-load messages when conversation ID changes
+  useEffect(() => {
+    if (conversationId) {
+      loadMessages(conversationId);
+    } else {
+      // Clear messages when no conversation is selected (new chat)
+      setMessages([]);
+    }
+  }, [conversationId, loadMessages]);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom(messagesEndRef.current);
