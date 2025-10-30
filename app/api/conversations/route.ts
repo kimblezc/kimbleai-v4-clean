@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getUserByIdentifier } from '@/lib/user-utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,12 +14,8 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    // Get user
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -157,12 +154,8 @@ export async function POST(request: NextRequest) {
   try {
     const { action, conversationId, userId = 'zach', messages, projectId } = await request.json();
 
-    // Get user
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

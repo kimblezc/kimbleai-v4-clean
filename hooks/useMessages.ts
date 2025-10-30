@@ -71,7 +71,7 @@ export function useMessages(conversationId: string | null, userId: string) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   const sendMessage = useCallback(
     async (

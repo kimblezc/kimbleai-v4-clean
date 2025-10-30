@@ -11,6 +11,7 @@ import { embeddingCache } from '@/lib/embedding-cache';
 import { costMonitor } from '@/lib/cost-monitor';
 import { PromptCache } from '@/lib/prompt-cache';
 import { ClaudeClient, type ClaudeModel, type ClaudeMessage } from '@/lib/claude-client';
+import { getUserByIdentifier } from '@/lib/user-utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -149,18 +150,14 @@ export async function POST(request: NextRequest) {
       console.warn('[QueryComplexity] Complex query detected, enabling aggressive timeout protection');
     }
 
-    // Get user data
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Get user data using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
 
-    if (userError || !userData) {
-      console.error('User fetch error:', userError);
+    if (!userData) {
+      console.error('User not found:', userId);
       return NextResponse.json({
         error: 'User not found',
-        details: userError?.message
+        details: `No user found with identifier: ${userId}`
       }, { status: 404 });
     }
 
