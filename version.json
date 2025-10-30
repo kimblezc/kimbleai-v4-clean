@@ -1,8 +1,8 @@
 {
-  "version": "7.4.1",
-  "commit": "0342d07",
-  "lastUpdated": "2025-10-30T12:00:00.000Z",
-  "changelog": "🚀 MAJOR UPDATE: Smart model selection + Tags system + MCP cleanup | 🔧 BUGFIX: Removed duplicate route files causing 503 errors",
+  "version": "7.4.2",
+  "commit": "d4d6069",
+  "lastUpdated": "2025-10-30T12:48:00.000Z",
+  "changelog": "✅ FIXED: Chat endpoint 503 errors caused by ModelSelector - Added robust error handling with guaranteed fallback",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

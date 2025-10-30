@@ -5,15 +5,17 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.4.1
-Latest Commit: 0342d07
+Latest Version: v7.4.2
+Latest Commit: d4d6069
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
-- **0342d07** (v7.4.1) - CRITICAL FIX: Removed duplicate DESKTOP-UN6T850 route files causing 503/500 API errors
+- **d4d6069** (v7.4.2) - CRITICAL FIX: ModelSelector error handling - Fixed 503 errors by adding robust fallback logic
+- **c358233** (v7.4.1) - DEBUG: Temporarily bypassed ModelSelector to isolate 503 cause
+- **0342d07** (v7.4.1) - BUGFIX: Removed duplicate DESKTOP-UN6T850 route files causing 503/500 API errors
 - **265e08e** (v7.4.0) - Smart model selection system + Tags feature + MCP cleanup (see full details below)
 - **4487124** (v7.3.5) - Added SSE streaming to chat API - messages now display in real-time with typing animation
 - **323d5b3** (v7.3.4) - Switched default model back to Claude Sonnet 4.5 after Anthropic credits added
