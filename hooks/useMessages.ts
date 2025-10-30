@@ -31,7 +31,16 @@ export function useMessages(conversationId: string | null, userId: string) {
   const loadMessages = useCallback(async (convId: string) => {
     try {
       setLoading(true);
+
+      // Skip loading if conversation ID looks invalid
+      if (!convId || convId.includes('test-') || convId.includes('-test')) {
+        console.warn('Skipping invalid conversation ID:', convId);
+        setMessages([]);
+        return;
+      }
+
       const response = await fetch(`/api/conversations/${convId}`);
+
       if (response.ok) {
         const data = await response.json();
         if (data.conversation && data.conversation.messages) {
@@ -43,10 +52,22 @@ export function useMessages(conversationId: string | null, userId: string) {
             metadata: msg.metadata,
           }));
           setMessages(formattedMessages);
+        } else {
+          // Conversation exists but has no messages
+          setMessages([]);
         }
+      } else if (response.status === 404) {
+        // Conversation not found - clear messages
+        console.warn('Conversation not found:', convId);
+        setMessages([]);
+      } else {
+        // Other error
+        console.error('Failed to load conversation:', response.status);
+        setMessages([]);
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
+      setMessages([]);
     } finally {
       setLoading(false);
     }

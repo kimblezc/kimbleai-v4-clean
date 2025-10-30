@@ -42,7 +42,21 @@ export function useConversations(userId: string) {
       const response = await fetch(`/api/conversations?userId=${userId}&limit=100`);
       if (response.ok) {
         const data = await response.json();
-        const convs = data.conversations || [];
+        const rawConvs = data.conversations || [];
+
+        // Filter out test/invalid conversations
+        const convs = rawConvs.filter((c: Conversation) => {
+          // Skip conversations with test IDs
+          if (c.id.includes('test-') || c.id.includes('-test')) {
+            return false;
+          }
+          // Skip conversations with invalid ID formats
+          if (c.id.length < 10) {
+            return false;
+          }
+          return true;
+        });
+
         setConversations(convs);
 
         // Group conversations by date
