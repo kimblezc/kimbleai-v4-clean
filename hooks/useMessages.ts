@@ -83,13 +83,12 @@ export function useMessages(conversationId: string | null, userId: string) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            message: content,
+            messages: [
+              { role: 'user', content, projectId: options?.currentProject }
+            ],
             conversationId,
             userId,
-            projectId: options?.currentProject,
-            tags: options?.suggestedTags,
-            model: options?.selectedModel,
-            conversationTitle: options?.conversationTitle,
+            preferredModel: options?.selectedModel,
           }),
         });
 

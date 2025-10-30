@@ -1,8 +1,8 @@
 {
-  "version": "7.3.2",
-  "commit": "927777e",
-  "lastUpdated": "2025-10-30T19:00:00.000Z",
-  "changelog": "🐛 BUGFIX: Fixed chat endpoint crash - removed undefined mcpTools reference",
+  "version": "7.3.3",
+  "commit": "pending",
+  "lastUpdated": "2025-10-30T19:15:00.000Z",
+  "changelog": "🐛 BUGFIX: Fixed chat API request format - useMessages now sends correct messages array",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
