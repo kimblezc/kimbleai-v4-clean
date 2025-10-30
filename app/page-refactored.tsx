@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
@@ -10,15 +10,7 @@ import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
 import UnifiedSearch from '../components/search/UnifiedSearch';
 import { ModelSelector, type AIModel } from '../components/model-selector/ModelSelector';
-import D20Dice from '../components/D20Dice';
 import versionData from '../version.json';
-
-// Dynamic version info - commit hash from Vercel environment
-const versionInfo = {
-  version: versionData.version,
-  commit: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || versionData.commit || 'dev',
-  lastUpdated: versionData.lastUpdated
-};
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -29,37 +21,6 @@ export default function Home() {
   const [showGoogleServices, setShowGoogleServices] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [costStats, setCostStats] = useState<{
-    hourly: { used: number; limit: number; percentage: number };
-    daily: { used: number; limit: number; percentage: number };
-    monthly: { used: number; limit: number; percentage: number };
-  } | null>(null);
-
-  // Load cost stats
-  useEffect(() => {
-    const loadCosts = async () => {
-      if (!session) return;
-      try {
-        const response = await fetch(`/api/costs?action=summary&userId=${currentUser}`);
-        const data = await response.json();
-        if (!data.error) {
-          setCostStats({
-            hourly: data.hourly,
-            daily: data.daily,
-            monthly: data.monthly
-          });
-        }
-      } catch (err) {
-        console.error('Failed to load costs:', err);
-      }
-    };
-
-    if (session) {
-      loadCosts();
-      const interval = setInterval(loadCosts, 60000); // Refresh every 60s
-      return () => clearInterval(interval);
-    }
-  }, [session, currentUser]);
 
   // Custom hooks for state management
   const conversationsHook = useConversations(currentUser);
@@ -229,57 +190,9 @@ export default function Home() {
         </div>
 
         {/* Version Info */}
-        <div
-          style={{
-            fontSize: '10px',
-            color: '#10b981',
-            marginTop: '8px',
-            textAlign: 'center',
-            padding: '4px',
-            backgroundColor: '#1a1a1a',
-            border: '1px solid #10b981',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-          title={`Version ${versionInfo.version} - Commit ${versionInfo.commit}\nUpdated: ${new Date(versionInfo.lastUpdated).toLocaleString()}`}
-        >
-          <div>v{versionInfo.version} @ {versionInfo.commit}</div>
+        <div style={{ fontSize: '10px', color: '#666', marginTop: '8px', textAlign: 'center' }}>
+          v{versionData.version}
         </div>
-
-        {/* Cost Tracker */}
-        {session && costStats && (() => {
-          const isExceeded = costStats.hourly.percentage >= 100 ||
-                            costStats.daily.percentage >= 100 ||
-                            costStats.monthly.percentage >= 100;
-          return (
-            <div
-              onClick={() => window.location.href = '/costs'}
-              style={{
-                marginTop: '8px',
-                padding: '4px 6px',
-                backgroundColor: isExceeded ? '#7f1d1d' : '#2a2a2a',
-                border: `1px solid ${isExceeded ? '#ef4444' : '#10b981'}`,
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '10px'
-              }}
-              title={`Hourly: ${costStats.hourly.percentage.toFixed(0)}%\nDaily: ${costStats.daily.percentage.toFixed(0)}%\nMonthly: ${costStats.monthly.percentage.toFixed(0)}%`}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                <span style={{ color: '#666' }}>Hr:</span>
-                <span style={{ color: isExceeded ? '#fca5a5' : '#ccc' }}>${costStats.hourly.used.toFixed(2)}/${costStats.hourly.limit.toFixed(0)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                <span style={{ color: '#666' }}>Day:</span>
-                <span style={{ color: isExceeded ? '#fca5a5' : '#ccc' }}>${costStats.daily.used.toFixed(2)}/${costStats.daily.limit.toFixed(0)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#666' }}>Mon:</span>
-                <span style={{ color: isExceeded ? '#fca5a5' : '#ccc' }}>${costStats.monthly.used.toFixed(2)}/${costStats.monthly.limit.toFixed(0)}</span>
-              </div>
-            </div>
-          );
-        })()}
       </div>
 
       {/* Main Content */}
@@ -340,9 +253,7 @@ export default function Home() {
         >
           {messages.length === 0 ? (
             <div style={{ textAlign: 'center', marginTop: '100px', color: '#666' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                <D20Dice size={96} spinning={true} />
-              </div>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>💬</div>
               <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Start a conversation</div>
               <div style={{ fontSize: '14px' }}>Ask me anything!</div>
             </div>
