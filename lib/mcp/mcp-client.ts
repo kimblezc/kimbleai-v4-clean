@@ -180,24 +180,44 @@ export class MCPClient {
       const response = await this.client.listTools();
       return response.tools;
     } catch (error: any) {
-      // Handle Zod schema validation errors - try to extract raw tools anyway
-      if (error.name === 'ZodError' && error.issues) {
-        console.warn(`⚠️  Schema validation error for ${this.config.name}, attempting to extract raw tools:`, error.issues);
+      console.log(`[MCP-TOOLS-DEBUG] Caught error in listTools for ${this.config.name}:`, {
+        errorName: error?.name,
+        errorConstructor: error?.constructor?.name,
+        hasIssues: !!error?.issues,
+        isZodError: error?.name === 'ZodError',
+        message: error?.message?.substring(0, 100)
+      });
 
-        // Try to get the raw response before validation
+      // Handle Zod schema validation errors - extract raw tools by accessing internal transport
+      if (error.name === 'ZodError' || error.constructor?.name === 'ZodError') {
+        console.warn(`⚠️  Schema validation error for ${this.config.name}. Attempting to extract raw tools by bypassing validation...`);
+
         try {
-          // The client likely has the raw response cached
-          const rawResponse = await this.client.request(
-            { method: 'tools/list' },
+          // Access the internal client to send raw request without validation
+          const internalClient = (this.client as any)._client || this.client;
+
+          // Send request directly through transport layer
+          const rawResponse = await internalClient.request(
+            { method: 'tools/list', params: {} },
             {} as any
           );
 
-          if (rawResponse && (rawResponse as any).tools) {
-            console.log(`✅ Extracted ${(rawResponse as any).tools.length} tools from ${this.config.name} (bypassing schema validation)`);
-            return (rawResponse as any).tools;
+          console.log(`[MCP-TOOLS-DEBUG] Raw response received:`, {
+            hasTools: !!rawResponse?.tools,
+            toolsIsArray: Array.isArray(rawResponse?.tools),
+            toolCount: rawResponse?.tools?.length
+          });
+
+          if (rawResponse && rawResponse.tools && Array.isArray(rawResponse.tools)) {
+            console.log(`✅ Extracted ${rawResponse.tools.length} tools from ${this.config.name} (bypassing schema validation)`);
+
+            // Return raw tools even if they don't match schema
+            return rawResponse.tools;
+          } else {
+            console.error(`Raw response doesn't contain tools array:`, rawResponse);
           }
         } catch (rawError) {
-          console.error(`Failed to extract raw tools:`, rawError);
+          console.error(`Failed to extract raw tools from ${this.config.name}:`, rawError);
         }
       }
 
