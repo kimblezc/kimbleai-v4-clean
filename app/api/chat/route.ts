@@ -10,7 +10,6 @@ import { zapierClient } from '@/lib/zapier-client';
 import { embeddingCache } from '@/lib/embedding-cache';
 import { costMonitor } from '@/lib/cost-monitor';
 import { PromptCache } from '@/lib/prompt-cache';
-import { getMCPToolsForChat, invokeMCPToolFromChat, getMCPSystemPrompt } from '@/lib/mcp/chat-integration';
 import { ClaudeClient, type ClaudeModel, type ClaudeMessage } from '@/lib/claude-client';
 
 const supabase = createClient(
@@ -46,15 +45,6 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
 }
 
 export async function GET() {
-  // Fetch MCP tools count for status display
-  let mcpToolsCount = 0;
-  try {
-    const mcpTools = await getMCPToolsForChat();
-    mcpToolsCount = mcpTools.length;
-  } catch (error) {
-    console.warn('[MCP] Failed to load tools for status:', error);
-  }
-
   return NextResponse.json({
     status: 'OK',
     service: 'KimbleAI Chat API',
@@ -68,8 +58,6 @@ export async function GET() {
       functionCalling: true,
       gmailAccess: true,
       driveAccess: true,
-      mcpIntegration: true,
-      mcpToolsAvailable: mcpToolsCount,
       multiModelAI: true,
       claudeIntegration: true,
       models: {
@@ -87,8 +75,7 @@ export async function GET() {
       'get_file_details',
       'send_email',
       'create_calendar_event',
-      'get_calendar_events',
-      `...and ${mcpToolsCount} MCP tools (GitHub, Filesystem, Memory, etc.)`
+      'get_calendar_events'
     ],
     lastUpdated: new Date().toISOString()
   });
@@ -312,11 +299,8 @@ You automatically reference ALL relevant data from:
 - Uploaded files & knowledge base
 - Project data & task information
 
-🔮 **MODEL CONTEXT PROTOCOL (MCP) INTEGRATION**
-${getMCPSystemPrompt()}
-
 🔧 **FUNCTION CALLING CAPABILITIES**
-You have active access to Gmail, Google Drive, File Management, and MCP tools:
+You have active access to Gmail, Google Drive, and File Management tools:
 
 **Gmail Functions:**
 - get_recent_emails: Retrieve recent emails from Gmail
@@ -423,17 +407,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
       }
     }
 
-    // Fetch MCP tools and merge with built-in tools
-    let mcpTools: any[] = [];
-    try {
-      mcpTools = await getMCPToolsForChat();
-      console.log(`🔮 [MCP] Loaded ${mcpTools.length} MCP tools for chat`);
-    } catch (error: any) {
-      console.warn('[MCP] Failed to load MCP tools:', error.message);
-      // Continue without MCP tools if they fail to load
-    }
-
-    // Define function tools for Gmail, Drive, File Management, and MCP
+    // Define function tools for Gmail, Drive, and File Management
     const tools = [
       {
         type: "function" as const,
@@ -1042,27 +1016,7 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
                 break;
 
               default:
-                // Check if it's an MCP tool (format: mcp_servername_toolname)
-                if (functionName.startsWith('mcp_')) {
-                  console.log(`🔮 [MCP] Invoking MCP tool: ${functionName}`);
-                  try {
-                    functionResult = await invokeMCPToolFromChat(
-                      functionName,
-                      functionArgs,
-                      userData.id,
-                      conversationId
-                    );
-                    // Convert string response to object for consistency
-                    if (typeof functionResult === 'string') {
-                      functionResult = { success: true, result: functionResult };
-                    }
-                  } catch (mcpError: any) {
-                    console.error(`[MCP] Tool invocation error:`, mcpError);
-                    functionResult = { error: `MCP tool error: ${mcpError.message}` };
-                  }
-                } else {
-                  functionResult = { error: `Unknown function: ${functionName}` };
-                }
+                functionResult = { error: `Unknown function: ${functionName}` };
             }
 
             functionResults.push({
