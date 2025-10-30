@@ -1286,26 +1286,53 @@ ${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
     console.log(`⏱️ [Performance] TOTAL REQUEST TIME: ${totalTime}ms`);
     console.log(`⏱️ [Performance] Breakdown: Butler=${butlerEndTime - butlerStartTime}ms, OpenAI=${openaiEndTime - openaiStartTime}ms, Other=${totalTime - (butlerEndTime - butlerStartTime) - (openaiEndTime - openaiStartTime)}ms`);
 
-    return NextResponse.json({
-      response: aiResponse,
-      saved: true,
-      storageLocation: 'background-processing',
-      memoryActive: true,
-      knowledgeItemsFound: autoContext.relevantKnowledge.length,
-      allMessagesRetrieved: allUserMessages?.length || 0,
-      factsExtracted: facts.length,
-      modelUsed: {
-        model: isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model,
-        provider: isClaudeModel ? 'Claude (Anthropic)' : 'OpenAI',
-        reasoningLevel: selectedModel.reasoningLevel || 'none',
-        costMultiplier: selectedModel.costMultiplier,
-        explanation: isClaudeModel && claudeModelToUse
-          ? `Using Claude ${claudeModelToUse} for high-quality responses`
-          : ModelSelector.getModelExplanation(selectedModel, taskContext),
-        inputTokens,
-        outputTokens,
-        cost
-      }
+    // STREAMING RESPONSE: Send response as SSE (Server-Sent Events)
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        // Send the AI response in chunks
+        const chunkSize = 50; // Send 50 characters at a time for smooth streaming
+        for (let i = 0; i < aiResponse.length; i += chunkSize) {
+          const chunk = aiResponse.slice(i, i + chunkSize);
+          const sseData = `data: ${JSON.stringify({ content: chunk })}\n\n`;
+          controller.enqueue(encoder.encode(sseData));
+        }
+
+        // Send model info as final metadata chunk
+        const metadata = {
+          modelInfo: {
+            model: isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model,
+            provider: isClaudeModel ? 'Claude (Anthropic)' : 'OpenAI',
+            reasoningLevel: selectedModel.reasoningLevel || 'none',
+            costMultiplier: selectedModel.costMultiplier,
+            explanation: isClaudeModel && claudeModelToUse
+              ? `Using Claude ${claudeModelToUse} for high-quality responses`
+              : ModelSelector.getModelExplanation(selectedModel, taskContext),
+            inputTokens,
+            outputTokens,
+            cost
+          },
+          saved: true,
+          storageLocation: 'background-processing',
+          memoryActive: true,
+          knowledgeItemsFound: autoContext.relevantKnowledge.length,
+          allMessagesRetrieved: allUserMessages?.length || 0,
+          factsExtracted: facts.length
+        };
+        const metadataSSE = `data: ${JSON.stringify(metadata)}\n\n`;
+        controller.enqueue(encoder.encode(metadataSSE));
+
+        // Close the stream
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
 
   } catch (error: any) {
