@@ -39,7 +39,7 @@ export function useMessages(conversationId: string | null, userId: string) {
         return;
       }
 
-      const response = await fetch(`/api/conversations/${convId}`);
+      const response = await fetch(`/api/conversations/${convId}?userId=${userId}`);
 
       if (response.ok) {
         const data = await response.json();

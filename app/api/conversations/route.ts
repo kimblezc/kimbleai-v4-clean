@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     let error;
 
     // Try querying with project_id column (new schema)
+    // FIXED: Order by updated_at descending (newest first) and include timestamps
     const queryWithProject = await supabase
       .from('conversations')
       .select(`
@@ -36,10 +37,13 @@ export async function GET(request: NextRequest) {
         title,
         user_id,
         project_id,
+        created_at,
+        updated_at,
+        is_pinned,
         messages(id, content, role, created_at)
       `)
       .eq('user_id', userData.id)
-      .order('id', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(limit);
 
     if (queryWithProject.error) {
@@ -51,10 +55,13 @@ export async function GET(request: NextRequest) {
           id,
           title,
           user_id,
+          created_at,
+          updated_at,
+          is_pinned,
           messages(id, content, role, created_at)
         `)
         .eq('user_id', userData.id)
-        .order('id', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(limit);
 
       conversations = queryWithoutProject.data;
@@ -114,8 +121,9 @@ export async function GET(request: NextRequest) {
         project: actualProject,
         messageCount,
         lastMessage: lastMessage ? formatTimeAgo(lastMessage.created_at) : 'No messages',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: (conv as any).created_at || new Date().toISOString(),
+        updatedAt: (conv as any).updated_at || new Date().toISOString(),
+        is_pinned: (conv as any).is_pinned || false,
         preview: lastMessage?.content?.substring(0, 100) + '...' || ''
       };
     }) || [];
