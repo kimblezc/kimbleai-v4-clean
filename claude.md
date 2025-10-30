@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.4.7
-Latest Commit: 72da669
+Latest Version: v7.5.0
+Latest Commit: ee47d21
 Last Updated: 2025-10-30
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **ee47d21** (v7.5.0) - FEATURE: Auto-load conversation messages when clicking sidebar chats - Added useEffect to automatically fetch and display old conversations
 - **72da669** (v7.4.7) - CRITICAL FIX: Use user.id UUID instead of userId string in projects API - Fixed 500 errors by using actual UUID from user object for owner_id, created_by, assigned_to fields
 - **5dd16a4** (v7.4.6) - COMPREHENSIVE FIX: Complete UUID handling across all API endpoints - Added getUserByIdentifier() helper, fixed delete/edit authorization on projects/tags, eliminated all UUID errors
 - **78ee567** (v7.4.5) - COMPREHENSIVE FIX: Added flexible user ID mapper (mapUserIdentifier) to handle UUIDs, friendly IDs, and names - eliminates recurring UUID mismatch errors across entire codebase
