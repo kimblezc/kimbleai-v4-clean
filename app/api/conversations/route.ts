@@ -44,25 +44,22 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     if (queryWithProject.error) {
-      // If project_id column doesn't exist, try without it (old schema)
-      console.warn('project_id column not found, using fallback query');
-      const queryWithoutProject = await supabase
+      // If project_id or other columns don't exist, try minimal query
+      console.warn('Full query failed, trying minimal query. Error:', queryWithProject.error);
+      const queryMinimal = await supabase
         .from('conversations')
         .select(`
           id,
           title,
           user_id,
-          created_at,
-          updated_at,
-          is_pinned,
           messages(id, content, role, created_at)
         `)
         .eq('user_id', userData.id)
-        .order('updated_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(limit);
 
-      conversations = queryWithoutProject.data;
-      error = queryWithoutProject.error;
+      conversations = queryMinimal.data;
+      error = queryMinimal.error;
     } else {
       conversations = queryWithProject.data;
       error = queryWithProject.error;
@@ -70,9 +67,14 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Conversations fetch error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
       return NextResponse.json({
         error: 'Failed to fetch conversations',
-        details: error.message
+        details: error.message,
+        code: error.code,
+        hint: error.hint
       }, { status: 500 });
     }
 
@@ -112,18 +114,27 @@ export async function GET(request: NextRequest) {
       // Handle case where project_id column doesn't exist yet
       const actualProject = (conv as any).project_id || '';
 
+      // Use actual timestamps if available, otherwise use message timestamps
+      const createdAt = (conv as any).created_at || lastMessage?.created_at || new Date().toISOString();
+      const updatedAt = (conv as any).updated_at || lastMessage?.created_at || createdAt;
+
       return {
         id: conv.id,
         title: conv.title || 'Untitled Conversation',
         project: actualProject,
         messageCount,
         lastMessage: lastMessage ? formatTimeAgo(lastMessage.created_at) : 'No messages',
-        createdAt: (conv as any).created_at || new Date().toISOString(),
-        updatedAt: (conv as any).updated_at || new Date().toISOString(),
+        createdAt,
+        updatedAt,
         is_pinned: (conv as any).is_pinned || false,
         preview: lastMessage?.content?.substring(0, 100) + '...' || ''
       };
     }) || [];
+
+    // Sort by updatedAt in JavaScript if database ordering failed
+    formattedConversations.sort((a, b) =>
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
 
     // Group by project if needed
     const groupedByProject = formattedConversations.reduce((acc, conv) => {
