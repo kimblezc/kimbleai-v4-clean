@@ -118,15 +118,38 @@ export async function POST(request: NextRequest) {
     }
 
     // FIXED: Actually delete the project from the projects table
-    // This was missing - projects would stay in the database even after "deletion"
+    // Using service_role key which bypasses RLS, so we only filter by ID
     console.log('[PROJECT-DELETE] Attempting to delete project:', projectId);
     console.log('[PROJECT-DELETE] User ID:', userData.id);
 
-    const { error: projectDeleteError } = await supabase
+    // First verify the project exists and belongs to the user
+    const { data: projectData, error: projectFetchError } = await supabase
       .from('projects')
-      .delete()
+      .select('id, user_id, name')
       .eq('id', projectId)
-      .eq('user_id', userData.id);
+      .single();
+
+    if (projectFetchError || !projectData) {
+      console.error('[PROJECT-DELETE] Project not found:', projectFetchError);
+      return NextResponse.json({
+        error: 'Project not found',
+        details: projectFetchError?.message || 'Project does not exist'
+      }, { status: 404 });
+    }
+
+    if (projectData.user_id !== userData.id) {
+      console.error('[PROJECT-DELETE] User does not own this project');
+      return NextResponse.json({
+        error: 'Unauthorized',
+        details: 'You do not have permission to delete this project'
+      }, { status: 403 });
+    }
+
+    // Delete the project - service_role bypasses RLS, so just match by ID
+    const { error: projectDeleteError, count } = await supabase
+      .from('projects')
+      .delete({ count: 'exact' })
+      .eq('id', projectId);
 
     if (projectDeleteError) {
       console.error('[PROJECT-DELETE] Failed to delete project from database');
@@ -135,17 +158,32 @@ export async function POST(request: NextRequest) {
       console.error('[PROJECT-DELETE] Error:', projectDeleteError);
       console.error('[PROJECT-DELETE] Error message:', projectDeleteError.message);
       console.error('[PROJECT-DELETE] Error code:', projectDeleteError.code);
-      // Log but don't fail - conversations have been moved successfully
-    } else {
-      console.log('[PROJECT-DELETE] Successfully deleted project from database');
-      console.log('[PROJECT-DELETE] Project ID:', projectId);
+
+      // Actually return error instead of silently failing
+      return NextResponse.json({
+        error: 'Failed to delete project from database',
+        details: projectDeleteError.message,
+        code: projectDeleteError.code
+      }, { status: 500 });
     }
+
+    if (count === 0) {
+      console.error('[PROJECT-DELETE] No rows deleted - project may not exist');
+      return NextResponse.json({
+        error: 'Project deletion failed',
+        details: 'No rows were deleted. Project may have already been deleted.'
+      }, { status: 404 });
+    }
+
+    console.log('[PROJECT-DELETE] Successfully deleted project from database');
+    console.log('[PROJECT-DELETE] Project ID:', projectId);
+    console.log('[PROJECT-DELETE] Rows deleted:', count);
 
     return NextResponse.json({
       success: true,
       projectId,
       conversationsMoved: conversationsToUpdate.length,
-      message: `Project "${projectId}" deleted successfully. ${conversationsToUpdate.length} conversations now unassigned.`
+      message: `Project "${projectData.name}" deleted successfully. ${conversationsToUpdate.length} conversations now unassigned.`
     });
 
   } catch (error: any) {
