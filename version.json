@@ -1,8 +1,8 @@
 {
-  "version": "7.1.0",
-  "commit": "d82312e",
-  "lastUpdated": "2025-10-30T16:00:00.000Z",
-  "changelog": "🎨 MINOR: Tag management UI - Full-featured dashboard with analytics, search, and sync",
+  "version": "7.2.0",
+  "commit": "8e79aca",
+  "lastUpdated": "2025-10-30T17:00:00.000Z",
+  "changelog": "♻️ REFACTOR: Complete page.tsx modernization - Reduced from 4,041 to 430 lines with custom hooks",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
