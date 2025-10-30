@@ -1,7 +1,7 @@
 {
   "version": "6.1.4",
-  "commit": "72c26ab",
-  "lastUpdated": "2025-10-30T06:00:00.000Z",
+  "commit": "8b34238",
+  "lastUpdated": "2025-10-30T07:17:00.000Z",
   "changelog": "🐛 Fix: Enhanced MCP stdio logging + fixed syntax error + updated NEXTAUTH_URL to Railway",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
