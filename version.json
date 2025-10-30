@@ -1,8 +1,8 @@
 {
-  "version": "6.1.3",
-  "commit": "aa6a1e4",
-  "lastUpdated": "2025-10-29T20:00:00.000Z",
-  "changelog": "🐛 Fix: Replace alert() popups with toast notifications in MCP components + enhanced error logging",
+  "version": "6.1.4",
+  "commit": "72c26ab",
+  "lastUpdated": "2025-10-30T06:00:00.000Z",
+  "changelog": "🐛 Fix: Enhanced MCP stdio logging + fixed syntax error + updated NEXTAUTH_URL to Railway",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
