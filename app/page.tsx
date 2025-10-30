@@ -12,6 +12,7 @@ import UnifiedSearch from '../components/search/UnifiedSearch';
 import { ModelSelector, type AIModel } from '../components/model-selector/ModelSelector';
 import D20Dice from '../components/D20Dice';
 import versionData from '../version.json';
+import { formatRelativeTime } from '@/lib/chat-utils';
 
 // Dynamic version info - commit hash from Vercel environment
 const versionInfo = {
@@ -183,12 +184,20 @@ export default function Home() {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {Object.entries(groupedConversations).map(([group, convs]) => {
             if (convs.length === 0) return null;
+
+            // Sort conversations within group by updated_at (newest first)
+            const sortedConvs = [...convs].sort((a, b) => {
+              const dateA = new Date(a.updated_at || a.created_at).getTime();
+              const dateB = new Date(b.updated_at || b.created_at).getTime();
+              return dateB - dateA; // Newest first
+            });
+
             return (
               <div key={group} style={{ marginBottom: '16px' }}>
                 <div style={{ fontSize: '11px', color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>
                   {group}
                 </div>
-                {convs.map((conv) => (
+                {sortedConvs.map((conv) => (
                   <div
                     key={conv.id}
                     onClick={() => {
@@ -202,9 +211,15 @@ export default function Home() {
                       cursor: 'pointer',
                       marginBottom: '4px',
                       fontSize: '13px',
+                      transition: 'background-color 0.2s',
                     }}
                   >
-                    {conv.title || 'Untitled conversation'}
+                    <div style={{ fontWeight: 500, marginBottom: '4px' }}>
+                      {conv.title || 'Untitled conversation'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#888' }}>
+                      {formatRelativeTime(conv.updated_at || conv.created_at)}
+                    </div>
                   </div>
                 ))}
               </div>
