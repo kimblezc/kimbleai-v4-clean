@@ -1,8 +1,8 @@
 {
-  "version": "7.7.1",
-  "commit": "a4db07f",
-  "lastUpdated": "2025-10-31T17:30:00.000Z",
-  "changelog": "🦉 ARCHIE SIMPLIFICATION: Removed complex Archie 2.0 (database, approval queues, activity streams) and replaced with simple git-based version. New Archie: auto-fixes lint/dead code/patches, commits to git, runs hourly via cron. Also changed D&D fact rotation from 8 to 30 seconds.",
+  "version": "7.7.2",
+  "commit": "ca21b74",
+  "lastUpdated": "2025-10-31T17:45:00.000Z",
+  "changelog": "🦉 ARCHIE AI ENHANCEMENT: Added AI-powered iterative fixing with retry logic. Uses GPT-4o to fix complex TypeScript errors, tests each fix, rolls back on failure, and tries up to 3 times with increasingly aggressive strategies. Also simplified Archie 2.0 to git-based version and changed D&D rotation to 30s.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
