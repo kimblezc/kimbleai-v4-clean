@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.6.0
-Latest Commit: 39ca25b
+Latest Version: v7.6.1
+Latest Commit: 1b5b670
 Last Updated: 2025-10-31
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **1b5b670** (v7.6.1) - FEATURE: 20 D&D facts with smart rotation - Expanded to 20 curated facts mixing surface-level and deep lore (THAC0, Vecna, Lady of Pain, Spelljammer, Blood War), smart rotation tracks used facts and never repeats until all shown, provides 2min 40sec of unique content before any repeats
 - **39ca25b** (v7.6.0) - FEATURE: Rotating D&D facts on empty state - Removed large "KimbleAI" branding from center, added 10 rotating D&D facts that change every 8 seconds, kept time-based greetings, cleaner minimal UI, changed input placeholder to "Ask me anything..."
 - **7ce3fa4** (v7.5.7) - HOTFIX: Fixed TypeError in conversation sorting - Added defensive null checks for conversations without timestamps, prevents 'Cannot read properties of undefined (reading getTime)' error
 - **38e311d** (v7.5.6) - UX: Added timestamps to conversation sidebar + sorted conversations newest to oldest - Shows relative time (e.g., '2h ago') for each chat, conversations now properly sorted within each group
