@@ -1,8 +1,8 @@
 {
-  "version": "7.6.0",
-  "commit": "39ca25b",
-  "lastUpdated": "2025-10-31T07:05:00.000Z",
-  "changelog": "✨ FEATURE: Rotating D&D facts on empty state - Removed big KimbleAI branding from center, added rotating D&D facts every 8 seconds with time-based greetings, cleaner UI",
+  "version": "7.6.1",
+  "commit": "1b5b670",
+  "lastUpdated": "2025-10-31T07:15:00.000Z",
+  "changelog": "✨ FEATURE: 20 D&D facts with smart rotation - Expanded to 20 curated facts (deep lore + gameplay), smart rotation never repeats until all shown, 2min 40sec of unique content",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
