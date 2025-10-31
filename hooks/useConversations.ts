@@ -23,6 +23,10 @@ export interface ConversationGroups {
   older: Conversation[];
 }
 
+export interface ConversationsByProject {
+  [projectId: string]: Conversation[];
+}
+
 export function useConversations(userId: string) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [groupedConversations, setGroupedConversations] = useState<ConversationGroups>({
@@ -32,6 +36,7 @@ export function useConversations(userId: string) {
     thisMonth: [],
     older: [],
   });
+  const [conversationsByProject, setConversationsByProject] = useState<ConversationsByProject>({});
   const [loading, setLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [pinnedConversations, setPinnedConversations] = useState<Set<string>>(new Set());
@@ -62,6 +67,27 @@ export function useConversations(userId: string) {
         // Group conversations by date
         const grouped = groupConversationsByDate(convs);
         setGroupedConversations(grouped);
+
+        // Group conversations by project
+        const byProject: ConversationsByProject = {};
+        convs.forEach((conv: Conversation) => {
+          const projectId = conv.project_id || 'unassigned';
+          if (!byProject[projectId]) {
+            byProject[projectId] = [];
+          }
+          byProject[projectId].push(conv);
+        });
+
+        // Sort conversations within each project by updated_at
+        Object.keys(byProject).forEach(projectId => {
+          byProject[projectId].sort((a, b) => {
+            const dateA = new Date(a.updated_at || a.created_at).getTime();
+            const dateB = new Date(b.updated_at || b.created_at).getTime();
+            return dateB - dateA; // Most recent first
+          });
+        });
+
+        setConversationsByProject(byProject);
 
         // Track pinned conversations
         const pinned = new Set(convs.filter((c: Conversation) => c.is_pinned).map((c: Conversation) => c.id));
@@ -155,6 +181,7 @@ export function useConversations(userId: string) {
   return {
     conversations,
     groupedConversations,
+    conversationsByProject,
     loading,
     currentConversationId,
     pinnedConversations,

@@ -76,6 +76,7 @@ export default function Home() {
   const {
     currentConversationId,
     groupedConversations,
+    conversationsByProject,
     selectConversation,
     createNewConversation,
     deleteConversation,
@@ -255,44 +256,76 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Conversations List */}
+        {/* Conversations List - Grouped by Project */}
         <div className="flex-1 overflow-y-auto px-3">
-          {Object.entries(groupedConversations).map(([group, convs]) => {
-            if (convs.length === 0) return null;
+          {/* Unassigned conversations first */}
+          {conversationsByProject['unassigned'] && conversationsByProject['unassigned'].length > 0 && (
+            <div className="mb-4">
+              <div className="text-sm text-gray-500 font-medium px-2 mb-2">GENERAL</div>
+              {conversationsByProject['unassigned'].map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => {
+                    selectConversation(conv.id);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
+                    currentConversationId === conv.id
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-400 hover:bg-gray-900'
+                  }`}
+                >
+                  <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
+                  {(conv.updated_at || conv.created_at) && (
+                    <div className="text-sm text-gray-600 mt-0.5">
+                      {formatRelativeTime(conv.updated_at || conv.created_at)}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
 
-            const sortedConvs = [...convs].sort((a, b) => {
-              const dateA = (a?.updated_at || a?.created_at) ? new Date(a.updated_at || a.created_at).getTime() : 0;
-              const dateB = (b?.updated_at || b?.created_at) ? new Date(b.updated_at || b.created_at).getTime() : 0;
-              return dateB - dateA;
-            });
+          {/* Conversations grouped by project */}
+          {Object.entries(conversationsByProject)
+            .filter(([projectId]) => projectId !== 'unassigned')
+            .map(([projectId, convs]) => {
+              if (convs.length === 0) return null;
 
-            return (
-              <div key={group} className="mb-4">
-                <div className="text-sm text-gray-500 font-medium px-2 mb-2">{group.toUpperCase()}</div>
-                {sortedConvs.map((conv) => (
-                  <button
-                    key={conv.id}
-                    onClick={() => {
-                      selectConversation(conv.id);
-                      setIsMobileSidebarOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
-                      currentConversationId === conv.id
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-400 hover:bg-gray-900'
-                    }`}
-                  >
-                    <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
-                    {(conv.updated_at || conv.created_at) && (
-                      <div className="text-sm text-gray-600 mt-0.5">
-                        {formatRelativeTime(conv.updated_at || conv.created_at)}
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            );
-          })}
+              // Find project name from projects list
+              const project = projects.find(p => p.id === projectId);
+              const projectName = project?.name || projectId;
+
+              return (
+                <div key={projectId} className="mb-4">
+                  <div className="text-sm text-gray-500 font-medium px-2 mb-2 flex items-center justify-between">
+                    <span>{projectName.toUpperCase()}</span>
+                    <span className="text-gray-600 text-xs">({convs.length})</span>
+                  </div>
+                  {convs.map((conv) => (
+                    <button
+                      key={conv.id}
+                      onClick={() => {
+                        selectConversation(conv.id);
+                        setIsMobileSidebarOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
+                        currentConversationId === conv.id
+                          ? 'bg-gray-800 text-white'
+                          : 'text-gray-400 hover:bg-gray-900'
+                      }`}
+                    >
+                      <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
+                      {(conv.updated_at || conv.created_at) && (
+                        <div className="text-sm text-gray-600 mt-0.5">
+                          {formatRelativeTime(conv.updated_at || conv.created_at)}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
         </div>
 
         {/* Archie Dashboard Link */}

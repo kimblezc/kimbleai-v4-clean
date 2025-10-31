@@ -69,7 +69,8 @@ export class ProjectTagGuardian {
         this.validateAssociations(),
         this.validateOrphans(),
         this.validateDuplicates(),
-        this.validatePermissions()
+        this.validatePermissions(),
+        this.validateConversationIntegrity()
       ]);
 
       // Auto-fix issues that are marked as fixable
@@ -418,8 +419,149 @@ export class ProjectTagGuardian {
         }
       }
 
+      // Check for orphaned messages (messages without valid conversation)
+      const { data: messages } = await this.supabase
+        .from('messages')
+        .select('id, conversation_id, user_id');
+
+      if (messages && messages.length > 0) {
+        const { data: conversationIds } = await this.supabase
+          .from('conversations')
+          .select('id');
+
+        const validConversationIds = new Set(conversationIds?.map(c => c.id) || []);
+
+        const orphanedMessages = messages.filter(m => !m.conversation_id || !validConversationIds.has(m.conversation_id));
+
+        if (orphanedMessages.length > 0) {
+          this.issues.push({
+            type: 'orphan',
+            severity: 'critical',
+            entity: 'Messages',
+            issue: `Found ${orphanedMessages.length} orphaned messages (no valid conversation_id)`,
+            fixable: true,
+            fix: async () => {
+              // Group orphaned messages by user_id
+              const orphansByUser = new Map<string, any[]>();
+              orphanedMessages.forEach(msg => {
+                if (!orphansByUser.has(msg.user_id)) {
+                  orphansByUser.set(msg.user_id, []);
+                }
+                orphansByUser.get(msg.user_id)!.push(msg);
+              });
+
+              // Create "Recovered Messages" conversation for each user
+              for (const [userId, userMessages] of orphansByUser) {
+                const recoveryConvId = `recovered_${userId}_${Date.now()}`;
+
+                // Create recovery conversation
+                const { error: convError } = await this.supabase
+                  .from('conversations')
+                  .insert({
+                    id: recoveryConvId,
+                    user_id: userId,
+                    title: 'Recovered Messages',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    is_pinned: false
+                  });
+
+                if (!convError) {
+                  // Update messages to point to recovery conversation
+                  const messageIds = userMessages.map(m => m.id);
+                  const { error: updateError } = await this.supabase
+                    .from('messages')
+                    .update({ conversation_id: recoveryConvId })
+                    .in('id', messageIds);
+
+                  if (updateError) {
+                    console.error('Failed to update orphaned messages:', updateError);
+                    return false;
+                  }
+                }
+              }
+
+              return true;
+            }
+          });
+        }
+      }
+
     } catch (error: any) {
       console.warn('Orphan check failed:', error.message);
+    }
+  }
+
+  /**
+   * Validate conversation-project integrity
+   */
+  private async validateConversationIntegrity(): Promise<void> {
+    console.log('💬 Validating conversation integrity...');
+
+    try {
+      // Check for conversations with invalid project_id
+      const { data: conversations } = await this.supabase
+        .from('conversations')
+        .select('id, title, project_id, user_id');
+
+      if (!conversations) return;
+
+      const { data: projects } = await this.supabase
+        .from('projects')
+        .select('id');
+
+      const validProjectIds = new Set(projects?.map(p => p.id) || []);
+
+      for (const conv of conversations) {
+        // Skip if no project_id (unassigned is valid)
+        if (!conv.project_id) continue;
+
+        // Check if project exists
+        if (!validProjectIds.has(conv.project_id)) {
+          this.issues.push({
+            type: 'association',
+            severity: 'warning',
+            entity: `Conversation: ${conv.title || conv.id}`,
+            issue: `References non-existent project: ${conv.project_id}`,
+            fixable: true,
+            fix: async () => {
+              // Unassign from deleted project
+              const { error } = await this.supabase
+                .from('conversations')
+                .update({ project_id: null })
+                .eq('id', conv.id);
+              return !error;
+            }
+          });
+        }
+      }
+
+      // Check for conversations without created_at
+      const conversationsWithoutCreatedAt = conversations.filter(c => !(c as any).created_at);
+      if (conversationsWithoutCreatedAt.length > 0) {
+        this.issues.push({
+          type: 'project',
+          severity: 'warning',
+          entity: 'Conversations',
+          issue: `${conversationsWithoutCreatedAt.length} conversations missing created_at timestamp`,
+          fixable: true,
+          fix: async () => {
+            // Set created_at to updated_at for these conversations
+            for (const conv of conversationsWithoutCreatedAt) {
+              await this.supabase
+                .from('conversations')
+                .update({
+                  created_at: (conv as any).updated_at || new Date().toISOString()
+                })
+                .eq('id', conv.id);
+            }
+            return true;
+          }
+        });
+      }
+
+    } catch (error: any) {
+      console.warn('Conversation integrity check failed:', error.message);
     }
   }
 
