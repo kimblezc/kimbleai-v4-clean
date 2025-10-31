@@ -15,9 +15,10 @@ import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
-const openai = new OpenAI({
+// Optional OpenAI client (only needed for AI-powered fixes, currently unused)
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 interface ImprovementTask {
   type: 'lint' | 'dead_code' | 'type_error' | 'optimization' | 'dependency';
