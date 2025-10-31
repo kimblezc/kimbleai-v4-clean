@@ -109,24 +109,26 @@ export default function Home() {
   // Rotate D&D fact every 8 seconds without repeating until all are shown
   useEffect(() => {
     const interval = setInterval(() => {
-      // Add current index to used set
-      usedFactIndicesRef.current.add(currentFactIndex);
+      setCurrentFactIndex(prevIndex => {
+        // Add previous index to used set
+        usedFactIndicesRef.current.add(prevIndex);
 
-      // If all facts have been used, reset
-      if (usedFactIndicesRef.current.size >= DND_FACTS.length) {
-        usedFactIndicesRef.current.clear();
-      }
+        // If all facts have been used, reset
+        if (usedFactIndicesRef.current.size >= DND_FACTS.length) {
+          usedFactIndicesRef.current.clear();
+        }
 
-      // Find next unused fact
-      let nextIndex;
-      do {
-        nextIndex = Math.floor(Math.random() * DND_FACTS.length);
-      } while (usedFactIndicesRef.current.has(nextIndex) && usedFactIndicesRef.current.size < DND_FACTS.length);
+        // Find next unused fact
+        let nextIndex;
+        do {
+          nextIndex = Math.floor(Math.random() * DND_FACTS.length);
+        } while (usedFactIndicesRef.current.has(nextIndex) && usedFactIndicesRef.current.size < DND_FACTS.length);
 
-      setCurrentFactIndex(nextIndex);
+        return nextIndex;
+      });
     }, 8000);
     return () => clearInterval(interval);
-  }, [currentFactIndex]);
+  }, []);
 
   // Get time-based greeting in CET timezone
   const getGreeting = () => {
