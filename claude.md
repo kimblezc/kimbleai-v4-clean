@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.5.7
-Latest Commit: 7ce3fa4
-Last Updated: 2025-10-30
+Latest Version: v7.6.0
+Latest Commit: 39ca25b
+Last Updated: 2025-10-31
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **39ca25b** (v7.6.0) - FEATURE: Rotating D&D facts on empty state - Removed large "KimbleAI" branding from center, added 10 rotating D&D facts that change every 8 seconds, kept time-based greetings, cleaner minimal UI, changed input placeholder to "Ask me anything..."
 - **7ce3fa4** (v7.5.7) - HOTFIX: Fixed TypeError in conversation sorting - Added defensive null checks for conversations without timestamps, prevents 'Cannot read properties of undefined (reading getTime)' error
 - **38e311d** (v7.5.6) - UX: Added timestamps to conversation sidebar + sorted conversations newest to oldest - Shows relative time (e.g., '2h ago') for each chat, conversations now properly sorted within each group
 - **60b37e5** (v7.5.5) - HOTFIX: Fixed 500 error on page load - Improved error handling with detailed logging, added minimal field fallback query, JavaScript-based sorting backup, resilient timestamp handling using message timestamps when conversation timestamps missing
