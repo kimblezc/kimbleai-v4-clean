@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
@@ -58,10 +58,8 @@ export default function Home() {
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [currentFact, setCurrentFact] = useState(
-    DND_FACTS[Math.floor(Math.random() * DND_FACTS.length)]
-  );
-  const [usedFacts, setUsedFacts] = useState<Set<number>>(new Set([0]));
+  const [currentFactIndex, setCurrentFactIndex] = useState(Math.floor(Math.random() * DND_FACTS.length));
+  const usedFactIndicesRef = useRef<Set<number>>(new Set());
 
   const conversationsHook = useConversations(currentUser);
   const {
@@ -111,26 +109,24 @@ export default function Home() {
   // Rotate D&D fact every 8 seconds without repeating until all are shown
   useEffect(() => {
     const interval = setInterval(() => {
-      setUsedFacts(prev => {
-        // If all facts have been used, reset
-        if (prev.size >= DND_FACTS.length) {
-          const firstFactIndex = Math.floor(Math.random() * DND_FACTS.length);
-          setCurrentFact(DND_FACTS[firstFactIndex]);
-          return new Set([firstFactIndex]);
-        }
+      // Add current index to used set
+      usedFactIndicesRef.current.add(currentFactIndex);
 
-        // Find a fact that hasn't been used yet
-        let newFactIndex;
-        do {
-          newFactIndex = Math.floor(Math.random() * DND_FACTS.length);
-        } while (prev.has(newFactIndex));
+      // If all facts have been used, reset
+      if (usedFactIndicesRef.current.size >= DND_FACTS.length) {
+        usedFactIndicesRef.current.clear();
+      }
 
-        setCurrentFact(DND_FACTS[newFactIndex]);
-        return new Set([...prev, newFactIndex]);
-      });
+      // Find next unused fact
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * DND_FACTS.length);
+      } while (usedFactIndicesRef.current.has(nextIndex) && usedFactIndicesRef.current.size < DND_FACTS.length);
+
+      setCurrentFactIndex(nextIndex);
     }, 8000);
     return () => clearInterval(interval);
-  }, []);
+  }, [currentFactIndex]);
 
   // Get time-based greeting in CET timezone
   const getGreeting = () => {
@@ -370,7 +366,7 @@ export default function Home() {
             <div className="text-center mt-32 max-w-2xl mx-auto px-8">
               <div className="text-lg text-gray-400 mb-3">{getGreeting()}</div>
               <div className="text-sm text-gray-600 italic leading-relaxed transition-opacity duration-500">
-                "{currentFact}"
+                "{DND_FACTS[currentFactIndex]}"
               </div>
             </div>
           ) : (
