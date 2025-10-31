@@ -1,8 +1,8 @@
 {
-  "version": "7.5.8",
-  "commit": "b7a49d7",
-  "lastUpdated": "2025-10-30T19:07:00.000Z",
-  "changelog": "🔧 FIX: Timestamps now display on conversations + auto-refresh on 404 - Fixed API field names (snake_case), timestamps now show correctly, conversation list auto-refreshes when clicking deleted chats",
+  "version": "7.5.9",
+  "commit": "a840686",
+  "lastUpdated": "2025-10-31T03:30:00.000Z",
+  "changelog": "🔧 FIX: New conversations now appear in sidebar - Fixed conversation ID generation to create unique IDs instead of defaulting to 'default'",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

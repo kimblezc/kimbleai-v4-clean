@@ -122,7 +122,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { messages, userId = 'zach', conversationId = 'default', mode, agent, preferredModel } = requestData;
+    const { messages, userId = 'zach', mode, agent, preferredModel } = requestData;
+
+    // Generate new conversation ID if not provided (for new chats)
+    const conversationId = requestData.conversationId || `conv_${Date.now()}`;
 
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'No messages provided' }, { status: 400 });
