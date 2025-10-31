@@ -102,7 +102,12 @@ export default function Home() {
     <div className="flex h-screen bg-black text-white">
       <style jsx>{`
         .d20-glow {
-          box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+          position: relative;
+          background: radial-gradient(circle at center, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 30%, transparent 70%);
+          box-shadow:
+            0 0 20px rgba(16, 185, 129, 0.3),
+            0 0 40px rgba(16, 185, 129, 0.15),
+            0 0 60px rgba(16, 185, 129, 0.05);
         }
 
         @media (max-width: 768px) {
