@@ -1,8 +1,8 @@
 {
-  "version": "7.7.2",
-  "commit": "ca21b74",
-  "lastUpdated": "2025-10-31T17:45:00.000Z",
-  "changelog": "🦉 ARCHIE AI ENHANCEMENT: Added AI-powered iterative fixing with retry logic. Uses GPT-4o to fix complex TypeScript errors, tests each fix, rolls back on failure, and tries up to 3 times with increasingly aggressive strategies. Also simplified Archie 2.0 to git-based version and changed D&D rotation to 30s.",
+  "version": "7.7.3",
+  "commit": "e5d09db",
+  "lastUpdated": "2025-10-31T18:00:00.000Z",
+  "changelog": "🦉 Added Archie Dashboard button to sidebar - Green owl button above version info links to /agent for easy access to Archie's activity monitoring.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
