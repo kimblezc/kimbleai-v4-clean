@@ -1,8 +1,8 @@
 {
-  "version": "7.6.2",
-  "commit": "1d43080",
-  "lastUpdated": "2025-10-31T07:25:00.000Z",
-  "changelog": "🔧 HOTFIX: React Error #310 - Fixed infinite render loop in D&D facts rotation by using useRef instead of nested state updates, imported missing useRef hook",
+  "version": "7.6.3",
+  "commit": "00ba6e9",
+  "lastUpdated": "2025-10-31T07:35:00.000Z",
+  "changelog": "✨ FEATURE: Fantasy-themed fonts - Replaced Inter/Space Grotesk with Cinzel (headers) and Crimson Text (body) for D&D rulebook aesthetic, improved typography with better spacing and readability",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
