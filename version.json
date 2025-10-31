@@ -1,8 +1,8 @@
 {
-  "version": "7.7.0",
-  "commit": "b6a6e6e",
-  "lastUpdated": "2025-10-31T12:00:00.000Z",
-  "changelog": "✨ D20 3D ROTATION RESTORED: Brought back JavaScript-based requestAnimationFrame rotation for smooth 3D animation. Removed green glow effect per user request. D20 now spins properly with 30/40/20 degree rotation speeds on X/Y/Z axes.",
+  "version": "7.7.1",
+  "commit": "pending",
+  "lastUpdated": "2025-10-31T17:30:00.000Z",
+  "changelog": "🦉 ARCHIE SIMPLIFICATION: Removed complex Archie 2.0 (database, approval queues, activity streams) and replaced with simple git-based version. New Archie: auto-fixes lint/dead code/patches, commits to git, runs hourly via cron. Also changed D&D fact rotation from 8 to 30 seconds.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
@@ -17,6 +17,12 @@
       "reason": "66% failure rate, zero unique value vs existing RAG system",
       "linesRemoved": "2300+",
       "costSavings": "$5/mo Railway, reduced API costs"
+    },
+    "archie2": {
+      "removedAt": "2025-10-31T17:30:00.000Z",
+      "reason": "Over-engineered. Simple git-based version works better",
+      "linesRemoved": "~500",
+      "filesRemoved": "ARCHIE-2.0.md, database schemas, 5 API routes"
     }
   },
   "coreFeatures": {
@@ -24,6 +30,7 @@
     "semanticSearch": "RAG Search System - 602 lines with hybrid vector+keyword search",
     "embeddings": "Embedding Cache - 445 lines with 80-90% hit rate",
     "knowledgeGraph": "Knowledge Graph - 553 lines with entity/relationship tracking",
-    "database": "pgvector with HNSW indexes for fast similarity search"
+    "database": "pgvector with HNSW indexes for fast similarity search",
+    "archie": "Simple git-based maintenance - 466 lines, hourly cron, auto-commits fixes"
   }
 }

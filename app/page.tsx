@@ -90,7 +90,7 @@ export default function Home() {
   const projectsHook = useProjects(currentUser);
   const { projects, currentProject, selectProject, updateProject, deleteProject } = projectsHook;
 
-  // Rotate D&D facts every 8 seconds - random non-repeating using shuffled queue
+  // Rotate D&D facts every 30 seconds - random non-repeating using shuffled queue
   // MUST be called before early return to maintain consistent hook order
   useEffect(() => {
     const interval = setInterval(() => {
@@ -104,7 +104,7 @@ export default function Home() {
       if (nextIndex !== undefined) {
         setCurrentFactIndex(nextIndex);
       }
-    }, 8000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);

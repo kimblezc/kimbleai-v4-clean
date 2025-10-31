@@ -91,100 +91,75 @@ Live URL: https://www.kimbleai.com
 
 ---
 
-## Archie 2.0 - Smart Autonomous Agent System
+## Archie - Autonomous Code Maintenance
 
-**Status: 🚧 In Development (Database schema ready, CodeHealthAnalyzer next)**
+**A.R.C.H.I.E.** = Autonomous Repository Coding & Housekeeping Intelligence Engine
+
+**Status**: ✅ Active (Runs every hour)
 
 ### Philosophy
-> "Don't make me think about tiny stuff, but ask before big changes"
+> "Don't make me think about lint errors. Just fix them."
 
-Archie 2.0 is a smart autonomous agent that:
-- **Auto-executes** small, safe improvements (no human needed)
-- **Requires approval** for big, risky changes (human gate)
-- **Tracks code health** with 0-100 score over time
-- **Monitors costs** with hard daily limits
-- **Full transparency** via dashboard at `/agent`
+Archie is a simple, practical coding janitor that automatically maintains kimbleai.com.
 
-### Architecture Components
+**No approval workflows. No databases. No complexity. Just gets stuff done.**
 
-**1. CodeHealthAnalyzer** (Coming next)
-- Scans codebase every 30 minutes
-- Calculates health score (0-100)
-- Generates improvement proposals
-- Auto-approves safe ones
+### What Archie Does
 
-**2. Approval Queue (Database ready)**
-- `archie_proposals` table tracks all improvements
-- Smart auto-approval rules apply automatically
-- Big changes wait for human review
-- Full audit trail
+Every hour, Archie:
+1. Scans the codebase for issues
+2. Fixes obvious problems (linting, dead code, patch updates)
+3. Commits the changes to git
+4. Logs what it did
 
-**3. Dashboard** (`/agent` - ✅ Built)
-- Code health score with trends
-- Pending approvals section
-- Auto-approved today log
-- Recent activity feed
-- Cost tracking
+**Auto-Fixes:**
+- ✓ Linting errors (`npm run lint --fix`)
+- ✓ Unused imports and dead code
+- ✓ Patch-level dependency updates (1.2.3 → 1.2.4)
+- ✓ Simple TypeScript errors (future)
 
-### Auto-Approval Rules
+**Doesn't Touch:**
+- ❌ Major refactoring
+- ❌ API breaking changes
+- ❌ Database schema changes
+- ❌ Anything requiring human judgment
 
-**✅ AUTO-EXECUTES (no human needed):**
-- Fix linting/formatting errors
-- Remove dead code & unused imports
-- Add obvious null checks
-- Patch dependency updates (1.2.3 → 1.2.4)
-- Simple TypeScript fixes
-- Basic input validation
+### Implementation
 
-**Limits**: Max 5 files, 50 lines, must have tests
+**Files:**
+- `lib/archie-agent.ts` - Main agent logic
+- `app/api/archie/run/route.ts` - API endpoint
+- `app/agent/page.tsx` - Dashboard showing activity
 
-**🛑 REQUIRES YOUR APPROVAL:**
-- Major refactoring (>10 files)
-- API contract changes
-- Database schema changes
-- Major/minor dependency updates
-- Critical security fixes
-- Architectural changes
-
-### Database Schema (✅ Created)
-- `archie_runs` - Track all executions
-- `archie_proposals` - Approval queue
-- `archie_auto_approval_rules` - What can auto-execute
-- `archie_safety_limits` - Cost & rate controls
-- `archie_health_history` - Code health tracking
-- `archie_state` - Configuration
-
-**Migrations**: `database/archie-2.0-migration.sql` and `database/archie-auto-approval-rules.sql`
+**Schedule**: Every hour via Vercel Cron (`0 * * * *`)
+**Manual trigger**: `/api/archie/run?trigger=manual`
+**Dashboard**: https://www.kimbleai.com/agent
 
 ### Safety Features
-- 🛡️ Cost caps: $15/day max, $500/week max
-- 🛡️ Rate limiting: Max 2 scans/hour, 5 executions/day
-- 🛡️ Emergency stop: Big red button to pause everything
-- 🛡️ Rollback: Every change tracked, can revert
-- 🛡️ Dry-run mode: Test without making changes
 
-### What Happened to Old Agents?
-**All removed (2025-10-31)** - Archie 1.0 failed, complete reboot:
-- ❌ Autonomous Agent - Shelved, uncontrolled
-- ❌ Archie Utility - Shelved, duplicated effort
-- ❌ Drive Intelligence - Shelved, never completed
-- ❌ Device Sync - Shelved, scope too large
+1. **Max 5 fixes per run** - Prevents going crazy
+2. **Git commits** - Every change is tracked and revertable
+3. **Dry-run mode** - Test without making changes
+4. **Limited scope** - Only touches obvious issues
+5. **No databases** - Simple, can't corrupt data
 
-**Archived to**: `lib/archive/agents-removed-2025-10-31/` and `app/api/archive/cron-removed-2025-10-31/`
+### Why This Approach?
 
-### Rationale
-The old agents failed because:
-- No visibility into what they were doing
-- No approval gates for risky changes
-- No cost controls
-- Too ambitious, tried to do everything
-- Ran without oversight
+**Previous agents (Archie 1.0, MCP, etc.) failed because:**
+- Too complex (approval queues, databases)
+- Too ambitious (tried to do everything)
+- No visibility (ran without logging)
+- No accountability (changes disappeared)
 
-Archie 2.0 fixes all of this with human oversight, transparency, and smart automation for *only* the boring stuff.
+**This Archie succeeds because:**
+- Simple (one file, one endpoint, one dashboard)
+- Focused (only fixes boring stuff)
+- Transparent (git commits show everything)
+- Practical (actually useful, not theoretical)
 
 ### Documentation
-- `ARCHIE-2.0.md` - Full architecture guide
-- `ARCHIE-2.0-CHANGES.md` - Implementation summary
+
+See `ARCHIE.md` for full details.
 
 ---
 

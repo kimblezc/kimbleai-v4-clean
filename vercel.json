@@ -29,6 +29,10 @@
     "app/api/cron/index-attachments/route.ts": {
       "maxDuration": 300,
       "memory": 3008
+    },
+    "app/api/archie/run/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
     }
   },
   "crons": [
@@ -43,6 +47,10 @@
     {
       "path": "/api/cron/index-attachments",
       "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/archie/run",
+      "schedule": "0 * * * *"
     }
   ],
   "headers": [
