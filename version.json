@@ -1,6 +1,6 @@
 {
   "version": "7.6.5",
-  "commit": "pending",
+  "commit": "19e885a",
   "lastUpdated": "2025-10-31T08:00:00.000Z",
   "changelog": "🎯 ROOT CAUSE FIX: React Error #310 resolved - D20Dice now uses CSS animation instead of requestAnimationFrame (60fps state updates), eliminated infinite re-render trigger while maintaining full rotating D&D facts feature with random non-repeating queue",
   "platform": "Railway",
