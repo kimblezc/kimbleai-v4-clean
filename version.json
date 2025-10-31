@@ -1,6 +1,6 @@
 {
   "version": "7.6.0",
-  "commit": "pending",
+  "commit": "39ca25b",
   "lastUpdated": "2025-10-31T07:05:00.000Z",
   "changelog": "✨ FEATURE: Rotating D&D facts on empty state - Removed big KimbleAI branding from center, added rotating D&D facts every 8 seconds with time-based greetings, cleaner UI",
   "platform": "Railway",
