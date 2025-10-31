@@ -64,12 +64,12 @@ export function groupConversationsByDate(conversations: any[]): {
 export function formatProjectName(projectId: string): string {
   // Map of common project IDs to friendly names
   const projectNames: Record<string, string> = {
-    development: '💻 Development',
-    personal: '👤 Personal',
-    business: '💼 Business',
-    travel: '✈️ Travel',
-    automotive: '🚗 Automotive',
-    gaming: '🎮 Gaming',
+    development: 'Development',
+    personal: 'Personal',
+    business: 'Business',
+    travel: 'Travel',
+    automotive: 'Automotive',
+    gaming: 'Gaming',
   };
 
   return projectNames[projectId] || projectId;
