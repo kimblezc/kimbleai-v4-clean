@@ -1,8 +1,8 @@
 {
-  "version": "7.7.3",
-  "commit": "e5d09db",
-  "lastUpdated": "2025-10-31T18:00:00.000Z",
-  "changelog": "🦉 Added Archie Dashboard button to sidebar - Green owl button above version info links to /agent for easy access to Archie's activity monitoring.",
+  "version": "7.7.4",
+  "commit": "32e8499",
+  "lastUpdated": "2025-10-31T18:15:00.000Z",
+  "changelog": "🦉 ENHANCED ARCHIE DASHBOARD: Comprehensive logging with fix type breakdown, statistics, color-coded categories, layman explanations, and individual fix cards. Dashboard now parses commits to show detailed activity in readable format.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
