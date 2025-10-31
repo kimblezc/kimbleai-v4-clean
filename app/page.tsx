@@ -20,18 +20,28 @@ const versionInfo = {
   lastUpdated: versionData.lastUpdated
 };
 
-// D&D facts for rotating display
+// D&D facts for rotating display - mix of surface-level and deep lore
 const DND_FACTS = [
-  "The original D&D had only 3 character classes: Fighter, Magic-User, and Cleric.",
+  "The original D&D (1974) had only 3 character classes: Fighter, Magic-User, and Cleric.",
   "A natural 20 is called a 'critical success' - it automatically succeeds at nearly any task.",
-  "The Deck of Many Things is one of D&D's most dangerous magic items - it can grant wishes or instantly kill you.",
-  "Dungeons & Dragons was created by Gary Gygax and Dave Arneson in 1974.",
-  "The Tarrasque is one of the most powerful creatures in D&D, often used as a campaign-ending boss.",
-  "Beholders are iconic D&D monsters with a central eye that projects an anti-magic cone.",
-  "The Nine Hells are structured as nine layers, each ruled by a powerful archdevil.",
-  "A Dungeon Master's most powerful tool isn't dice - it's improvisation.",
-  "Critical Role, the most popular D&D stream, has raised over $11 million for charity.",
-  "The longest D&D campaign ever recorded lasted over 40 years with the same players.",
+  "The Deck of Many Things can grant wishes or instantly kill you - many DMs ban it entirely.",
+  "Dungeons & Dragons was created by Gary Gygax and Dave Arneson in 1974 in Lake Geneva, Wisconsin.",
+  "The Tarrasque, inspired by French folklore, is nearly indestructible with a CR of 30 in 5e.",
+  "Beholders are xenophobic tyrants - each believes its own physical form is the only 'correct' one.",
+  "The Blood War is an eternal conflict between demons (chaotic evil) and devils (lawful evil).",
+  "A Dungeon Master's most powerful tool isn't dice - it's improvisation and player buy-in.",
+  "Critical Role has raised over $11 million for charity and revolutionized actual-play content.",
+  "The longest D&D campaign ever recorded lasted over 40 years with the same DM and players.",
+  "Vecna began as a simple lich in Greyhawk and became a god - his hand and eye are legendary artifacts.",
+  "The d20 system wasn't always core to D&D - early editions used d6s and percentile dice for most rolls.",
+  "THAC0 (To Hit Armor Class 0) was the most confusing mechanic in AD&D 2e - lower numbers were better.",
+  "The Drow were created by Gary Gygax for the D-series modules and became iconic dark elves.",
+  "Planescape's city of Sigil sits at the center of the multiverse - even gods cannot enter uninvited.",
+  "The Tomb of Horrors is Gary Gygax's deadliest dungeon - designed to kill overconfident players.",
+  "Ravenloft started as a single Halloween adventure (I6) and became an entire gothic horror setting.",
+  "The Lady of Pain rules Sigil - her mere presence can kill, and she has never spoken a word.",
+  "Spelljammer lets you sail through space in magical ships - from the Forgotten Realms to Dark Sun.",
+  "Bahamut, the Platinum Dragon god of good, sometimes walks among mortals disguised as an old man.",
 ];
 
 export default function Home() {
@@ -51,6 +61,7 @@ export default function Home() {
   const [currentFact, setCurrentFact] = useState(
     DND_FACTS[Math.floor(Math.random() * DND_FACTS.length)]
   );
+  const [usedFacts, setUsedFacts] = useState<Set<number>>(new Set([0]));
 
   const conversationsHook = useConversations(currentUser);
   const {
@@ -97,10 +108,26 @@ export default function Home() {
     setIsMobileSidebarOpen(false);
   };
 
-  // Rotate D&D fact every 8 seconds
+  // Rotate D&D fact every 8 seconds without repeating until all are shown
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentFact(DND_FACTS[Math.floor(Math.random() * DND_FACTS.length)]);
+      setUsedFacts(prev => {
+        // If all facts have been used, reset
+        if (prev.size >= DND_FACTS.length) {
+          const firstFactIndex = Math.floor(Math.random() * DND_FACTS.length);
+          setCurrentFact(DND_FACTS[firstFactIndex]);
+          return new Set([firstFactIndex]);
+        }
+
+        // Find a fact that hasn't been used yet
+        let newFactIndex;
+        do {
+          newFactIndex = Math.floor(Math.random() * DND_FACTS.length);
+        } while (prev.has(newFactIndex));
+
+        setCurrentFact(DND_FACTS[newFactIndex]);
+        return new Set([...prev, newFactIndex]);
+      });
     }, 8000);
     return () => clearInterval(interval);
   }, []);
