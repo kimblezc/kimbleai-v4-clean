@@ -295,6 +295,19 @@ export default function Home() {
           })}
         </div>
 
+        {/* Archie Dashboard Link */}
+        <div className="p-3 border-t border-gray-900">
+          <a
+            href="/agent"
+            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-900/20 to-emerald-900/20 hover:from-green-800/30 hover:to-emerald-800/30 border border-green-700/30 hover:border-green-600/50 transition-all duration-200 group"
+          >
+            <span className="text-lg group-hover:scale-110 transition-transform">🦉</span>
+            <span className="text-sm font-medium text-green-400 group-hover:text-green-300">
+              Archie Dashboard
+            </span>
+          </a>
+        </div>
+
         {/* Version Info */}
         <div className="p-3 border-t border-gray-900">
           <div className="text-xs text-gray-600 text-center">
