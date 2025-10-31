@@ -99,7 +99,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-black text-white font-sans">
+    <div className="flex h-screen bg-black text-white">
       <style jsx>{`
         .d20-glow {
           box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
