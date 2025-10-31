@@ -29,26 +29,6 @@
     "app/api/cron/index-attachments/route.ts": {
       "maxDuration": 300,
       "memory": 3008
-    },
-    "app/api/agent/cron/route.ts": {
-      "maxDuration": 300,
-      "memory": 3008
-    },
-    "app/api/cron/archie-utility/route.ts": {
-      "maxDuration": 300,
-      "memory": 3008
-    },
-    "app/api/cron/drive-intelligence/route.ts": {
-      "maxDuration": 300,
-      "memory": 3008
-    },
-    "app/api/cron/device-sync/route.ts": {
-      "maxDuration": 60,
-      "memory": 1024
-    },
-    "app/api/cron/mcp-health/route.ts": {
-      "maxDuration": 60,
-      "memory": 1024
     }
   },
   "crons": [
@@ -63,26 +43,6 @@
     {
       "path": "/api/cron/index-attachments",
       "schedule": "0 */4 * * *"
-    },
-    {
-      "path": "/api/agent/cron",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/archie-utility",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/drive-intelligence",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/device-sync",
-      "schedule": "*/2 * * * *"
-    },
-    {
-      "path": "/api/cron/mcp-health",
-      "schedule": "*/15 * * * *"
     }
   ],
   "headers": [

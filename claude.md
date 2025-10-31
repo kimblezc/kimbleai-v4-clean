@@ -426,3 +426,4 @@ Consistent deployment process ensures:
 - **Confidence**: Comprehensive testing verifies success
 - openai chatgpt5 models exist.
 - at every change to code and new deployment update both the Vx.x.x and the commit. include it in your response here in claude code every time.
+- ensure that builds are actively deployed and test them iteratively
