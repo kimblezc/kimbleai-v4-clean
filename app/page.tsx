@@ -16,7 +16,7 @@ import { formatRelativeTime } from '@/lib/chat-utils';
 
 const versionInfo = {
   version: versionData.version,
-  commit: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || versionData.commit || 'dev',
+  commit: versionData.commit,
   lastUpdated: versionData.lastUpdated
 };
 
@@ -80,11 +80,29 @@ export default function Home() {
     setIsMobileSidebarOpen(false);
   };
 
+  // Get time-based greeting in CET timezone
+  const getGreeting = () => {
+    const now = new Date();
+    const cetTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const hour = cetTime.getHours();
+    const userName = currentUser === 'zach' ? 'Zach' : 'Rebecca';
+
+    if (hour >= 6 && hour < 12) {
+      return `Good morning, ${userName}`;
+    } else if (hour >= 12 && hour < 17) {
+      return `Good afternoon, ${userName}`;
+    } else if (hour >= 17 && hour < 22) {
+      return `Good evening, ${userName}`;
+    } else {
+      return `Go to bed, ${userName}`;
+    }
+  };
+
   return (
     <div className="flex h-screen bg-black text-white font-sans">
       <style jsx>{`
         .d20-glow {
-          box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+          box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
         }
 
         @media (max-width: 768px) {
@@ -294,7 +312,7 @@ export default function Home() {
           {messages.length === 0 ? (
             <div className="text-center mt-32">
               <div className="text-4xl mb-4 text-gray-700">KimbleAI</div>
-              <div className="text-sm text-gray-500">Start a conversation</div>
+              <div className="text-sm text-gray-500">{getGreeting()}</div>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
