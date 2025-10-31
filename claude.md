@@ -5,16 +5,17 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.7.2
-Latest Commit: ad93693
+Latest Version: v7.7.3
+Latest Commit: 9f455c9
 Last Updated: 2025-10-31
-Status: ✅ Deployed
+Status: 🚀 Deploying
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
-- **ad93693** (v7.7.2) - 🦉 ARCHIE AI ENHANCEMENT: Enhanced Archie with AI-powered iterative fixing! Now uses GPT-4o to fix complex TypeScript errors with retry logic (up to 3 attempts), tests each fix with tsc/lint, rolls back on failure, and uses progressively aggressive strategies. Simplified Archie 2.0 (removed database/approval queue) to git-based version. Changed D&D fact rotation from 8 to 30 seconds.
-- **a4db07f** (v7.7.1) - 🦉 ARCHIE SIMPLIFICATION: Removed complex Archie 2.0 (database, approval queues, SSE streams) and replaced with simple git-based version at lib/archie-agent.ts. Auto-fixes lint/dead code/patches, commits to git, runs hourly via cron. Dashboard at /agent shows git commits by Archie. Archived old API routes.
+- **9f455c9** (v7.7.3) - 🦉 UX IMPROVEMENT: Added Archie Dashboard button to sidebar for easy access. Green owl button with gradient background and hover effects positioned above version info. Users can now click directly to /agent to monitor Archie's activity without typing the URL.
+- **ad93693** (v7.7.2) - 🦉 ARCHIE AI ENHANCEMENT: Enhanced Archie with AI-powered iterative fixing! Now uses GPT-4o to fix complex TypeScript errors with retry logic (up to 3 attempts), tests each fix with tsc/lint, rolls back on failure, and uses progressively aggressive strategies (minimal changes → type assertions → any types). Added comprehensive logging for each fix attempt. Manual trigger tested and working at /api/archie/run?trigger=manual.
+- **a4db07f** (v7.7.1) - 🦉 ARCHIE SIMPLIFICATION: Removed complex Archie 2.0 (database, approval queues, SSE streams) and replaced with simple git-based version at lib/archie-agent.ts. Auto-fixes lint/dead code/patches, commits to git, runs hourly via cron. Dashboard at /agent shows git commits by Archie. Archived old API routes. Changed D&D fact rotation from 8 to 30 seconds for better readability.
 - **83d8ae3** (v7.7.0) - 🦉 ARCHIE 2.0 INITIAL (later simplified): First attempt at complex approval system - was over-engineered, replaced in v7.7.1 with simpler approach
 - **79d7ac3** (v7.6.4) - CRITICAL FIX: React Error #310 resolved with shuffled queue approach - Moved shuffleArray outside component, use ref-based queue of shuffled indices, empty dependency array prevents recreation, maintains full random non-repeating feature
 - **00ba6e9** (v7.6.3) - FEATURE: Fantasy-themed fonts - Replaced Inter/Space Grotesk with Cinzel (elegant Roman serif for headers) and Crimson Text (readable serif for body), improved typography with 16px base size, 1.6 line-height, and letter-spacing for D&D rulebook aesthetic
@@ -109,16 +110,23 @@ Archie is a simple, practical coding janitor that automatically maintains kimble
 ### What Archie Does
 
 Every hour, Archie:
-1. Scans the codebase for issues
-2. Fixes obvious problems (linting, dead code, patch updates)
-3. Commits the changes to git
-4. Logs what it did
+1. **Scans** the codebase for issues (lint, dead code, type errors, dependencies)
+2. **Fixes** issues using multiple strategies (up to 3 attempts per issue)
+3. **Tests** each fix to verify it actually works (runs tsc/lint)
+4. **Rolls back** failed fixes and tries different approaches
+5. **Commits** successful fixes to git with detailed messages
+6. **Logs** everything with comprehensive attempt tracking
 
 **Auto-Fixes:**
 - ✓ Linting errors (`npm run lint --fix`)
-- ✓ Unused imports and dead code
+- ✓ Unused imports and dead code (AI-powered with GPT-4o-mini)
+- ✓ TypeScript errors (AI-powered with GPT-4o, 3 retry attempts)
 - ✓ Patch-level dependency updates (1.2.3 → 1.2.4)
-- ✓ Simple TypeScript errors (future)
+
+**Fix Strategy (Progressive):**
+1. **Attempt 1**: Minimal changes, preserve code structure
+2. **Attempt 2**: Type assertions, null checks, more aggressive
+3. **Attempt 3**: Any types, disable strict checks (last resort)
 
 **Doesn't Touch:**
 - ❌ Major refactoring
@@ -140,10 +148,34 @@ Every hour, Archie:
 ### Safety Features
 
 1. **Max 5 fixes per run** - Prevents going crazy
-2. **Git commits** - Every change is tracked and revertable
-3. **Dry-run mode** - Test without making changes
-4. **Limited scope** - Only touches obvious issues
-5. **No databases** - Simple, can't corrupt data
+2. **Max 3 retry attempts** - Stops after 3 failed fix attempts per issue
+3. **Test before commit** - Runs tsc/lint to verify each fix works
+4. **Automatic rollback** - Reverts failed fixes via git checkout
+5. **Git commits** - Every change is tracked and revertable
+6. **Dry-run mode** - Test without making changes
+7. **Limited scope** - Only touches obvious issues
+8. **No databases** - Simple, can't corrupt data
+9. **OpenAI optional** - Works without AI (skips complex fixes)
+
+### Monitoring & Access
+
+**Dashboard**: https://www.kimbleai.com/agent
+- View all Archie commits with timestamps
+- See what was fixed and when
+- Manual trigger button available
+
+**Sidebar Button**: Click the green 🦉 button above version info
+
+**Manual Trigger**: `/api/archie/run?trigger=manual` (takes 1-2 min)
+
+**Git Logs**:
+```bash
+# See all Archie activity
+git log --author="Archie" --oneline -20
+
+# See last 24 hours
+git log --author="Archie" --since="24 hours ago"
+```
 
 ### Why This Approach?
 
