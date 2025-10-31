@@ -1,6 +1,6 @@
 {
   "version": "7.7.0",
-  "commit": "ac1b001",
+  "commit": "b6a6e6e",
   "lastUpdated": "2025-10-31T12:00:00.000Z",
   "changelog": "✨ D20 3D ROTATION RESTORED: Brought back JavaScript-based requestAnimationFrame rotation for smooth 3D animation. Removed green glow effect per user request. D20 now spins properly with 30/40/20 degree rotation speeds on X/Y/Z axes.",
   "platform": "Railway",
