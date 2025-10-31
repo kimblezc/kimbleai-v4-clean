@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { StatCard, ProjectCard } from '../../components/ui/Card';
+import { StatCard, ProjectCard } from '../../components/ui/card';
 import { Button, ButtonGroup } from '../../components/ui/Button';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from '../../components/LoadingScreen';

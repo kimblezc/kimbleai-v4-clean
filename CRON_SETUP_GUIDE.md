@@ -2,6 +2,23 @@
 
 This guide explains how to set up automated cron execution for Archie and Guardian agents using external cron services.
 
+## ⭐ Recommended: Use Zapier Pro
+
+**If you already have Zapier Pro**, use that instead of this guide!
+
+👉 **See `ZAPIER_AUTOMATION_SETUP.md` for complete Zapier setup instructions.**
+
+**Benefits of Zapier Pro:**
+- ✅ You already pay for it
+- ✅ Built-in monitoring and error notifications
+- ✅ Easy to change schedules
+- ✅ No additional infrastructure
+- ✅ 99.99% uptime SLA
+
+**If you don't have Zapier Pro**, continue with this guide for free alternatives.
+
+---
+
 ## Overview
 
 Since Railway doesn't have built-in cron scheduling (unlike Vercel), we use external cron services to trigger our agents on schedule.
@@ -108,21 +125,26 @@ railway variables --set "CRON_SECRET=new-value-here"
 4. Cron Expression: `0 */6 * * *` (Guardian) or `0 * * * *` (Archie)
 5. HTTP Headers: `Authorization: Bearer CRON_SECRET`
 
-## Option 3: Zapier (If you already use it)
+## Option 3: Zapier Pro (Recommended if you have it)
 
 **Why**: You may already have Zapier for other workflows
 
-### Setup Steps:
+**⭐ For complete Zapier setup instructions, see: `ZAPIER_AUTOMATION_SETUP.md`**
+
+### Quick Setup:
 
 1. Create new Zap
 2. Trigger: Schedule by Zapier
    - Interval: Every Hour (for Archie) or Every 6 Hours (for Guardian)
+   - **Note**: Requires Zapier Pro or higher (Free plan doesn't include Schedule trigger)
 3. Action: Webhooks by Zapier
    - Method: GET
    - URL: `https://kimbleai.com/api/guardian/run`
    - Headers:
      - `Authorization`: `Bearer Y44DsLg+ITJIhiSSXIEWIgGms34hvRCKYVfJOwfMPbA=`
 4. Test & Turn On
+
+**Full guide with screenshots and troubleshooting**: `ZAPIER_AUTOMATION_SETUP.md`
 
 ## Option 4: In-Process Node-Cron (Not Recommended)
 

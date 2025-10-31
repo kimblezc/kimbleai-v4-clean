@@ -22,6 +22,59 @@ export function Card({ children, className = '', onClick, hover = false }: CardP
   );
 }
 
+// Additional Card subcomponents for analytics compatibility
+interface CardHeaderProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function CardHeader({ children, className = '' }: CardHeaderProps) {
+  return (
+    <div className={`mb-4 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+interface CardTitleProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function CardTitle({ children, className = '' }: CardTitleProps) {
+  return (
+    <h3 className={`text-lg font-semibold text-white ${className}`}>
+      {children}
+    </h3>
+  );
+}
+
+interface CardDescriptionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function CardDescription({ children, className = '' }: CardDescriptionProps) {
+  return (
+    <p className={`text-sm text-gray-400 ${className}`}>
+      {children}
+    </p>
+  );
+}
+
+interface CardContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function CardContent({ children, className = '' }: CardContentProps) {
+  return (
+    <div className={className}>
+      {children}
+    </div>
+  );
+}
+
 interface StatCardProps {
   title: string;
   value: string | number;
