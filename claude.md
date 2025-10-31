@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.6.3
-Latest Commit: 00ba6e9
+Latest Version: v7.6.4
+Latest Commit: 79d7ac3
 Last Updated: 2025-10-31
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **79d7ac3** (v7.6.4) - CRITICAL FIX: React Error #310 resolved with shuffled queue approach - Moved shuffleArray outside component, use ref-based queue of shuffled indices, empty dependency array prevents recreation, maintains full random non-repeating feature
 - **00ba6e9** (v7.6.3) - FEATURE: Fantasy-themed fonts - Replaced Inter/Space Grotesk with Cinzel (elegant Roman serif for headers) and Crimson Text (readable serif for body), improved typography with 16px base size, 1.6 line-height, and letter-spacing for D&D rulebook aesthetic
 - **8a2f887** (v7.6.2) - HOTFIX: Empty dependency array fix - Changed useEffect from [currentFactIndex] to [] to prevent re-creation on every fact change, uses functional setState for prevIndex access
 - **1d43080** (v7.6.2) - HOTFIX: React Error #310 crash - Fixed infinite render loop caused by nested state updates in D&D facts rotation, imported missing useRef hook, refactored to use useRef for tracking used indices (single state update per interval)

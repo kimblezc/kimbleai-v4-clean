@@ -1,8 +1,8 @@
 {
-  "version": "7.6.3",
-  "commit": "00ba6e9",
-  "lastUpdated": "2025-10-31T07:35:00.000Z",
-  "changelog": "✨ FEATURE: Fantasy-themed fonts - Replaced Inter/Space Grotesk with Cinzel (headers) and Crimson Text (body) for D&D rulebook aesthetic, improved typography with better spacing and readability",
+  "version": "7.6.4",
+  "commit": "79d7ac3",
+  "lastUpdated": "2025-10-31T07:45:00.000Z",
+  "changelog": "🔧 CRITICAL FIX: React Error #310 resolved - Refactored D&D facts rotation to use shuffled queue with ref-based storage, maintains random non-repeating feature without infinite loops",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
