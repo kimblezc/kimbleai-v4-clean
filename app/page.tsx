@@ -80,6 +80,32 @@ export default function Home() {
     setIsMobileSidebarOpen(false);
   };
 
+  // D&D facts and rotating messages
+  const dndFacts = [
+    "The original D&D had only 3 character classes: Fighter, Magic-User, and Cleric.",
+    "A natural 20 is called a 'critical success' - it automatically succeeds at nearly any task.",
+    "The Deck of Many Things is one of D&D's most dangerous magic items - it can grant wishes or instantly kill you.",
+    "Dungeons & Dragons was created by Gary Gygax and Dave Arneson in 1974.",
+    "The Tarrasque is one of the most powerful creatures in D&D, often used as a campaign-ending boss.",
+    "Beholders are iconic D&D monsters with a central eye that projects an anti-magic cone.",
+    "The Nine Hells are structured as nine layers, each ruled by a powerful archdevil.",
+    "A Dungeon Master's most powerful tool isn't dice - it's improvisation.",
+    "Critical Role, the most popular D&D stream, has raised over $11 million for charity.",
+    "The longest D&D campaign ever recorded lasted over 40 years with the same players.",
+  ];
+
+  const [currentFact, setCurrentFact] = useState(
+    dndFacts[Math.floor(Math.random() * dndFacts.length)]
+  );
+
+  // Rotate fact every 8 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFact(dndFacts[Math.floor(Math.random() * dndFacts.length)]);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Get time-based greeting in CET timezone
   const getGreeting = () => {
     const now = new Date();
@@ -315,9 +341,11 @@ export default function Home() {
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4">
           {messages.length === 0 ? (
-            <div className="text-center mt-32">
-              <div className="text-4xl mb-4 text-gray-700">KimbleAI</div>
-              <div className="text-sm text-gray-500">{getGreeting()}</div>
+            <div className="text-center mt-32 max-w-2xl mx-auto px-8">
+              <div className="text-lg text-gray-400 mb-3">{getGreeting()}</div>
+              <div className="text-sm text-gray-600 italic leading-relaxed transition-opacity duration-500">
+                "{currentFact}"
+              </div>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
@@ -377,7 +405,7 @@ export default function Home() {
                     handleSendMessage();
                   }
                 }}
-                placeholder="Message KimbleAI..."
+                placeholder="Ask me anything..."
                 disabled={sending}
                 className="flex-1 px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-gray-600 transition-colors"
               />

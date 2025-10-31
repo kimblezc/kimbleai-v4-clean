@@ -1,8 +1,8 @@
 {
-  "version": "7.5.9",
-  "commit": "a840686",
-  "lastUpdated": "2025-10-31T03:30:00.000Z",
-  "changelog": "🔧 FIX: New conversations now appear in sidebar - Fixed conversation ID generation to create unique IDs instead of defaulting to 'default'",
+  "version": "7.6.0",
+  "commit": "pending",
+  "lastUpdated": "2025-10-31T07:05:00.000Z",
+  "changelog": "✨ FEATURE: Rotating D&D facts on empty state - Removed big KimbleAI branding from center, added rotating D&D facts every 8 seconds with time-based greetings, cleaner UI",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
