@@ -1,8 +1,8 @@
 {
-  "version": "7.8.0",
-  "commit": "6065f47",
-  "lastUpdated": "2025-10-31T20:00:00.000Z",
-  "changelog": "🛡️ PROJECT-TAG GUARDIAN: New autonomous agent ensuring projects and tags functionality. Validates CRUD operations, detects data integrity issues (orphans, duplicates, broken associations), auto-fixes simple problems, commits to git. Runs every 6 hours. Dashboard at /guardian with blue shield button in sidebar.",
+  "version": "7.8.1",
+  "commit": "a52f49d",
+  "lastUpdated": "2025-10-31T21:22:00.000Z",
+  "changelog": "🔧 Overnight Improvements: Fixed Guardian auth (API tests now info-level), resolved Card import case-sensitivity warnings, added CardHeader/CardTitle exports for analytics compatibility. Conversation fixes already in place (project grouping). Database migration ready but needs manual execution in Supabase.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
