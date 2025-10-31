@@ -191,7 +191,7 @@ export default function Home() {
         <div className="p-3">
           <button
             onClick={handleNewChat}
-            className="w-full py-2.5 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-medium transition-colors"
+            className="w-full py-2.5 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-lg font-medium transition-colors"
           >
             New chat
           </button>
@@ -201,7 +201,7 @@ export default function Home() {
         <div className="px-3 pb-2">
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="w-full py-2 px-4 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-lg text-sm text-gray-400 text-left transition-colors"
+            className="w-full py-2 px-4 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-lg text-base text-gray-400 text-left transition-colors"
           >
             Search...
           </button>
@@ -209,11 +209,11 @@ export default function Home() {
 
         {/* Projects Section */}
         <div className="px-3 pb-2">
-          <div className="text-xs text-gray-500 font-medium px-2 mb-2">PROJECTS</div>
+          <div className="text-sm text-gray-500 font-medium px-2 mb-2">PROJECTS</div>
           <div className="space-y-1">
             <button
               onClick={() => selectProject('')}
-              className={`w-full py-1.5 px-3 rounded-md text-sm text-left transition-colors ${
+              className={`w-full py-1.5 px-3 rounded-md text-base text-left transition-colors ${
                 !currentProject ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900'
               }`}
             >
@@ -223,7 +223,7 @@ export default function Home() {
               <div key={project.id} className="flex items-center gap-1">
                 <button
                   onClick={() => selectProject(project.id)}
-                  className={`flex-1 py-1.5 px-3 rounded-md text-sm text-left transition-colors ${
+                  className={`flex-1 py-1.5 px-3 rounded-md text-base text-left transition-colors ${
                     currentProject === project.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900'
                   }`}
                 >
@@ -235,7 +235,7 @@ export default function Home() {
                       deleteProject(project.id);
                     }
                   }}
-                  className="p-1 text-gray-600 hover:text-red-500 text-xs"
+                  className="p-1 text-gray-600 hover:text-red-500 text-sm"
                 >
                   ×
                 </button>
@@ -248,7 +248,7 @@ export default function Home() {
                   projectsHook.createProject({ name, status: 'active' });
                 }
               }}
-              className="w-full py-1.5 px-3 rounded-md text-sm text-left text-gray-500 hover:bg-gray-900 transition-colors"
+              className="w-full py-1.5 px-3 rounded-md text-base text-left text-gray-500 hover:bg-gray-900 transition-colors"
             >
               + New project
             </button>
@@ -268,7 +268,7 @@ export default function Home() {
 
             return (
               <div key={group} className="mb-4">
-                <div className="text-xs text-gray-500 font-medium px-2 mb-2">{group.toUpperCase()}</div>
+                <div className="text-sm text-gray-500 font-medium px-2 mb-2">{group.toUpperCase()}</div>
                 {sortedConvs.map((conv) => (
                   <button
                     key={conv.id}
@@ -282,9 +282,9 @@ export default function Home() {
                         : 'text-gray-400 hover:bg-gray-900'
                     }`}
                   >
-                    <div className="text-sm truncate">{conv.title || 'Untitled conversation'}</div>
+                    <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
                     {(conv.updated_at || conv.created_at) && (
-                      <div className="text-xs text-gray-600 mt-0.5">
+                      <div className="text-sm text-gray-600 mt-0.5">
                         {formatRelativeTime(conv.updated_at || conv.created_at)}
                       </div>
                     )}
@@ -301,8 +301,8 @@ export default function Home() {
             href="/agent"
             className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-900/20 to-emerald-900/20 hover:from-green-800/30 hover:to-emerald-800/30 border border-green-700/30 hover:border-green-600/50 transition-all duration-200 group mb-2"
           >
-            <span className="text-lg group-hover:scale-110 transition-transform">🦉</span>
-            <span className="text-sm font-medium text-green-400 group-hover:text-green-300">
+            <span className="text-xl group-hover:scale-110 transition-transform">🦉</span>
+            <span className="text-base font-medium text-green-400 group-hover:text-green-300">
               Archie Dashboard
             </span>
           </a>
@@ -312,8 +312,8 @@ export default function Home() {
             href="/guardian"
             className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-900/20 to-cyan-900/20 hover:from-blue-800/30 hover:to-cyan-800/30 border border-blue-700/30 hover:border-blue-600/50 transition-all duration-200 group"
           >
-            <span className="text-lg group-hover:scale-110 transition-transform">🛡️</span>
-            <span className="text-sm font-medium text-blue-400 group-hover:text-blue-300">
+            <span className="text-xl group-hover:scale-110 transition-transform">🛡️</span>
+            <span className="text-base font-medium text-blue-400 group-hover:text-blue-300">
               Guardian Dashboard
             </span>
           </a>
@@ -321,7 +321,7 @@ export default function Home() {
 
         {/* Version Info */}
         <div className="p-3 border-t border-gray-900">
-          <div className="text-xs text-gray-600 text-center">
+          <div className="text-base text-gray-600 text-center">
             v{versionInfo.version} @ {versionInfo.commit}
           </div>
         </div>
@@ -385,8 +385,8 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto p-4">
           {messages.length === 0 ? (
             <div className="text-center mt-32 max-w-2xl mx-auto px-8">
-              <div className="text-lg text-gray-400 mb-3">{getGreeting()}</div>
-              <div className="text-sm text-gray-600 italic leading-relaxed transition-opacity duration-500">
+              <div className="text-4xl text-gray-400 mb-3">{getGreeting()}</div>
+              <div className="text-2xl text-gray-600 italic leading-relaxed transition-opacity duration-500">
                 "{DND_FACTS[currentFactIndex]}"
               </div>
             </div>
