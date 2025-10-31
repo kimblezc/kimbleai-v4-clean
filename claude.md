@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.7.4
-Latest Commit: 6647c44
+Latest Version: v7.8.0
+Latest Commit: cc51e69
 Last Updated: 2025-10-31
-Status: 🚀 Deploying
+Status: 🚧 Ready to Deploy
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **[pending]** (v7.8.0) - 🛡️ PROJECT-TAG GUARDIAN: New autonomous agent ensuring projects and tags are properly functioning. Expert in CRUD validation, data integrity, and organizational structure. Validates all projects/tags operations (create, read, update, delete), detects issues (orphans, duplicates, broken associations), auto-fixes simple problems, commits to git. Runs every 6 hours via cron. Dashboard at /guardian with blue shield button in sidebar. Comprehensive GUARDIAN.md documentation created. Guardian complements Archie (code quality) with data integrity monitoring.
 - **6647c44** (v7.7.4) - 🦉 COMPREHENSIVE LOGGING DASHBOARD: Completely revamped /agent dashboard with parsed commit analysis, color-coded fix type breakdown (🔧 lint, 🧹 dead code, 🐛 type error, 📦 dependency), individual fix cards, statistics (total fixes, commits, last run), layman explanations section, technical details, and created ARCHIE-LOGGING.md guide. Dashboard now production-ready for monitoring all Archie activity in readable format.
 - **9f455c9** (v7.7.3) - 🦉 UX IMPROVEMENT: Added Archie Dashboard button to sidebar for easy access. Green owl button with gradient background and hover effects positioned above version info. Users can now click directly to /agent to monitor Archie's activity without typing the URL.
 - **ad93693** (v7.7.2) - 🦉 ARCHIE AI ENHANCEMENT: Enhanced Archie with AI-powered iterative fixing! Now uses GPT-4o to fix complex TypeScript errors with retry logic (up to 3 attempts), tests each fix with tsc/lint, rolls back on failure, and uses progressively aggressive strategies (minimal changes → type assertions → any types). Added comprehensive logging for each fix attempt. Manual trigger tested and working at /api/archie/run?trigger=manual.
@@ -195,6 +196,142 @@ git log --author="Archie" --since="24 hours ago"
 ### Documentation
 
 See `ARCHIE.md` for full details.
+
+---
+
+## Guardian - Autonomous Data Integrity
+
+**Project-Tag Guardian** = Data integrity and API health watchdog
+
+**Status**: ✅ Active (Runs every 6 hours)
+
+### Philosophy
+> "Projects and tags are a continual problem. Let Guardian handle it."
+
+Guardian is a specialized autonomous agent that ensures projects and tags are properly functioning.
+
+**No human intervention needed. Just validates, fixes, commits, and reports.**
+
+### What Guardian Does
+
+Every 6 hours, Guardian:
+1. **Validates** all Projects CRUD operations (Create, Read, Update, Delete)
+2. **Validates** all Tags CRUD operations (Create, Read, Update, Delete)
+3. **Checks** project-tag associations for broken references
+4. **Detects** orphaned records (tasks without projects)
+5. **Finds** duplicate tags
+6. **Verifies** permissions are working correctly
+7. **Auto-fixes** fixable issues (creates missing tags, removes orphans, merges duplicates)
+8. **Commits** fixes to git with detailed reports
+9. **Logs** everything for full transparency
+
+**Auto-Fixes:**
+- ✓ Missing tags (creates them if projects reference non-existent tags)
+- ✓ Orphaned records (deletes tasks that reference deleted projects)
+- ✓ Duplicate tags (keeps first, removes duplicates)
+- ✓ Broken associations (repairs or removes)
+
+**Doesn't Touch:**
+- ❌ Production data without validation
+- ❌ Projects or tags without confirmation
+- ❌ Breaking changes
+- ❌ Anything requiring business logic decisions
+
+### Implementation
+
+**Files:**
+- `lib/project-tag-guardian.ts` - Main Guardian agent (500+ lines)
+- `app/api/guardian/run/route.ts` - API endpoint
+- `app/guardian/page.tsx` - Dashboard showing activity
+
+**Schedule**: Every 6 hours via Vercel Cron (`0 */6 * * *`)
+**Manual trigger**: `/api/guardian/run?trigger=manual`
+**Dashboard**: https://www.kimbleai.com/guardian
+
+### Validation Checks
+
+**Projects CRUD:**
+- GET /api/projects (list all projects)
+- POST /api/projects (create new project)
+- POST /api/projects (update project)
+- POST /api/projects (delete project)
+
+**Tags CRUD:**
+- GET /api/tags (list all tags)
+- POST /api/tags (create new tag)
+- PUT /api/tags (update tag)
+- DELETE /api/tags (delete tag)
+
+**Data Integrity:**
+- Projects only reference existing tags
+- No orphaned tasks
+- No duplicate tags
+- Proper permissions enforced
+
+### Issue Types
+
+**Critical (🔴)**: System broken, needs immediate attention
+- CRUD operation failing
+- API returning 500 errors
+- Data corruption detected
+
+**Warning (🟡)**: Problem exists but system works
+- Orphaned records
+- Duplicate tags
+- Broken associations
+
+**Info (🔵)**: Informational
+- Validation passed
+- Auto-fix applied
+- Performance metrics
+
+### Monitoring & Access
+
+**Dashboard**: https://www.kimbleai.com/guardian
+- View all Guardian runs with timestamps
+- See issues detected and fixed
+- Manual trigger button available
+- Color-coded issue severity
+
+**Sidebar Button**: Click the blue 🛡️ button above version info
+
+**Manual Trigger**: `/api/guardian/run?trigger=manual` (takes 1-2 min)
+
+**Git Logs**:
+```bash
+# See all Guardian activity
+git log --author="Guardian" --oneline -20
+
+# See last 24 hours
+git log --author="Guardian" --since="24 hours ago"
+```
+
+### Why Guardian?
+
+**Problem**: Projects and tags were "a continual problem"
+- CRUD operations would break
+- Orphaned records accumulated
+- Duplicate tags caused confusion
+- No visibility into data health
+
+**Solution**: Autonomous agent that validates everything, auto-fixes what it can, reports the rest.
+
+**Success**: All CRUD operations work, no orphans, no duplicates, full transparency.
+
+### Comparison: Guardian vs Archie
+
+| Feature | Archie 🦉 | Guardian 🛡️ |
+|---------|----------|-------------|
+| **Focus** | Code quality | Data integrity |
+| **Runs** | Every hour | Every 6 hours |
+| **Fixes** | Lint, dead code, deps | Duplicates, orphans, associations |
+| **Scope** | Source files | Database + APIs |
+| **Git commits** | ✅ Yes | ✅ Yes |
+| **Dashboard** | /agent | /guardian |
+
+### Documentation
+
+See `GUARDIAN.md` for full details.
 
 ---
 

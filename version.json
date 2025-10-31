@@ -1,8 +1,8 @@
 {
-  "version": "7.7.4",
-  "commit": "32e8499",
-  "lastUpdated": "2025-10-31T18:15:00.000Z",
-  "changelog": "🦉 ENHANCED ARCHIE DASHBOARD: Comprehensive logging with fix type breakdown, statistics, color-coded categories, layman explanations, and individual fix cards. Dashboard now parses commits to show detailed activity in readable format.",
+  "version": "7.8.0",
+  "commit": "cc51e69",
+  "lastUpdated": "2025-10-31T20:00:00.000Z",
+  "changelog": "🛡️ PROJECT-TAG GUARDIAN: New autonomous agent ensuring projects and tags functionality. Validates CRUD operations, detects data integrity issues (orphans, duplicates, broken associations), auto-fixes simple problems, commits to git. Runs every 6 hours. Dashboard at /guardian with blue shield button in sidebar.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

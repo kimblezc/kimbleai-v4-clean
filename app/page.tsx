@@ -299,11 +299,22 @@ export default function Home() {
         <div className="p-3 border-t border-gray-900">
           <a
             href="/agent"
-            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-900/20 to-emerald-900/20 hover:from-green-800/30 hover:to-emerald-800/30 border border-green-700/30 hover:border-green-600/50 transition-all duration-200 group"
+            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-900/20 to-emerald-900/20 hover:from-green-800/30 hover:to-emerald-800/30 border border-green-700/30 hover:border-green-600/50 transition-all duration-200 group mb-2"
           >
             <span className="text-lg group-hover:scale-110 transition-transform">🦉</span>
             <span className="text-sm font-medium text-green-400 group-hover:text-green-300">
               Archie Dashboard
+            </span>
+          </a>
+
+          {/* Guardian Dashboard Link */}
+          <a
+            href="/guardian"
+            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-900/20 to-cyan-900/20 hover:from-blue-800/30 hover:to-cyan-800/30 border border-blue-700/30 hover:border-blue-600/50 transition-all duration-200 group"
+          >
+            <span className="text-lg group-hover:scale-110 transition-transform">🛡️</span>
+            <span className="text-sm font-medium text-blue-400 group-hover:text-blue-300">
+              Guardian Dashboard
             </span>
           </a>
         </div>
