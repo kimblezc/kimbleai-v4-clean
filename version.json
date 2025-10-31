@@ -1,8 +1,8 @@
 {
-  "version": "7.6.1",
-  "commit": "1b5b670",
-  "lastUpdated": "2025-10-31T07:15:00.000Z",
-  "changelog": "✨ FEATURE: 20 D&D facts with smart rotation - Expanded to 20 curated facts (deep lore + gameplay), smart rotation never repeats until all shown, 2min 40sec of unique content",
+  "version": "7.6.2",
+  "commit": "1d43080",
+  "lastUpdated": "2025-10-31T07:25:00.000Z",
+  "changelog": "🔧 HOTFIX: React Error #310 - Fixed infinite render loop in D&D facts rotation by using useRef instead of nested state updates, imported missing useRef hook",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
