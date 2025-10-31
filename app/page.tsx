@@ -20,6 +20,20 @@ const versionInfo = {
   lastUpdated: versionData.lastUpdated
 };
 
+// D&D facts for rotating display
+const DND_FACTS = [
+  "The original D&D had only 3 character classes: Fighter, Magic-User, and Cleric.",
+  "A natural 20 is called a 'critical success' - it automatically succeeds at nearly any task.",
+  "The Deck of Many Things is one of D&D's most dangerous magic items - it can grant wishes or instantly kill you.",
+  "Dungeons & Dragons was created by Gary Gygax and Dave Arneson in 1974.",
+  "The Tarrasque is one of the most powerful creatures in D&D, often used as a campaign-ending boss.",
+  "Beholders are iconic D&D monsters with a central eye that projects an anti-magic cone.",
+  "The Nine Hells are structured as nine layers, each ruled by a powerful archdevil.",
+  "A Dungeon Master's most powerful tool isn't dice - it's improvisation.",
+  "Critical Role, the most popular D&D stream, has raised over $11 million for charity.",
+  "The longest D&D campaign ever recorded lasted over 40 years with the same players.",
+];
+
 export default function Home() {
   const { data: session, status } = useSession();
   const [currentUser, setCurrentUser] = useState<'zach' | 'rebecca'>('zach');
@@ -34,6 +48,9 @@ export default function Home() {
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [currentFact, setCurrentFact] = useState(
+    DND_FACTS[Math.floor(Math.random() * DND_FACTS.length)]
+  );
 
   const conversationsHook = useConversations(currentUser);
   const {
@@ -80,28 +97,10 @@ export default function Home() {
     setIsMobileSidebarOpen(false);
   };
 
-  // D&D facts and rotating messages
-  const dndFacts = [
-    "The original D&D had only 3 character classes: Fighter, Magic-User, and Cleric.",
-    "A natural 20 is called a 'critical success' - it automatically succeeds at nearly any task.",
-    "The Deck of Many Things is one of D&D's most dangerous magic items - it can grant wishes or instantly kill you.",
-    "Dungeons & Dragons was created by Gary Gygax and Dave Arneson in 1974.",
-    "The Tarrasque is one of the most powerful creatures in D&D, often used as a campaign-ending boss.",
-    "Beholders are iconic D&D monsters with a central eye that projects an anti-magic cone.",
-    "The Nine Hells are structured as nine layers, each ruled by a powerful archdevil.",
-    "A Dungeon Master's most powerful tool isn't dice - it's improvisation.",
-    "Critical Role, the most popular D&D stream, has raised over $11 million for charity.",
-    "The longest D&D campaign ever recorded lasted over 40 years with the same players.",
-  ];
-
-  const [currentFact, setCurrentFact] = useState(
-    dndFacts[Math.floor(Math.random() * dndFacts.length)]
-  );
-
-  // Rotate fact every 8 seconds
+  // Rotate D&D fact every 8 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentFact(dndFacts[Math.floor(Math.random() * dndFacts.length)]);
+      setCurrentFact(DND_FACTS[Math.floor(Math.random() * DND_FACTS.length)]);
     }, 8000);
     return () => clearInterval(interval);
   }, []);
