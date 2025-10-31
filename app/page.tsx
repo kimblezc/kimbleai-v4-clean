@@ -44,6 +44,16 @@ const DND_FACTS = [
   "Bahamut, the Platinum Dragon god of good, sometimes walks among mortals disguised as an old man.",
 ];
 
+// Shuffle helper function (outside component to avoid recreation)
+const shuffleArray = (array: number[]) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 export default function Home() {
   const { data: session, status } = useSession();
   const [currentUser, setCurrentUser] = useState<'zach' | 'rebecca'>('zach');
@@ -58,8 +68,8 @@ export default function Home() {
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [currentFactIndex, setCurrentFactIndex] = useState(Math.floor(Math.random() * DND_FACTS.length));
-  const usedFactIndicesRef = useRef<Set<number>>(new Set());
+  const [currentFactIndex, setCurrentFactIndex] = useState(0);
+  const factQueueRef = useRef<number[]>(shuffleArray(Array.from({ length: DND_FACTS.length }, (_, i) => i)));
 
   const conversationsHook = useConversations(currentUser);
   const {
@@ -106,26 +116,19 @@ export default function Home() {
     setIsMobileSidebarOpen(false);
   };
 
-  // Rotate D&D fact every 8 seconds without repeating until all are shown
+  // Rotate D&D fact every 8 seconds - random order without repeats
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentFactIndex(prevIndex => {
-        // Add previous index to used set
-        usedFactIndicesRef.current.add(prevIndex);
+      // If queue is empty, reshuffle
+      if (factQueueRef.current.length === 0) {
+        factQueueRef.current = shuffleArray(Array.from({ length: DND_FACTS.length }, (_, i) => i));
+      }
 
-        // If all facts have been used, reset
-        if (usedFactIndicesRef.current.size >= DND_FACTS.length) {
-          usedFactIndicesRef.current.clear();
-        }
-
-        // Find next unused fact
-        let nextIndex;
-        do {
-          nextIndex = Math.floor(Math.random() * DND_FACTS.length);
-        } while (usedFactIndicesRef.current.has(nextIndex) && usedFactIndicesRef.current.size < DND_FACTS.length);
-
-        return nextIndex;
-      });
+      // Pop next index from queue
+      const nextIndex = factQueueRef.current.shift();
+      if (nextIndex !== undefined) {
+        setCurrentFactIndex(nextIndex);
+      }
     }, 8000);
     return () => clearInterval(interval);
   }, []);
