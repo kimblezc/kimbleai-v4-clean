@@ -5,14 +5,16 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.6.2
-Latest Commit: 1d43080
+Latest Version: v7.6.3
+Latest Commit: 00ba6e9
 Last Updated: 2025-10-31
 Status: ✅ Deployed to Production
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **00ba6e9** (v7.6.3) - FEATURE: Fantasy-themed fonts - Replaced Inter/Space Grotesk with Cinzel (elegant Roman serif for headers) and Crimson Text (readable serif for body), improved typography with 16px base size, 1.6 line-height, and letter-spacing for D&D rulebook aesthetic
+- **8a2f887** (v7.6.2) - HOTFIX: Empty dependency array fix - Changed useEffect from [currentFactIndex] to [] to prevent re-creation on every fact change, uses functional setState for prevIndex access
 - **1d43080** (v7.6.2) - HOTFIX: React Error #310 crash - Fixed infinite render loop caused by nested state updates in D&D facts rotation, imported missing useRef hook, refactored to use useRef for tracking used indices (single state update per interval)
 - **1b5b670** (v7.6.1) - FEATURE: 20 D&D facts with smart rotation - Expanded to 20 curated facts mixing surface-level and deep lore (THAC0, Vecna, Lady of Pain, Spelljammer, Blood War), smart rotation tracks used facts and never repeats until all shown, provides 2min 40sec of unique content before any repeats
 - **39ca25b** (v7.6.0) - FEATURE: Rotating D&D facts on empty state - Removed large "KimbleAI" branding from center, added 10 rotating D&D facts that change every 8 seconds, kept time-based greetings, cleaner minimal UI, changed input placeholder to "Ask me anything..."
