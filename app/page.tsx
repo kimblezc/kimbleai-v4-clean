@@ -157,15 +157,6 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-black text-white">
       <style jsx>{`
-        .d20-glow {
-          position: relative;
-          background: radial-gradient(circle at center, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 30%, transparent 70%);
-          box-shadow:
-            0 0 20px rgba(16, 185, 129, 0.3),
-            0 0 40px rgba(16, 185, 129, 0.15),
-            0 0 60px rgba(16, 185, 129, 0.05);
-        }
-
         @media (max-width: 768px) {
           .sidebar {
             position: fixed;
@@ -317,9 +308,7 @@ export default function Home() {
         {/* Header */}
         <div className="bg-gray-950 border-b border-gray-800 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="d20-glow rounded-full p-1">
-              <D20Dice size={40} spinning={true} />
-            </div>
+            <D20Dice size={40} spinning={true} />
             <div>
               <h1 className="text-lg font-semibold">KimbleAI</h1>
             </div>
