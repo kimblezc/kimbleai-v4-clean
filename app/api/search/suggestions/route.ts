@@ -66,17 +66,17 @@ export async function GET(request: NextRequest) {
       // Search recent conversation titles
       const { data: conversations } = await supabase
         .from('conversations')
-        .select('title, created_at')
+        .select('title, updated_at')
         .eq('user_id', userId)
         .ilike('title', `%${query}%`)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(3);
 
       if (conversations) {
         suggestions.push(...conversations.map(c => ({
           text: c.title,
           type: 'content' as const,
-          timestamp: c.created_at
+          timestamp: c.updated_at
         })));
       }
 

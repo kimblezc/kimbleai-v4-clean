@@ -115,8 +115,8 @@ async function getSystemOverview(timeRange: string) {
     supabase
       .from('conversations')
       .select('*', { count: 'exact', head: true })
-      .gte('created_at', previousPeriod)
-      .lt('created_at', since),
+      .gte('updated_at', previousPeriod)
+      .lt('updated_at', since),
 
     supabase
       .from('messages')
@@ -178,7 +178,7 @@ async function getUserAnalytics(timeRange: string) {
         .from('conversations')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .gte('created_at', since),
+        .gte('updated_at', since),
 
       supabase
         .from('messages')
