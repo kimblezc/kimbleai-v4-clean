@@ -20,13 +20,21 @@ export async function GET(request: NextRequest) {
     // Check for manual trigger or cron auth
     const trigger = request.nextUrl.searchParams.get('trigger');
     const authHeader = request.headers.get('authorization');
+    const secretParam = request.nextUrl.searchParams.get('secret');
     const cronSecret = process.env.CRON_SECRET;
 
     const isManualTrigger = trigger === 'manual';
-    const isAuthorizedCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    const isAuthorizedHeader = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    const isAuthorizedParam = cronSecret && secretParam === cronSecret;
 
-    if (!isManualTrigger && cronSecret && !isAuthorizedCron) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // If CRON_SECRET is configured, require authentication (except for manual triggers)
+    if (cronSecret && !isManualTrigger && !isAuthorizedHeader && !isAuthorizedParam) {
+      console.log('🚫 Archie: Unauthorized access attempt');
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Valid CRON_SECRET required to run Archie'
+      }, { status: 401 });
     }
 
     // Run Archie

@@ -27,8 +27,10 @@ const PUBLIC_PATHS = [
   '/api/index/cron', // Cron jobs (protected by CRON_SECRET in route)
   '/api/cron', // Cron jobs (protected by CRON_SECRET in route)
   '/api/agent', // Archie autonomous agent (protected by CRON_SECRET in route)
+  '/api/guardian/run', // Guardian agent (protected by CRON_SECRET in route)
   '/api/storage', // Storage monitoring endpoints
   '/archie', // Archie dashboard (read-only public view - redesigned v3.0.0)
+  '/guardian', // Guardian dashboard (read-only public view)
   '/api/archie', // Archie agent APIs (overview, tasks, references, etc.)
   '/api/agent/trigger', // Manual Archie trigger (for Zapier/external crons)
   '/api/mcp/fix-args', // TEMPORARY: MCP database fix endpoint (remove after setup)

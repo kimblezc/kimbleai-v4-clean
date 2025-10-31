@@ -21,6 +21,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const trigger = searchParams.get('trigger') || 'scheduled';
 
+    // Authentication: Check for CRON_SECRET or manual trigger
+    const authHeader = request.headers.get('authorization');
+    const secretParam = searchParams.get('secret');
+    const cronSecret = process.env.CRON_SECRET;
+
+    const isManualTrigger = trigger === 'manual';
+    const isAuthorizedHeader = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    const isAuthorizedParam = cronSecret && secretParam === cronSecret;
+
+    // If CRON_SECRET is configured, require authentication (except for manual triggers)
+    if (cronSecret && !isManualTrigger && !isAuthorizedHeader && !isAuthorizedParam) {
+      console.log('🚫 Guardian: Unauthorized access attempt');
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Valid CRON_SECRET required to run Guardian'
+      }, { status: 401 });
+    }
+
     console.log(`🛡️ Guardian run triggered: ${trigger}`);
 
     // Run the guardian
