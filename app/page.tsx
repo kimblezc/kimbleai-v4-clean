@@ -90,6 +90,25 @@ export default function Home() {
   const projectsHook = useProjects(currentUser);
   const { projects, currentProject, selectProject, updateProject, deleteProject } = projectsHook;
 
+  // Rotate D&D facts every 8 seconds - random non-repeating using shuffled queue
+  // MUST be called before early return to maintain consistent hook order
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // If queue is empty, refill with shuffled indices
+      if (factQueueRef.current.length === 0) {
+        factQueueRef.current = shuffleArray(Array.from({ length: DND_FACTS.length }, (_, i) => i));
+      }
+
+      // Get next fact from queue
+      const nextIndex = factQueueRef.current.shift();
+      if (nextIndex !== undefined) {
+        setCurrentFactIndex(nextIndex);
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   if (status === 'loading' || status === 'unauthenticated') {
     return (
       <LoadingScreen
@@ -116,24 +135,6 @@ export default function Home() {
     clearMessages();
     setIsMobileSidebarOpen(false);
   };
-
-  // Rotate D&D facts every 8 seconds - random non-repeating using shuffled queue
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // If queue is empty, refill with shuffled indices
-      if (factQueueRef.current.length === 0) {
-        factQueueRef.current = shuffleArray(Array.from({ length: DND_FACTS.length }, (_, i) => i));
-      }
-
-      // Get next fact from queue
-      const nextIndex = factQueueRef.current.shift();
-      if (nextIndex !== undefined) {
-        setCurrentFactIndex(nextIndex);
-      }
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Get time-based greeting in CET timezone
   const getGreeting = () => {
