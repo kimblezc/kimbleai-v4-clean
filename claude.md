@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.6.4
-Latest Commit: 79d7ac3
+Latest Version: v7.7.0
+Latest Commit: 83d8ae3
 Last Updated: 2025-10-31
-Status: ✅ Deployed to Production
+Status: 🚧 Ready to Deploy
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **83d8ae3** (v7.7.0) - 🦉 ARCHIE 2.0 REBOOT: Complete rebuild of autonomous agent system - Removed all 4 old failed agents (Autonomous, Archie Utility, Drive Intelligence, Device Sync), archived to lib/archive/ and app/api/archive/. New smart auto-approval system: auto-executes small improvements (linting, dead code, null checks), requires approval for big changes (refactoring, API changes). New dashboard at /agent with health scores, approval queue, cost tracking. Database schema ready (6 new tables), CodeHealthAnalyzer coming next.
 - **79d7ac3** (v7.6.4) - CRITICAL FIX: React Error #310 resolved with shuffled queue approach - Moved shuffleArray outside component, use ref-based queue of shuffled indices, empty dependency array prevents recreation, maintains full random non-repeating feature
 - **00ba6e9** (v7.6.3) - FEATURE: Fantasy-themed fonts - Replaced Inter/Space Grotesk with Cinzel (elegant Roman serif for headers) and Crimson Text (readable serif for body), improved typography with 16px base size, 1.6 line-height, and letter-spacing for D&D rulebook aesthetic
 - **8a2f887** (v7.6.2) - HOTFIX: Empty dependency array fix - Changed useEffect from [currentFactIndex] to [] to prevent re-creation on every fact change, uses functional setState for prevIndex access
@@ -90,57 +91,100 @@ Live URL: https://www.kimbleai.com
 
 ---
 
-## Agent Visibility and Oversight
+## Archie 2.0 - Smart Autonomous Agent System
 
-**Rule: All Active Agents Must Be Visible on the Archie Dashboard**
+**Status: 🚧 In Development (Database schema ready, CodeHealthAnalyzer next)**
 
-Archie serves as the central oversight coordinator for all autonomous agents in the system. The Archie Dashboard at `/agent` must display:
+### Philosophy
+> "Don't make me think about tiny stuff, but ask before big changes"
 
-### Required Information for Each Active Agent:
-1. **Agent Name and Type** (e.g., "Archie Utility Agent", "Drive Intelligence Agent")
-2. **Current Status** (Active, Running, Idle, Error)
-3. **Execution Schedule** (e.g., "Every 15 minutes", "Every 6 hours")
-4. **Last Run Time** (When the agent last executed)
-5. **What It's Doing** (Current or recent findings)
-6. **Next Tasks** (Upcoming tasks in the queue)
-7. **API Endpoint** (For manual triggering/debugging)
+Archie 2.0 is a smart autonomous agent that:
+- **Auto-executes** small, safe improvements (no human needed)
+- **Requires approval** for big, risky changes (human gate)
+- **Tracks code health** with 0-100 score over time
+- **Monitors costs** with hard daily limits
+- **Full transparency** via dashboard at `/agent`
 
-### Active Agents (as of Oct 2025):
-1. **Autonomous Agent** - Every 5 minutes - `/api/agent/cron`
-   - Main orchestrator, code analysis, self-improvement
+### Architecture Components
 
-2. **Archie Utility Agent** - Every 15 minutes - `/api/cron/archie-utility`
-   - Actionable conversation detection, cost monitoring, task optimization
+**1. CodeHealthAnalyzer** (Coming next)
+- Scans codebase every 30 minutes
+- Calculates health score (0-100)
+- Generates improvement proposals
+- Auto-approves safe ones
 
-3. **Drive Intelligence Agent** - Every 6 hours - `/api/cron/drive-intelligence`
-   - File organization, duplicate detection, media discovery
+**2. Approval Queue (Database ready)**
+- `archie_proposals` table tracks all improvements
+- Smart auto-approval rules apply automatically
+- Big changes wait for human review
+- Full audit trail
 
-4. **Device Sync Agent** - Every 2 minutes - `/api/cron/device-sync`
-   - Cross-device state synchronization, conflict resolution
+**3. Dashboard** (`/agent` - ✅ Built)
+- Code health score with trends
+- Pending approvals section
+- Auto-approved today log
+- Recent activity feed
+- Cost tracking
 
-### Dashboard Requirements:
-- Must be server-side rendered (no caching)
-- Must auto-update on each page visit
-- Must show real-time agent status
-- Must display findings and tasks from all agents
-- Must provide visual indicators for agent health (active/inactive/error)
+### Auto-Approval Rules
 
-### Adding New Agents:
-When adding a new autonomous agent to the system:
-1. Create the agent implementation in `lib/`
-2. Create the API endpoint in `app/api/cron/`
-3. Add the cron schedule to `vercel.json`
-4. **Update the Archie Dashboard** at `app/agent/page.tsx` to include the new agent
-5. Document the agent in this file under "Active Agents"
+**✅ AUTO-EXECUTES (no human needed):**
+- Fix linting/formatting errors
+- Remove dead code & unused imports
+- Add obvious null checks
+- Patch dependency updates (1.2.3 → 1.2.4)
+- Simple TypeScript fixes
+- Basic input validation
 
-### Rationale:
-Without centralized visibility, agents can:
-- Run without oversight
-- Generate duplicate or conflicting tasks
-- Consume resources unnecessarily
-- Fail silently without alerting the team
+**Limits**: Max 5 files, 50 lines, must have tests
 
-Archie's dashboard provides a single pane of glass for monitoring all autonomous activity, ensuring transparency and accountability in the AI-driven workflow.
+**🛑 REQUIRES YOUR APPROVAL:**
+- Major refactoring (>10 files)
+- API contract changes
+- Database schema changes
+- Major/minor dependency updates
+- Critical security fixes
+- Architectural changes
+
+### Database Schema (✅ Created)
+- `archie_runs` - Track all executions
+- `archie_proposals` - Approval queue
+- `archie_auto_approval_rules` - What can auto-execute
+- `archie_safety_limits` - Cost & rate controls
+- `archie_health_history` - Code health tracking
+- `archie_state` - Configuration
+
+**Migrations**: `database/archie-2.0-migration.sql` and `database/archie-auto-approval-rules.sql`
+
+### Safety Features
+- 🛡️ Cost caps: $15/day max, $500/week max
+- 🛡️ Rate limiting: Max 2 scans/hour, 5 executions/day
+- 🛡️ Emergency stop: Big red button to pause everything
+- 🛡️ Rollback: Every change tracked, can revert
+- 🛡️ Dry-run mode: Test without making changes
+
+### What Happened to Old Agents?
+**All removed (2025-10-31)** - Archie 1.0 failed, complete reboot:
+- ❌ Autonomous Agent - Shelved, uncontrolled
+- ❌ Archie Utility - Shelved, duplicated effort
+- ❌ Drive Intelligence - Shelved, never completed
+- ❌ Device Sync - Shelved, scope too large
+
+**Archived to**: `lib/archive/agents-removed-2025-10-31/` and `app/api/archive/cron-removed-2025-10-31/`
+
+### Rationale
+The old agents failed because:
+- No visibility into what they were doing
+- No approval gates for risky changes
+- No cost controls
+- Too ambitious, tried to do everything
+- Ran without oversight
+
+Archie 2.0 fixes all of this with human oversight, transparency, and smart automation for *only* the boring stuff.
+
+### Documentation
+- `ARCHIE-2.0.md` - Full architecture guide
+- `ARCHIE-2.0-CHANGES.md` - Implementation summary
 
 ---
 
