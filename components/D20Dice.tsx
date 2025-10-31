@@ -10,39 +10,15 @@ interface D20DiceProps {
 }
 
 export default function D20Dice({ size = 64, className = '', spinning = true }: D20DiceProps) {
-  const [rotationX, setRotationX] = React.useState(15);
-  const [rotationY, setRotationY] = React.useState(25);
-  const [rotationZ, setRotationZ] = React.useState(10);
+  // Static rotation angles - CSS will handle animation
+  const [rotationX] = React.useState(15);
+  const [rotationY] = React.useState(25);
+  const [rotationZ] = React.useState(10);
   const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  React.useEffect(() => {
-    if (!spinning || !isMounted) return;
-
-    let animationFrameId: number;
-    let startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = (Date.now() - startTime) / 1000; // seconds
-      const speed = 0.3; // rotation speed
-
-      // Smooth, continuous 3D rotation
-      setRotationX((elapsed * 30 * speed) % 360);
-      setRotationY((elapsed * 40 * speed) % 360);
-      setRotationZ((elapsed * 20 * speed) % 360);
-
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [spinning, isMounted]);
 
   // Mathematically correct icosahedron using golden ratio
   const renderD20 = () => {
@@ -228,7 +204,23 @@ export default function D20Dice({ size = 64, className = '', spinning = true }: 
         height: size
       }}
     >
-      {renderD20()}
+      <style jsx>{`
+        @keyframes spin3d {
+          0% {
+            transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+          }
+          100% {
+            transform: rotateX(360deg) rotateY(480deg) rotateZ(240deg);
+          }
+        }
+        .d20-container {
+          animation: ${spinning ? 'spin3d 20s linear infinite' : 'none'};
+          transform-style: preserve-3d;
+        }
+      `}</style>
+      <div className="d20-container">
+        {renderD20()}
+      </div>
     </div>
   );
 }

@@ -68,7 +68,9 @@ export default function Home() {
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [currentFact, setCurrentFact] = useState(DND_FACTS[0]);
+  // D&D facts rotation - shuffled queue for random non-repeating facts
+  const factQueueRef = useRef(shuffleArray(Array.from({ length: DND_FACTS.length }, (_, i) => i)));
+  const [currentFactIndex, setCurrentFactIndex] = useState(factQueueRef.current[0] || 0);
 
   const conversationsHook = useConversations(currentUser);
   const {
@@ -115,13 +117,21 @@ export default function Home() {
     setIsMobileSidebarOpen(false);
   };
 
-  // Rotate D&D fact every 8 seconds - simple cycle for now
+  // Rotate D&D facts every 8 seconds - random non-repeating using shuffled queue
   useEffect(() => {
-    let index = 0;
     const interval = setInterval(() => {
-      index = (index + 1) % DND_FACTS.length;
-      setCurrentFact(DND_FACTS[index]);
+      // If queue is empty, refill with shuffled indices
+      if (factQueueRef.current.length === 0) {
+        factQueueRef.current = shuffleArray(Array.from({ length: DND_FACTS.length }, (_, i) => i));
+      }
+
+      // Get next fact from queue
+      const nextIndex = factQueueRef.current.shift();
+      if (nextIndex !== undefined) {
+        setCurrentFactIndex(nextIndex);
+      }
     }, 8000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -363,7 +373,7 @@ export default function Home() {
             <div className="text-center mt-32 max-w-2xl mx-auto px-8">
               <div className="text-lg text-gray-400 mb-3">{getGreeting()}</div>
               <div className="text-sm text-gray-600 italic leading-relaxed transition-opacity duration-500">
-                "{currentFact}"
+                "{DND_FACTS[currentFactIndex]}"
               </div>
             </div>
           ) : (

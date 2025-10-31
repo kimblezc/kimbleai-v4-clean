@@ -1,8 +1,8 @@
 {
-  "version": "7.6.4",
-  "commit": "79d7ac3",
-  "lastUpdated": "2025-10-31T07:45:00.000Z",
-  "changelog": "🔧 CRITICAL FIX: React Error #310 resolved - Refactored D&D facts rotation to use shuffled queue with ref-based storage, maintains random non-repeating feature without infinite loops",
+  "version": "7.6.5",
+  "commit": "pending",
+  "lastUpdated": "2025-10-31T08:00:00.000Z",
+  "changelog": "🎯 ROOT CAUSE FIX: React Error #310 resolved - D20Dice now uses CSS animation instead of requestAnimationFrame (60fps state updates), eliminated infinite re-render trigger while maintaining full rotating D&D facts feature with random non-repeating queue",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
