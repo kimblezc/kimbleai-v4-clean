@@ -41,6 +41,7 @@ interface ArchieRun {
 
 export class ArchieAgent {
   private maxTasksPerRun = 5; // Don't go crazy
+  private maxRetries = 3; // Retry failed fixes up to 3 times
   private projectRoot: string;
   private dryRun: boolean;
 
@@ -283,33 +284,106 @@ export class ArchieAgent {
   }
 
   /**
-   * Fix an individual issue
+   * Fix an individual issue with retry logic
    */
   private async fixIssue(task: ImprovementTask): Promise<boolean> {
     console.log(`  🔧 Fixing ${task.type}: ${task.issue}`);
 
-    switch (task.type) {
-      case 'lint':
-        return this.fixLintError(task);
+    // Try fix up to maxRetries times
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        let success = false;
 
-      case 'dead_code':
-        return this.fixDeadCode(task);
+        switch (task.type) {
+          case 'lint':
+            success = await this.fixLintError(task);
+            break;
 
-      case 'type_error':
-        return this.fixTypeError(task);
+          case 'dead_code':
+            success = await this.fixDeadCode(task);
+            break;
 
-      case 'dependency':
-        return this.fixDependency(task);
+          case 'type_error':
+            success = await this.fixTypeError(task, attempt);
+            break;
 
-      default:
-        return false;
+          case 'dependency':
+            success = await this.fixDependency(task);
+            break;
+
+          default:
+            return false;
+        }
+
+        if (success) {
+          // Test the fix
+          const testPassed = await this.testFix(task);
+          if (testPassed) {
+            console.log(`    ✅ Fixed successfully (attempt ${attempt})`);
+            return true;
+          } else {
+            console.log(`    ⚠️  Fix applied but tests failed (attempt ${attempt})`);
+            // Rollback and try again
+            await this.rollbackChanges(task);
+          }
+        } else {
+          console.log(`    ❌ Fix failed (attempt ${attempt})`);
+        }
+      } catch (error: any) {
+        console.log(`    ❌ Error during fix attempt ${attempt}: ${error.message}`);
+      }
+
+      if (attempt < this.maxRetries) {
+        console.log(`    🔄 Retrying with different approach...`);
+      }
+    }
+
+    console.log(`    ⛔ Gave up after ${this.maxRetries} attempts`);
+    return false;
+  }
+
+  /**
+   * Test if a fix actually works
+   */
+  private async testFix(task: ImprovementTask): Promise<boolean> {
+    try {
+      if (task.type === 'type_error' || task.type === 'dead_code') {
+        // Test TypeScript compilation
+        execSync('npx tsc --noEmit', {
+          cwd: this.projectRoot,
+          stdio: 'pipe'
+        });
+      } else if (task.type === 'lint') {
+        // Test linting
+        execSync(`npm run lint -- ${task.file}`, {
+          cwd: this.projectRoot,
+          stdio: 'pipe'
+        });
+      }
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Rollback changes to a file
+   */
+  private async rollbackChanges(task: ImprovementTask): Promise<void> {
+    try {
+      execSync(`git checkout -- ${task.file}`, {
+        cwd: this.projectRoot,
+        stdio: 'ignore'
+      });
+    } catch (error) {
+      // Ignore rollback errors
     }
   }
 
   /**
    * Auto-fix linting errors
    */
-  private fixLintError(task: ImprovementTask): boolean {
+  private async fixLintError(task: ImprovementTask): Promise<boolean> {
     try {
       execSync(`npm run lint -- --fix ${task.file}`, {
         cwd: this.projectRoot,
@@ -322,36 +396,117 @@ export class ArchieAgent {
   }
 
   /**
-   * Remove dead code (unused imports)
+   * Remove dead code (unused imports) using AI
    */
-  private fixDeadCode(task: ImprovementTask): boolean {
+  private async fixDeadCode(task: ImprovementTask): Promise<boolean> {
+    if (!openai) {
+      console.log(`      ⚠️  Skipping AI fix - OPENAI_API_KEY not set`);
+      return false;
+    }
+
     try {
       const content = readFileSync(task.file, 'utf-8');
 
-      // Use AI to safely remove unused imports
-      const prompt = `Remove unused imports from this TypeScript file. Return only the fixed code, no explanations:\n\n${content}`;
+      console.log(`      🤖 Using AI to remove dead code...`);
 
-      // For now, skip AI fixes - too expensive for routine maintenance
-      // In production, we'd use GPT-4 here
-      return false;
-    } catch (error) {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a code fixing assistant. Remove unused imports and dead code. Return ONLY the fixed code, no explanations, no markdown formatting.'
+          },
+          {
+            role: 'user',
+            content: `Fix this file by removing unused imports:\n\nIssue: ${task.issue}\n\nFile content:\n${content}`
+          }
+        ],
+        temperature: 0.3
+      });
+
+      const fixedCode = response.choices[0]?.message?.content?.trim();
+      if (!fixedCode) return false;
+
+      // Apply fix
+      if (!this.dryRun) {
+        writeFileSync(task.file, fixedCode, 'utf-8');
+      }
+
+      return true;
+    } catch (error: any) {
+      console.log(`      ❌ AI fix failed: ${error.message}`);
       return false;
     }
   }
 
   /**
-   * Fix TypeScript errors (simple cases only)
+   * Fix TypeScript errors using AI with iterative approaches
    */
-  private fixTypeError(task: ImprovementTask): boolean {
-    // For now, skip complex type fixes
-    // In production, we'd use AI for obvious fixes like adding null checks
-    return false;
+  private async fixTypeError(task: ImprovementTask, attempt: number): Promise<boolean> {
+    if (!openai) {
+      console.log(`      ⚠️  Skipping AI fix - OPENAI_API_KEY not set`);
+      return false;
+    }
+
+    try {
+      const content = readFileSync(task.file, 'utf-8');
+      const lines = content.split('\n');
+
+      // Extract line number from error message if available
+      const lineMatch = task.issue.match(/line (\d+)/i) || task.file.match(/:(\d+):/);
+      const errorLine = lineMatch ? parseInt(lineMatch[1]) : null;
+
+      // Get context around error (20 lines before and after)
+      const contextStart = errorLine ? Math.max(0, errorLine - 20) : 0;
+      const contextEnd = errorLine ? Math.min(lines.length, errorLine + 20) : Math.min(lines.length, 50);
+      const context = lines.slice(contextStart, contextEnd).join('\n');
+
+      console.log(`      🤖 Using AI to fix TypeScript error (attempt ${attempt})...`);
+
+      const systemPrompt = attempt === 1
+        ? 'You are a TypeScript expert. Fix the error by making minimal changes. Return ONLY the complete fixed code, no explanations, no markdown.'
+        : attempt === 2
+        ? 'You are a TypeScript expert. The first fix failed. Try a different approach - be more aggressive with type assertions or null checks. Return ONLY the complete fixed code.'
+        : 'You are a TypeScript expert. Previous fixes failed. Try adding "any" types or disabling strict checks as a last resort. Return ONLY the complete fixed code.';
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: `Fix this TypeScript error:\n\nError: ${task.issue}\n\nFile: ${task.file}\n\n${errorLine ? `Error is around line ${errorLine}.\n\n` : ''}Relevant context:\n\`\`\`typescript\n${context}\n\`\`\`\n\nFull file content:\n\`\`\`typescript\n${content}\n\`\`\``
+          }
+        ],
+        temperature: 0.2 + (attempt * 0.1) // Increase creativity with each attempt
+      });
+
+      let fixedCode = response.choices[0]?.message?.content?.trim();
+      if (!fixedCode) return false;
+
+      // Remove markdown code blocks if present
+      fixedCode = fixedCode.replace(/^```typescript\n?/gm, '').replace(/^```\n?/gm, '').trim();
+
+      // Apply fix
+      if (!this.dryRun) {
+        writeFileSync(task.file, fixedCode, 'utf-8');
+        console.log(`      📝 Applied AI fix to ${task.file}`);
+      }
+
+      return true;
+    } catch (error: any) {
+      console.log(`      ❌ AI fix failed: ${error.message}`);
+      return false;
+    }
   }
 
   /**
    * Update patch-level dependencies
    */
-  private fixDependency(task: ImprovementTask): boolean {
+  private async fixDependency(task: ImprovementTask): Promise<boolean> {
     try {
       const match = task.issue.match(/Update (.+) from (.+) to (.+)/);
       if (!match) return false;
