@@ -83,6 +83,30 @@ export default function ProjectsPage() {
   };
 
   const handleCreateProject = async () => {
+    // Generate temporary ID for optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticProject = {
+      id: tempId,
+      name: newProject.name,
+      description: newProject.description,
+      status: newProject.status,
+      priority: newProject.priority,
+      metadata: {
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      stats: {
+        total_conversations: 0,
+        total_files: 0,
+      },
+      tags: [],
+    };
+
+    // Optimistic update - add project immediately
+    setProjects(prev => [...prev, optimisticProject]);
+    setShowCreateModal(false);
+    setNewProject({ name: '', description: '', status: 'active', priority: 'medium' });
+
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
@@ -95,15 +119,21 @@ export default function ProjectsPage() {
       });
 
       if (response.ok) {
-        setShowCreateModal(false);
-        setNewProject({ name: '', description: '', status: 'active', priority: 'medium' });
-        loadProjects();
+        const data = await response.json();
+        // Replace optimistic project with real one
+        setProjects(prev =>
+          prev.map(p => p.id === tempId ? data.project : p)
+        );
       } else {
         const error = await response.json();
+        // Revert optimistic update on error
+        setProjects(prev => prev.filter(p => p.id !== tempId));
         console.error('Error creating project:', error);
         alert(`Failed to create project: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
+      // Revert optimistic update on error
+      setProjects(prev => prev.filter(p => p.id !== tempId));
       console.error('Failed to create project:', error);
       alert('Failed to create project. Please try again.');
     }
@@ -111,6 +141,12 @@ export default function ProjectsPage() {
 
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
+
+    // Store the project for potential rollback
+    const deletedProject = projects.find(p => p.id === projectId);
+
+    // Optimistic update - remove project immediately
+    setProjects(prev => prev.filter(p => p.id !== projectId));
 
     try {
       // Use the proper REST endpoint that actually deletes the project record
@@ -124,14 +160,20 @@ export default function ProjectsPage() {
         }),
       });
 
-      if (response.ok) {
-        loadProjects();
-      } else {
+      if (!response.ok) {
         const data = await response.json();
+        // Revert optimistic update on error
+        if (deletedProject) {
+          setProjects(prev => [...prev, deletedProject]);
+        }
         console.error('Delete failed:', data.error);
         alert(`Failed to delete project: ${data.error}`);
       }
     } catch (error) {
+      // Revert optimistic update on error
+      if (deletedProject) {
+        setProjects(prev => [...prev, deletedProject]);
+      }
       console.error('Failed to delete project:', error);
       alert('Failed to delete project. Please try again.');
     }

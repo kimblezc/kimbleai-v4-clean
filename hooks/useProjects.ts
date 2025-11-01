@@ -36,6 +36,22 @@ export function useProjects(userId: string) {
 
   const createProject = useCallback(
     async (projectData: { name: string; description?: string; status?: string; priority?: string }) => {
+      // Generate temporary ID for optimistic update
+      const tempId = `temp-${Date.now()}`;
+      const optimisticProject: Project = {
+        id: tempId,
+        name: projectData.name,
+        description: projectData.description,
+        status: projectData.status || 'active',
+        metadata: {
+          created_at: new Date().toISOString(),
+          isOptimistic: true,
+        },
+      };
+
+      // Optimistic update - add project immediately
+      setProjects(prev => [...prev, optimisticProject]);
+
       try {
         const response = await fetch('/api/projects', {
           method: 'POST',
@@ -49,22 +65,41 @@ export function useProjects(userId: string) {
 
         if (response.ok) {
           const data = await response.json();
-          await loadProjects();
+          // Replace optimistic project with real one
+          setProjects(prev =>
+            prev.map(p => p.id === tempId ? data.project : p)
+          );
           return data.project;
         } else {
           const error = await response.json();
+          // Revert optimistic update on error
+          setProjects(prev => prev.filter(p => p.id !== tempId));
           throw new Error(error.error || 'Failed to create project');
         }
       } catch (error) {
         console.error('Failed to create project:', error);
+        // Revert optimistic update on error
+        setProjects(prev => prev.filter(p => p.id !== tempId));
         throw error;
       }
     },
-    [userId, loadProjects]
+    [userId]
   );
 
   const updateProject = useCallback(
     async (projectId: string, updates: { name?: string; description?: string; status?: string }) => {
+      // Store original project for rollback
+      const originalProject = projects.find(p => p.id === projectId);
+
+      // Optimistic update - update project immediately
+      setProjects(prev =>
+        prev.map(p =>
+          p.id === projectId
+            ? { ...p, ...updates, metadata: { ...p.metadata, updated_at: new Date().toISOString() } }
+            : p
+        )
+      );
+
       try {
         const response = await fetch('/api/projects', {
           method: 'POST',
@@ -78,21 +113,48 @@ export function useProjects(userId: string) {
         });
 
         if (response.ok) {
-          await loadProjects();
+          const data = await response.json();
+          // Replace with actual server response
+          setProjects(prev =>
+            prev.map(p => p.id === projectId ? data.project : p)
+          );
         } else {
           const error = await response.json();
+          // Revert optimistic update on error
+          if (originalProject) {
+            setProjects(prev =>
+              prev.map(p => p.id === projectId ? originalProject : p)
+            );
+          }
           throw new Error(error.error || 'Failed to update project');
         }
       } catch (error) {
         console.error('Failed to update project:', error);
+        // Revert optimistic update on error
+        if (originalProject) {
+          setProjects(prev =>
+            prev.map(p => p.id === projectId ? originalProject : p)
+          );
+        }
         throw error;
       }
     },
-    [userId, loadProjects]
+    [userId, projects]
   );
 
   const deleteProject = useCallback(
     async (projectId: string) => {
+      // Store the project for potential rollback
+      const deletedProject = projects.find(p => p.id === projectId);
+
+      // Optimistic update - remove project immediately
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+
+      // Clear current project if it's the one being deleted
+      if (currentProject === projectId) {
+        setCurrentProject('');
+      }
+
       try {
         const response = await fetch('/api/projects/delete', {
           method: 'POST',
@@ -103,21 +165,24 @@ export function useProjects(userId: string) {
           }),
         });
 
-        if (response.ok) {
-          await loadProjects();
-          if (currentProject === projectId) {
-            setCurrentProject('');
-          }
-        } else {
+        if (!response.ok) {
           const error = await response.json();
+          // Revert optimistic update on error
+          if (deletedProject) {
+            setProjects(prev => [...prev, deletedProject]);
+          }
           throw new Error(error.error || 'Failed to delete project');
         }
       } catch (error) {
         console.error('Failed to delete project:', error);
+        // Revert optimistic update on error
+        if (deletedProject) {
+          setProjects(prev => [...prev, deletedProject]);
+        }
         throw error;
       }
     },
-    [userId, loadProjects, currentProject]
+    [userId, projects, currentProject]
   );
 
   const selectProject = useCallback((projectId: string) => {
