@@ -18,9 +18,10 @@ Every hour, Archie:
 
 **Auto-Fixes:**
 - Linting errors (`npm run lint --fix`)
-- Unused imports and dead code
+- Unused imports and dead code (AI-powered)
+- TypeScript syntax errors (AI-powered with retry logic)
 - Patch-level dependency updates (1.2.3 → 1.2.4)
-- Simple TypeScript errors (future)
+- Code optimization issues (AI-powered)
 
 **Doesn't Touch:**
 - Major refactoring
@@ -96,13 +97,52 @@ Or click "Run Archie Now" on the dashboard.
 **Cron**: Every hour (`0 * * * *`)
 **Platform**: Vercel Cron (or external cron service)
 
+## AI-Powered Fixes
+
+Archie uses GPT-4 to fix complex issues that can't be auto-fixed with simple tools:
+
+### What AI Can Fix
+- **TypeScript syntax errors** - Missing commas, brackets, type issues
+- **Unused imports** - Intelligently removes dead code
+- **Code optimization** - Performance improvements, better patterns
+- **Complex type errors** - Infers correct types and assertions
+
+### AI Safety Guardrails
+1. **Cost limits**: Max $0.50 per run (prevents runaway costs)
+2. **Model selection**: Uses `gpt-4o-mini` for cheap fixes, `gpt-4o` for complex ones
+3. **Size checks**: Rejects fixes that change file size by >50%
+4. **Build validation**: Tests all fixes to ensure they don't break compilation
+5. **Retry logic**: 3 attempts with escalating approaches (minimal → aggressive → any-type)
+6. **CANNOT_FIX**: AI can refuse unsafe changes
+
+### Cost Tracking
+- Estimates tokens before making API calls
+- Tracks actual costs using OpenAI usage data
+- Reports total cost in summary (e.g., "AI cost: $0.0234")
+- Skips fixes if budget exceeded
+
+### How It Works
+```typescript
+// Attempt 1: Minimal fix with gpt-4o-mini
+System: "Fix with MINIMAL changes. Return ONLY fixed code."
+
+// Attempt 2: More aggressive with gpt-4o
+System: "First fix failed. Try type assertions, null checks."
+
+// Attempt 3: Last resort
+System: "Use 'any' types if needed to make it compile."
+```
+
 ## Safety Features
 
 1. **Max 5 fixes per run** - Prevents going crazy
-2. **Dry-run mode** - Test without making changes
-3. **Git commits** - Every change is tracked
-4. **Rollback ready** - Can revert any commit
-5. **Limited scope** - Only touches obvious issues
+2. **AI cost limits** - Max $0.50 per run
+3. **Dry-run mode** - Test without making changes
+4. **Git commits** - Every change is tracked
+5. **Rollback ready** - Can revert any commit
+6. **Build validation** - Tests all fixes before committing
+7. **Size safety checks** - Rejects drastic changes
+8. **Limited scope** - Only touches obvious issues
 
 ## Why This Approach?
 
@@ -130,10 +170,16 @@ Archie is a **coding janitor**, not an AI architect. It does the boring maintena
 ```json
 {
   "success": true,
-  "timestamp": "2025-10-31T10:00:00Z",
+  "timestamp": "2025-11-01T10:00:00Z",
   "tasksFound": 12,
   "tasksCompleted": 5,
   "improvements": [
+    {
+      "type": "type_error",
+      "file": "lib/archie-agent.ts",
+      "issue": "',' expected.",
+      "priority": 7
+    },
     {
       "type": "lint",
       "file": "app/page.tsx",
@@ -148,19 +194,52 @@ Archie is a **coding janitor**, not an AI architect. It does the boring maintena
     }
   ],
   "commitHash": "abc1234",
-  "summary": "Fixed 5/12 issues: 3 lint, 2 dead code"
+  "summary": "Fixed 5/12 issues: 1 type error, 3 lint, 1 dead code (AI cost: $0.0234)"
 }
+```
+
+## Configuration
+
+You can adjust AI behavior in `lib/archie-agent.ts`:
+
+```typescript
+// AI Configuration
+private useAI: boolean = true;              // Enable/disable AI fixes
+private maxAICost: number = 0.50;           // Max $0.50 per run
+private aiModel: string = 'gpt-4o-mini';    // Cheap model for simple fixes
+private aiModelAdvanced: string = 'gpt-4o'; // Smart model for complex fixes
+```
+
+To disable AI fixes entirely:
+```typescript
+const archie = new ArchieAgent(process.cwd(), false);
+archie.useAI = false; // No AI, only simple fixes
 ```
 
 ## Future Enhancements
 
-- AI-powered code fixes (GPT-4)
-- More sophisticated dead code detection
+- ✅ AI-powered code fixes (GPT-4) - **DONE**
+- ✅ More sophisticated dead code detection - **DONE**
+- ✅ TypeScript error fixing - **DONE**
 - Automatic test generation
-- Performance optimization suggestions
 - Security vulnerability scanning
+- Performance profiling integration
+- Dependency security audits
 
-For now: **Keep it simple. Make it work.**
+## Estimated Costs
+
+With AI enabled:
+- **Per run**: $0.01 - $0.05 (typically fixes 1-3 issues)
+- **Per month**: ~$1.00 - $3.00 (running hourly, 24/7)
+- **Max per run**: $0.50 (hard limit to prevent runaway costs)
+
+Most runs cost under $0.02 because:
+- Simple fixes don't use AI (linting, dependencies)
+- Uses cheap `gpt-4o-mini` model first
+- Only escalates to `gpt-4o` for complex retries
+- Cost checks prevent expensive operations
+
+For now: **Keep it simple. Make it smart.**
 
 ---
 

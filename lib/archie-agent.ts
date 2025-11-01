@@ -45,6 +45,13 @@ export class ArchieAgent {
   private projectRoot: string;
   private dryRun: boolean;
 
+  // AI Configuration
+  private useAI: boolean = true; // Enable/disable AI fixes
+  private maxAICost: number = 0.50; // Max $0.50 per run
+  private estimatedCost: number = 0; // Track costs during run
+  private aiModel: string = 'gpt-4o-mini'; // Cheaper model for most fixes
+  private aiModelAdvanced: string = 'gpt-4o'; // Use for complex fixes
+
   constructor(projectRoot: string = process.cwd(), dryRun: boolean = false) {
     this.projectRoot = projectRoot;
     this.dryRun = dryRun;
@@ -55,6 +62,9 @@ export class ArchieAgent {
    */
   async run(): Promise<ArchieRun> {
     console.log('🦉 Archie starting maintenance run...');
+
+    // Reset cost tracking for this run
+    this.estimatedCost = 0;
 
     const runResult: ArchieRun = {
       timestamp: new Date(),
@@ -311,8 +321,16 @@ export class ArchieAgent {
             success = await this.fixDependency(task);
             break;
 
+          case 'optimization':
+            // Use AI for optimization issues
+            success = await this.aiFixIssue(task);
+            break;
+
           default:
-            return false;
+            // Try general AI fix for unknown issue types
+            console.log(`    🤖 Unknown issue type, trying AI fix...`);
+            success = await this.aiFixIssue(task);
+            break;
         }
 
         if (success) {
@@ -407,10 +425,18 @@ export class ArchieAgent {
     try {
       const content = readFileSync(task.file, 'utf-8');
 
+      // Check cost before proceeding
+      const inputText = `Fix this file by removing unused imports:\n\nIssue: ${task.issue}\n\nFile content:\n${content}`;
+      const inputTokens = this.estimateTokens(inputText);
+
+      if (!this.canAffordAIFix(inputTokens, this.aiModel)) {
+        return false;
+      }
+
       console.log(`      🤖 Using AI to remove dead code...`);
 
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: this.aiModel,
         messages: [
           {
             role: 'system',
@@ -418,13 +444,19 @@ export class ArchieAgent {
           },
           {
             role: 'user',
-            content: `Fix this file by removing unused imports:\n\nIssue: ${task.issue}\n\nFile content:\n${content}`
+            content: inputText
           }
         ],
         temperature: 0.3
       });
 
       const fixedCode = response.choices[0]?.message?.content?.trim();
+      const usage = response.usage;
+
+      if (usage) {
+        this.trackCost(usage.prompt_tokens, usage.completion_tokens, this.aiModel);
+      }
+
       if (!fixedCode) return false;
 
       // Apply fix
@@ -449,28 +481,62 @@ export class ArchieAgent {
     }
 
     try {
-      const content = readFileSync(task.file, 'utf-8');
+      const filePath = join(this.projectRoot, task.file);
+      const content = readFileSync(filePath, 'utf-8');
       const lines = content.split('\n');
 
       // Extract line number from error message if available
       const lineMatch = task.issue.match(/line (\d+)/i) || task.file.match(/:(\d+):/);
       const errorLine = lineMatch ? parseInt(lineMatch[1]) : null;
 
-      // Get context around error (20 lines before and after)
-      const contextStart = errorLine ? Math.max(0, errorLine - 20) : 0;
-      const contextEnd = errorLine ? Math.min(lines.length, errorLine + 20) : Math.min(lines.length, 50);
+      // Get context around error (30 lines before and after for better understanding)
+      const contextStart = errorLine ? Math.max(0, errorLine - 30) : 0;
+      const contextEnd = errorLine ? Math.min(lines.length, errorLine + 30) : Math.min(lines.length, 100);
       const context = lines.slice(contextStart, contextEnd).join('\n');
 
-      console.log(`      🤖 Using AI to fix TypeScript error (attempt ${attempt})...`);
+      // Choose model based on attempt (start cheap, get smarter)
+      const model = attempt === 1 ? this.aiModel : this.aiModelAdvanced;
+
+      // Check cost
+      const inputText = `Fix this TypeScript error:\n\nError: ${task.issue}\n\nFile: ${task.file}\n\n${errorLine ? `Error is around line ${errorLine}.\n\n` : ''}Relevant context:\n\`\`\`typescript\n${context}\n\`\`\`\n\nFull file content:\n\`\`\`typescript\n${content}\n\`\`\``;
+      const inputTokens = this.estimateTokens(inputText);
+
+      if (!this.canAffordAIFix(inputTokens, model)) {
+        return false;
+      }
+
+      console.log(`      🤖 Using AI (${model}) to fix TypeScript error (attempt ${attempt})...`);
 
       const systemPrompt = attempt === 1
-        ? 'You are a TypeScript expert. Fix the error by making minimal changes. Return ONLY the complete fixed code, no explanations, no markdown.'
+        ? `You are an expert TypeScript developer. Fix the syntax error with MINIMAL changes.
+
+RULES:
+1. Return ONLY the complete fixed file content
+2. NO explanations, NO markdown code blocks, NO comments about what you changed
+3. Preserve all existing code structure and formatting
+4. Fix ONLY the specific syntax error mentioned
+5. Do not add new features or refactor unrelated code
+6. If you cannot safely fix it, return exactly: CANNOT_FIX`
         : attempt === 2
-        ? 'You are a TypeScript expert. The first fix failed. Try a different approach - be more aggressive with type assertions or null checks. Return ONLY the complete fixed code.'
-        : 'You are a TypeScript expert. Previous fixes failed. Try adding "any" types or disabling strict checks as a last resort. Return ONLY the complete fixed code.';
+        ? `You are an expert TypeScript developer. The first fix failed. Try a different approach.
+
+RULES:
+1. Return ONLY the complete fixed file content
+2. NO explanations, NO markdown code blocks
+3. Be more aggressive - add type assertions, null checks, or type guards if needed
+4. Fix the syntax error completely
+5. If you cannot safely fix it, return exactly: CANNOT_FIX`
+        : `You are an expert TypeScript developer. Previous fixes failed. Last resort approach.
+
+RULES:
+1. Return ONLY the complete fixed file content
+2. NO explanations, NO markdown code blocks
+3. Use any necessary type assertions ('as any', etc.) to make it compile
+4. The code MUST be syntactically valid TypeScript
+5. If you cannot safely fix it, return exactly: CANNOT_FIX`;
 
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: model,
         messages: [
           {
             role: 'system',
@@ -478,21 +544,36 @@ export class ArchieAgent {
           },
           {
             role: 'user',
-            content: `Fix this TypeScript error:\n\nError: ${task.issue}\n\nFile: ${task.file}\n\n${errorLine ? `Error is around line ${errorLine}.\n\n` : ''}Relevant context:\n\`\`\`typescript\n${context}\n\`\`\`\n\nFull file content:\n\`\`\`typescript\n${content}\n\`\`\``
+            content: inputText
           }
         ],
-        temperature: 0.2 + (attempt * 0.1) // Increase creativity with each attempt
+        temperature: 0.1 + (attempt * 0.1) // Increase creativity with each attempt
       });
 
       let fixedCode = response.choices[0]?.message?.content?.trim();
-      if (!fixedCode) return false;
+      const usage = response.usage;
 
-      // Remove markdown code blocks if present
-      fixedCode = fixedCode.replace(/^```typescript\n?/gm, '').replace(/^```\n?/gm, '').trim();
+      if (usage) {
+        this.trackCost(usage.prompt_tokens, usage.completion_tokens, model);
+      }
+
+      if (!fixedCode || fixedCode === 'CANNOT_FIX') {
+        console.log(`      🤖 AI determined fix is unsafe`);
+        return false;
+      }
+
+      // Remove markdown code blocks if present (despite instructions not to include them)
+      fixedCode = fixedCode.replace(/^```(?:typescript|ts|javascript|js)?\n?/gm, '').replace(/^```\n?$/gm, '').trim();
+
+      // Safety check: Ensure code hasn't changed drastically
+      if (Math.abs(fixedCode.length - content.length) > content.length * 0.5) {
+        console.log(`      ⚠️  Fix changes file size by >50%, rejecting as unsafe`);
+        return false;
+      }
 
       // Apply fix
       if (!this.dryRun) {
-        writeFileSync(task.file, fixedCode, 'utf-8');
+        writeFileSync(filePath, fixedCode, 'utf-8');
         console.log(`      📝 Applied AI fix to ${task.file}`);
       }
 
@@ -522,6 +603,89 @@ export class ArchieAgent {
 
       return true;
     } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * General AI-powered fix for optimization and complex issues
+   */
+  private async aiFixIssue(task: ImprovementTask): Promise<boolean> {
+    if (!openai) {
+      console.log(`      ⚠️  Skipping AI fix - OPENAI_API_KEY not set`);
+      return false;
+    }
+
+    try {
+      const filePath = join(this.projectRoot, task.file);
+      const content = readFileSync(filePath, 'utf-8');
+
+      // Prepare context
+      const inputText = `Fix this code issue:\n\nFile: ${task.file}\nIssue Type: ${task.type}\nProblem: ${task.issue}\n\nFile content:\n\`\`\`typescript\n${content}\n\`\`\``;
+      const inputTokens = this.estimateTokens(inputText);
+
+      // Use advanced model for complex issues
+      if (!this.canAffordAIFix(inputTokens, this.aiModelAdvanced)) {
+        return false;
+      }
+
+      console.log(`      🤖 Using AI (${this.aiModelAdvanced}) for complex fix...`);
+
+      const response = await openai.chat.completions.create({
+        model: this.aiModelAdvanced,
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert code optimization and maintenance assistant.
+
+RULES:
+1. Return ONLY the complete fixed file content
+2. NO explanations, NO markdown code blocks, NO comments about changes
+3. Make MINIMAL changes - only fix the specific issue
+4. Preserve all existing functionality
+5. Follow the existing code style and patterns
+6. If you cannot safely fix it, return exactly: CANNOT_FIX
+
+Fix the issue described while maintaining code quality and functionality.`
+          },
+          {
+            role: 'user',
+            content: inputText
+          }
+        ],
+        temperature: 0.2
+      });
+
+      let fixedCode = response.choices[0]?.message?.content?.trim();
+      const usage = response.usage;
+
+      if (usage) {
+        this.trackCost(usage.prompt_tokens, usage.completion_tokens, this.aiModelAdvanced);
+      }
+
+      if (!fixedCode || fixedCode === 'CANNOT_FIX') {
+        console.log(`      🤖 AI determined fix is unsafe`);
+        return false;
+      }
+
+      // Remove markdown code blocks
+      fixedCode = fixedCode.replace(/^```(?:typescript|ts|javascript|js)?\n?/gm, '').replace(/^```\n?$/gm, '').trim();
+
+      // Safety check
+      if (Math.abs(fixedCode.length - content.length) > content.length * 0.5) {
+        console.log(`      ⚠️  Fix changes file size by >50%, rejecting as unsafe`);
+        return false;
+      }
+
+      // Apply fix
+      if (!this.dryRun) {
+        writeFileSync(filePath, fixedCode, 'utf-8');
+        console.log(`      📝 Applied AI fix to ${task.file}`);
+      }
+
+      return true;
+    } catch (error: any) {
+      console.log(`      ❌ AI fix failed: ${error.message}`);
       return false;
     }
   }
@@ -573,8 +737,10 @@ Co-Authored-By: Archie <archie@kimbleai.com>`;
    * Generate human-readable summary
    */
   private generateSummary(run: ArchieRun): string {
+    const costInfo = this.estimatedCost > 0 ? ` (AI cost: $${this.estimatedCost.toFixed(4)})` : '';
+
     if (run.tasksCompleted === 0) {
-      return `Found ${run.tasksFound} issues but couldn't auto-fix any`;
+      return `Found ${run.tasksFound} issues but couldn't auto-fix any${costInfo}`;
     }
 
     const types = run.improvements.reduce((acc, imp) => {
@@ -586,7 +752,7 @@ Co-Authored-By: Archie <archie@kimbleai.com>`;
       .map(([type, count]) => `${count} ${type.replace('_', ' ')}`)
       .join(', ');
 
-    return `Fixed ${run.tasksCompleted}/${run.tasksFound} issues: ${typeSummary}`;
+    return `Fixed ${run.tasksCompleted}/${run.tasksFound} issues: ${typeSummary}${costInfo}`;
   }
 
   /**
@@ -614,6 +780,63 @@ Co-Authored-By: Archie <archie@kimbleai.com>`;
 
     walk(this.projectRoot);
     return results;
+  }
+
+  /**
+   * Estimate tokens for cost calculation (rough approximation)
+   */
+  private estimateTokens(text: string): number {
+    return Math.ceil(text.length / 4); // 1 token ≈ 4 characters
+  }
+
+  /**
+   * Check if AI fix would exceed cost budget
+   */
+  private canAffordAIFix(inputTokens: number, model: string = this.aiModel): boolean {
+    if (!this.useAI || !openai) {
+      return false;
+    }
+
+    // Pricing per 1M tokens (as of 2024)
+    const pricing: Record<string, { input: number; output: number }> = {
+      'gpt-4o-mini': { input: 0.15, output: 0.60 },
+      'gpt-4o': { input: 2.50, output: 10.00 }
+    };
+
+    const modelPricing = pricing[model] || pricing['gpt-4o-mini'];
+
+    // Estimate output tokens (usually less than input)
+    const outputTokens = inputTokens * 0.8;
+
+    const costEstimate =
+      (inputTokens / 1000000) * modelPricing.input +
+      (outputTokens / 1000000) * modelPricing.output;
+
+    if (this.estimatedCost + costEstimate > this.maxAICost) {
+      console.log(`      💰 Would exceed cost limit ($${this.maxAICost.toFixed(2)}), current: $${this.estimatedCost.toFixed(3)}`);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Track cost after AI call
+   */
+  private trackCost(inputTokens: number, outputTokens: number, model: string) {
+    const pricing: Record<string, { input: number; output: number }> = {
+      'gpt-4o-mini': { input: 0.15, output: 0.60 },
+      'gpt-4o': { input: 2.50, output: 10.00 }
+    };
+
+    const modelPricing = pricing[model] || pricing['gpt-4o-mini'];
+
+    const cost =
+      (inputTokens / 1000000) * modelPricing.input +
+      (outputTokens / 1000000) * modelPricing.output;
+
+    this.estimatedCost += cost;
+    console.log(`      💰 Cost: $${cost.toFixed(4)} (Total: $${this.estimatedCost.toFixed(4)})`);
   }
 }
 
