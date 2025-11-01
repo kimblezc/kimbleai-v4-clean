@@ -33,10 +33,6 @@
     "app/api/archie/run/route.ts": {
       "maxDuration": 300,
       "memory": 1024
-    },
-    "app/api/guardian/run/route.ts": {
-      "maxDuration": 300,
-      "memory": 1024
     }
   },
   "crons": [
@@ -55,10 +51,6 @@
     {
       "path": "/api/archie/run",
       "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/guardian/run",
-      "schedule": "0 */6 * * *"
     }
   ],
   "headers": [

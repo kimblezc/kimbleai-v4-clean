@@ -1,8 +1,8 @@
 {
-  "version": "7.8.1",
-  "commit": "a52f49d",
-  "lastUpdated": "2025-10-31T21:22:00.000Z",
-  "changelog": "🔧 Overnight Improvements: Fixed Guardian auth (API tests now info-level), resolved Card import case-sensitivity warnings, added CardHeader/CardTitle exports for analytics compatibility. Conversation fixes already in place (project grouping). Database migration ready but needs manual execution in Supabase.",
+  "version": "7.9.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-01T09:45:00.000Z",
+  "changelog": "🗑️ Removed Guardian: Deleted all Guardian code, API endpoints, dashboard, documentation, and cron jobs. Guardian was not working effectively. Archie remains as the sole autonomous agent.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
