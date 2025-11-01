@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { FileCard } from '../../components/ui/Card';
+import { FileCard } from '../../components/ui/card';
 import { Button } from '../../components/ui/Button';
 import { SearchInput, Select } from '../../components/ui/Input';
 import { useRouter } from 'next/navigation';

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { ProjectCard } from '../../components/ui/Card';
+import { ProjectCard } from '../../components/ui/card';
 import { Button, ButtonGroup, IconButton } from '../../components/ui/Button';
 import { SearchInput, Select } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';

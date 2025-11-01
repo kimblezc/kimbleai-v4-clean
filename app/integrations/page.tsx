@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { Card } from '../../components/ui/Card';
+import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/Button';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { GmailInbox } from '../../components/GmailInbox';
