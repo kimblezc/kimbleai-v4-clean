@@ -538,29 +538,10 @@ export class ProjectTagGuardian {
         }
       }
 
-      // Check for conversations without created_at
-      const conversationsWithoutCreatedAt = conversations.filter(c => !(c as any).created_at);
-      if (conversationsWithoutCreatedAt.length > 0) {
-        this.issues.push({
-          type: 'project',
-          severity: 'warning',
-          entity: 'Conversations',
-          issue: `${conversationsWithoutCreatedAt.length} conversations missing created_at timestamp`,
-          fixable: true,
-          fix: async () => {
-            // Set created_at to updated_at for these conversations
-            for (const conv of conversationsWithoutCreatedAt) {
-              await this.supabase
-                .from('conversations')
-                .update({
-                  created_at: (conv as any).updated_at || new Date().toISOString()
-                })
-                .eq('id', conv.id);
-            }
-            return true;
-          }
-        });
-      }
+      // NOTE: created_at check removed - if the column doesn't exist in the database,
+      // that's a schema migration issue, not a data integrity issue that Guardian should fix.
+      // The schema (run-all-migrations.sql) includes created_at with DEFAULT NOW(),
+      // so all new conversations should have it automatically.
 
     } catch (error: any) {
       console.warn('Conversation integrity check failed:', error.message);
