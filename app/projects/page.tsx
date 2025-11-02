@@ -24,6 +24,8 @@ export default function ProjectsPage() {
     status: 'active',
     priority: 'medium',
   });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<any | null>(null);
 
   useEffect(() => {
     loadProjects();
@@ -179,6 +181,78 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleEditProject = async () => {
+    if (!editingProject) return;
+
+    // Store the original project for potential rollback
+    const originalProject = projects.find(p => p.id === editingProject.id);
+
+    // Optimistic update - update project immediately
+    setProjects(prev =>
+      prev.map(p =>
+        p.id === editingProject.id
+          ? {
+              ...p,
+              name: editingProject.name,
+              description: editingProject.description,
+              status: editingProject.status,
+              priority: editingProject.priority,
+              metadata: {
+                ...p.metadata,
+                updated_at: new Date().toISOString(),
+              },
+            }
+          : p
+      )
+    );
+    setShowEditModal(false);
+
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          userId: 'zach',
+          projectData: {
+            id: editingProject.id,
+            name: editingProject.name,
+            description: editingProject.description,
+            status: editingProject.status,
+            priority: editingProject.priority,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Replace with server response
+        setProjects(prev =>
+          prev.map(p => (p.id === editingProject.id ? data.project : p))
+        );
+      } else {
+        const error = await response.json();
+        // Revert optimistic update on error
+        if (originalProject) {
+          setProjects(prev =>
+            prev.map(p => (p.id === editingProject.id ? originalProject : p))
+          );
+        }
+        console.error('Error updating project:', error);
+        alert(`Failed to update project: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      if (originalProject) {
+        setProjects(prev =>
+          prev.map(p => (p.id === editingProject.id ? originalProject : p))
+        );
+      }
+      console.error('Failed to update project:', error);
+      alert('Failed to update project. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -291,6 +365,10 @@ export default function ProjectsPage() {
                 lastActivity={formatTimestamp(project.metadata?.updated_at)}
                 tags={project.tags}
                 onClick={() => router.push(`/projects/${project.id}`)}
+                onEdit={() => {
+                  setEditingProject(project);
+                  setShowEditModal(true);
+                }}
                 onDelete={() => handleDeleteProject(project.id)}
               />
             ))}
@@ -375,6 +453,96 @@ export default function ProjectsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Edit Project Modal */}
+      {editingProject && (
+        <Modal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingProject(null);
+          }}
+          title="Edit Project"
+          footer={
+            <>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingProject(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleEditProject}
+                disabled={!editingProject.name?.trim()}
+              >
+                Update Project
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Project Name *
+              </label>
+              <input
+                type="text"
+                value={editingProject.name || ''}
+                onChange={(e) =>
+                  setEditingProject({ ...editingProject, name: e.target.value })
+                }
+                placeholder="My Awesome Project"
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Description
+              </label>
+              <textarea
+                value={editingProject.description || ''}
+                onChange={(e) =>
+                  setEditingProject({ ...editingProject, description: e.target.value })
+                }
+                placeholder="What is this project about?"
+                rows={3}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Status"
+                value={editingProject.status || 'active'}
+                onChange={(value) =>
+                  setEditingProject({ ...editingProject, status: value })
+                }
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'paused', label: 'Paused' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'archived', label: 'Archived' },
+                ]}
+              />
+              <Select
+                label="Priority"
+                value={editingProject.priority || 'medium'}
+                onChange={(value) =>
+                  setEditingProject({ ...editingProject, priority: value })
+                }
+                options={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' },
+                  { value: 'critical', label: 'Critical' },
+                ]}
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
     </DashboardLayout>
   );
 }

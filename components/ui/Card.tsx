@@ -134,6 +134,7 @@ interface ProjectCardProps {
   lastActivity: string;
   tags?: string[];
   onClick?: () => void;
+  onEdit?: () => void;
   onDelete?: () => void;
 }
 
@@ -147,6 +148,7 @@ export function ProjectCard({
   lastActivity,
   tags = [],
   onClick,
+  onEdit,
   onDelete,
 }: ProjectCardProps) {
   const statusColors = {
@@ -201,17 +203,30 @@ export function ProjectCard({
 
       <div className="flex items-center justify-between pt-3 border-t border-gray-800">
         <span className="text-xs text-gray-500">Updated {lastActivity}</span>
-        {onDelete && id !== 'general' && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="text-xs text-red-500 hover:text-red-400 transition-colors"
-          >
-            Delete
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {onEdit && id !== 'general' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="text-xs text-blue-500 hover:text-blue-400 transition-colors"
+            >
+              Edit
+            </button>
+          )}
+          {onDelete && id !== 'general' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="text-xs text-red-500 hover:text-red-400 transition-colors"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </div>
     </Card>
   );
