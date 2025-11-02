@@ -83,9 +83,10 @@ export default function Home() {
     togglePin,
     loading: conversationsLoading,
     loadConversations,
+    removeOrphanedConversation,
   } = conversationsHook;
 
-  const messagesHook = useMessages(currentConversationId, currentUser, loadConversations);
+  const messagesHook = useMessages(currentConversationId, currentUser, removeOrphanedConversation);
   const { messages, sending, messagesEndRef, sendMessage, clearMessages } = messagesHook;
 
   const projectsHook = useProjects(currentUser);

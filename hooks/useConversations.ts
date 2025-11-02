@@ -175,6 +175,21 @@ export function useConversations(userId: string) {
     setCurrentConversationId(null);
   }, []);
 
+  const removeOrphanedConversation = useCallback((conversationId: string) => {
+    console.log('[useConversations] Removing orphaned conversation:', conversationId);
+
+    // Remove from local state immediately
+    setConversations(prev => prev.filter(c => c.id !== conversationId));
+
+    // Clear current conversation if it's the orphaned one
+    if (currentConversationId === conversationId) {
+      setCurrentConversationId(null);
+    }
+
+    // Trigger reload to get fresh data from server
+    loadConversations();
+  }, [currentConversationId, loadConversations]);
+
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
@@ -191,5 +206,6 @@ export function useConversations(userId: string) {
     deleteConversation,
     togglePin,
     createNewConversation,
+    removeOrphanedConversation,
   };
 }

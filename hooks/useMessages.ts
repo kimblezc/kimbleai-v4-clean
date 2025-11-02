@@ -25,7 +25,7 @@ export interface Message {
 export function useMessages(
   conversationId: string | null,
   userId: string,
-  onNotFound?: () => void
+  onNotFound?: (conversationId: string) => void
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,12 +70,12 @@ export function useMessages(
           setMessages([]);
         }
       } else if (response.status === 404) {
-        // Conversation not found - clear messages and trigger refresh
+        // Conversation not found - clear messages and trigger orphan removal
         console.warn('[loadMessages] Conversation not found (404):', convId);
         setMessages([]);
-        // Trigger conversation list refresh to remove stale entry
+        // Trigger orphaned conversation removal
         if (onNotFound) {
-          onNotFound();
+          onNotFound(convId);
         }
       } else {
         // Other error
