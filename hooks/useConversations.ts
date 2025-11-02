@@ -101,6 +101,7 @@ export function useConversations(userId: string) {
   }, [userId]);
 
   const selectConversation = useCallback((conversationId: string) => {
+    console.log('[useConversations] selectConversation called with ID:', conversationId);
     setCurrentConversationId(conversationId);
   }, []);
 

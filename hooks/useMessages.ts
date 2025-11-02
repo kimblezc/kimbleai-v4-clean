@@ -35,19 +35,26 @@ export function useMessages(
   const loadMessages = useCallback(async (convId: string) => {
     try {
       setLoading(true);
+      console.log('[loadMessages] Starting load for conversation:', convId);
 
       // Skip loading if conversation ID looks invalid
       if (!convId || convId.includes('test-') || convId.includes('-test')) {
-        console.warn('Skipping invalid conversation ID:', convId);
+        console.warn('[loadMessages] Skipping invalid conversation ID:', convId);
         setMessages([]);
         return;
       }
 
-      const response = await fetch(`/api/conversations/${convId}?userId=${userId}`);
+      const url = `/api/conversations/${convId}?userId=${userId}`;
+      console.log('[loadMessages] Fetching from URL:', url);
+      const response = await fetch(url);
+      console.log('[loadMessages] API response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[loadMessages] API response data:', data);
+
         if (data.conversation && data.conversation.messages) {
+          console.log('[loadMessages] Found', data.conversation.messages.length, 'messages');
           const formattedMessages = data.conversation.messages.map((msg: any) => ({
             role: msg.role,
             content: msg.content,
@@ -55,14 +62,16 @@ export function useMessages(
             modelInfo: msg.metadata?.modelInfo,
             metadata: msg.metadata,
           }));
+          console.log('[loadMessages] Setting', formattedMessages.length, 'formatted messages');
           setMessages(formattedMessages);
         } else {
           // Conversation exists but has no messages
+          console.log('[loadMessages] Conversation exists but has no messages');
           setMessages([]);
         }
       } else if (response.status === 404) {
         // Conversation not found - clear messages and trigger refresh
-        console.warn('Conversation not found:', convId);
+        console.warn('[loadMessages] Conversation not found (404):', convId);
         setMessages([]);
         // Trigger conversation list refresh to remove stale entry
         if (onNotFound) {
@@ -70,14 +79,17 @@ export function useMessages(
         }
       } else {
         // Other error
-        console.error('Failed to load conversation:', response.status);
+        console.error('[loadMessages] Unexpected response status:', response.status);
+        const errorText = await response.text();
+        console.error('[loadMessages] Error response:', errorText);
         setMessages([]);
       }
     } catch (error) {
-      console.error('Failed to load messages:', error);
+      console.error('[loadMessages] Failed to load messages:', error);
       setMessages([]);
     } finally {
       setLoading(false);
+      console.log('[loadMessages] Finished loading messages');
     }
   }, [userId, onNotFound]);
 
@@ -183,10 +195,13 @@ export function useMessages(
 
   // Auto-load messages when conversation ID changes
   useEffect(() => {
+    console.log('[useMessages] conversationId changed to:', conversationId);
     if (conversationId) {
+      console.log('[useMessages] Loading messages for conversation:', conversationId);
       loadMessages(conversationId);
     } else {
       // Clear messages when no conversation is selected (new chat)
+      console.log('[useMessages] No conversation selected, clearing messages');
       setMessages([]);
     }
   }, [conversationId, loadMessages]);
