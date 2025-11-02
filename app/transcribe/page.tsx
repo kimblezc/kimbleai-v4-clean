@@ -37,6 +37,90 @@ export default function TranscribePage() {
   const [dailyUsage, setDailyUsage] = useState<{ hours: number; cost: number } | null>(null);
   const [projectName, setProjectName] = useState('general');  // Added: Project/category name
   const [exportingFileId, setExportingFileId] = useState<string | null>(null);  // Added: Track which file is exporting
+  const [uploadingFile, setUploadingFile] = useState<File | null>(null);  // Added: Local file being uploaded
+  const [uploadProgress, setUploadProgress] = useState<number>(0);  // Added: Upload progress percentage
+
+  // Handle local file upload and transcription
+  const handleLocalFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check if it's an audio file
+    const audioExtensions = ['.mp3', '.m4a', '.wav', '.flac', '.aac', '.ogg', '.wma'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    if (!audioExtensions.includes(fileExtension) && !file.type.startsWith('audio/')) {
+      setError('Please select a valid audio file (MP3, M4A, WAV, etc.)');
+      return;
+    }
+
+    setUploadingFile(file);
+    setError(null);
+    setUploadProgress(0);
+
+    // Create a temporary job for this upload
+    const tempFileId = `local_${Date.now()}`;
+    const newJob: TranscriptionJob = {
+      jobId: tempFileId,
+      fileId: tempFileId,
+      fileName: file.name,
+      status: 'queued',
+      progress: 0,
+    };
+
+    setJobs(new Map(jobs.set(tempFileId, newJob)));
+
+    try {
+      // Upload file to AssemblyAI endpoint
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', 'zach');
+      formData.append('projectId', projectName);
+
+      newJob.status = 'processing';
+      setJobs(new Map(jobs.set(tempFileId, newJob)));
+
+      const response = await fetch('/api/transcribe/assemblyai', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.jobId) {
+        newJob.jobId = data.jobId;
+        newJob.transcriptionId = data.jobId;
+        setJobs(new Map(jobs.set(tempFileId, newJob)));
+
+        // Start polling for completion
+        pollJobStatus(tempFileId, data.jobId);
+
+        // Auto-export to Drive when complete
+        setTimeout(async () => {
+          const job = jobs.get(tempFileId);
+          if (job && job.status === 'completed' && job.transcriptionId) {
+            await exportAllToDrive(tempFileId, job.transcriptionId);
+          }
+        }, 60000); // Wait 1 minute for transcription to complete, then export
+      } else {
+        throw new Error('Failed to start transcription');
+      }
+    } catch (err: any) {
+      newJob.status = 'error';
+      newJob.error = err.message;
+      setJobs(new Map(jobs.set(tempFileId, newJob)));
+      setError(err.message);
+    } finally {
+      setUploadingFile(null);
+      setUploadProgress(0);
+      // Reset the file input
+      event.target.value = '';
+    }
+  };
 
   // Load items from folder
   const loadFolder = async (folderId?: string) => {
@@ -391,6 +475,60 @@ export default function TranscribePage() {
             <div style={{ fontSize: '0.75rem', color: '#9ca3af', minWidth: '200px' }}>
               Exports will be saved to: kimbleai-transcriptions/{projectName}
             </div>
+          </div>
+        </div>
+
+        {/* Local File Upload */}
+        <div style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '2rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '1rem', fontWeight: '600', color: '#c084fc', marginBottom: '0.5rem' }}>
+              🎙️ Upload Local Audio File
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#9ca3af' }}>
+              Upload audio from your computer → Auto-transcribe → Export all formats to Drive
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <label
+              htmlFor="audio-file-input"
+              style={{
+                flex: 1,
+                display: 'inline-block',
+                padding: '1rem',
+                backgroundColor: '#7c3aed',
+                border: 'none',
+                borderRadius: '0.5rem',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: '500',
+                textAlign: 'center',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#6d28d9')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#7c3aed')}
+            >
+              {uploadingFile ? `Uploading ${uploadingFile.name}...` : '📁 Choose Audio File'}
+            </label>
+            <input
+              id="audio-file-input"
+              type="file"
+              accept="audio/*,.mp3,.m4a,.wav,.flac,.aac,.ogg,.wma"
+              onChange={handleLocalFileUpload}
+              disabled={!!uploadingFile}
+              style={{ display: 'none' }}
+            />
+
+            {uploadingFile && (
+              <div style={{ color: '#c084fc', fontSize: '0.875rem' }}>
+                Processing...
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+            Supported: MP3, M4A, WAV, FLAC, AAC, OGG, WMA • Auto-exports TXT, SRT, VTT, JSON to Drive
           </div>
         </div>
 
