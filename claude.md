@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v7.8.1
-Latest Commit: a52f49d
-Last Updated: 2025-10-31
+Latest Version: v8.0.3
+Latest Commit: 047f7e8
+Last Updated: 2025-11-03
 Status: ✅ Deployed to Railway
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **047f7e8** (v8.0.3) - 🔧 CRITICAL FIXES: (1) Fixed projects disappearing on refresh - corrected useEffect dependency from [loadProjects] to [userId] to prevent infinite re-renders in useProjects hook. (2) Fixed conversations returning 404 when clicked - added fallback query to check string user_id if UUID query fails, handles both new conversations (UUID) and old ones (string "zach"/"rebecca"). Both issues completely resolved.
 - **a52f49d** (v7.8.1) - 🔧 OVERNIGHT IMPROVEMENTS: Fixed Guardian authentication (changed API test severity from 'critical' to 'info' since auth failures are expected - Guardian's real value is in database integrity checks). Fixed Card import case-sensitivity warnings (changed 5 files from 'Card' to 'card' to prevent Linux/macOS issues). Added CardHeader/CardTitle/CardDescription/CardContent exports to fix analytics page import errors. Conversation fixes from v6.1.1 already in place (project-based grouping working). Database migration file ready at supabase/migrations/fix-conversations-schema.sql but needs manual execution (will fix 30 orphaned messages and add missing created_at column).
 - **6065f47** (v7.8.0) - 🛡️ PROJECT-TAG GUARDIAN: New autonomous agent ensuring projects and tags are properly functioning. Expert in CRUD validation, data integrity, and organizational structure. Validates all projects/tags operations (create, read, update, delete), detects issues (orphans, duplicates, broken associations), auto-fixes simple problems, commits to git. Runs every 6 hours via cron. Dashboard at /guardian with blue shield button in sidebar. Comprehensive GUARDIAN.md documentation created. Guardian complements Archie (code quality) with data integrity monitoring.
 - **6647c44** (v7.7.4) - 🦉 COMPREHENSIVE LOGGING DASHBOARD: Completely revamped /agent dashboard with parsed commit analysis, color-coded fix type breakdown (🔧 lint, 🧹 dead code, 🐛 type error, 📦 dependency), individual fix cards, statistics (total fixes, commits, last run), layman explanations section, technical details, and created ARCHIE-LOGGING.md guide. Dashboard now production-ready for monitoring all Archie activity in readable format.
