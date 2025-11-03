@@ -1,8 +1,8 @@
 {
-  "version": "8.0.0",
-  "commit": "0918a93",
-  "lastUpdated": "2025-11-01T10:15:00.000Z",
-  "changelog": "⚡ Major UX Upgrade: Real-time UI updates with optimistic rendering. Projects now appear/disappear instantly (<10ms vs 500-2000ms before). 50-200x faster perceived performance. No page refreshes needed for create/update/delete operations.",
+  "version": "8.0.1",
+  "commit": "21d70f0",
+  "lastUpdated": "2025-11-03T00:00:00.000Z",
+  "changelog": "🔧 CRITICAL FIX: Fixed project_id field mismatch causing conversations not to group under projects. Added edit button for projects. All CRUD operations now fully functional (Create, Read, Update, Delete).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
