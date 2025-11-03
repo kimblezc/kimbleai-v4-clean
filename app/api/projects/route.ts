@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         // Cache miss - fetch fresh data
         let projects = [];
         try {
-          projects = await projectManager.getUserProjects(userId);
+          projects = await projectManager.getUserProjects(user.id); // Use UUID, not string userId
         } catch (error: any) {
           // If projects table doesn't exist, return empty array
           console.warn('Projects table query failed (table may not exist):', error.message);
