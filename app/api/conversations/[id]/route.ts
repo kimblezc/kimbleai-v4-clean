@@ -27,8 +27,13 @@ export async function GET(
 
     console.log('[Conversations API] Fetching conversation:', conversationId, 'for user UUID:', userData.id);
 
-    // Fetch conversation with messages
-    const { data: conversation, error } = await supabase
+    // FIXED: Try to fetch conversation by UUID first, then fallback to string userId
+    // This handles both old conversations (user_id = "zach") and new ones (user_id = UUID)
+    let conversation = null;
+    let error = null;
+
+    // Try with UUID first
+    const uuidResult = await supabase
       .from('conversations')
       .select(`
         *,
@@ -42,6 +47,31 @@ export async function GET(
       .eq('id', conversationId)
       .eq('user_id', userData.id)
       .single();
+
+    if (uuidResult.data) {
+      conversation = uuidResult.data;
+      console.log('[Conversations API] Found conversation with UUID user_id');
+    } else {
+      // Fallback: Try with string userId (for old conversations)
+      const stringResult = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          messages (
+            id,
+            role,
+            content,
+            created_at
+          )
+        `)
+        .eq('id', conversationId)
+        .eq('user_id', userId)
+        .single();
+
+      conversation = stringResult.data;
+      error = stringResult.error;
+      console.log('[Conversations API] Tried string user_id, result:', conversation ? 'found' : 'not found');
+    }
 
     console.log('[Conversations API] Query result - error:', error, 'data:', conversation ? 'found' : 'not found');
 

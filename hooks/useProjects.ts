@@ -202,7 +202,8 @@ export function useProjects(userId: string) {
   useEffect(() => {
     console.log('[useProjects] useEffect triggered, calling loadProjects()');
     loadProjects();
-  }, [loadProjects]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]); // Only re-run when userId changes, not when loadProjects callback changes
 
   return {
     projects,

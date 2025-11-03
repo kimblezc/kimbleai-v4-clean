@@ -1,8 +1,8 @@
 {
-  "version": "8.0.2",
-  "commit": "4dc3142",
-  "lastUpdated": "2025-11-03T10:47:00.000Z",
-  "changelog": "🔧 CRITICAL FIX: Fixed old conversations not displaying when clicked - removed non-existent 'messages.metadata' column from conversation query. Projects ARE persisting correctly (12 projects in DB), frontend state management working as expected.",
+  "version": "8.0.3",
+  "commit": "pending",
+  "lastUpdated": "2025-11-03T12:00:00.000Z",
+  "changelog": "🔧 CRITICAL FIXES: (1) Fixed projects disappearing on refresh - corrected useEffect dependency to prevent infinite re-renders. (2) Fixed conversations returning 404 - added fallback to query by string user_id for old conversations created before UUID migration.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
