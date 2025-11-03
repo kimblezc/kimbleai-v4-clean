@@ -18,10 +18,14 @@ export async function GET(
 
     // Get user data
     const userData = await getUserByIdentifier(userId, supabase);
+    console.log('[Conversations API] getUserByIdentifier result for', userId, ':', userData);
 
     if (!userData) {
+      console.error('[Conversations API] User not found:', userId);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    console.log('[Conversations API] Fetching conversation:', conversationId, 'for user UUID:', userData.id);
 
     // Fetch conversation with messages
     const { data: conversation, error } = await supabase
@@ -38,6 +42,8 @@ export async function GET(
       .eq('id', conversationId)
       .eq('user_id', userData.id)
       .single();
+
+    console.log('[Conversations API] Query result - error:', error, 'data:', conversation ? 'found' : 'not found');
 
     if (error) {
       console.error('Error fetching conversation:', error);
