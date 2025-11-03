@@ -1,6 +1,6 @@
 {
   "version": "8.0.2",
-  "commit": "pending",
+  "commit": "4dc3142",
   "lastUpdated": "2025-11-03T10:47:00.000Z",
   "changelog": "🔧 CRITICAL FIX: Fixed old conversations not displaying when clicked - removed non-existent 'messages.metadata' column from conversation query. Projects ARE persisting correctly (12 projects in DB), frontend state management working as expected.",
   "platform": "Railway",
