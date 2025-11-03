@@ -32,8 +32,7 @@ export async function GET(
           id,
           role,
           content,
-          created_at,
-          metadata
+          created_at
         )
       `)
       .eq('id', conversationId)
