@@ -31,6 +31,7 @@ const PUBLIC_PATHS = [
   '/archie', // Archie dashboard (read-only public view - redesigned v3.0.0)
   '/api/archie', // Archie agent APIs (overview, tasks, references, etc.)
   '/api/agent/trigger', // Manual Archie trigger (for Zapier/external crons)
+  '/api/dnd-facts', // D&D facts generator (public endpoint)
   '/api/mcp/fix-args', // TEMPORARY: MCP database fix endpoint (remove after setup)
   '/api/test-fs', // TEMPORARY: Filesystem test endpoint
   '/auth/signin',

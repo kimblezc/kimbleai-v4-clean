@@ -1,8 +1,8 @@
 {
-  "version": "8.0.4",
-  "commit": "4bf8c8f",
-  "lastUpdated": "2025-11-03T16:00:00.000Z",
-  "changelog": "🔧 FINAL FIX: Fixed UUID mismatch - getUserProjects now uses user.id (UUID) instead of userId string. Projects now persist correctly after refresh!",
+  "version": "8.1.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-03T17:30:00.000Z",
+  "changelog": "✨ NEW FEATURE: Dynamic D&D facts with GPT-4o-mini - Unlimited unique facts replacing static 20-fact rotation. API endpoint with caching, rate limiting, and fallback facts.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

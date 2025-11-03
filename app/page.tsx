@@ -5,6 +5,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
 import { useProjects } from '@/hooks/useProjects';
+import { useDndFacts } from '@/hooks/useDndFacts';
 import FormattedMessage from '../components/FormattedMessage';
 import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
@@ -20,39 +21,7 @@ const versionInfo = {
   lastUpdated: versionData.lastUpdated
 };
 
-// D&D facts for rotating display - mix of surface-level and deep lore
-const DND_FACTS = [
-  "The original D&D (1974) had only 3 character classes: Fighter, Magic-User, and Cleric.",
-  "A natural 20 is called a 'critical success' - it automatically succeeds at nearly any task.",
-  "The Deck of Many Things can grant wishes or instantly kill you - many DMs ban it entirely.",
-  "Dungeons & Dragons was created by Gary Gygax and Dave Arneson in 1974 in Lake Geneva, Wisconsin.",
-  "The Tarrasque, inspired by French folklore, is nearly indestructible with a CR of 30 in 5e.",
-  "Beholders are xenophobic tyrants - each believes its own physical form is the only 'correct' one.",
-  "The Blood War is an eternal conflict between demons (chaotic evil) and devils (lawful evil).",
-  "A Dungeon Master's most powerful tool isn't dice - it's improvisation and player buy-in.",
-  "Critical Role has raised over $11 million for charity and revolutionized actual-play content.",
-  "The longest D&D campaign ever recorded lasted over 40 years with the same DM and players.",
-  "Vecna began as a simple lich in Greyhawk and became a god - his hand and eye are legendary artifacts.",
-  "The d20 system wasn't always core to D&D - early editions used d6s and percentile dice for most rolls.",
-  "THAC0 (To Hit Armor Class 0) was the most confusing mechanic in AD&D 2e - lower numbers were better.",
-  "The Drow were created by Gary Gygax for the D-series modules and became iconic dark elves.",
-  "Planescape's city of Sigil sits at the center of the multiverse - even gods cannot enter uninvited.",
-  "The Tomb of Horrors is Gary Gygax's deadliest dungeon - designed to kill overconfident players.",
-  "Ravenloft started as a single Halloween adventure (I6) and became an entire gothic horror setting.",
-  "The Lady of Pain rules Sigil - her mere presence can kill, and she has never spoken a word.",
-  "Spelljammer lets you sail through space in magical ships - from the Forgotten Realms to Dark Sun.",
-  "Bahamut, the Platinum Dragon god of good, sometimes walks among mortals disguised as an old man.",
-];
-
-// Shuffle helper function (outside component to avoid recreation)
-const shuffleArray = (array: number[]) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
+// Dynamic D&D facts are now fetched via API (see /api/dnd-facts)
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -68,9 +37,9 @@ export default function Home() {
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  // D&D facts rotation - shuffled queue for random non-repeating facts
-  const factQueueRef = useRef(shuffleArray(Array.from({ length: DND_FACTS.length }, (_, i) => i)));
-  const [currentFactIndex, setCurrentFactIndex] = useState(factQueueRef.current[0] || 0);
+
+  // Dynamic D&D facts - fetched from API every 30 seconds
+  const { currentFact, loading: factLoading, error: factError } = useDndFacts(30000);
 
   const conversationsHook = useConversations(currentUser);
   const {
@@ -91,25 +60,6 @@ export default function Home() {
 
   const projectsHook = useProjects(currentUser);
   const { projects, currentProject, selectProject, updateProject, deleteProject } = projectsHook;
-
-  // Rotate D&D facts every 30 seconds - random non-repeating using shuffled queue
-  // MUST be called before early return to maintain consistent hook order
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // If queue is empty, refill with shuffled indices
-      if (factQueueRef.current.length === 0) {
-        factQueueRef.current = shuffleArray(Array.from({ length: DND_FACTS.length }, (_, i) => i));
-      }
-
-      // Get next fact from queue
-      const nextIndex = factQueueRef.current.shift();
-      if (nextIndex !== undefined) {
-        setCurrentFactIndex(nextIndex);
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   if (status === 'loading' || status === 'unauthenticated') {
     return (
@@ -423,8 +373,17 @@ export default function Home() {
             <div className="text-center mt-32 max-w-2xl mx-auto px-8">
               <div className="text-4xl text-gray-400 mb-3">{getGreeting()}</div>
               <div className="text-2xl text-gray-600 italic leading-relaxed transition-opacity duration-500">
-                "{DND_FACTS[currentFactIndex]}"
+                {factLoading ? (
+                  <span className="text-gray-700">Loading new fact...</span>
+                ) : (
+                  `"${currentFact}"`
+                )}
               </div>
+              {factError && (
+                <div className="text-sm text-yellow-600 mt-2">
+                  {factError}
+                </div>
+              )}
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">

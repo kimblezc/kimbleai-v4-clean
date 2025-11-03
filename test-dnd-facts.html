@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Facts Test</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Crimson Text', serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-family: 'Cinzel', serif;
+            text-align: center;
+            color: #ffa500;
+        }
+        #fact-display {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 30px 0;
+            min-height: 100px;
+            font-size: 24px;
+            font-style: italic;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .loading {
+            color: #888;
+        }
+        .error {
+            color: #ff6b6b;
+            font-size: 14px;
+        }
+        .info {
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+        }
+        button {
+            background: #ffa500;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background: #ff8c00;
+        }
+        #log {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎲 D&D Facts Test</h1>
+
+    <div id="fact-display" class="loading">
+        Loading first fact...
+    </div>
+
+    <div id="status" class="info"></div>
+
+    <button onclick="fetchNewFact()">Fetch New Fact (Manual)</button>
+
+    <h2>Console Log</h2>
+    <div id="log"></div>
+
+    <script>
+        const sessionId = `test-${Date.now()}`;
+        let factCount = 0;
+
+        function log(message) {
+            console.log(message);
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function fetchNewFact() {
+            log('Fetching new fact from API...');
+            const factDisplay = document.getElementById('fact-display');
+            const statusDiv = document.getElementById('status');
+
+            factDisplay.className = 'loading';
+            factDisplay.textContent = 'Loading...';
+            statusDiv.textContent = '';
+
+            try {
+                const response = await fetch('/api/dnd-facts', {
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+
+                if (response.status === 429) {
+                    const data = await response.json();
+                    log(`⚠️ Rate limited: ${data.error}`);
+                    statusDiv.className = 'error';
+                    statusDiv.textContent = data.error;
+                    factDisplay.className = '';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                factCount++;
+
+                log(`✅ Received fact #${factCount} (cached: ${data.cached})`);
+                log(`📝 Fact: ${data.fact.substring(0, 100)}...`);
+
+                factDisplay.className = '';
+                factDisplay.textContent = `"${data.fact}"`;
+
+                statusDiv.className = 'info';
+                statusDiv.textContent = `Fact #${factCount} • ${data.cached ? 'From Cache' : 'Freshly Generated'}`;
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+                factDisplay.className = 'error';
+                factDisplay.textContent = 'Error loading fact';
+                statusDiv.className = 'error';
+                statusDiv.textContent = error.message;
+            }
+        }
+
+        // Fetch initial fact
+        log('🚀 Test started');
+        log(`Session ID: ${sessionId}`);
+        fetchNewFact();
+
+        // Auto-fetch every 30 seconds
+        setInterval(() => {
+            log('⏰ 30 seconds elapsed, auto-fetching...');
+            fetchNewFact();
+        }, 30000);
+    </script>
+</body>
+</html>
