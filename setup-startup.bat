@@ -22,7 +22,8 @@ if /i not "%confirm%"=="yes" (
 echo.
 echo Creating startup shortcut...
 
-set STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+REM Get startup folder path
+for /f "delims=" %%i in ('powershell -Command "[Environment]::GetFolderPath('Startup')"') do set STARTUP=%%i
 
 powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%STARTUP%\Kimbleai Auto-Start.lnk'); $Shortcut.TargetPath = 'C:\Dev\Projects\kimbleai-v4-clean\auto-start.bat'; $Shortcut.WorkingDirectory = 'C:\Dev\Projects\kimbleai-v4-clean'; $Shortcut.Description = 'Auto-start Kimbleai development server'; $Shortcut.Save()"
 

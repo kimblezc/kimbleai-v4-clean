@@ -6,8 +6,8 @@ echo.
 echo Creating desktop shortcuts...
 echo.
 
-REM Get desktop path
-set DESKTOP=%USERPROFILE%\Desktop
+REM Get desktop path (works with OneDrive redirection)
+for /f "delims=" %%i in ('powershell -Command "[Environment]::GetFolderPath('Desktop')"') do set DESKTOP=%%i
 
 REM Create shortcut for work-start.bat
 powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Start Kimbleai.lnk'); $Shortcut.TargetPath = 'C:\Dev\Projects\kimbleai-v4-clean\work-start.bat'; $Shortcut.WorkingDirectory = 'C:\Dev\Projects\kimbleai-v4-clean'; $Shortcut.Description = 'Start working on Kimbleai'; $Shortcut.Save()"
