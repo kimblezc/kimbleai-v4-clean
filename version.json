@@ -1,8 +1,8 @@
 {
-  "version": "8.0.3",
-  "commit": "dbc5913",
-  "lastUpdated": "2025-11-03T12:00:00.000Z",
-  "changelog": "🔧 CRITICAL FIXES: (1) Fixed projects disappearing on refresh - corrected useEffect dependency to prevent infinite re-renders. (2) Fixed conversations returning 404 - added fallback to query by string user_id for old conversations created before UUID migration.",
+  "version": "8.0.4",
+  "commit": "4bf8c8f",
+  "lastUpdated": "2025-11-03T16:00:00.000Z",
+  "changelog": "🔧 FINAL FIX: Fixed UUID mismatch - getUserProjects now uses user.id (UUID) instead of userId string. Projects now persist correctly after refresh!",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
