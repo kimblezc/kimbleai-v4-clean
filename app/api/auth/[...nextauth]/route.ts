@@ -14,13 +14,21 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: 'openid email profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar',
+          // FIXED: Removed sensitive scopes (drive, gmail, calendar) to eliminate Google "untrusted app" warnings
+          // Only request basic profile info - no verification required
+          scope: 'openid email profile',
           access_type: 'offline',
           prompt: 'consent'
         }
       }
     })
   ],
+  session: {
+    // FIXED: Session stays active for 30 days instead of expiring quickly
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // Refresh session every 24 hours
+  },
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
