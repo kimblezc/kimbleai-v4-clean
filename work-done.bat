@@ -6,28 +6,32 @@ echo.
 echo ===== ENDING WORK SESSION =====
 echo.
 
-cd C:\Dev\Projects\kimbleai-v4-clean
+cd /d D:\OneDrive\Documents\kimbleai-v4-clean
 
 echo What did you work on today?
 set /p message="Commit message: "
 
 echo.
-echo [1/3] Saving all changes...
+echo [1/4] Saving all changes...
 git add .
 
 echo.
-echo [2/3] Committing changes...
+echo [2/4] Committing changes...
 git commit -m "%message%"
 
 echo.
-echo [3/3] Pushing to GitHub...
+echo [3/4] Pushing to GitHub...
 git push origin master
+
+echo.
+echo [4/4] Deploying to Railway...
+railway up
 
 echo.
 echo ===== DONE! =====
 echo.
 echo ✅ Your changes are saved to GitHub
-echo ✅ Railway auto-deploy triggered!
+echo ✅ Railway deployment started!
 echo.
 echo ⏱️  Deployment Timeline:
 echo     - Build: ~4-6 minutes

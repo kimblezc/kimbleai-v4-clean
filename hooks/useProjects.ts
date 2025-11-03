@@ -112,9 +112,11 @@ export function useProjects(userId: string) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'update',
-            projectId,
             userId,
-            updates,
+            projectData: {
+              id: projectId,
+              ...updates
+            }
           }),
         });
 
