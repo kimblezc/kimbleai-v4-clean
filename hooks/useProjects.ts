@@ -21,14 +21,20 @@ export function useProjects(userId: string) {
 
   const loadProjects = useCallback(async () => {
     try {
+      console.log('[useProjects] Loading projects for user:', userId);
       setLoading(true);
       const response = await fetch(`/api/projects?userId=${userId}`);
+      console.log('[useProjects] API response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[useProjects] Projects received:', data.projects?.length || 0, 'projects');
+        console.log('[useProjects] Projects data:', data.projects);
         setProjects(data.projects || []);
+      } else {
+        console.error('[useProjects] API returned error:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Failed to load projects:', error);
+      console.error('[useProjects] Failed to load projects:', error);
     } finally {
       setLoading(false);
     }
@@ -194,6 +200,7 @@ export function useProjects(userId: string) {
   }, []);
 
   useEffect(() => {
+    console.log('[useProjects] useEffect triggered, calling loadProjects()');
     loadProjects();
   }, [loadProjects]);
 
