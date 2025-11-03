@@ -14,13 +14,22 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
+          // Full Google integration: Drive, Gmail, Calendar access
+          // Test users configured in Google Cloud Console (zach.kimble@gmail.com, becky.aza.kimble@gmail.com)
+          // Publishing status: Testing (eliminates "unverified app" warning for test users)
           scope: 'openid email profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar',
           access_type: 'offline',
-          prompt: 'consent'
+          // Removed 'prompt: consent' to reduce clicks - only shows consent on first login
         }
       }
     })
   ],
+  session: {
+    // FIXED: Session stays active for 30 days instead of expiring quickly
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // Refresh session every 24 hours
+  },
   callbacks: {
     async jwt({ token, account }) {
       if (account) {

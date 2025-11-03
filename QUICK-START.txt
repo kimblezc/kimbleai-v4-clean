@@ -1,0 +1,45 @@
+====================================
+  KIMBLEAI - QUICK START GUIDE
+====================================
+
+YOUR CODE LOCATION:
+C:\Dev\Projects\kimbleai-v4-clean
+
+====================================
+START WORKING
+====================================
+
+Double-click: work-start.bat
+
+This gets latest code and starts server.
+
+====================================
+FINISH WORKING
+====================================
+
+Double-click: work-done.bat
+
+This saves your code to GitHub.
+
+====================================
+EMERGENCY SAVE
+====================================
+
+Double-click: quick-save.bat
+
+Instantly saves everything.
+
+====================================
+SWITCH DEVICES
+====================================
+
+PC:     Run work-done.bat
+Laptop: Run work-start.bat
+
+Takes 25 seconds total.
+
+====================================
+THAT'S IT!
+====================================
+
+Read WORKFLOW.md for more details.
