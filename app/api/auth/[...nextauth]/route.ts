@@ -14,9 +14,11 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          // FIXED: Removed sensitive scopes (drive, gmail, calendar) to eliminate Google "untrusted app" warnings
-          // Only request basic profile info - no verification required
-          scope: 'openid email profile',
+          // Full Google integration: Drive, Gmail, Calendar access
+          // Note: These scopes require clicking through Google's "untrusted app" warning
+          // To fix: Set OAuth consent screen to "Internal" in Google Cloud Console (for workspace users)
+          // Or: Submit app for Google verification (takes 1-2 weeks)
+          scope: 'openid email profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar',
           access_type: 'offline',
           prompt: 'consent'
         }
