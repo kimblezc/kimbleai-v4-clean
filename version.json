@@ -1,8 +1,8 @@
 {
-  "version": "8.1.1",
+  "version": "8.1.2",
   "commit": "pending",
-  "lastUpdated": "2025-11-03T17:35:00.000Z",
-  "changelog": "🚀 ENHANCEMENT: Increased D&D facts cache from 100 to 5000 - Dramatically reduced repeats with 50x larger cache pool for maximum fact variety.",
+  "lastUpdated": "2025-11-03T17:40:00.000Z",
+  "changelog": "🎲 UNLIMITED: Removed cache size limit entirely - D&D facts cache now grows infinitely. Every generated fact is saved forever, ensuring maximum variety with zero repeats.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

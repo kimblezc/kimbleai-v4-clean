@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-// In-memory cache for generated facts
+// In-memory cache for generated facts (unlimited - no cap)
 const factCache: string[] = [];
-const MAX_CACHE_SIZE = 5000;
 
 // Rate limiting: track last request time per session
 const sessionLastRequest = new Map<string, number>();
@@ -78,16 +77,11 @@ Return ONLY the fact text, no quotes, no prefix.`,
 
     const fact = completion.choices[0]?.message?.content?.trim() || 'D&D was created in 1974 by Gary Gygax and Dave Arneson.';
 
-    // Add to cache
+    // Add to unlimited cache
     factCache.push(fact);
 
-    // Trim cache if too large
-    if (factCache.length > MAX_CACHE_SIZE) {
-      factCache.shift(); // Remove oldest fact
-    }
-
     console.log('[DND Facts API] Generated fact:', fact);
-    console.log('[DND Facts API] Cache size:', factCache.length);
+    console.log('[DND Facts API] Cache size:', factCache.length, '(unlimited)');
 
     return NextResponse.json({ fact, cached: false });
   } catch (error) {
