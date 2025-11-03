@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
       return {
         id: conv.id,
         title: conv.title || 'Untitled Conversation',
-        project: actualProject,
+        project_id: actualProject, // FIXED: Changed from 'project' to 'project_id' to match frontend expectation
         messageCount,
         lastMessage: lastMessage ? formatTimeAgo(lastMessage.created_at) : 'No messages',
         created_at: createdAt,
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
 
     // Group by project if needed
     const groupedByProject = formattedConversations.reduce((acc, conv) => {
-      const project = conv.project;
+      const project = conv.project_id || 'unassigned'; // FIXED: Use project_id and default to 'unassigned'
       if (!acc[project]) acc[project] = [];
       acc[project].push(conv);
       return acc;
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
       conversation: {
         id: conversation.id,
         title: conversation.title,
-        project: (conversation as any).project_id || '', // ✅ FIX: Return actual project_id from database (handle missing column)
+        project_id: (conversation as any).project_id || '', // FIXED: Changed from 'project' to 'project_id' to match frontend expectation
         messages: formattedMessages
       }
     });

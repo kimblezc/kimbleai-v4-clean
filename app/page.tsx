@@ -233,13 +233,26 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => {
+                    const newName = prompt(`Edit project name:`, project.name);
+                    if (newName && newName !== project.name) {
+                      updateProject(project.id, { name: newName });
+                    }
+                  }}
+                  className="p-1.5 text-gray-600 hover:text-blue-400 text-xs"
+                  title="Edit project"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => {
                     if (confirm(`Delete project "${project.name}"?`)) {
                       deleteProject(project.id);
                     }
                   }}
-                  className="p-1 text-gray-600 hover:text-red-500 text-sm"
+                  className="p-1.5 text-gray-600 hover:text-red-500 text-xs"
+                  title="Delete project"
                 >
-                  ×
+                  🗑️
                 </button>
               </div>
             ))}
