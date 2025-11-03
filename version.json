@@ -1,6 +1,6 @@
 {
   "version": "8.0.3",
-  "commit": "pending",
+  "commit": "dbc5913",
   "lastUpdated": "2025-11-03T12:00:00.000Z",
   "changelog": "🔧 CRITICAL FIXES: (1) Fixed projects disappearing on refresh - corrected useEffect dependency to prevent infinite re-renders. (2) Fixed conversations returning 404 - added fallback to query by string user_id for old conversations created before UUID migration.",
   "platform": "Railway",
