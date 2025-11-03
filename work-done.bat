@@ -25,7 +25,19 @@ git push origin master
 
 echo.
 echo ===== DONE! =====
-echo Your changes are saved to GitHub
+echo.
+echo ✅ Your changes are saved to GitHub
+echo ✅ Railway auto-deploy triggered!
+echo.
+echo ⏱️  Deployment Timeline:
+echo     - Build: ~4-6 minutes
+echo     - Deploy: ~30 seconds
+echo     - Total: ~7 minutes to LIVE
+echo.
+echo 🌐 Live URL: https://www.kimbleai.com
+echo.
+echo 💡 TIP: Wait 7 minutes, then visit kimbleai.com and hard refresh (Ctrl+Shift+R)
+echo.
 echo You can now work on your laptop - just run work-start.bat
 echo.
 pause
