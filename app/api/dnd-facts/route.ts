@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 
 // In-memory cache for generated facts
 const factCache: string[] = [];
-const MAX_CACHE_SIZE = 100;
+const MAX_CACHE_SIZE = 5000;
 
 // Rate limiting: track last request time per session
 const sessionLastRequest = new Map<string, number>();
