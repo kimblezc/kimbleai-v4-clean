@@ -93,3 +93,22 @@ postgresql-18.0-2-windows-x64.exe
 # Archie backup files
 .archie-backups/
 nul
+
+# OneDrive/sync conflicts (added 2025-11-03)
+*-DESKTOP-*
+*-UN6T850*
+*-ZACH-*
+
+# Build artifacts
+*.tsbuildinfo
+
+# Logs
+*.log.json
+logs.*.json
+114log.json
+test-results.json
+
+# Backups
+*.backup
+*.old
+*.bak
