@@ -1,8 +1,8 @@
 {
-  "version": "8.1.2",
-  "commit": "ef40e23",
-  "lastUpdated": "2025-11-03T17:40:00.000Z",
-  "changelog": "🎲 UNLIMITED: Removed cache size limit entirely - D&D facts cache now grows infinitely. Every generated fact is saved forever, ensuring maximum variety with zero repeats.",
+  "version": "8.1.3",
+  "commit": "pending",
+  "lastUpdated": "2025-11-03T17:45:00.000Z",
+  "changelog": "🚀 FIX: Removed rate limiting from D&D facts API - Facts now load instantly without 30-second wait restrictions. Cache serves facts immediately.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

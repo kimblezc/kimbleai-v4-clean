@@ -4,10 +4,6 @@ import OpenAI from 'openai';
 // In-memory cache for generated facts (unlimited - no cap)
 const factCache: string[] = [];
 
-// Rate limiting: track last request time per session
-const sessionLastRequest = new Map<string, number>();
-const RATE_LIMIT_MS = 30000; // 30 seconds
-
 // Initialize OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -15,27 +11,9 @@ const openai = new OpenAI({
 
 export async function GET(req: NextRequest) {
   try {
-    // Get session ID from headers or create one
-    const sessionId = req.headers.get('x-session-id') || 'default';
-
-    // Rate limiting check
-    const lastRequest = sessionLastRequest.get(sessionId);
-    const now = Date.now();
-
-    if (lastRequest && now - lastRequest < RATE_LIMIT_MS) {
-      const remainingTime = Math.ceil((RATE_LIMIT_MS - (now - lastRequest)) / 1000);
-      return NextResponse.json(
-        { error: `Rate limited. Please wait ${remainingTime} seconds.` },
-        { status: 429 }
-      );
-    }
-
-    // Update last request time
-    sessionLastRequest.set(sessionId, now);
-
     // Check if we have cached facts available
     if (factCache.length > 0) {
-      // Return a random cached fact
+      // Return a random cached fact instantly (no rate limiting)
       const randomIndex = Math.floor(Math.random() * factCache.length);
       const fact = factCache[randomIndex];
       console.log('[DND Facts API] Returning cached fact:', fact);
