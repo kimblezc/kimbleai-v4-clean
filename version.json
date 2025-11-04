@@ -1,6 +1,6 @@
 {
   "version": "8.3.0",
-  "commit": "pending",
+  "commit": "b00827b",
   "lastUpdated": "2025-11-04T05:15:00.000Z",
   "changelog": "🎙️ MULTI-FILE TRANSCRIPTION: Added batch audio transcription system - Upload multiple audio files simultaneously, process in parallel with progress tracking, smart routing (Whisper <100MB, AssemblyAI >100MB), downloadable combined transcripts. Minimalist UI at /transcribe-multi. Component: MultiFileAudioUpload.tsx (500 lines).",
   "platform": "Railway",
