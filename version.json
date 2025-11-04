@@ -1,6 +1,6 @@
 {
   "version": "8.2.0",
-  "commit": "pending",
+  "commit": "605ea54",
   "lastUpdated": "2025-11-04T00:00:00.000Z",
   "changelog": "🔗 INTEGRATIONS: Added GitHub, Notion, and Todoist integrations - Full CRUD APIs for repos/issues (GitHub), workspace/databases (Notion), and tasks/projects (Todoist). Integration cards on /integrations page. Complete setup guide in INTEGRATIONS_SETUP.md with environment variables, API endpoints, and use cases.",
   "platform": "Railway",
