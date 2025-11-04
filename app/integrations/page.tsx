@@ -196,6 +196,66 @@ export default function IntegrationsPage() {
                     </Button>
                   </div>
                 </Card>
+
+                {/* GitHub */}
+                <Card>
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center">
+                      <span className="text-3xl">⚙️</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-1">GitHub</h3>
+                      <p className="text-sm text-gray-400">Repos, Issues, PRs</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <span className="w-2 h-2 bg-gray-500 rounded-full" />
+                      <span className="text-gray-500">Not Connected</span>
+                    </div>
+                    <Button fullWidth onClick={() => alert('GitHub integration coming soon!')}>
+                      Connect
+                    </Button>
+                  </div>
+                </Card>
+
+                {/* Notion */}
+                <Card>
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-white to-gray-300 rounded-full flex items-center justify-center">
+                      <span className="text-3xl text-gray-900">📝</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-1">Notion</h3>
+                      <p className="text-sm text-gray-400">Workspace & Databases</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <span className="w-2 h-2 bg-gray-500 rounded-full" />
+                      <span className="text-gray-500">Not Connected</span>
+                    </div>
+                    <Button fullWidth onClick={() => alert('Notion integration coming soon!')}>
+                      Connect
+                    </Button>
+                  </div>
+                </Card>
+
+                {/* Todoist */}
+                <Card>
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center">
+                      <span className="text-3xl">✓</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-1">Todoist</h3>
+                      <p className="text-sm text-gray-400">Tasks & Projects</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <span className="w-2 h-2 bg-gray-500 rounded-full" />
+                      <span className="text-gray-500">Not Connected</span>
+                    </div>
+                    <Button fullWidth onClick={() => alert('Todoist integration coming soon!')}>
+                      Connect
+                    </Button>
+                  </div>
+                </Card>
               </div>
 
               {/* Quick Stats */}
