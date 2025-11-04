@@ -1,6 +1,6 @@
 {
   "version": "8.1.3",
-  "commit": "pending",
+  "commit": "6afcbe4",
   "lastUpdated": "2025-11-03T17:45:00.000Z",
   "changelog": "🚀 FIX: Removed rate limiting from D&D facts API - Facts now load instantly without 30-second wait restrictions. Cache serves facts immediately.",
   "platform": "Railway",
