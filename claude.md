@@ -5,14 +5,16 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v8.0.3
-Latest Commit: 047f7e8
-Last Updated: 2025-11-03
+Latest Version: v8.6.0
+Latest Commit: ed89f7f
+Last Updated: 2025-11-11
 Status: ✅ Deployed to Railway
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **ed89f7f** (v8.6.0) - 📱 MOBILE UX PHASE 2: Advanced mobile interactions complete! PWA icons generated (D20 design with sharp: 192/512px standard + maskable + apple-touch-icon, total 6 files), PromptDialog component (mobile-optimized text input, 44px touch targets, 16px font prevents iOS zoom, validation, swipe-to-dismiss), haptic feedback system (5 patterns: light/medium/heavy/error/success, integrated into TouchButton/ConfirmDialog/PromptDialog), swipe gestures (useSwipe hook with 4 directions, visual feedback, 100px threshold for dismiss), performance verified (build successful, 0 new TS errors, bundle unchanged at 102 KB). Desktop 100% preserved. ~800 lines added. See MOBILE_PHASE2_COMPLETE.md for details.
+- **50c0fac** (v8.5.0) - 📱 MOBILE UX PHASE 1: Critical mobile optimizations complete! Touch targets fixed (44px min for all buttons via btn-touch class), responsive sidebar (90vw on mobile with proper z-index layering), mobile-optimized modals (slide from bottom with swipe indicator, proper safe-area-inset), ConfirmDialog component (replaces window.confirm, touch-friendly, proper variant styling), PWA manifest configured (standalone mode, proper theme colors). Desktop functionality 100% preserved. All changes additive. See MOBILE_PHASE1_COMPLETE.md for full documentation.
 - **047f7e8** (v8.0.3) - 🔧 CRITICAL FIXES: (1) Fixed projects disappearing on refresh - corrected useEffect dependency from [loadProjects] to [userId] to prevent infinite re-renders in useProjects hook. (2) Fixed conversations returning 404 when clicked - added fallback query to check string user_id if UUID query fails, handles both new conversations (UUID) and old ones (string "zach"/"rebecca"). Both issues completely resolved.
 - **a52f49d** (v7.8.1) - 🔧 OVERNIGHT IMPROVEMENTS: Fixed Guardian authentication (changed API test severity from 'critical' to 'info' since auth failures are expected - Guardian's real value is in database integrity checks). Fixed Card import case-sensitivity warnings (changed 5 files from 'Card' to 'card' to prevent Linux/macOS issues). Added CardHeader/CardTitle/CardDescription/CardContent exports to fix analytics page import errors. Conversation fixes from v6.1.1 already in place (project-based grouping working). Database migration file ready at supabase/migrations/fix-conversations-schema.sql but needs manual execution (will fix 30 orphaned messages and add missing created_at column).
 - **6065f47** (v7.8.0) - 🛡️ PROJECT-TAG GUARDIAN: New autonomous agent ensuring projects and tags are properly functioning. Expert in CRUD validation, data integrity, and organizational structure. Validates all projects/tags operations (create, read, update, delete), detects issues (orphans, duplicates, broken associations), auto-fixes simple problems, commits to git. Runs every 6 hours via cron. Dashboard at /guardian with blue shield button in sidebar. Comprehensive GUARDIAN.md documentation created. Guardian complements Archie (code quality) with data integrity monitoring.
