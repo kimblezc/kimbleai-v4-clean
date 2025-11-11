@@ -1,6 +1,6 @@
 {
   "version": "8.4.0",
-  "commit": "pending",
+  "commit": "aeb184e",
   "lastUpdated": "2025-11-11T18:30:00.000Z",
   "changelog": "📦 LARGE FILE SUPPORT: Upgraded multi-file transcription to handle up to 5GB per file and multiple hours of audio. Smart file size validation (5GB limit), intelligent cost warnings (>2GB or $10+), optimized routing (<25MB Whisper, 25MB-5GB AssemblyAI), file size display (KB/MB/GB), batch capacity unlimited. Perfect for interviews, meetings, lectures, podcasts.",
   "platform": "Railway",
