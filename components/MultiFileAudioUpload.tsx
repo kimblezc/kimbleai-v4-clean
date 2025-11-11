@@ -56,6 +56,40 @@ export default function MultiFileAudioUpload({
       return;
     }
 
+    // Validate file sizes and show warnings
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+    const tooLargeFiles = audioFiles.filter(f => f.size > MAX_FILE_SIZE);
+
+    if (tooLargeFiles.length > 0) {
+      const fileList = tooLargeFiles.map(f =>
+        `${f.name} (${(f.size / 1024 / 1024 / 1024).toFixed(2)} GB)`
+      ).join('\n');
+      alert(`❌ Files exceed 5GB limit:\n\n${fileList}\n\nMaximum file size: 5GB per file`);
+      return;
+    }
+
+    // Calculate total size and estimated cost
+    const totalSizeGB = audioFiles.reduce((sum, f) => sum + f.size, 0) / (1024 * 1024 * 1024);
+    const estimatedHours = totalSizeGB * 0.5; // Rough estimate: 2GB per hour
+    const estimatedCost = estimatedHours * 0.41; // $0.41/hour average
+
+    // Show warning for large batches
+    if (totalSizeGB > 2 || estimatedCost > 10) {
+      const confirmed = window.confirm(
+        `⚠️ LARGE BATCH WARNING ⚠️\n\n` +
+        `Files: ${audioFiles.length}\n` +
+        `Total Size: ${totalSizeGB.toFixed(2)} GB\n` +
+        `Estimated Duration: ${estimatedHours.toFixed(1)} hours\n` +
+        `Estimated Cost: $${estimatedCost.toFixed(2)}\n\n` +
+        `Processing time: ${Math.ceil(estimatedHours * 1.5)}-${Math.ceil(estimatedHours * 2)} minutes\n\n` +
+        `Proceed with transcription?`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     const newJobs: FileJob[] = audioFiles.map(file => ({
       id: generateId(),
       file,
@@ -92,8 +126,11 @@ export default function MultiFileAudioUpload({
       formData.append('projectId', projectId);
 
       // Route based on file size
+      // Small files (<25MB): OpenAI Whisper (25MB API limit)
+      // Medium files (25MB-100MB): AssemblyAI
+      // Large files (100MB-5GB): AssemblyAI (handles up to 5GB)
       const fileSizeMB = job.file.size / (1024 * 1024);
-      const endpoint = fileSizeMB < 100
+      const endpoint = fileSizeMB < 25
         ? '/api/audio/transcribe-progress'
         : '/api/transcribe/assemblyai';
 
@@ -407,6 +444,18 @@ export default function MultiFileAudioUpload({
                   marginRight: '8px'
                 }}>
                   {job.file.name}
+                  <span style={{
+                    fontSize: '12px',
+                    color: '#888',
+                    marginLeft: '8px'
+                  }}>
+                    ({job.file.size < 1024 * 1024
+                      ? `${(job.file.size / 1024).toFixed(0)} KB`
+                      : job.file.size < 1024 * 1024 * 1024
+                      ? `${(job.file.size / 1024 / 1024).toFixed(1)} MB`
+                      : `${(job.file.size / 1024 / 1024 / 1024).toFixed(2)} GB`
+                    })
+                  </span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <div style={{

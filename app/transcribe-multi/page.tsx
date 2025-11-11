@@ -108,15 +108,17 @@ export default function TranscribeMultiPage() {
             lineHeight: '1.8'
           }}>
             <li>Upload multiple audio files at once (drag & drop or click)</li>
-            <li>Files &lt;100MB use OpenAI Whisper (fast & cost-effective)</li>
-            <li>Files &gt;100MB use AssemblyAI (handles large files)</li>
+            <li>Small files (&lt;25MB): OpenAI Whisper (fast & cost-effective)</li>
+            <li>Large files (25MB-5GB): AssemblyAI (handles massive files)</li>
+            <li>Maximum capacity: 5GB per file, unlimited total batch size</li>
             <li>Each file processes independently with progress tracking</li>
+            <li>Smart cost warnings for large batches (&gt;2GB or $10+)</li>
             <li>Download all transcriptions as a single text file</li>
             <li>Supports M4A, MP3, WAV formats</li>
           </ul>
         </div>
 
-        {/* Cost Info */}
+        {/* Capacity & Cost Info */}
         <div style={{
           marginTop: '16px',
           padding: '16px',
@@ -125,6 +127,39 @@ export default function TranscribeMultiPage() {
           borderRadius: '8px'
         }}>
           <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '12px'
+          }}>
+            <div>
+              <div style={{ fontSize: '14px', color: '#8a8aff', marginBottom: '4px' }}>
+                Max File Size
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                5GB per file
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', color: '#8a8aff', marginBottom: '4px' }}>
+                Batch Capacity
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                Unlimited files
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '14px', color: '#8a8aff', marginBottom: '4px' }}>
+                Est. Processing
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                1.5-2x duration
+              </div>
+            </div>
+          </div>
+          <div style={{
+            borderTop: '1px solid #333',
+            paddingTop: '12px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center'
@@ -138,11 +173,11 @@ export default function TranscribeMultiPage() {
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '14px', color: '#8a8aff', marginBottom: '4px' }}>
-                Daily Limit
+              <div style={{ fontSize: '14px', color: '#ff8a8a', marginBottom: '4px' }}>
+                Smart Warnings
               </div>
               <div style={{ fontSize: '12px', color: '#666' }}>
-                10 hours / $5.00
+                Alerts for batches &gt;2GB or $10+
               </div>
             </div>
           </div>
