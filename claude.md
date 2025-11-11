@@ -8,7 +8,7 @@
 Latest Version: v8.0.3
 Latest Commit: e549212
 Last Updated: 2025-11-11
-Status: 🔄 Deploying to Railway
+Status: ✅ Deployed to Railway
 Live URL: https://www.kimbleai.com
 ```
 
