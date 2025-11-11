@@ -1,6 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { TouchButton } from './TouchButton';
+import { triggerHaptic, HapticPattern } from '@/lib/haptics';
+import { useSwipe } from '@/hooks/useSwipe';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -23,6 +26,38 @@ export function ConfirmDialog({
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
+  const [swipeOffset, setSwipeOffset] = useState(0);
+
+  // Trigger haptic feedback when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      triggerHaptic(variant === 'danger' ? HapticPattern.HEAVY : HapticPattern.MEDIUM);
+      setSwipeOffset(0);
+    }
+  }, [isOpen, variant]);
+
+  // Swipe to dismiss (downward swipe on mobile)
+  const swipeHandlers = useSwipe(
+    {
+      onSwipeDown: () => {
+        triggerHaptic(HapticPattern.LIGHT);
+        onCancel();
+      },
+      onSwipeProgress: (_, deltaY) => {
+        if (deltaY > 0) {
+          setSwipeOffset(deltaY);
+        }
+      },
+      onSwipeCancel: () => {
+        setSwipeOffset(0);
+      },
+    },
+    {
+      threshold: 100,
+      trackProgress: true,
+    }
+  );
+
   if (!isOpen) return null;
 
   const variantStyles = {
@@ -37,8 +72,10 @@ export function ConfirmDialog({
       onClick={onCancel}
     >
       <div
+        {...swipeHandlers}
         onClick={(e) => e.stopPropagation()}
-        className="bg-gray-900 border border-gray-700 rounded-xl max-w-md w-full p-6 shadow-2xl animate-slide-up"
+        className="bg-gray-900 border border-gray-700 rounded-xl max-w-md w-full p-6 shadow-2xl animate-slide-up transition-transform"
+        style={{ transform: `translateY(${swipeOffset}px)`, opacity: Math.max(0.3, 1 - swipeOffset / 200) }}
       >
         {/* Swipe indicator (mobile only) */}
         <div className="sm:hidden w-12 h-1 bg-gray-700 rounded-full mx-auto mb-4" />

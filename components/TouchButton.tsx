@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { triggerHaptic, HapticPattern } from '@/lib/haptics';
 
 interface TouchButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -37,11 +38,22 @@ export function TouchButton({
 
   const widthStyles = fullWidth ? 'w-full' : '';
 
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!disabled) {
+      // Trigger haptic feedback on button press
+      triggerHaptic(variant === 'danger' ? HapticPattern.MEDIUM : HapticPattern.LIGHT);
+    }
+    if (props.onClick) {
+      props.onClick(e);
+    }
+  };
+
   return (
     <button
+      {...props}
+      onClick={handleClick}
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyles} ${className}`}
       disabled={disabled}
-      {...props}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}
       <span>{children}</span>

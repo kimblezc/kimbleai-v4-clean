@@ -1,8 +1,8 @@
 {
-  "version": "8.5.0",
-  "commit": "50c0fac",
-  "lastUpdated": "2025-11-11T19:10:00.000Z",
-  "changelog": "📱 MOBILE UX PHASE 1: Critical mobile optimizations complete! Touch targets fixed (44px min for all buttons), responsive sidebar (90vw on mobile, 256px on desktop), mobile-optimized modals (slide from bottom), touch-friendly input area, ConfirmDialog replaces window.confirm, PWA icons added. Desktop functionality 100% preserved. All changes additive, not replacements. Ready for Phase 2 (component integration).",
+  "version": "8.6.0",
+  "commit": "[to_be_updated]",
+  "lastUpdated": "2025-11-11T20:45:00.000Z",
+  "changelog": "📱 MOBILE UX PHASE 2: Advanced mobile interactions complete! PWA icons generated (D20 design, 6 sizes including maskable), PromptDialog component (mobile-optimized text input, keyboard support), haptic feedback system (5 patterns integrated: light/medium/heavy/error/success), swipe gestures (swipe-to-dismiss modals with visual feedback, 100px threshold), performance verified (build successful, 0 new TS errors, bundle size unchanged). Desktop 100% preserved. ~800 lines added. Ready for deployment.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
