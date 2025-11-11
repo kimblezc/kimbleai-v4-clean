@@ -11,6 +11,9 @@ import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
 import UnifiedSearch from '../components/search/UnifiedSearch';
 import { ModelSelector, type AIModel } from '../components/model-selector/ModelSelector';
+import { IconButton, TouchButton } from '../components/TouchButton';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
 import versionData from '../version.json';
 import { formatRelativeTime } from '@/lib/chat-utils';
@@ -37,6 +40,22 @@ export default function Home() {
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  // Device detection for responsive design
+  const deviceType = useDeviceType();
+  const isMobile = deviceType === 'mobile';
 
   // Dynamic D&D facts - fetched from API every 30 seconds
   const { currentFact, loading: factLoading, error: factError } = useDndFacts(30000);
@@ -112,22 +131,28 @@ export default function Home() {
         @media (max-width: 768px) {
           .sidebar {
             position: fixed;
-            left: ${isMobileSidebarOpen ? '0' : '-280px'};
+            left: ${isMobileSidebarOpen ? '0' : '-100%'};
             top: 0;
             bottom: 0;
             z-index: 1000;
+            width: 90vw;
+            max-width: 280px;
             transition: left 0.3s ease;
           }
         }
       `}</style>
 
       {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm"
-      >
-        Menu
-      </button>
+      {isMobile && (
+        <TouchButton
+          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          className="md:hidden fixed top-4 left-4 z-50 bg-gray-800 border border-gray-700"
+          size="sm"
+          variant="secondary"
+        >
+          Menu
+        </TouchButton>
+      )}
 
       {/* Sidebar Overlay (mobile) */}
       {isMobileSidebarOpen && (
@@ -181,29 +206,36 @@ export default function Home() {
                 >
                   {project.name}
                 </button>
-                <button
+                <IconButton
+                  icon={<span className="text-base">✏️</span>}
+                  label="Edit project"
                   onClick={() => {
                     const newName = prompt(`Edit project name:`, project.name);
                     if (newName && newName !== project.name) {
                       updateProject(project.id, { name: newName });
                     }
                   }}
-                  className="p-1.5 text-gray-600 hover:text-blue-400 text-xs"
-                  title="Edit project"
-                >
-                  ✏️
-                </button>
-                <button
+                  variant="ghost"
+                  className="text-gray-600 hover:text-blue-400"
+                />
+                <IconButton
+                  icon={<span className="text-base">🗑️</span>}
+                  label="Delete project"
                   onClick={() => {
-                    if (confirm(`Delete project "${project.name}"?`)) {
-                      deleteProject(project.id);
-                    }
+                    setConfirmDialog({
+                      isOpen: true,
+                      title: 'Delete Project',
+                      message: `Are you sure you want to delete "${project.name}"? This action cannot be undone.`,
+                      variant: 'danger',
+                      onConfirm: () => {
+                        deleteProject(project.id);
+                        setConfirmDialog({ ...confirmDialog, isOpen: false });
+                      },
+                    });
                   }}
-                  className="p-1.5 text-gray-600 hover:text-red-500 text-xs"
-                  title="Delete project"
-                >
-                  🗑️
-                </button>
+                  variant="ghost"
+                  className="text-gray-600 hover:text-red-500"
+                />
               </div>
             ))}
             <button
@@ -421,17 +453,18 @@ export default function Home() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-gray-800 bg-gray-950 p-4">
+        <div className={`border-t border-gray-800 bg-gray-950 p-3 md:p-4 ${isMobile ? 'safe-padding-bottom' : ''}`}>
           <div className="max-w-3xl mx-auto">
             <div className="flex items-end gap-2">
-              {/* Model Selector Button */}
-              <button
+              {/* Model Selector Button - Hidden on very small screens */}
+              <TouchButton
                 onClick={() => setShowModelSelector(!showModelSelector)}
-                className="px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-xs text-gray-400 transition-colors"
-                title="Select model"
+                size="sm"
+                variant="ghost"
+                className="flex-shrink-0 hidden sm:flex bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400"
               >
                 {selectedModel.replace('claude-', '').replace('gpt-', '')}
-              </button>
+              </TouchButton>
 
               <input
                 type="text"
@@ -445,20 +478,17 @@ export default function Home() {
                 }}
                 placeholder="Ask me anything..."
                 disabled={sending}
-                className="flex-1 px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-gray-600 transition-colors"
+                className="flex-1 px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-base focus:outline-none focus:border-gray-600 transition-colors min-h-[44px]"
               />
 
-              <button
+              <TouchButton
                 onClick={handleSendMessage}
                 disabled={!input.trim() || sending}
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  input.trim() && !sending
-                    ? 'bg-white text-black hover:bg-gray-200'
-                    : 'bg-gray-800 text-gray-600 cursor-not-allowed'
-                }`}
+                size="md"
+                className={input.trim() && !sending ? 'bg-white text-black hover:bg-gray-200' : 'bg-gray-800 text-gray-600'}
               >
-                Send
-              </button>
+                {isMobile ? '→' : 'Send'}
+              </TouchButton>
             </div>
 
             {showTags && (
@@ -498,13 +528,16 @@ export default function Home() {
       {/* Model Selector Modal */}
       {showModelSelector && (
         <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50"
           onClick={() => setShowModelSelector(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto m-4"
+            className="bg-gray-900 border border-gray-700 rounded-t-xl sm:rounded-xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto m-0 sm:m-4 animate-slide-up"
           >
+            {/* Swipe indicator (mobile only) */}
+            <div className="sm:hidden w-12 h-1 bg-gray-700 rounded-full mx-auto mb-4" />
+
             <h2 className="text-xl font-semibold mb-4">Select Model</h2>
             <ModelSelector
               selectedModel={selectedModel}
@@ -525,6 +558,16 @@ export default function Home() {
       {showGoogleServices && (
         <GoogleServicesPanel onClose={() => setShowGoogleServices(false)} userId={currentUser} />
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   );
 }
