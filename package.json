@@ -1,6 +1,6 @@
 {
   "name": "kimbleai-v4",
-  "version": "8.0.2",
+  "version": "8.0.3",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -34,6 +34,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-switch": "^1.2.6",
     "@supabase/supabase-js": "^2.57.4",
+    "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.2",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
@@ -50,6 +51,7 @@
     "mime-types": "^3.0.1",
     "next": "^15.5.3",
     "next-auth": "^4.24.11",
+    "node-cron": "^4.2.1",
     "nodemailer": "^6.10.1",
     "officeparser": "^5.2.1",
     "openai": "^5.21.0",

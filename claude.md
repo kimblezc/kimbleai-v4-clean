@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v8.6.0
-Latest Commit: ed89f7f
+Latest Version: v8.0.3
+Latest Commit: [pending]
 Last Updated: 2025-11-11
-Status: ✅ Deployed to Railway
+Status: 🔄 Ready to Deploy to Railway
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **[pending]** (v8.0.3) - 🔧 CRON FIX FOR RAILWAY: Fixed Archie & Guardian not running for 10 days. Implemented in-process node-cron scheduler (lib/cron-scheduler.ts) with CRON_SECRET authentication. Added Next.js instrumentation hook to initialize cron jobs on server start. Schedules: Archie (every hour), Guardian (every 6 hours), Backup (daily 2am), Index (every 6 hours), Index Attachments (every 4 hours). Only runs in Railway production environment. Added CRON_SECRET auth to Guardian endpoint (matching Archie). Build tested successfully. See ARCHIE_GUARDIAN_CRON_FIX.md for complete documentation and verification steps.
 - **ed89f7f** (v8.6.0) - 📱 MOBILE UX PHASE 2: Advanced mobile interactions complete! PWA icons generated (D20 design with sharp: 192/512px standard + maskable + apple-touch-icon, total 6 files), PromptDialog component (mobile-optimized text input, 44px touch targets, 16px font prevents iOS zoom, validation, swipe-to-dismiss), haptic feedback system (5 patterns: light/medium/heavy/error/success, integrated into TouchButton/ConfirmDialog/PromptDialog), swipe gestures (useSwipe hook with 4 directions, visual feedback, 100px threshold for dismiss), performance verified (build successful, 0 new TS errors, bundle unchanged at 102 KB). Desktop 100% preserved. ~800 lines added. See MOBILE_PHASE2_COMPLETE.md for details.
 - **50c0fac** (v8.5.0) - 📱 MOBILE UX PHASE 1: Critical mobile optimizations complete! Touch targets fixed (44px min for all buttons via btn-touch class), responsive sidebar (90vw on mobile with proper z-index layering), mobile-optimized modals (slide from bottom with swipe indicator, proper safe-area-inset), ConfirmDialog component (replaces window.confirm, touch-friendly, proper variant styling), PWA manifest configured (standalone mode, proper theme colors). Desktop functionality 100% preserved. All changes additive. See MOBILE_PHASE1_COMPLETE.md for full documentation.
 - **047f7e8** (v8.0.3) - 🔧 CRITICAL FIXES: (1) Fixed projects disappearing on refresh - corrected useEffect dependency from [loadProjects] to [userId] to prevent infinite re-renders in useProjects hook. (2) Fixed conversations returning 404 when clicked - added fallback query to check string user_id if UUID query fails, handles both new conversations (UUID) and old ones (string "zach"/"rebecca"). Both issues completely resolved.
@@ -603,13 +604,39 @@ railway domain add         # Add custom domain
 
 ### Cron Jobs on Railway
 
-Railway doesn't have built-in cron scheduling like Vercel. Options:
+**Status**: ✅ FIXED (v8.0.3)
 
-1. **External cron service**: Use cron-job.org or similar
-2. **Node-cron**: Implement in-process scheduling
-3. **Railway Cron plugin**: Use Railway's cron service (if available)
+Railway doesn't have built-in cron scheduling like Vercel. We've implemented **in-process node-cron scheduling**.
 
-Current approach: Keep Vercel cron endpoints active, point them to Railway URLs.
+**Implementation**:
+- `lib/cron-scheduler.ts` - Node-cron scheduler with CRON_SECRET authentication
+- `instrumentation.ts` - Next.js hook that initializes cron jobs on server start
+- Runs only in Railway production environment
+
+**Schedule**:
+- **Archie**: Every hour (0 * * * *)
+- **Guardian**: Every 6 hours (0 */6 * * *)
+- **Backup**: Daily at 2:00 AM (0 2 * * *)
+- **Index**: Every 6 hours (0 */6 * * *)
+- **Index Attachments**: Every 4 hours (0 */4 * * *)
+
+**Verification**:
+```bash
+# Check cron initialization
+railway logs | grep "CRON"
+
+# Expected output:
+[CRON] Initializing cron jobs...
+[CRON] All cron jobs scheduled...
+
+# Verify Archie commits
+git log --author="Archie" --oneline -5
+
+# Verify Guardian commits
+git log --author="Guardian" --oneline -5
+```
+
+**Documentation**: See `ARCHIE_GUARDIAN_CRON_FIX.md` for complete details.
 
 ### Rationale
 Consistent deployment process ensures:
