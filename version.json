@@ -1,8 +1,8 @@
 {
-  "version": "8.4.0",
-  "commit": "aeb184e",
-  "lastUpdated": "2025-11-11T18:30:00.000Z",
-  "changelog": "📦 LARGE FILE SUPPORT: Upgraded multi-file transcription to handle up to 5GB per file and multiple hours of audio. Smart file size validation (5GB limit), intelligent cost warnings (>2GB or $10+), optimized routing (<25MB Whisper, 25MB-5GB AssemblyAI), file size display (KB/MB/GB), batch capacity unlimited. Perfect for interviews, meetings, lectures, podcasts.",
+  "version": "8.5.0",
+  "commit": "50c0fac",
+  "lastUpdated": "2025-11-11T19:10:00.000Z",
+  "changelog": "📱 MOBILE UX PHASE 1: Critical mobile optimizations complete! Touch targets fixed (44px min for all buttons), responsive sidebar (90vw on mobile, 256px on desktop), mobile-optimized modals (slide from bottom), touch-friendly input area, ConfirmDialog replaces window.confirm, PWA icons added. Desktop functionality 100% preserved. All changes additive, not replacements. Ready for Phase 2 (component integration).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
