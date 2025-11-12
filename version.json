@@ -1,6 +1,6 @@
 {
   "version": "8.13.2",
-  "commit": "b7631a2",
+  "commit": "09360f8",
   "lastUpdated": "2025-11-12T15:30:00.000Z",
   "changelog": "✨ UI REFINEMENT: Implemented automatic model selection based on query type - simple queries use fast models (gpt-4o-mini), complex/RAG queries use quality models (claude-sonnet-4-5). Added minimalist model indicator showing current selection below input. Simplified cost bar styling with no emoji, clean monospace font, minimal borders. All selection happens automatically - no manual dropdown needed. Users don't need to think about model choice, system picks the best for each query.",
   "platform": "Railway",
