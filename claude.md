@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v8.7.0
-Latest Commit: 4fdc22c
+Latest Version: v8.9.0
+Latest Commit: e27dfee
 Last Updated: 2025-11-12
 Status: ✅ Deployed to Railway
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
+- **e27dfee** (v8.9.0) - 💰 COST TRACKING RESTORED: Added Cost Tracker 💰 button to sidebar (featured gradient), created minimalist CostWidget component (shows daily spending, auto-expands with hourly/daily/monthly breakdown on hover), integrated widget into main chat header next to user selector, comprehensive COST_TRACKING_AGENT.md documentation (1,100+ lines covering architecture, dashboards at /costs and /costs/models, budget enforcement, savings recommendations, alert system, database schema). Full cost tracking system now visible and accessible. Widget auto-refreshes every 30s, color-coded status (green/blue/yellow/red), links to full dashboard. ~400 lines added.
 - **4fdc22c** (v8.7.0) - 🔧 CRITICAL FIXES: Fixed NEXTAUTH_URL domain redirect issue (updated Railway env var from kimbleai-production-efed.up.railway.app to https://kimbleai.com - users now stay on kimbleai.com in address bar). Integrated all session improvements: Archie/Guardian cron scheduling (instrumentation.ts with node-cron, 5 autonomous jobs), Mobile Phase 2 complete (PWA icons, haptics, swipe gestures, PromptDialog), Mobile Phase 1 deployed (touch targets, responsive sidebar, ConfirmDialog). Total ~1,000 lines added this session.
 - **9d80597** (v8.7.0) - 🔧 NEXTAUTH_URL FIX: Updated Railway environment variable NEXTAUTH_URL from Railway URL to https://kimbleai.com to prevent domain redirect in browser address bar. Triggered redeployment.
 - **e549212** (v8.0.3) - 🔧 CRON FIX FOR RAILWAY: Fixed Archie & Guardian not running for 10 days. Implemented in-process node-cron scheduler (lib/cron-scheduler.ts) with CRON_SECRET authentication. Added Next.js instrumentation hook to initialize cron jobs on server start. Schedules: Archie (every hour), Guardian (every 6 hours), Backup (daily 2am), Index (every 6 hours), Index Attachments (every 4 hours). Only runs in Railway production environment. Added CRON_SECRET auth to Guardian endpoint (matching Archie). Build tested successfully. See ARCHIE_GUARDIAN_CRON_FIX.md for complete documentation and verification steps.
