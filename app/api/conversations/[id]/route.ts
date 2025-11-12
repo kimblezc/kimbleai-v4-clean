@@ -110,40 +110,96 @@ export async function DELETE(
 ) {
   try {
     const { id: conversationId } = await params;
-    const { userId = 'zach' } = await request.json();
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || 'zach';
+
+    console.log('[DELETE Conversations] Deleting conversation:', conversationId, 'for user:', userId);
 
     // Get user data using centralized helper
     const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
+      console.error('[DELETE Conversations] User not found:', userId);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    console.log('[DELETE Conversations] User UUID:', userData.id);
+
+    // First, verify the conversation belongs to this user
+    const { data: conversation, error: fetchError } = await supabase
+      .from('conversations')
+      .select('id, user_id')
+      .eq('id', conversationId)
+      .single();
+
+    if (fetchError || !conversation) {
+      console.error('[DELETE Conversations] Conversation not found:', fetchError);
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+    }
+
+    // Check if user owns this conversation (try both UUID and string user_id)
+    const isOwner = conversation.user_id === userData.id || conversation.user_id === userId;
+
+    if (!isOwner) {
+      console.error('[DELETE Conversations] User does not own this conversation');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     // SECURITY FIX: Delete messages with user_id check to prevent unauthorized deletion
-    const { error: messagesError } = await supabase
+    // Try both UUID and string user_id for backwards compatibility
+    const { error: messagesError1 } = await supabase
       .from('messages')
       .delete()
       .eq('conversation_id', conversationId)
       .eq('user_id', userData.id);
 
-    if (messagesError) {
-      console.error('Error deleting messages:', messagesError);
+    if (messagesError1) {
+      console.log('[DELETE Conversations] Trying alternative user_id format for messages');
+      // Fallback: try with string userId
+      const { error: messagesError2 } = await supabase
+        .from('messages')
+        .delete()
+        .eq('conversation_id', conversationId)
+        .eq('user_id', userId);
+
+      if (messagesError2) {
+        console.error('[DELETE Conversations] Error deleting messages:', messagesError2);
+      }
     }
 
     // Delete conversation (with user_id verification)
-    const { error: conversationError } = await supabase
+    // Try both UUID and string user_id
+    let conversationError = null;
+
+    const { error: deleteError1 } = await supabase
       .from('conversations')
       .delete()
       .eq('id', conversationId)
       .eq('user_id', userData.id);
 
+    if (deleteError1) {
+      console.log('[DELETE Conversations] Trying alternative user_id format for conversation');
+      // Fallback: try with string userId
+      const { error: deleteError2 } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId)
+        .eq('user_id', userId);
+
+      conversationError = deleteError2;
+    } else {
+      conversationError = deleteError1;
+    }
+
     if (conversationError) {
-      console.error('Error deleting conversation:', conversationError);
+      console.error('[DELETE Conversations] Error deleting conversation:', conversationError);
       return NextResponse.json({
         error: 'Failed to delete conversation',
         details: conversationError.message
       }, { status: 500 });
     }
+
+    console.log('[DELETE Conversations] Successfully deleted conversation');
 
     return NextResponse.json({
       success: true,
@@ -151,7 +207,7 @@ export async function DELETE(
     });
 
   } catch (error: any) {
-    console.error('Delete conversation error:', error);
+    console.error('[DELETE Conversations] Delete conversation error:', error);
     return NextResponse.json({
       error: 'Failed to delete conversation',
       details: error.message

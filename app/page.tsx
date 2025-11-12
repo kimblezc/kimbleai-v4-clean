@@ -262,7 +262,7 @@ export default function Home() {
               {conversationsByProject['unassigned'].map((conv) => (
                 <div
                   key={conv.id}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md mb-1 transition-colors ${
+                  className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors ${
                     currentConversationId === conv.id
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-400 hover:bg-gray-900'
@@ -273,11 +273,13 @@ export default function Home() {
                       selectConversation(conv.id);
                       setIsMobileSidebarOpen(false);
                     }}
-                    className="flex-1 text-left"
+                    className="flex-1 text-left min-w-0 px-1"
                   >
-                    <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
+                    <div className="text-base truncate overflow-hidden text-ellipsis whitespace-nowrap">
+                      {conv.title || 'Untitled conversation'}
+                    </div>
                     {(conv.updated_at || conv.created_at) && (
-                      <div className="text-sm text-gray-600 mt-0.5">
+                      <div className="text-sm text-gray-600 mt-0.5 truncate">
                         {formatRelativeTime(conv.updated_at || conv.created_at)}
                       </div>
                     )}
@@ -296,7 +298,7 @@ export default function Home() {
                         }
                       });
                     }}
-                    className="text-red-500 hover:text-red-400 transition-colors p-1"
+                    className="flex-shrink-0 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded p-1.5 transition-colors"
                     title="Delete conversation"
                   >
                     🗑️
@@ -325,7 +327,7 @@ export default function Home() {
                   {convs.map((conv) => (
                     <div
                       key={conv.id}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md mb-1 transition-colors ${
+                      className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors ${
                         currentConversationId === conv.id
                           ? 'bg-gray-800 text-white'
                           : 'text-gray-400 hover:bg-gray-900'
@@ -336,11 +338,13 @@ export default function Home() {
                           selectConversation(conv.id);
                           setIsMobileSidebarOpen(false);
                         }}
-                        className="flex-1 text-left"
+                        className="flex-1 text-left min-w-0 px-1"
                       >
-                        <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
+                        <div className="text-base truncate overflow-hidden text-ellipsis whitespace-nowrap">
+                          {conv.title || 'Untitled conversation'}
+                        </div>
                         {(conv.updated_at || conv.created_at) && (
-                          <div className="text-sm text-gray-600 mt-0.5">
+                          <div className="text-sm text-gray-600 mt-0.5 truncate">
                             {formatRelativeTime(conv.updated_at || conv.created_at)}
                           </div>
                         )}
@@ -359,7 +363,7 @@ export default function Home() {
                             }
                           });
                         }}
-                        className="text-red-500 hover:text-red-400 transition-colors p-1"
+                        className="flex-shrink-0 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded p-1.5 transition-colors"
                         title="Delete conversation"
                       >
                         🗑️

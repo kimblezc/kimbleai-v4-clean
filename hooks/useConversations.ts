@@ -107,22 +107,26 @@ export function useConversations(userId: string) {
 
   const deleteConversation = useCallback(async (conversationId: string) => {
     try {
-      const response = await fetch(`/api/conversations/${conversationId}`, {
+      const response = await fetch(`/api/conversations/${conversationId}?userId=${userId}`, {
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        setConversations(prev => prev.filter(c => c.id !== conversationId));
-        if (currentConversationId === conversationId) {
-          setCurrentConversationId(null);
-        }
-        await loadConversations();
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to delete conversation:', errorData);
+        throw new Error(errorData.error || 'Failed to delete conversation');
       }
+
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+      }
+      await loadConversations();
     } catch (error) {
       console.error('Failed to delete conversation:', error);
       throw error;
     }
-  }, [currentConversationId, loadConversations]);
+  }, [userId, currentConversationId, loadConversations]);
 
   const togglePin = useCallback(async (conversationId: string, currentlyPinned: boolean) => {
     const newPinnedState = !currentlyPinned;
