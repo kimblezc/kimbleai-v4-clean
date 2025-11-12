@@ -1,6 +1,6 @@
 {
   "version": "8.14.0",
-  "commit": "pending",
+  "commit": "17bead8",
   "lastUpdated": "2025-11-12T18:00:00.000Z",
   "changelog": "✨ DYNAMIC D&D FACTS: Implemented comprehensive fact system with 100+ curated facts covering 50 years of D&D history (1974-2024). Features include: curated lore database (editions, mechanics, monsters, NPCs, artifacts, planes, adventures), smart deduplication using Levenshtein distance & keyword overlap, session-based non-repetition (localStorage tracking), category diversity balancing (ensures mix of topics), AI generation for additional facts with validation, and progressive disclosure (surface → medium → deep lore). Facts never repeat until all 100+ shown, covers everything from THAC0 to Spelljammer to the Lady of Pain. No more boring repetition!",
   "platform": "Railway",
