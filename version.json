@@ -1,6 +1,6 @@
 {
   "version": "8.13.0",
-  "commit": "7d186aa",
+  "commit": "3e3714b",
   "lastUpdated": "2025-11-12T14:00:00.000Z",
   "changelog": "⚡ PERFORMANCE BREAKTHROUGH: Implemented fast-path for simple queries - responses now 2-5s instead of 40s (87% faster). Added skip-RAG logic for general knowledge questions. Added delete functionality for conversations with confirmation dialog. Smart model selection prioritizes speed for simple queries while maintaining quality for complex ones. isSimpleQuery() detects greetings, math, definitions, and general questions, bypassing expensive AutoReferenceButler context gathering. Delete conversations with cascade delete to remove all messages.",
   "platform": "Railway",
