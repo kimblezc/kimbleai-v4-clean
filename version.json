@@ -1,6 +1,6 @@
 {
   "version": "8.9.0",
-  "commit": "pending",
+  "commit": "1bfdec6",
   "lastUpdated": "2025-11-12T08:30:00.000Z",
   "changelog": "💰 COST TRACKING RESTORED: Added Cost Tracker 💰 button to sidebar (featured gradient), created minimalist CostWidget component (shows daily spending, auto-expands with hourly/daily/monthly breakdown), integrated widget into main chat header next to user selector, comprehensive COST_TRACKING_AGENT.md documentation (covers architecture, dashboards, budget enforcement, savings recommendations). Full cost tracking system now visible and accessible. ~400 lines added.",
   "platform": "Railway",
