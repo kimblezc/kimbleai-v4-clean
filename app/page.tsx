@@ -90,12 +90,51 @@ export default function Home() {
     );
   }
 
+  // Auto-select model based on query type
+  const getAutoSelectedModel = (message: string): AIModel => {
+    // Simple queries - use fast models
+    const simplePatterns = [
+      /^(hi|hello|hey|greetings?)$/i,
+      /^(thank you|thanks|thx)$/i,
+      /^(what|who|where|when|how) (is|are|was|were)/i,
+      /^(tell me|give me) (a |an )?(joke|fact|quote)/i,
+      /^(what'?s|what is) \d+/i,
+      /^(explain|define|what does).{0,30}mean/i,
+    ];
+
+    // Complex queries - use quality models
+    const complexKeywords = ['analyze', 'complex', 'detailed', 'comprehensive', 'research'];
+
+    // RAG queries - use quality models
+    const ragKeywords = ['gmail', 'email', 'drive', 'files', 'documents', 'calendar', 'search', 'find'];
+
+    const msg = message.toLowerCase().trim();
+
+    // Check for complex/RAG queries first
+    if (complexKeywords.some(kw => msg.includes(kw)) || ragKeywords.some(kw => msg.includes(kw))) {
+      return 'claude-sonnet-4-5'; // Quality model for complex tasks
+    }
+
+    // Check for simple queries
+    if (msg.length < 100 && simplePatterns.some(p => p.test(message))) {
+      return 'gpt-4o-mini'; // Fast model for simple tasks
+    }
+
+    // Default to balanced model
+    return 'gpt-4o-mini'; // Default to fast for most queries
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim() || sending) return;
     const messageContent = input;
+
+    // Auto-select model based on query type
+    const autoModel = getAutoSelectedModel(messageContent);
+    setSelectedModel(autoModel);
+
     setInput('');
     await sendMessage(messageContent, {
-      selectedModel,
+      selectedModel: autoModel,
       currentProject,
       suggestedTags: activeTagFilters,
       conversationTitle: '',
@@ -510,16 +549,6 @@ export default function Home() {
         <div className={`border-t border-gray-800 bg-gray-950 p-3 md:p-4 ${isMobile ? 'safe-padding-bottom' : ''}`}>
           <div className="max-w-3xl mx-auto">
             <div className="flex items-end gap-2">
-              {/* Model Selector Button - Hidden on very small screens */}
-              <TouchButton
-                onClick={() => setShowModelSelector(!showModelSelector)}
-                size="sm"
-                variant="ghost"
-                className="flex-shrink-0 hidden sm:flex bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400"
-              >
-                {selectedModel.replace('claude-', '').replace('gpt-', '')}
-              </TouchButton>
-
               <input
                 type="text"
                 value={input}
@@ -543,6 +572,20 @@ export default function Home() {
               >
                 {isMobile ? '→' : 'Send'}
               </TouchButton>
+            </div>
+
+            {/* Minimalist Model Indicator */}
+            <div className="flex items-center justify-between mt-2 px-1 text-xs text-gray-500">
+              <span className="font-mono">
+                Model: {selectedModel === 'claude-sonnet-4-5' ? 'Claude Sonnet' :
+                       selectedModel === 'gpt-4o' ? 'GPT-4o' :
+                       selectedModel === 'gpt-4o-mini' ? 'GPT-4o Mini' :
+                       selectedModel === 'claude-3-5-haiku' ? 'Claude Haiku' :
+                       selectedModel}
+              </span>
+              <span className="text-[10px] opacity-70">
+                {selectedModel.includes('mini') || selectedModel.includes('haiku') ? 'Fast' : 'Quality'}
+              </span>
             </div>
 
             {showTags && (

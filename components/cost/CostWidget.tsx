@@ -89,23 +89,16 @@ export function CostWidget({ compact = false }: CostWidgetProps) {
   if (compact) {
     return (
       <div
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all hover:bg-gray-800/50"
-        style={{ backgroundColor: status.bgColor }}
+        className="flex items-center gap-2 px-3 py-1.5 text-xs border border-gray-700 rounded cursor-pointer transition-all hover:border-gray-600"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="text-sm">💰</span>
-        <span className="text-xs font-medium" style={{ color: status.color }}>
+        <span className="font-mono text-gray-600 dark:text-gray-400">
           ${costData.daily.used.toFixed(2)}
         </span>
-        <div className="w-12 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className="h-full transition-all duration-300"
-            style={{
-              width: `${Math.min(costData.daily.percentage, 100)}%`,
-              backgroundColor: status.color,
-            }}
-          />
-        </div>
+        <span className="text-gray-500">/</span>
+        <span className="font-mono text-gray-500">
+          ${costData.daily.limit.toFixed(2)}
+        </span>
       </div>
     );
   }
@@ -126,10 +119,9 @@ export function CostWidget({ compact = false }: CostWidgetProps) {
         }}
       >
         <div className="flex items-center gap-2 flex-1">
-          <span className="text-xl">💰</span>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-gray-300">
+              <span className="text-sm font-mono text-gray-300">
                 ${costData.daily.used.toFixed(2)} / ${costData.daily.limit.toFixed(2)}
               </span>
               <span className="text-xs font-semibold" style={{ color: status.color }}>
@@ -162,7 +154,7 @@ export function CostWidget({ compact = false }: CostWidgetProps) {
             className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
-            📊 Details
+            Details
           </Link>
         </div>
       </div>

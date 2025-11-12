@@ -1,8 +1,8 @@
 {
-  "version": "8.13.1",
-  "commit": "c20c3dd",
-  "lastUpdated": "2025-11-12T15:00:00.000Z",
-  "changelog": "🐛 CRITICAL FIXES: Fixed conversation delete 500 error (changed from request.json() to query params since DELETE request has no body). Fixed delete button UI overflow with proper flex layout (flex-1 for title, flex-shrink-0 for button). Added truncate/ellipsis for long conversation titles. Improved error handling with user_id fallback for backwards compatibility. All delete operations now working correctly.",
+  "version": "8.13.2",
+  "commit": "b7631a2",
+  "lastUpdated": "2025-11-12T15:30:00.000Z",
+  "changelog": "✨ UI REFINEMENT: Implemented automatic model selection based on query type - simple queries use fast models (gpt-4o-mini), complex/RAG queries use quality models (claude-sonnet-4-5). Added minimalist model indicator showing current selection below input. Simplified cost bar styling with no emoji, clean monospace font, minimal borders. All selection happens automatically - no manual dropdown needed. Users don't need to think about model choice, system picks the best for each query.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
