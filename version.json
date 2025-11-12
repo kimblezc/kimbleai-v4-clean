@@ -1,8 +1,8 @@
 {
-  "version": "8.11.0",
-  "commit": "a9bf5dc",
-  "lastUpdated": "2025-11-12T12:00:00.000Z",
-  "changelog": "🦉 ARCHIE V2 DASHBOARD: Replaced old V1 git commit history dashboard with comprehensive database-driven oversight system. New dashboard queries 5 Supabase tables (runs, issues, fix_attempts, metrics, learning) to show: recent runs with full details (found/fixed/skipped/failed, costs, models), recent issues with type/severity/priority/status, top fix strategies with success rates, V2 enhancements section, action buttons (Run V2, View Metrics API, View Issues API). Complete visibility into AI performance, cost tracking, and learning patterns. V2 fully operational with 80% success rate.",
+  "version": "8.12.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-12T13:00:00.000Z",
+  "changelog": "💰 HYBRID COST OPTIMIZATION: Implemented cost-optimized hybrid Archie schedule - V1 runs every 12 hours for simple fixes (lint/dead code/patches @ $5.08/mo), V2 runs daily at 3AM for complex AI-powered fixes with learning ($5.22/mo). Total cost: $10.30/month (92% reduction from $125/month hourly). Both versions tracked in database with full V2 dashboard oversight. Smart scheduling maintains code quality while dramatically reducing OpenAI/Claude costs.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

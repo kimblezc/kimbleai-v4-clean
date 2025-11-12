@@ -5,11 +5,17 @@
  * to schedule jobs in-process.
  *
  * Jobs:
- * - Archie: Every hour
- * - Guardian: Every 6 hours
+ * - Archie V1: Every 12 hours (simple fixes: lint, dead code, patches)
+ * - Archie V2: Daily at 3am (complex fixes with AI and learning)
  * - Backup: Daily at 2am
  * - Index: Every 6 hours
  * - Index Attachments: Every 4 hours
+ *
+ * Cost Optimization:
+ * - V1 (2x/day): $5.08/month (60 runs @ $0.0847)
+ * - V2 (1x/day): $5.22/month (30 runs @ $0.174)
+ * - Total: $10.30/month (vs $125/month hourly V2)
+ * - Savings: 92% reduction!
  */
 
 import cron from 'node-cron';
@@ -70,11 +76,18 @@ export function initCronJobs(): void {
 
   console.log('[CRON] Initializing cron jobs...');
 
-  // Archie: Every hour at minute 0
-  cron.schedule('0 * * * *', () => {
-    callCronEndpoint('/api/archie/run', 'Archie Agent');
+  // Archie V1: Every 12 hours at midnight and noon (simple fixes)
+  cron.schedule('0 0,12 * * *', () => {
+    callCronEndpoint('/api/archie/run', 'Archie V1 (Simple Fixes)');
   }, {
-    timezone: 'America/New_York' // Adjust to your timezone
+    timezone: 'America/New_York'
+  });
+
+  // Archie V2: Daily at 3:00 AM (complex fixes with AI)
+  cron.schedule('0 3 * * *', () => {
+    callCronEndpoint('/api/archie/run?v2=true', 'Archie V2 (Complex Fixes)');
+  }, {
+    timezone: 'America/New_York'
   });
 
   // Backup: Daily at 2:00 AM
@@ -99,7 +112,8 @@ export function initCronJobs(): void {
   });
 
   console.log('[CRON] All cron jobs scheduled:');
-  console.log('[CRON] - Archie Agent: Every hour (0 * * * *)');
+  console.log('[CRON] - Archie V1 (Simple): Every 12 hours at midnight & noon (0 0,12 * * *)');
+  console.log('[CRON] - Archie V2 (Complex): Daily at 3:00 AM (0 3 * * *)');
   console.log('[CRON] - Backup: Daily at 2:00 AM (0 2 * * *)');
   console.log('[CRON] - Index: Every 6 hours (0 */6 * * *)');
   console.log('[CRON] - Index Attachments: Every 4 hours (0 */4 * * *)');
@@ -111,6 +125,8 @@ export function initCronJobs(): void {
 export async function triggerCronJob(jobName: string): Promise<void> {
   const jobs: Record<string, string> = {
     'archie': '/api/archie/run',
+    'archie-v1': '/api/archie/run',
+    'archie-v2': '/api/archie/run?v2=true',
     'backup': '/api/backup/cron',
     'index': '/api/index/cron',
     'index-attachments': '/api/cron/index-attachments',
