@@ -1,8 +1,8 @@
 {
-  "version": "8.10.0",
-  "commit": "14eef85",
-  "lastUpdated": "2025-11-12T08:40:00.000Z",
-  "changelog": "🦉 ARCHIE V2 DEPLOYED: Comprehensive upgrade with 10 major improvements - Database tracking (runs/issues/fixes in 5 tables), issue prioritization (dynamic 1-10 scale), multi-model AI strategy (GPT-4o-mini → GPT-4o → Claude), learning system (remembers successful strategies), specialized fixers (React/TypeScript/Security), cost optimization (dynamic budgets), enhanced testing, comprehensive metrics/analytics, new API endpoints (issues/metrics), backward compatible with V1. Total ~3,500 lines added across 12 new files. Status: Production Ready.",
+  "version": "8.11.0",
+  "commit": "a9bf5dc",
+  "lastUpdated": "2025-11-12T12:00:00.000Z",
+  "changelog": "🦉 ARCHIE V2 DASHBOARD: Replaced old V1 git commit history dashboard with comprehensive database-driven oversight system. New dashboard queries 5 Supabase tables (runs, issues, fix_attempts, metrics, learning) to show: recent runs with full details (found/fixed/skipped/failed, costs, models), recent issues with type/severity/priority/status, top fix strategies with success rates, V2 enhancements section, action buttons (Run V2, View Metrics API, View Issues API). Complete visibility into AI performance, cost tracking, and learning patterns. V2 fully operational with 80% success rate.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
