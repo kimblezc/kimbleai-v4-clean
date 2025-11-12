@@ -1,8 +1,8 @@
 {
-  "version": "8.13.2",
-  "commit": "09360f8",
-  "lastUpdated": "2025-11-12T15:30:00.000Z",
-  "changelog": "✨ UI REFINEMENT: Implemented automatic model selection based on query type - simple queries use fast models (gpt-4o-mini), complex/RAG queries use quality models (claude-sonnet-4-5). Added minimalist model indicator showing current selection below input. Simplified cost bar styling with no emoji, clean monospace font, minimal borders. All selection happens automatically - no manual dropdown needed. Users don't need to think about model choice, system picks the best for each query.",
+  "version": "8.14.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-12T18:00:00.000Z",
+  "changelog": "✨ DYNAMIC D&D FACTS: Implemented comprehensive fact system with 100+ curated facts covering 50 years of D&D history (1974-2024). Features include: curated lore database (editions, mechanics, monsters, NPCs, artifacts, planes, adventures), smart deduplication using Levenshtein distance & keyword overlap, session-based non-repetition (localStorage tracking), category diversity balancing (ensures mix of topics), AI generation for additional facts with validation, and progressive disclosure (surface → medium → deep lore). Facts never repeat until all 100+ shown, covers everything from THAC0 to Spelljammer to the Lady of Pain. No more boring repetition!",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

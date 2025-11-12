@@ -4,21 +4,76 @@ interface UseDndFactsReturn {
   currentFact: string;
   loading: boolean;
   error: string | null;
+  sessionProgress?: string; // e.g., "15/120" facts shown
+  category?: string;
 }
 
 // Fallback facts in case API fails
 const FALLBACK_FACTS = [
-  "The original D&D (1974) had only 3 character classes: Fighter, Magic-User, and Cleric.",
-  "A natural 20 is called a 'critical success' - it automatically succeeds at nearly any task.",
-  "The Deck of Many Things can grant wishes or instantly kill you - many DMs ban it entirely.",
-  "Dungeons & Dragons was created by Gary Gygax and Dave Arneson in 1974 in Lake Geneva, Wisconsin.",
+  "D&D was created in 1974 by Gary Gygax and Dave Arneson in Lake Geneva, Wisconsin. The first edition came in a wood-grain box with three booklets totaling 36 pages.",
+  "THAC0 (To Hit Armor Class 0) was the core combat mechanic in AD&D 1e and 2e. Lower armor class was better, and you subtracted the target's AC from your THAC0 to get the d20 target number.",
+  "The Tarrasque is D&D's most powerful monster: a 50-foot-tall kaiju with regeneration, reflective carapace, and frightful presence. Only one exists, sleeping beneath the earth.",
+  "The Deck of Many Things is a cursed artifact with 22 cards. Drawing can grant wishes, castles, or magic items—or instantly kill you, imprison you, or steal your soul.",
 ];
+
+const SESSION_STORAGE_KEY = 'dnd-facts-session';
+
+/**
+ * Session tracking for facts shown
+ */
+interface SessionData {
+  shownFacts: string[]; // Fact texts shown this session
+  startedAt: number;
+}
+
+/**
+ * Load session data from localStorage
+ */
+function loadSession(): SessionData {
+  if (typeof window === 'undefined') {
+    return { shownFacts: [], startedAt: Date.now() };
+  }
+
+  try {
+    const stored = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as SessionData;
+      // Reset session if older than 24 hours
+      const ageHours = (Date.now() - parsed.startedAt) / (1000 * 60 * 60);
+      if (ageHours > 24) {
+        console.log('[useDndFacts] Session expired, resetting...');
+        return { shownFacts: [], startedAt: Date.now() };
+      }
+      return parsed;
+    }
+  } catch (err) {
+    console.error('[useDndFacts] Error loading session:', err);
+  }
+
+  return { shownFacts: [], startedAt: Date.now() };
+}
+
+/**
+ * Save session data to localStorage
+ */
+function saveSession(data: SessionData): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.error('[useDndFacts] Error saving session:', err);
+  }
+}
 
 export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
   const [currentFact, setCurrentFact] = useState<string>(FALLBACK_FACTS[0]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionProgress, setSessionProgress] = useState<string>('0/120');
+  const [category, setCategory] = useState<string>('loading');
+
+  const sessionDataRef = useRef<SessionData>(loadSession());
   const fallbackIndexRef = useRef<number>(0);
 
   const fetchFact = async () => {
@@ -26,32 +81,47 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
     setError(null);
 
     try {
-      console.log('[useDndFacts] Fetching new fact from API...');
+      const session = sessionDataRef.current;
+
+      // Send session data to API for smart fact selection
       const response = await fetch('/api/dnd-facts', {
         headers: {
-          'x-session-id': sessionIdRef.current,
+          'x-session-shown-facts': session.shownFacts.join(','),
         },
       });
-
-      if (response.status === 429) {
-        // Rate limited - use fallback
-        const data = await response.json();
-        console.log('[useDndFacts] Rate limited:', data.error);
-        setError(data.error);
-
-        // Cycle through fallback facts
-        fallbackIndexRef.current = (fallbackIndexRef.current + 1) % FALLBACK_FACTS.length;
-        setCurrentFact(FALLBACK_FACTS[fallbackIndexRef.current]);
-        return;
-      }
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('[useDndFacts] Received fact:', data.fact, '(cached:', data.cached, ')');
+      console.log('[useDndFacts] Received fact:', data.fact.substring(0, 60) + '...');
+      console.log('[useDndFacts] Metadata:', data.metadata);
+
+      // Update state
       setCurrentFact(data.fact);
+
+      if (data.metadata) {
+        setSessionProgress(data.metadata.sessionProgress || '0/120');
+        setCategory(data.metadata.category || 'unknown');
+      }
+
+      // Track fact in session
+      if (!session.shownFacts.includes(data.fact)) {
+        session.shownFacts.push(data.fact);
+        saveSession(session);
+        console.log(`[useDndFacts] Session progress: ${session.shownFacts.length} facts seen`);
+      }
+
+      // If we've seen all facts, reset session
+      if (data.metadata?.sessionProgress) {
+        const [seen, total] = data.metadata.sessionProgress.split('/').map(Number);
+        if (seen >= total) {
+          console.log('[useDndFacts] All facts shown! Resetting session...');
+          session.shownFacts = [data.fact];
+          saveSession(session);
+        }
+      }
     } catch (err) {
       console.error('[useDndFacts] Error fetching fact:', err);
       setError('Failed to fetch fact');
@@ -59,6 +129,7 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
       // Use fallback facts
       fallbackIndexRef.current = (fallbackIndexRef.current + 1) % FALLBACK_FACTS.length;
       setCurrentFact(FALLBACK_FACTS[fallbackIndexRef.current]);
+      setCategory('fallback');
     } finally {
       setLoading(false);
     }
@@ -79,5 +150,5 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
     return () => clearInterval(interval);
   }, [intervalMs]);
 
-  return { currentFact, loading, error };
+  return { currentFact, loading, error, sessionProgress, category };
 }

@@ -1,72 +1,250 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { LORE_DATABASE, DndFact, getAllCategories } from '@/lib/dnd-lore-database';
+import {
+  isDuplicate,
+  CategoryTracker,
+  selectDiverseFact,
+  shouldGenerateNewFact,
+  isValidFact,
+} from '@/lib/dnd-fact-deduplication';
 
-// In-memory cache for generated facts (unlimited - no cap)
-const factCache: string[] = [];
+// Enhanced cache with fact metadata
+interface CachedFact {
+  text: string;
+  category: string;
+  timesShown: number;
+  addedAt: Date;
+}
+
+const factCache: CachedFact[] = [];
+const categoryTracker = new CategoryTracker();
+let initialized = false;
 
 // Initialize OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function GET(req: NextRequest) {
-  try {
-    // Check if we have cached facts available
-    if (factCache.length > 0) {
-      // Return a random cached fact instantly (no rate limiting)
-      const randomIndex = Math.floor(Math.random() * factCache.length);
-      const fact = factCache[randomIndex];
-      console.log('[DND Facts API] Returning cached fact:', fact);
-      return NextResponse.json({ fact, cached: true });
-    }
+/**
+ * Initialize cache with curated lore database
+ */
+function initializeCache() {
+  if (initialized) return;
 
-    console.log('[DND Facts API] Generating new fact with OpenAI...');
+  console.log('[DND Facts API] Initializing cache with curated lore database...');
 
-    // Generate a new fact using GPT-4o-mini
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a D&D expert who generates interesting, accurate facts about Dungeons & Dragons.
+  // Load all curated facts from database
+  for (const fact of LORE_DATABASE) {
+    factCache.push({
+      text: fact.text,
+      category: fact.category,
+      timesShown: 0,
+      addedAt: new Date(),
+    });
+  }
 
-Generate ONE unique fact about D&D. Mix between these categories:
-- Deep lore (Forgotten Realms, Greyhawk, Planescape, Eberron, Dark Sun)
-- Game mechanics (THAC0, saving throws, spell components, ability scores)
-- Monster ecology (beholders, mind flayers, dragons, tarrasque, aboleths)
-- Historical game development (TSR, Gygax, Arneson, editions)
-- Famous campaigns and modules (Tomb of Horrors, Curse of Strahd, etc.)
-- Iconic NPCs and deities (Vecna, Mordenkainen, Elminster, Tiamat)
-- Planar cosmology (Nine Hells, Abyss, Shadowfell, Feywild)
-- Magical items and artifacts (Deck of Many Things, Sphere of Annihilation)
+  initialized = true;
+  console.log(`[DND Facts API] Cache initialized with ${factCache.length} curated facts`);
+}
+
+/**
+ * Select a fact from cache that hasn't been shown recently
+ */
+function selectFactFromCache(sessionShownFacts: string[]): CachedFact | null {
+  // Filter out facts already shown this session
+  const unseenFacts = factCache.filter(
+    cached => !sessionShownFacts.includes(cached.text)
+  );
+
+  if (unseenFacts.length === 0) {
+    console.log('[DND Facts API] All facts shown this session, resetting...');
+    // All facts shown, return least-shown fact
+    const sorted = [...factCache].sort((a, b) => a.timesShown - b.timesShown);
+    return sorted[0];
+  }
+
+  // Sort by times shown (prefer unseen/rarely shown facts)
+  const sorted = unseenFacts.sort((a, b) => a.timesShown - b.timesShown);
+
+  // Take facts in bottom 50% (least shown)
+  const halfwayPoint = Math.ceil(sorted.length / 2);
+  const leastShown = sorted.slice(0, halfwayPoint);
+
+  // Convert to DndFact format for diversity selection
+  const factsForSelection: DndFact[] = leastShown.map(cached => ({
+    text: cached.text,
+    category: cached.category as any,
+    difficulty: 'medium' as const,
+  }));
+
+  // Use diversity selector to ensure category balance
+  const selectedFact = selectDiverseFact(factsForSelection, categoryTracker);
+
+  // Find original cached fact
+  return leastShown.find(cached => cached.text === selectedFact.text) || leastShown[0];
+}
+
+/**
+ * Generate a new fact using AI with deduplication
+ */
+async function generateNewFact(maxRetries: number = 3): Promise<string | null> {
+  if (!process.env.OPENAI_API_KEY) {
+    console.log('[DND Facts API] No OpenAI key, skipping generation');
+    return null;
+  }
+
+  const categories = getAllCategories();
+  const leastShownCategory = categoryTracker.getLeastShownCategory() || categories[0];
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[DND Facts API] Generating new fact (attempt ${attempt}/${maxRetries})...`);
+      console.log(`[DND Facts API] Target category: ${leastShownCategory}`);
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a D&D expert who generates interesting, accurate facts about Dungeons & Dragons.
+
+Generate ONE unique fact about D&D in the category: ${leastShownCategory}
+
+Categories:
+- editions: Edition history (OD&D, AD&D, 3e, 4e, 5e, 5.5e) and how the game evolved
+- mechanics: Game rules (THAC0, saving throws, vancian magic, advantage/disadvantage)
+- lore: Campaign settings (Forgotten Realms, Greyhawk, Planescape, Spelljammer, Dark Sun, Eberron)
+- monsters: Iconic creatures (tarrasque, beholder, mind flayer, rust monster, gelatinous cube)
+- npcs: Legendary characters (Vecna, Elminster, Drizzt, Raistlin, Mordenkainen)
+- artifacts: Magical items (Deck of Many Things, Eye of Vecna, Sphere of Annihilation)
+- planes: Planar cosmology (Nine Hells, Abyss, Sigil, Mechanus, Limbo, Astral Plane)
+- adventures: Famous modules (Tomb of Horrors, Curse of Strahd, Keep on the Borderlands)
 
 The fact should be:
 - Interesting and surprising
-- 1-2 sentences maximum
+- 1-2 sentences (50-300 characters)
 - Accurate to official D&D lore
-- A mix of well-known and obscure knowledge
+- Cover deep lore, not just surface-level knowledge
+- Include specific names, dates, or details
 
 Return ONLY the fact text, no quotes, no prefix.`,
-        },
-      ],
-      temperature: 1.2, // High temperature for variety
-      max_tokens: 150,
+          },
+        ],
+        temperature: 1.3, // Very high temperature for maximum variety
+        max_tokens: 200,
+      });
+
+      const fact = completion.choices[0]?.message?.content?.trim();
+
+      if (!fact) {
+        console.log('[DND Facts API] Empty response from OpenAI');
+        continue;
+      }
+
+      // Validate fact quality
+      if (!isValidFact(fact)) {
+        console.log('[DND Facts API] Generated fact failed validation');
+        continue;
+      }
+
+      // Check for duplicates
+      const existingTexts = factCache.map(f => f.text);
+      if (isDuplicate(fact, existingTexts, 0.80)) {
+        console.log('[DND Facts API] Generated fact is duplicate, retrying...');
+        continue;
+      }
+
+      // Success! Add to cache
+      console.log('[DND Facts API] Generated valid unique fact:', fact);
+      factCache.push({
+        text: fact,
+        category: leastShownCategory,
+        timesShown: 0,
+        addedAt: new Date(),
+      });
+
+      return fact;
+    } catch (error) {
+      console.error(`[DND Facts API] Error generating fact (attempt ${attempt}):`, error);
+    }
+  }
+
+  console.log('[DND Facts API] Failed to generate unique fact after retries');
+  return null;
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    // Initialize cache with curated database on first request
+    initializeCache();
+
+    // Get session-shown facts from header (comma-separated)
+    const sessionHeader = req.headers.get('x-session-shown-facts') || '';
+    const sessionShownFacts = sessionHeader ? sessionHeader.split(',').map(f => f.trim()) : [];
+
+    console.log(`[DND Facts API] Session has seen ${sessionShownFacts.length} facts`);
+    console.log(`[DND Facts API] Cache size: ${factCache.length} facts`);
+
+    // Try to generate new fact occasionally (if cache needs more diversity)
+    if (shouldGenerateNewFact(factCache.length, 120)) {
+      const newFact = await generateNewFact();
+      if (newFact) {
+        // Return the newly generated fact
+        const cached = factCache.find(f => f.text === newFact)!;
+        cached.timesShown++;
+        categoryTracker.trackFact(cached.category as any);
+
+        return NextResponse.json({
+          fact: newFact,
+          cached: false,
+          metadata: {
+            category: cached.category,
+            cacheSize: factCache.length,
+            sessionProgress: `${sessionShownFacts.length}/${factCache.length}`,
+          },
+        });
+      }
+    }
+
+    // Select fact from cache (prioritize unseen facts)
+    const selectedCached = selectFactFromCache(sessionShownFacts);
+
+    if (!selectedCached) {
+      // Should never happen, but fallback just in case
+      const fallback = LORE_DATABASE[0].text;
+      console.log('[DND Facts API] No facts available, using fallback');
+      return NextResponse.json({ fact: fallback, cached: true });
+    }
+
+    // Update tracking
+    selectedCached.timesShown++;
+    categoryTracker.trackFact(selectedCached.category as any);
+
+    console.log(`[DND Facts API] Selected fact from cache:`, selectedCached.text.substring(0, 60) + '...');
+    console.log(`[DND Facts API] Category: ${selectedCached.category}, Times shown: ${selectedCached.timesShown}`);
+    console.log(`[DND Facts API] Category distribution:`, categoryTracker.getDistribution());
+
+    return NextResponse.json({
+      fact: selectedCached.text,
+      cached: true,
+      metadata: {
+        category: selectedCached.category,
+        timesShown: selectedCached.timesShown,
+        cacheSize: factCache.length,
+        sessionProgress: `${sessionShownFacts.length}/${factCache.length}`,
+        categoryDistribution: categoryTracker.getDistribution(),
+      },
     });
-
-    const fact = completion.choices[0]?.message?.content?.trim() || 'D&D was created in 1974 by Gary Gygax and Dave Arneson.';
-
-    // Add to unlimited cache
-    factCache.push(fact);
-
-    console.log('[DND Facts API] Generated fact:', fact);
-    console.log('[DND Facts API] Cache size:', factCache.length, '(unlimited)');
-
-    return NextResponse.json({ fact, cached: false });
   } catch (error) {
     console.error('[DND Facts API] Error:', error);
 
-    // Fallback fact if API fails
-    const fallbackFact = 'The original D&D (1974) had only 3 character classes: Fighter, Magic-User, and Cleric.';
-    return NextResponse.json({ fact: fallbackFact, cached: false, error: 'API error, using fallback' });
+    // Fallback to first curated fact
+    const fallbackFact = LORE_DATABASE[0].text;
+    return NextResponse.json({
+      fact: fallbackFact,
+      cached: true,
+      error: 'API error, using fallback',
+    });
   }
 }
