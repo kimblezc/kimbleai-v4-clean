@@ -136,6 +136,37 @@ export async function POST(request: NextRequest) {
 
     console.log(`⏱️ [Performance] Request started at ${Date.now() - requestStartTime}ms`);
 
+    // Detect simple queries that don't need RAG
+    function isSimpleQuery(message: string): boolean {
+      const simplePatterns = [
+        /^(hi|hello|hey|greetings?)$/i,
+        /^(thank you|thanks|thx)$/i,
+        /^(what|who|where|when|how) (is|are|was|were)/i,
+        /^(tell me|give me) (a |an )?(joke|fact|quote)/i,
+        /^(what'?s|what is) \d+/i, // math questions
+        /^(explain|define|what does).{0,30}mean/i,
+        /^summarize/i,
+        /^how do (i|you)/i,
+      ];
+
+      const ragKeywords = [
+        'gmail', 'email', 'drive', 'files?', 'documents?',
+        'calendar', 'my ', 'search', 'find'
+      ];
+
+      const msg = message.trim();
+
+      // If message is short and matches simple patterns
+      if (msg.length < 100 && simplePatterns.some(p => p.test(msg))) {
+        // But doesn't mention RAG data sources
+        if (!ragKeywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(msg))) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
     // QUERY COMPLEXITY DETECTION: Warn about complex queries but allow them
     const broadQueryPatterns = [
       /find everything/i,
@@ -179,13 +210,31 @@ export async function POST(request: NextRequest) {
     // 💾 PROMPT CACHING: Check if we have a cached prompt for this query
     const cachedPrompt = PromptCache.getCachedPrompt(userData.id, conversationId, userMessage);
 
+    // 🚀 FAST-PATH OPTIMIZATION: Skip RAG for simple queries
+    const skipRAG = isSimpleQuery(userMessage);
+
+    if (skipRAG) {
+      console.log('[FastPath] 🚀 Simple query detected - skipping RAG for faster response');
+    }
+
     const butler = AutoReferenceButler.getInstance();
     let autoContext;
     let allUserMessages = null;
     let butlerStartTime = Date.now();
     let butlerEndTime = Date.now();
 
-    if (cachedPrompt) {
+    if (skipRAG) {
+      // FAST PATH: Skip RAG entirely for simple queries
+      console.log('[FastPath] Simple query detected - skipping RAG');
+      autoContext = {
+        relevantKnowledge: [],
+        relevantFiles: [],
+        relevantEmails: [],
+        relevantCalendar: [],
+        confidence: 0
+      };
+      allUserMessages = null; // Skip history too
+    } else if (cachedPrompt) {
       // Cache hit! Skip expensive context gathering
       console.log('[PromptCache] Using cached context - skipping Butler and history fetch');
       autoContext = cachedPrompt.autoContext;

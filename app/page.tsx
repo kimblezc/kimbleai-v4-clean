@@ -260,25 +260,48 @@ export default function Home() {
             <div className="mb-4">
               <div className="text-sm text-gray-500 font-medium px-2 mb-2">GENERAL</div>
               {conversationsByProject['unassigned'].map((conv) => (
-                <button
+                <div
                   key={conv.id}
-                  onClick={() => {
-                    selectConversation(conv.id);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md mb-1 transition-colors ${
                     currentConversationId === conv.id
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-400 hover:bg-gray-900'
                   }`}
                 >
-                  <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
-                  {(conv.updated_at || conv.created_at) && (
-                    <div className="text-sm text-gray-600 mt-0.5">
-                      {formatRelativeTime(conv.updated_at || conv.created_at)}
-                    </div>
-                  )}
-                </button>
+                  <button
+                    onClick={() => {
+                      selectConversation(conv.id);
+                      setIsMobileSidebarOpen(false);
+                    }}
+                    className="flex-1 text-left"
+                  >
+                    <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
+                    {(conv.updated_at || conv.created_at) && (
+                      <div className="text-sm text-gray-600 mt-0.5">
+                        {formatRelativeTime(conv.updated_at || conv.created_at)}
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      setConfirmDialog({
+                        isOpen: true,
+                        title: 'Delete Conversation',
+                        message: 'Are you sure you want to delete this conversation? This cannot be undone.',
+                        variant: 'danger',
+                        onConfirm: async () => {
+                          await deleteConversation(conv.id);
+                          setConfirmDialog({ ...confirmDialog, isOpen: false });
+                        }
+                      });
+                    }}
+                    className="text-red-500 hover:text-red-400 transition-colors p-1"
+                    title="Delete conversation"
+                  >
+                    🗑️
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -300,25 +323,48 @@ export default function Home() {
                     <span className="text-gray-600 text-xs">({convs.length})</span>
                   </div>
                   {convs.map((conv) => (
-                    <button
+                    <div
                       key={conv.id}
-                      onClick={() => {
-                        selectConversation(conv.id);
-                        setIsMobileSidebarOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md mb-1 transition-colors ${
                         currentConversationId === conv.id
                           ? 'bg-gray-800 text-white'
                           : 'text-gray-400 hover:bg-gray-900'
                       }`}
                     >
-                      <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
-                      {(conv.updated_at || conv.created_at) && (
-                        <div className="text-sm text-gray-600 mt-0.5">
-                          {formatRelativeTime(conv.updated_at || conv.created_at)}
-                        </div>
-                      )}
-                    </button>
+                      <button
+                        onClick={() => {
+                          selectConversation(conv.id);
+                          setIsMobileSidebarOpen(false);
+                        }}
+                        className="flex-1 text-left"
+                      >
+                        <div className="text-base truncate">{conv.title || 'Untitled conversation'}</div>
+                        {(conv.updated_at || conv.created_at) && (
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {formatRelativeTime(conv.updated_at || conv.created_at)}
+                          </div>
+                        )}
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setConfirmDialog({
+                            isOpen: true,
+                            title: 'Delete Conversation',
+                            message: 'Are you sure you want to delete this conversation? This cannot be undone.',
+                            variant: 'danger',
+                            onConfirm: async () => {
+                              await deleteConversation(conv.id);
+                              setConfirmDialog({ ...confirmDialog, isOpen: false });
+                            }
+                          });
+                        }}
+                        className="text-red-500 hover:text-red-400 transition-colors p-1"
+                        title="Delete conversation"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   ))}
                 </div>
               );
