@@ -1,8 +1,8 @@
 {
-  "version": "8.7.0",
-  "commit": "4fdc22c",
-  "lastUpdated": "2025-11-12T07:22:00.000Z",
-  "changelog": "🔧 CRITICAL FIXES: Fixed NEXTAUTH_URL domain redirect (kimbleai.com stays in address bar, not Railway URL), implemented Railway cron scheduling for Archie & Guardian (in-process node-cron, instrumentation.ts, 5 jobs: Archie hourly, Guardian 6hrs, backup daily, indexes 4-6hrs), fixed 10-day agent inactivity. Mobile Phase 2 complete (PWA icons, haptics, swipe gestures, PromptDialog). All agents now autonomous. ~1,000 lines added.",
+  "version": "8.8.0",
+  "commit": "8871879",
+  "lastUpdated": "2025-11-12T07:55:00.000Z",
+  "changelog": "🗑️ REMOVED GUARDIAN: Guardian agent removed (not needed - projects/tags are stable). Archie verified working (finds 5 issues, can't auto-fix these specific ones - working as designed, only commits successful fixes). Simplified cron to 4 jobs: Archie hourly, backup daily, indexes 4-6hrs. ~1,300 lines removed.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
