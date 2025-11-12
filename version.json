@@ -1,8 +1,8 @@
 {
-  "version": "8.8.0",
-  "commit": "8871879",
-  "lastUpdated": "2025-11-12T07:55:00.000Z",
-  "changelog": "🗑️ REMOVED GUARDIAN: Guardian agent removed (not needed - projects/tags are stable). Archie verified working (finds 5 issues, can't auto-fix these specific ones - working as designed, only commits successful fixes). Simplified cron to 4 jobs: Archie hourly, backup daily, indexes 4-6hrs. ~1,300 lines removed.",
+  "version": "8.9.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-12T08:30:00.000Z",
+  "changelog": "💰 COST TRACKING RESTORED: Added Cost Tracker 💰 button to sidebar (featured gradient), created minimalist CostWidget component (shows daily spending, auto-expands with hourly/daily/monthly breakdown), integrated widget into main chat header next to user selector, comprehensive COST_TRACKING_AGENT.md documentation (covers architecture, dashboards, budget enforcement, savings recommendations). Full cost tracking system now visible and accessible. ~400 lines added.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

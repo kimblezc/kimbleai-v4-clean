@@ -15,6 +15,7 @@ import { IconButton, TouchButton } from '../components/TouchButton';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
+import { CostWidget } from '../components/cost/CostWidget';
 import versionData from '../version.json';
 import { formatRelativeTime } from '@/lib/chat-utils';
 
@@ -356,14 +357,16 @@ export default function Home() {
             </div>
           </div>
 
-          {/* User Selector */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm transition-colors"
-            >
-              {currentUser === 'zach' ? 'Zach' : 'Rebecca'}
-            </button>
+          {/* Cost Widget & User Selector */}
+          <div className="flex items-center gap-4">
+            <CostWidget />
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm transition-colors"
+              >
+                {currentUser === 'zach' ? 'Zach' : 'Rebecca'}
+              </button>
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-40 bg-gray-900 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
                 <button
@@ -396,6 +399,7 @@ export default function Home() {
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
 

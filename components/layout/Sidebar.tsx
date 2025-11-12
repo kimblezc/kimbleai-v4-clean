@@ -15,6 +15,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigation = [
     { name: 'Chat', href: '/', icon: '💬' },
     { name: 'Archie', href: '/archie', icon: '🦉', featured: true },
+    { name: 'Costs', href: '/costs', icon: '💰', featured: true },
     { name: 'Projects', href: '/projects', icon: '📋' },
     { name: 'Files', href: '/files', icon: '📁' },
     { name: 'Search', href: '/search', icon: '🔍' },
