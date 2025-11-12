@@ -1,6 +1,6 @@
 {
   "version": "8.14.1",
-  "commit": "859bcec",
+  "commit": "f2faf9b",
   "lastUpdated": "2025-11-12T18:45:00.000Z",
   "changelog": "🐛 CRITICAL FIXES: (1) D&D Facts API - Verified all library exports and API endpoint working correctly with 100+ curated facts, deduplication system, and category diversity. (2) Archie Cost Tracking - Added database cost tracking to all 3 OpenAI API calls in archie-agent.ts using trackAPICall() from cost-monitor.ts. Archie bot costs now appear in CostWidget under 'archie-bot' user with detailed metadata (task type, run type). Cost tracking includes dead_code_removal, typescript_error_fix, and general_ai_fix tasks. Build verified successful with no compilation errors.",
   "platform": "Railway",
