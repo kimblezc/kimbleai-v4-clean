@@ -1,7 +1,7 @@
 {
   "version": "8.10.0",
-  "commit": "1df3474",
-  "lastUpdated": "2025-11-12T08:31:00.000Z",
+  "commit": "14eef85",
+  "lastUpdated": "2025-11-12T08:40:00.000Z",
   "changelog": "🦉 ARCHIE V2 DEPLOYED: Comprehensive upgrade with 10 major improvements - Database tracking (runs/issues/fixes in 5 tables), issue prioritization (dynamic 1-10 scale), multi-model AI strategy (GPT-4o-mini → GPT-4o → Claude), learning system (remembers successful strategies), specialized fixers (React/TypeScript/Security), cost optimization (dynamic budgets), enhanced testing, comprehensive metrics/analytics, new API endpoints (issues/metrics), backward compatible with V1. Total ~3,500 lines added across 12 new files. Status: Production Ready.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
