@@ -1,8 +1,8 @@
 {
-  "version": "8.14.0",
-  "commit": "17bead8",
-  "lastUpdated": "2025-11-12T18:00:00.000Z",
-  "changelog": "✨ DYNAMIC D&D FACTS: Implemented comprehensive fact system with 100+ curated facts covering 50 years of D&D history (1974-2024). Features include: curated lore database (editions, mechanics, monsters, NPCs, artifacts, planes, adventures), smart deduplication using Levenshtein distance & keyword overlap, session-based non-repetition (localStorage tracking), category diversity balancing (ensures mix of topics), AI generation for additional facts with validation, and progressive disclosure (surface → medium → deep lore). Facts never repeat until all 100+ shown, covers everything from THAC0 to Spelljammer to the Lady of Pain. No more boring repetition!",
+  "version": "8.14.1",
+  "commit": "bb4c6e9",
+  "lastUpdated": "2025-11-12T18:45:00.000Z",
+  "changelog": "🐛 CRITICAL FIXES: (1) D&D Facts API - Verified all library exports and API endpoint working correctly with 100+ curated facts, deduplication system, and category diversity. (2) Archie Cost Tracking - Added database cost tracking to all 3 OpenAI API calls in archie-agent.ts using trackAPICall() from cost-monitor.ts. Archie bot costs now appear in CostWidget under 'archie-bot' user with detailed metadata (task type, run type). Cost tracking includes dead_code_removal, typescript_error_fix, and general_ai_fix tasks. Build verified successful with no compilation errors.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

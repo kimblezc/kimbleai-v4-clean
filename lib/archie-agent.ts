@@ -14,6 +14,7 @@ import OpenAI from 'openai';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
+import { trackAPICall, calculateCost } from './cost-monitor';
 
 // Optional OpenAI client (only needed for AI-powered fixes, currently unused)
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -454,7 +455,7 @@ export class ArchieAgent {
       const usage = response.usage;
 
       if (usage) {
-        this.trackCost(usage.prompt_tokens, usage.completion_tokens, this.aiModel);
+        await this.trackCost(usage.prompt_tokens, usage.completion_tokens, this.aiModel, 'dead_code_removal');
       }
 
       if (!fixedCode) return false;
@@ -554,7 +555,7 @@ RULES:
       const usage = response.usage;
 
       if (usage) {
-        this.trackCost(usage.prompt_tokens, usage.completion_tokens, model);
+        await this.trackCost(usage.prompt_tokens, usage.completion_tokens, model, 'typescript_error_fix');
       }
 
       if (!fixedCode || fixedCode === 'CANNOT_FIX') {
@@ -660,7 +661,7 @@ Fix the issue described while maintaining code quality and functionality.`
       const usage = response.usage;
 
       if (usage) {
-        this.trackCost(usage.prompt_tokens, usage.completion_tokens, this.aiModelAdvanced);
+        await this.trackCost(usage.prompt_tokens, usage.completion_tokens, this.aiModelAdvanced, 'general_ai_fix');
       }
 
       if (!fixedCode || fixedCode === 'CANNOT_FIX') {
@@ -821,9 +822,9 @@ Co-Authored-By: Archie <archie@kimbleai.com>`;
   }
 
   /**
-   * Track cost after AI call
+   * Track cost after AI call (both locally and in database)
    */
-  private trackCost(inputTokens: number, outputTokens: number, model: string) {
+  private async trackCost(inputTokens: number, outputTokens: number, model: string, taskType?: string) {
     const pricing: Record<string, { input: number; output: number }> = {
       'gpt-4o-mini': { input: 0.15, output: 0.60 },
       'gpt-4o': { input: 2.50, output: 10.00 }
@@ -837,6 +838,27 @@ Co-Authored-By: Archie <archie@kimbleai.com>`;
 
     this.estimatedCost += cost;
     console.log(`      💰 Cost: $${cost.toFixed(4)} (Total: $${this.estimatedCost.toFixed(4)})`);
+
+    // Track in database for CostWidget display
+    try {
+      await trackAPICall({
+        user_id: 'archie-bot', // Special user ID for Archie
+        model: model,
+        endpoint: '/api/archie/run',
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        cost_usd: cost,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          task: taskType || 'archie-maintenance',
+          run_type: this.dryRun ? 'dry-run' : 'live'
+        }
+      });
+      console.log(`      📊 Cost tracked to database`);
+    } catch (error: any) {
+      console.log(`      ⚠️  Failed to track cost in database: ${error.message}`);
+      // Don't fail the fix if cost tracking fails
+    }
   }
 }
 
