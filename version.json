@@ -1,6 +1,6 @@
 {
   "version": "8.13.1",
-  "commit": "pending",
+  "commit": "c20c3dd",
   "lastUpdated": "2025-11-12T15:00:00.000Z",
   "changelog": "🐛 CRITICAL FIXES: Fixed conversation delete 500 error (changed from request.json() to query params since DELETE request has no body). Fixed delete button UI overflow with proper flex layout (flex-1 for title, flex-shrink-0 for button). Added truncate/ellipsis for long conversation titles. Improved error handling with user_id fallback for backwards compatibility. All delete operations now working correctly.",
   "platform": "Railway",
