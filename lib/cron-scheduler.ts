@@ -77,13 +77,6 @@ export function initCronJobs(): void {
     timezone: 'America/New_York' // Adjust to your timezone
   });
 
-  // Guardian: Every 6 hours at minute 0
-  cron.schedule('0 */6 * * *', () => {
-    callCronEndpoint('/api/guardian/run', 'Guardian Agent');
-  }, {
-    timezone: 'America/New_York'
-  });
-
   // Backup: Daily at 2:00 AM
   cron.schedule('0 2 * * *', () => {
     callCronEndpoint('/api/backup/cron', 'Backup');
@@ -107,7 +100,6 @@ export function initCronJobs(): void {
 
   console.log('[CRON] All cron jobs scheduled:');
   console.log('[CRON] - Archie Agent: Every hour (0 * * * *)');
-  console.log('[CRON] - Guardian Agent: Every 6 hours (0 */6 * * *)');
   console.log('[CRON] - Backup: Daily at 2:00 AM (0 2 * * *)');
   console.log('[CRON] - Index: Every 6 hours (0 */6 * * *)');
   console.log('[CRON] - Index Attachments: Every 4 hours (0 */4 * * *)');
@@ -119,7 +111,6 @@ export function initCronJobs(): void {
 export async function triggerCronJob(jobName: string): Promise<void> {
   const jobs: Record<string, string> = {
     'archie': '/api/archie/run',
-    'guardian': '/api/guardian/run',
     'backup': '/api/backup/cron',
     'index': '/api/index/cron',
     'index-attachments': '/api/cron/index-attachments',
