@@ -1,8 +1,8 @@
 {
-  "version": "8.6.0",
-  "commit": "ed89f7f",
-  "lastUpdated": "2025-11-11T20:45:00.000Z",
-  "changelog": "📱 MOBILE UX PHASE 2: Advanced mobile interactions complete! PWA icons generated (D20 design, 6 sizes including maskable), PromptDialog component (mobile-optimized text input, keyboard support), haptic feedback system (5 patterns integrated: light/medium/heavy/error/success), swipe gestures (swipe-to-dismiss modals with visual feedback, 100px threshold), performance verified (build successful, 0 new TS errors, bundle size unchanged). Desktop 100% preserved. ~800 lines added. Ready for deployment.",
+  "version": "8.7.0",
+  "commit": "9d80597",
+  "lastUpdated": "2025-11-12T07:15:00.000Z",
+  "changelog": "🔧 CRITICAL FIXES: Fixed NEXTAUTH_URL domain redirect (kimbleai.com stays in address bar, not Railway URL), implemented Railway cron scheduling for Archie & Guardian (in-process node-cron, instrumentation.ts, 5 jobs: Archie hourly, Guardian 6hrs, backup daily, indexes 4-6hrs), fixed 10-day agent inactivity. Mobile Phase 2 complete (PWA icons, haptics, swipe gestures, PromptDialog). All agents now autonomous. ~1,000 lines added.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
