@@ -1,7 +1,7 @@
 {
   "version": "8.12.0",
-  "commit": "0c18c65",
-  "lastUpdated": "2025-11-12T13:00:00.000Z",
+  "commit": "6e03684",
+  "lastUpdated": "2025-11-12T13:30:00.000Z",
   "changelog": "💰 HYBRID COST OPTIMIZATION: Implemented cost-optimized hybrid Archie schedule - V1 runs every 12 hours for simple fixes (lint/dead code/patches @ $5.08/mo), V2 runs daily at 3AM for complex AI-powered fixes with learning ($5.22/mo). Total cost: $10.30/month (92% reduction from $125/month hourly). Both versions tracked in database with full V2 dashboard oversight. Smart scheduling maintains code quality while dramatically reducing OpenAI/Claude costs.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
