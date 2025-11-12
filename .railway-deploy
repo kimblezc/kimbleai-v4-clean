@@ -1,5 +1,5 @@
 FORCE_DEPLOY=true
-TIMESTAMP=2025-11-12T11:18:37Z
-COMMIT=02067f9
-VERSION=v8.11.0
-# Archie V2 Dashboard with database oversight
+TIMESTAMP=2025-11-12T13:35:00Z
+COMMIT=1d701e0
+VERSION=v8.12.0
+# Hybrid cost optimization - V1 every 12h, V2 daily at 3AM
