@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { archieAgent } from '@/lib/archie-agent';
+import { enhancedArchieAgent } from '@/lib/archie-agent-v2';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
 
     // Check for manual trigger or cron auth
     const trigger = request.nextUrl.searchParams.get('trigger');
+    const useV2 = request.nextUrl.searchParams.get('v2') === 'true';
     const authHeader = request.headers.get('authorization');
     const secretParam = request.nextUrl.searchParams.get('secret');
     const cronSecret = process.env.CRON_SECRET;
@@ -37,11 +39,19 @@ export async function GET(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // Run Archie
-    const result = await archieAgent.run();
+    // Run Archie (v1 or v2)
+    let result;
+    if (useV2) {
+      console.log('Running Archie V2 (Enhanced)...');
+      result = await enhancedArchieAgent.runEnhanced();
+    } else {
+      console.log('Running Archie V1 (Legacy)...');
+      result = await archieAgent.run();
+    }
 
     return NextResponse.json({
       success: true,
+      version: useV2 ? 'v2' : 'v1',
       ...result,
       triggerType: isManualTrigger ? 'manual' : 'cron'
     });
