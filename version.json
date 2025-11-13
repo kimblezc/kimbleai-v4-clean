@@ -1,8 +1,8 @@
 {
-  "version": "8.14.3",
-  "commit": "4d665c9",
-  "lastUpdated": "2025-11-13T07:00:00.000Z",
-  "changelog": "✨ UX IMPROVEMENT: Simplified cost tracker widget - removed percentage display and status badge (Low/Medium/High/Critical) for cleaner, more minimal interface. Widget now shows only cost spent/limit with progress bar and Details link. Maintains all functionality (hover expansion, auto-refresh, color-coded status) with less visual clutter.",
+  "version": "8.15.0",
+  "commit": "ceb726c",
+  "lastUpdated": "2025-11-13T16:55:00.000Z",
+  "changelog": "🔧 CRITICAL FIX: Google API Token Refresh - Fixed intermittent Google API failures (Drive, Gmail, Calendar) by implementing automatic OAuth token refresh. Created lib/google-token-refresh.ts with 5-minute expiration buffer, thread-safe refresh, comprehensive error handling. Added /api/google/integration-test endpoint for diagnostics. All Google API routes now auto-refresh tokens before expiration. Fixes 401 errors that occurred unpredictably mid-session.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
