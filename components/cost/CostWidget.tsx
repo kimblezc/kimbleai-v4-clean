@@ -124,9 +124,6 @@ export function CostWidget({ compact = false }: CostWidgetProps) {
               <span className="text-sm font-mono text-gray-300">
                 ${costData.daily.used.toFixed(2)} / ${costData.daily.limit.toFixed(2)}
               </span>
-              <span className="text-xs font-semibold" style={{ color: status.color }}>
-                {costData.daily.percentage.toFixed(0)}%
-              </span>
             </div>
             <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
               <div
@@ -140,15 +137,6 @@ export function CostWidget({ compact = false }: CostWidgetProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span
-            className="text-xs font-semibold px-2 py-1 rounded-full"
-            style={{
-              backgroundColor: status.color + '20',
-              color: status.color,
-            }}
-          >
-            {status.label}
-          </span>
           <Link
             href="/costs"
             className="text-xs text-blue-400 hover:text-blue-300 transition-colors"

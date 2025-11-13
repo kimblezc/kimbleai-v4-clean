@@ -1,8 +1,8 @@
 {
-  "version": "8.14.2",
-  "commit": "077560e",
-  "lastUpdated": "2025-11-13T05:50:00.000Z",
-  "changelog": "🐛 UX FIX: Removed persistent 'Failed to fetch fact' error message from D&D facts display. Error was showing unnecessarily even though fallback facts were working correctly. Now error state is properly cleared on successful fetches and not shown when using fallback facts, providing cleaner UX. Facts continue to work perfectly with 122+ curated D&D facts, smart deduplication, and session-based non-repetition.",
+  "version": "8.14.3",
+  "commit": "pending",
+  "lastUpdated": "2025-11-13T07:00:00.000Z",
+  "changelog": "✨ UX IMPROVEMENT: Simplified cost tracker widget - removed percentage display and status badge (Low/Medium/High/Critical) for cleaner, more minimal interface. Widget now shows only cost spent/limit with progress bar and Details link. Maintains all functionality (hover expansion, auto-refresh, color-coded status) with less visual clutter.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
