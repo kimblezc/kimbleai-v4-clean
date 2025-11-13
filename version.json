@@ -1,6 +1,6 @@
 {
   "version": "8.15.0",
-  "commit": "pending",
+  "commit": "05e1a64",
   "lastUpdated": "2025-11-13T17:10:00.000Z",
   "changelog": "🧠 CRITICAL FIX: Context Retention Restored - Fixed AI amnesia issue where chat forgot previous messages in same conversation. Root cause: useMessages hook only sent current message, not full history. Fixed by sending complete conversation history from frontend. Removed redundant truncated history from system prompt (~500 token savings). Increased history limit from 15 to 20 messages. AI now properly remembers context across multi-turn conversations. Generated comprehensive PERFORMANCE_OPTIMIZATION_REPORT.md analyzing the 'went too hard on optimization' issue.",
   "platform": "Railway",
