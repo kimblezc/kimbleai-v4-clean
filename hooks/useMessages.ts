@@ -115,13 +115,22 @@ export function useMessages(
       setSending(true);
 
       try {
+        // CRITICAL FIX: Send full conversation history, not just current message
+        // This enables proper context retention across multi-turn conversations
+        const allMessages = [
+          ...messages.map(msg => ({
+            role: msg.role,
+            content: msg.content,
+            projectId: msg.projectId || options?.currentProject
+          })),
+          { role: 'user', content, projectId: options?.currentProject }
+        ];
+
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            messages: [
-              { role: 'user', content, projectId: options?.currentProject }
-            ],
+            messages: allMessages,
             conversationId,
             userId,
             preferredModel: options?.selectedModel,

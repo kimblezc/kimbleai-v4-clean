@@ -1,8 +1,8 @@
 {
   "version": "8.15.0",
-  "commit": "ceb726c",
-  "lastUpdated": "2025-11-13T16:55:00.000Z",
-  "changelog": "🔧 CRITICAL FIX: Google API Token Refresh - Fixed intermittent Google API failures (Drive, Gmail, Calendar) by implementing automatic OAuth token refresh. Created lib/google-token-refresh.ts with 5-minute expiration buffer, thread-safe refresh, comprehensive error handling. Added /api/google/integration-test endpoint for diagnostics. All Google API routes now auto-refresh tokens before expiration. Fixes 401 errors that occurred unpredictably mid-session.",
+  "commit": "pending",
+  "lastUpdated": "2025-11-13T17:10:00.000Z",
+  "changelog": "🧠 CRITICAL FIX: Context Retention Restored - Fixed AI amnesia issue where chat forgot previous messages in same conversation. Root cause: useMessages hook only sent current message, not full history. Fixed by sending complete conversation history from frontend. Removed redundant truncated history from system prompt (~500 token savings). Increased history limit from 15 to 20 messages. AI now properly remembers context across multi-turn conversations. Generated comprehensive PERFORMANCE_OPTIMIZATION_REPORT.md analyzing the 'went too hard on optimization' issue.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

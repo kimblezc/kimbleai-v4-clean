@@ -300,15 +300,17 @@ export async function POST(request: NextRequest) {
       butlerEndTime = Date.now();
       console.log(`⏱️ [Performance] AutoReferenceButler completed in ${butlerEndTime - butlerStartTime}ms (confidence: ${Math.round(autoContext.confidence)}%)`);
 
-      // PERFORMANCE: Skip message history for simple general knowledge queries
+      // CONTEXT RETENTION: Fetch message history for RAG relevance scoring
+      // Note: Frontend now sends full conversation history in messages array,
+      // so we don't need to fetch it for the AI conversation itself
       if (autoContext.confidence > 0) {
-        // Only fetch history if context was gathered (not a simple general query)
+        // Only fetch history if context was gathered (used for RAG relevance only)
         const { data: messageData, error: messagesError } = await supabase
           .from('messages')
           .select('content, role, created_at, conversation_id')
           .eq('user_id', userData.id)
           .order('created_at', { ascending: false })
-          .limit(15);
+          .limit(20); // Increased from 15 for better context
 
         if (messagesError) {
           console.error('Messages retrieval error:', messagesError);
@@ -336,17 +338,6 @@ This query requires searching multiple data sources. To avoid timeouts:
 
     // Build comprehensive context with auto-referenced data
     const systemMessageContent = `You are KimbleAI, an advanced digital butler AI assistant with PERFECT MEMORY and AUTOMATIC DATA REFERENCING.${complexQueryInstructions}
-
-🦉 **ABOUT ARCHIE - THE AUTONOMOUS AGENT**
-There is an autonomous agent named Archie who works alongside you:
-- Archie is a wise horned owl with piercing green eyes
-- He runs every 5 minutes (24/7) via Vercel cron
-- He monitors the system for errors, performance issues, and optimization opportunities
-- He autonomously detects problems, generates fixes, tests them, and deploys automatically
-- He logs all his work to the database (agent_tasks, agent_logs, agent_findings, agent_reports)
-- Users can see Archie's work at /accomplishments and /agent dashboards
-- If users ask about "Archie" or "the agent", explain that he's the autonomous background agent
-- You (KimbleAI chat assistant) and Archie (autonomous agent) are different but work together
 
 🤖 **AUTOMATIC CONTEXT RETRIEVAL ACTIVE**
 You automatically reference ALL relevant data from:
@@ -391,11 +382,6 @@ You have active access to Gmail, Google Drive, and File Management tools:
 
 🔄 **AUTO-REFERENCED CONTEXT** (Confidence: ${Math.round(autoContext.confidence)}%):
 ${formattedAutoContext}
-
-📝 **Recent Conversation History** (${allUserMessages?.length || 0} messages):
-${allUserMessages ? allUserMessages.slice(0, 15).map(m =>
-  `[${new Date(m.created_at).toLocaleDateString()}] ${m.role}: ${m.content.substring(0, 100)}...`
-).join('\n') : 'No previous messages'}
 
 ⚡ **RESPONSE FORMATTING REQUIREMENTS**:
 - **ALWAYS use proper markdown formatting** for professional, readable responses
