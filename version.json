@@ -1,6 +1,6 @@
 {
   "version": "8.14.3",
-  "commit": "pending",
+  "commit": "4d665c9",
   "lastUpdated": "2025-11-13T07:00:00.000Z",
   "changelog": "✨ UX IMPROVEMENT: Simplified cost tracker widget - removed percentage display and status badge (Low/Medium/High/Critical) for cleaner, more minimal interface. Widget now shows only cost spent/limit with progress bar and Details link. Maintains all functionality (hover expansion, auto-refresh, color-coded status) with less visual clutter.",
   "platform": "Railway",
