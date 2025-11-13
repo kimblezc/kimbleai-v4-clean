@@ -78,7 +78,7 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
 
   const fetchFact = async () => {
     setLoading(true);
-    setError(null);
+    setError(null); // Clear any previous errors
 
     try {
       const session = sessionDataRef.current;
@@ -100,6 +100,7 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
 
       // Update state
       setCurrentFact(data.fact);
+      setError(null); // Explicitly clear error on success
 
       if (data.metadata) {
         setSessionProgress(data.metadata.sessionProgress || '0/120');
@@ -124,9 +125,11 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
       }
     } catch (err) {
       console.error('[useDndFacts] Error fetching fact:', err);
-      setError('Failed to fetch fact');
+      // Only set error if this is a persistent failure
+      // Don't show error message since we have fallback facts working
+      // setError('Failed to fetch fact'); // REMOVED: Don't show error to user
 
-      // Use fallback facts
+      // Use fallback facts silently
       fallbackIndexRef.current = (fallbackIndexRef.current + 1) % FALLBACK_FACTS.length;
       setCurrentFact(FALLBACK_FACTS[fallbackIndexRef.current]);
       setCategory('fallback');
