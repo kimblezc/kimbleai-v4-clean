@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
+import { getValidAccessToken } from '@/lib/google-token-refresh';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,28 +36,32 @@ export async function POST(request: NextRequest) {
   try {
     const { action, userId = 'zach', eventData, timeRange } = await request.json();
 
-    // Get user's Google token
-    const { data: tokenData } = await supabase
-      .from('user_tokens')
-      .select('access_token, refresh_token')
-      .eq('user_id', userId)
-      .single();
+    // Get valid access token (with automatic refresh if needed)
+    const accessToken = await getValidAccessToken(userId);
 
-    if (!tokenData?.access_token) {
+    if (!accessToken) {
       return NextResponse.json({
-        error: 'User not authenticated with Google'
+        error: 'User not authenticated with Google. Please sign in again.',
+        needsAuth: true
       }, { status: 401 });
     }
 
-    // Initialize Google Calendar client
+    // Get refresh token for OAuth client
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    // Initialize Google Calendar client with refreshed token
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.NEXTAUTH_URL + '/api/auth/callback/google'
     );
     oauth2Client.setCredentials({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token
+      access_token: accessToken,
+      refresh_token: tokenData?.refresh_token
     });
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
@@ -431,27 +436,32 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get user's Google token
-    const { data: tokenData } = await supabase
-      .from('user_tokens')
-      .select('access_token')
-      .eq('user_id', userId)
-      .single();
+    // Get valid access token (with automatic refresh if needed)
+    const accessToken = await getValidAccessToken(userId);
 
-    if (!tokenData?.access_token) {
+    if (!accessToken) {
       return NextResponse.json({
-        error: 'User not authenticated with Google'
+        error: 'User not authenticated with Google. Please sign in again.',
+        needsAuth: true
       }, { status: 401 });
     }
 
-    // Initialize Google Calendar client
+    // Get refresh token for OAuth client
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    // Initialize Google Calendar client with refreshed token
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.NEXTAUTH_URL + '/api/auth/callback/google'
     );
     oauth2Client.setCredentials({
-      access_token: tokenData.access_token
+      access_token: accessToken,
+      refresh_token: tokenData?.refresh_token
     });
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });

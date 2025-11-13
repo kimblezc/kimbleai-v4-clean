@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
+import { getValidAccessToken } from '@/lib/google-token-refresh';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,28 +36,32 @@ export async function POST(request: NextRequest) {
   try {
     const { action = 'search', query, userId = 'zach', fileData, projectId } = await request.json();
 
-    // Get user's Google token
-    const { data: tokenData } = await supabase
-      .from('user_tokens')
-      .select('access_token, refresh_token')
-      .eq('user_id', userId)
-      .single();
+    // Get valid access token (with automatic refresh if needed)
+    const accessToken = await getValidAccessToken(userId);
 
-    if (!tokenData?.access_token) {
+    if (!accessToken) {
       return NextResponse.json({
-        error: 'User not authenticated with Google'
+        error: 'User not authenticated with Google. Please sign in again.',
+        needsAuth: true
       }, { status: 401 });
     }
 
-    // Initialize Google Drive client
+    // Get refresh token for OAuth client
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    // Initialize Google Drive client with refreshed token
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.NEXTAUTH_URL + '/api/auth/callback/google'
     );
     oauth2Client.setCredentials({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token
+      access_token: accessToken,
+      refresh_token: tokenData?.refresh_token
     });
 
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
@@ -105,38 +110,33 @@ export async function GET(request: NextRequest) {
 
     console.log(`[DRIVE-API] GET request - action: ${action}, userId: ${userId}, folderId: ${folderId}`);
 
-    // Get user's Google token
-    const { data: tokenData, error: tokenError } = await supabase
-      .from('user_tokens')
-      .select('access_token, refresh_token')
-      .eq('user_id', userId)
-      .single();
+    // Get valid access token (with automatic refresh if needed)
+    const accessToken = await getValidAccessToken(userId);
 
-    if (tokenError) {
-      console.error('[DRIVE-API] Token fetch error:', tokenError);
-      return NextResponse.json({
-        error: 'Failed to fetch authentication tokens',
-        details: tokenError.message
-      }, { status: 500 });
-    }
-
-    if (!tokenData?.access_token) {
-      console.error('[DRIVE-API] No access token found for user:', userId);
+    if (!accessToken) {
+      console.error('[DRIVE-API] No valid access token for user:', userId);
       return NextResponse.json({
         error: 'User not authenticated with Google. Please sign in again.',
         needsAuth: true
       }, { status: 401 });
     }
 
-    // Initialize Google Drive client
+    // Get refresh token for OAuth client
+    const { data: tokenData } = await supabase
+      .from('user_tokens')
+      .select('refresh_token')
+      .eq('user_id', userId)
+      .single();
+
+    // Initialize Google Drive client with refreshed token
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.NEXTAUTH_URL + '/api/auth/callback/google'
     );
     oauth2Client.setCredentials({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token
+      access_token: accessToken,
+      refresh_token: tokenData?.refresh_token
     });
 
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
