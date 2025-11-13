@@ -19,7 +19,7 @@ const handler = NextAuth({
           // Publishing status: Testing (eliminates "unverified app" warning for test users)
           scope: 'openid email profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar',
           access_type: 'offline',
-          // Removed 'prompt: consent' to reduce clicks - only shows consent on first login
+          prompt: 'consent', // Force consent screen to re-grant permissions and get fresh tokens
         }
       }
     })
@@ -35,6 +35,8 @@ const handler = NextAuth({
       if (account) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
+        // Store expiration time (expires_at is Unix timestamp in seconds, convert to milliseconds)
+        token.expiresAt = account.expires_at ? account.expires_at * 1000 : Date.now() + 3600000;
       }
       return token;
     },
@@ -43,7 +45,7 @@ const handler = NextAuth({
 
       // Store tokens in Supabase for the user
       if (session.user?.email) {
-        const userId = session.user.email === 'rebecca@kimbleai.com' ? 'rebecca' : 'zach';
+        const userId = session.user.email === 'becky.aza.kimble@gmail.com' ? 'rebecca' : 'zach';
 
         try {
           await supabase.from('user_tokens').upsert({
@@ -51,8 +53,11 @@ const handler = NextAuth({
             email: session.user.email,
             access_token: token.accessToken,
             refresh_token: token.refreshToken,
+            expires_at: token.expiresAt, // Store as Unix timestamp (milliseconds)
             updated_at: new Date().toISOString()
           });
+
+          console.log('[NextAuth] Stored tokens for', userId, '- expires at:', new Date(token.expiresAt as number).toISOString());
         } catch (error) {
           console.error('Error storing user tokens:', error);
         }
