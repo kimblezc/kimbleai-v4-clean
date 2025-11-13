@@ -84,9 +84,11 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
       const session = sessionDataRef.current;
 
       // Send session data to API for smart fact selection
+      // Base64 encode to handle emoji and special characters in HTTP headers (ISO-8859-1 requirement)
+      const sessionData = btoa(encodeURIComponent(session.shownFacts.join(',')));
       const response = await fetch('/api/dnd-facts', {
         headers: {
-          'x-session-shown-facts': session.shownFacts.join(','),
+          'x-session-shown-facts': sessionData,
         },
       });
 

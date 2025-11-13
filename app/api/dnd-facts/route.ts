@@ -179,9 +179,21 @@ export async function GET(req: NextRequest) {
     // Initialize cache with curated database on first request
     initializeCache();
 
-    // Get session-shown facts from header (comma-separated)
+    // Get session-shown facts from header (base64-encoded, comma-separated)
     const sessionHeader = req.headers.get('x-session-shown-facts') || '';
-    const sessionShownFacts = sessionHeader ? sessionHeader.split(',').map(f => f.trim()) : [];
+    let sessionShownFacts: string[] = [];
+
+    if (sessionHeader) {
+      try {
+        // Decode base64 and URI component encoding
+        const decoded = decodeURIComponent(Buffer.from(sessionHeader, 'base64').toString('utf-8'));
+        sessionShownFacts = decoded ? decoded.split(',').map(f => f.trim()).filter(Boolean) : [];
+      } catch (err) {
+        console.error('[DND Facts API] Error decoding session header:', err);
+        // Fall back to treating as plain text for backwards compatibility
+        sessionShownFacts = sessionHeader.split(',').map(f => f.trim()).filter(Boolean);
+      }
+    }
 
     console.log(`[DND Facts API] Session has seen ${sessionShownFacts.length} facts`);
     console.log(`[DND Facts API] Cache size: ${factCache.length} facts`);
