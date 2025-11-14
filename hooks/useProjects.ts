@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 export interface Project {
   id: string;
@@ -75,17 +76,20 @@ export function useProjects(userId: string) {
           setProjects(prev =>
             prev.map(p => p.id === tempId ? data.project : p)
           );
+          toast.success(`Project "${projectData.name}" created`);
           return data.project;
         } else {
           const error = await response.json();
           // Revert optimistic update on error
           setProjects(prev => prev.filter(p => p.id !== tempId));
+          toast.error('Failed to create project');
           throw new Error(error.error || 'Failed to create project');
         }
       } catch (error) {
         console.error('Failed to create project:', error);
         // Revert optimistic update on error
         setProjects(prev => prev.filter(p => p.id !== tempId));
+        toast.error('Failed to create project');
         throw error;
       }
     },
@@ -126,6 +130,7 @@ export function useProjects(userId: string) {
           setProjects(prev =>
             prev.map(p => p.id === projectId ? data.project : p)
           );
+          toast.success('Project updated');
         } else {
           const error = await response.json();
           // Revert optimistic update on error
@@ -134,6 +139,7 @@ export function useProjects(userId: string) {
               prev.map(p => p.id === projectId ? originalProject : p)
             );
           }
+          toast.error('Failed to update project');
           throw new Error(error.error || 'Failed to update project');
         }
       } catch (error) {
@@ -144,6 +150,7 @@ export function useProjects(userId: string) {
             prev.map(p => p.id === projectId ? originalProject : p)
           );
         }
+        toast.error('Failed to update project');
         throw error;
       }
     },
@@ -179,14 +186,18 @@ export function useProjects(userId: string) {
           if (deletedProject) {
             setProjects(prev => [...prev, deletedProject]);
           }
+          toast.error('Failed to delete project');
           throw new Error(error.error || 'Failed to delete project');
         }
+
+        toast.success('Project deleted');
       } catch (error) {
         console.error('Failed to delete project:', error);
         // Revert optimistic update on error
         if (deletedProject) {
           setProjects(prev => [...prev, deletedProject]);
         }
+        toast.error('Failed to delete project');
         throw error;
       }
     },

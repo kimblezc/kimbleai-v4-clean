@@ -3,13 +3,14 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Components } from 'react-markdown';
+import { CodeBlock } from './ui/CodeBlock';
 
 interface FormattedMessageProps {
   content: string;
-  role: 'user' | 'assistant';
+  role?: 'user' | 'assistant';
 }
 
-export default function FormattedMessage({ content, role }: FormattedMessageProps) {
+export default function FormattedMessage({ content, role = 'assistant' }: FormattedMessageProps) {
   if (role === 'user') {
     // User messages are plain text, no formatting needed
     return (
@@ -119,38 +120,25 @@ export default function FormattedMessage({ content, role }: FormattedMessageProp
             </li>
           ),
 
-          // Code blocks
-          code: (props: any) => (
-            props.inline ? (
-              <code style={{
-                backgroundColor: '#2a2a2a',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                color: '#4a9eff',
-                fontFamily: 'Monaco, Consolas, "Courier New", monospace'
-              }}>
-                {props.children}
-              </code>
-            ) : (
-              <pre style={{
-                backgroundColor: '#1a1a1a',
-                border: '1px solid #333',
-                borderRadius: '8px',
-                padding: '12px',
-                marginBottom: '12px',
-                overflow: 'auto'
-              }}>
-                <code style={{
-                  color: '#ffffff',
-                  fontSize: '14px',
-                  fontFamily: 'Monaco, Consolas, "Courier New", monospace'
-                }}>
-                  {props.children}
-                </code>
-              </pre>
-            )
-          ),
+          // Code blocks with copy button
+          code: (props: any) => {
+            const { inline, className, children } = props;
+            // Extract language from className (format: language-xxx)
+            const match = /language-(\w+)/.exec(className || '');
+            const language = match ? match[1] : undefined;
+            const code = String(children).replace(/\n$/, '');
+
+            return (
+              <CodeBlock
+                code={code}
+                language={language}
+                inline={inline}
+                className={className}
+              >
+                {children}
+              </CodeBlock>
+            );
+          },
 
           // Blockquotes
           blockquote: ({ children }) => (

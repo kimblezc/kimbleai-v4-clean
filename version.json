@@ -1,8 +1,8 @@
 {
-  "version": "8.15.0",
-  "commit": "05e1a64",
-  "lastUpdated": "2025-11-13T17:10:00.000Z",
-  "changelog": "🧠 CRITICAL FIX: Context Retention Restored - Fixed AI amnesia issue where chat forgot previous messages in same conversation. Root cause: useMessages hook only sent current message, not full history. Fixed by sending complete conversation history from frontend. Removed redundant truncated history from system prompt (~500 token savings). Increased history limit from 15 to 20 messages. AI now properly remembers context across multi-turn conversations. Generated comprehensive PERFORMANCE_OPTIMIZATION_REPORT.md analyzing the 'went too hard on optimization' issue.",
+  "version": "8.17.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-14T08:30:00.000Z",
+  "changelog": "🔔 TOAST NOTIFICATIONS & AUTOSAVE: Comprehensive UX feedback system implemented across entire application. Added react-hot-toast Toaster component with dark theme styling (top-right position, 5s duration, color-coded icons). Toast notifications integrated into: useMessages (send success/error), FileUploader (upload progress + completion), useProjects (create/update/delete feedback), useConversations (delete/create notifications). Created useAutosave hook with 2s delay, localStorage persistence, draft restoration on mount. Integrated autosave in main chat with draft loading (shows 'Draft restored' toast) and auto-clear on send. All user actions now provide immediate visual feedback. ~300 lines added across 6 files (1 new hook, 5 modified).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

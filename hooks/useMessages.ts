@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { scrollToBottom } from '@/lib/chat-utils';
+import toast from 'react-hot-toast';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -138,6 +139,7 @@ export function useMessages(
         });
 
         if (!response.ok) {
+          toast.error('Failed to send message');
           throw new Error('Failed to send message');
         }
 
@@ -183,6 +185,7 @@ export function useMessages(
         }
       } catch (error) {
         console.error('Error sending message:', error);
+        toast.error('Failed to send message');
         setMessages(prev => [
           ...prev,
           {

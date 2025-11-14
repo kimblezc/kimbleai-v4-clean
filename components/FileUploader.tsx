@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from './ui/Button';
+import toast from 'react-hot-toast';
 
 interface FileUploadItem {
   id: string;
@@ -85,9 +86,13 @@ export default function FileUploader({
 
         if (data.status === 'completed') {
           console.log(`Upload completed: ${fileId}`);
+          const fileName = uploadItems.find(item => item.id === itemId)?.file.name || 'File';
+          toast.success(`${fileName} uploaded successfully`);
           return true;
         } else if (data.status === 'failed') {
           console.error(`Upload failed: ${data.error}`);
+          const fileName = uploadItems.find(item => item.id === itemId)?.file.name || 'File';
+          toast.error(`${fileName} upload failed`);
           return true;
         }
 
@@ -121,6 +126,8 @@ export default function FileUploader({
 
   // Upload single file
   const uploadFile = async (item: FileUploadItem) => {
+    const uploadToastId = toast.loading(`Uploading ${item.file.name}...`);
+
     try {
       const formData = new FormData();
       formData.append('file', item.file);
@@ -141,6 +148,7 @@ export default function FileUploader({
       const result = await response.json();
 
       if (result.success) {
+        toast.loading('Processing file...', { id: uploadToastId });
         setUploadItems(prev => prev.map(i =>
           i.id === item.id
             ? {
@@ -155,7 +163,9 @@ export default function FileUploader({
 
         // Start polling for status
         pollUploadStatus(item.id, result.fileId);
+        toast.dismiss(uploadToastId);
       } else {
+        toast.error(`Upload failed: ${result.error}`, { id: uploadToastId });
         setUploadItems(prev => prev.map(i =>
           i.id === item.id
             ? {
@@ -170,6 +180,7 @@ export default function FileUploader({
       }
     } catch (error: any) {
       console.error('Upload error:', error);
+      toast.error('Upload failed', { id: uploadToastId });
       setUploadItems(prev => prev.map(i =>
         i.id === item.id
           ? {

@@ -6,6 +6,9 @@ import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
 import { useProjects } from '@/hooks/useProjects';
 import { useDndFacts } from '@/hooks/useDndFacts';
+import { useAutosave } from '@/hooks/useAutosave';
+import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
+import toast from 'react-hot-toast';
 import FormattedMessage from '../components/FormattedMessage';
 import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
@@ -13,6 +16,8 @@ import UnifiedSearch from '../components/search/UnifiedSearch';
 import { ModelSelector, type AIModel } from '../components/model-selector/ModelSelector';
 import { IconButton, TouchButton } from '../components/TouchButton';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { KeyboardShortcutsDialog } from '../components/KeyboardShortcutsDialog';
+import { MessageLengthIndicator } from '../components/ui/MessageLengthIndicator';
 import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
 import { CostWidget } from '../components/cost/CostWidget';
@@ -41,6 +46,7 @@ export default function Home() {
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -53,6 +59,9 @@ export default function Home() {
     message: '',
     onConfirm: () => {},
   });
+
+  // Refs for keyboard shortcuts
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Device detection for responsive design
   const deviceType = useDeviceType();
@@ -80,6 +89,133 @@ export default function Home() {
 
   const projectsHook = useProjects(currentUser);
   const { projects, currentProject, selectProject, updateProject, deleteProject } = projectsHook;
+
+  // Autosave hook - saves draft every 2 seconds
+  const { clearDraft, loadDraft } = useAutosave({
+    key: `chat-draft-${currentConversationId || 'new'}`,
+    value: input,
+    delay: 2000,
+    showToast: false, // Don't show toast for every autosave
+  });
+
+  // Load draft on mount or when conversation changes
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && draft !== input) {
+      setInput(draft);
+      toast('Draft restored', { icon: '📝', duration: 3000 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentConversationId]);
+
+  // Keyboard shortcuts configuration
+  const shortcuts: KeyboardShortcut[] = [
+    // Navigation
+    {
+      key: 'k',
+      ctrl: true,
+      callback: () => setIsSearchOpen(true),
+      description: 'Open search',
+      category: 'Navigation',
+    },
+    {
+      key: 'n',
+      ctrl: true,
+      callback: () => handleNewChat(),
+      description: 'New conversation',
+      category: 'Navigation',
+    },
+    {
+      key: '/',
+      ctrl: true,
+      callback: () => setIsMobileSidebarOpen(prev => !prev),
+      description: 'Toggle sidebar',
+      category: 'Navigation',
+    },
+    {
+      key: 'p',
+      ctrl: true,
+      callback: () => selectProject(''),
+      description: 'Go to General project',
+      category: 'Navigation',
+    },
+    {
+      key: 'j',
+      ctrl: true,
+      callback: () => setIsSearchOpen(true),
+      description: 'Quick switcher',
+      category: 'Navigation',
+    },
+    // Actions
+    {
+      key: 'Enter',
+      ctrl: true,
+      callback: () => handleSendMessage(),
+      description: 'Send message',
+      category: 'Actions',
+    },
+    {
+      key: 'Escape',
+      callback: () => {
+        // Close any open modals
+        setShowModelSelector(false);
+        setShowGoogleServices(false);
+        setIsSearchOpen(false);
+        setShowUserMenu(false);
+        setShowShortcutsDialog(false);
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+      },
+      description: 'Close modals/dialogs',
+      category: 'Actions',
+    },
+    {
+      key: 'm',
+      ctrl: true,
+      callback: () => setShowModelSelector(prev => !prev),
+      description: 'Toggle model selector',
+      category: 'Actions',
+    },
+    {
+      key: 't',
+      ctrl: true,
+      callback: () => setShowTags(prev => !prev),
+      description: 'Toggle tags',
+      category: 'Actions',
+    },
+    // View
+    {
+      key: 'd',
+      ctrl: true,
+      shift: true,
+      callback: () => {
+        // Toggle dark mode (future feature)
+        toast('Dark mode toggle coming soon', { icon: '🌙', duration: 2000 });
+      },
+      description: 'Toggle dark mode',
+      category: 'View',
+    },
+    {
+      key: 'i',
+      ctrl: true,
+      callback: () => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      },
+      description: 'Focus input',
+      category: 'View',
+    },
+    // Help
+    {
+      key: '?',
+      callback: () => setShowShortcutsDialog(true),
+      description: 'Show keyboard shortcuts',
+      category: 'General',
+    },
+  ];
+
+  // Enable keyboard shortcuts
+  useKeyboardShortcuts(shortcuts, !sending);
 
   if (status === 'loading' || status === 'unauthenticated') {
     return (
@@ -133,6 +269,7 @@ export default function Home() {
     setSelectedModel(autoModel);
 
     setInput('');
+    clearDraft(); // Clear autosaved draft after sending
     await sendMessage(messageContent, {
       selectedModel: autoModel,
       currentProject,
@@ -550,6 +687,7 @@ export default function Home() {
           <div className="max-w-3xl mx-auto">
             <div className="flex items-end gap-2">
               <input
+                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -573,6 +711,13 @@ export default function Home() {
                 {isMobile ? '→' : 'Send'}
               </TouchButton>
             </div>
+
+            {/* Message Length Indicator */}
+            {input.length > 0 && (
+              <div className="mt-2">
+                <MessageLengthIndicator text={input} />
+              </div>
+            )}
 
             {/* Minimalist Model Indicator */}
             <div className="flex items-center justify-between mt-2 px-1 text-xs text-gray-500">
@@ -664,6 +809,13 @@ export default function Home() {
         variant={confirmDialog.variant}
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
+
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcutsDialog
+        open={showShortcutsDialog}
+        onClose={() => setShowShortcutsDialog(false)}
+        shortcuts={shortcuts}
       />
     </div>
   );

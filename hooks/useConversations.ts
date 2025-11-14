@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { groupConversationsByDate } from '@/lib/chat-utils';
+import toast from 'react-hot-toast';
 
 export interface Conversation {
   id: string;
@@ -114,6 +115,7 @@ export function useConversations(userId: string) {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Failed to delete conversation:', errorData);
+        toast.error('Failed to delete conversation');
         throw new Error(errorData.error || 'Failed to delete conversation');
       }
 
@@ -121,9 +123,11 @@ export function useConversations(userId: string) {
       if (currentConversationId === conversationId) {
         setCurrentConversationId(null);
       }
+      toast.success('Conversation deleted');
       await loadConversations();
     } catch (error) {
       console.error('Failed to delete conversation:', error);
+      toast.error('Failed to delete conversation');
       throw error;
     }
   }, [userId, currentConversationId, loadConversations]);
@@ -177,6 +181,7 @@ export function useConversations(userId: string) {
 
   const createNewConversation = useCallback(() => {
     setCurrentConversationId(null);
+    toast.success('New conversation created');
   }, []);
 
   const removeOrphanedConversation = useCallback((conversationId: string) => {
