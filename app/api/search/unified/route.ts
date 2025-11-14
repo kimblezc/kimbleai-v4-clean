@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
+import { getValidAccessToken } from '@/lib/google-token-refresh';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -165,15 +166,11 @@ async function searchGmail(userId: string, query: string, limit: number): Promis
   try {
     console.log(`[Unified Search] Searching Gmail for: "${query}"`);
 
-    // Get user's Google token
-    const { data: tokenData } = await supabase
-      .from('user_tokens')
-      .select('access_token, refresh_token')
-      .eq('user_id', userId)
-      .single();
+    // Get valid access token (auto-refreshes if expired)
+    const accessToken = await getValidAccessToken(userId);
 
-    if (!tokenData?.access_token) {
-      console.log('[Unified Search] Gmail: User not authenticated');
+    if (!accessToken) {
+      console.log('[Unified Search] Gmail: User not authenticated or token refresh failed');
       return [];
     }
 
@@ -185,8 +182,7 @@ async function searchGmail(userId: string, query: string, limit: number): Promis
     );
 
     oauth2Client.setCredentials({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token
+      access_token: accessToken
     });
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -254,15 +250,11 @@ async function searchDrive(userId: string, query: string, limit: number): Promis
   try {
     console.log(`[Unified Search] Searching Drive for: "${query}"`);
 
-    // Get user's Google token
-    const { data: tokenData } = await supabase
-      .from('user_tokens')
-      .select('access_token, refresh_token')
-      .eq('user_id', userId)
-      .single();
+    // Get valid access token (auto-refreshes if expired)
+    const accessToken = await getValidAccessToken(userId);
 
-    if (!tokenData?.access_token) {
-      console.log('[Unified Search] Drive: User not authenticated');
+    if (!accessToken) {
+      console.log('[Unified Search] Drive: User not authenticated or token refresh failed');
       return [];
     }
 
@@ -274,8 +266,7 @@ async function searchDrive(userId: string, query: string, limit: number): Promis
     );
 
     oauth2Client.setCredentials({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token
+      access_token: accessToken
     });
 
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
