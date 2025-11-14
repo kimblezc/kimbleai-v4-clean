@@ -1,6 +1,6 @@
 {
   "version": "8.19.0",
-  "commit": "PLACEHOLDER",
+  "commit": "5bffe89",
   "lastUpdated": "2025-11-14T12:00:00.000Z",
   "changelog": "⚡ PHASE 3 POWER FEATURES: Message editing, conversation search, context menus, smart input. Message Editing: Double-click to edit user messages, shows 'Edited' badge with timestamp, PUT API endpoint at /api/messages/[id], edited_at column added to DB. Conversation Search: Ctrl+F to search, highlights matches, next/prev navigation, match counter (e.g., '3 of 12'). Context Menus: Right-click on messages (Copy, Edit, Share), conversations (Rename, Pin, Duplicate, Export, Delete), keyboard accessible. Smart Input: Autocomplete for @mentions (projects/files), /commands (/help, /clear, /export, /new, /shortcuts, /search), #tags. Tab/Enter to complete, fuzzy matching, dropdown with icons. ~1,400 lines added (9 new files). Build verified 0 errors.",
   "platform": "Railway",
