@@ -1,8 +1,8 @@
 {
-  "version": "8.20.0",
-  "commit": "3cd4bb2",
-  "lastUpdated": "2025-11-14T14:00:00.000Z",
-  "changelog": "feat: Phase 4 Polish - Dark Mode with theme toggle (light/dark/system), Ctrl+Shift+D keyboard shortcut, theme button in header. Undo/Redo hook created (useUndoRedo) with toast undo buttons and 5-second undo window. Tailwind darkMode: class enabled. ~250 lines added.",
+  "version": "8.21.0",
+  "commit": "TBD",
+  "lastUpdated": "2025-11-14T14:30:00.000Z",
+  "changelog": "chore: Phase 5 Cleanup - Removed 50,111 lines of bloated documentation (96 files). Deleted session reports, archived agent specs, mobile analysis, performance reports, integration diagnostics. Reduced docs from 141k to 91k lines. Total codebase: 303k → 253k lines (-50k, -16%).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
