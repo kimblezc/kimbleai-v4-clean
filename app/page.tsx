@@ -137,7 +137,7 @@ export default function Home() {
     const draft = loadDraft();
     if (draft && draft !== input) {
       setInput(draft);
-      toast('Draft restored', { icon: '📝', duration: 3000 });
+      toast('Draft restored', { icon: '📝', duration: 3000, position: 'bottom-left' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConversationId]);

@@ -150,8 +150,8 @@ export function CostWidget({ compact = false }: CostWidgetProps) {
       {/* Expanded state */}
       {expanded && (
         <div
-          className="absolute top-full left-0 right-0 mt-2 p-4 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50"
-          style={{ minWidth: '320px' }}
+          className="absolute top-full right-0 mt-2 p-4 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50"
+          style={{ minWidth: '320px', maxWidth: '360px' }}
         >
           <div className="space-y-3">
             {/* Hourly */}
