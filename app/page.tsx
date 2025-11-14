@@ -9,8 +9,15 @@ import { useDndFacts } from '@/hooks/useDndFacts';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
 import { useAutoScroll } from '@/hooks/useAutoScroll';
+import { useMessageSearch } from '@/hooks/useMessageSearch';
+import { useContextMenu } from '@/hooks/useContextMenu';
+import { SlashCommand } from '@/hooks/useAutocomplete';
 import toast from 'react-hot-toast';
 import FormattedMessage from '../components/FormattedMessage';
+import EditableMessage from '../components/EditableMessage';
+import ConversationSearch from '../components/ConversationSearch';
+import SmartInput from '../components/SmartInput';
+import ContextMenu, { ContextMenuItem } from '../components/ui/ContextMenu';
 import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
 import UnifiedSearch from '../components/search/UnifiedSearch';
@@ -50,6 +57,7 @@ export default function Home() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
+  const [isConversationSearchOpen, setIsConversationSearchOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -89,10 +97,26 @@ export default function Home() {
   } = conversationsHook;
 
   const messagesHook = useMessages(currentConversationId, currentUser, removeOrphanedConversation);
-  const { messages, sending, messagesEndRef, sendMessage, clearMessages } = messagesHook;
+  const { messages, sending, messagesEndRef, sendMessage, clearMessages, setMessages } = messagesHook;
 
   const projectsHook = useProjects(currentUser);
   const { projects, currentProject, selectProject, updateProject, deleteProject } = projectsHook;
+
+  // Message search hook
+  const messageSearch = useMessageSearch(messages);
+  const {
+    searchQuery,
+    updateSearchQuery,
+    totalMatches,
+    currentMatchIndex,
+    currentMatch,
+    nextMatch,
+    previousMatch,
+    clearSearch,
+  } = messageSearch;
+
+  // Context menu hook
+  const contextMenu = useContextMenu();
 
   // Autosave hook - saves draft every 2 seconds
   const { clearDraft, loadDraft } = useAutosave({
@@ -118,6 +142,51 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConversationId]);
 
+  // Define slash commands for autocomplete
+  const slashCommands: SlashCommand[] = [
+    {
+      command: 'help',
+      description: 'Show help dialog',
+      action: () => toast('Help coming soon', { icon: '❓' }),
+    },
+    {
+      command: 'clear',
+      description: 'Clear current conversation',
+      action: () => {
+        setConfirmDialog({
+          isOpen: true,
+          title: 'Clear Conversation',
+          message: 'Are you sure you want to clear all messages?',
+          variant: 'warning',
+          onConfirm: () => {
+            clearMessages();
+            setConfirmDialog({ ...confirmDialog, isOpen: false });
+          },
+        });
+      },
+    },
+    {
+      command: 'export',
+      description: 'Export conversation',
+      action: () => toast('Export coming soon', { icon: '📤' }),
+    },
+    {
+      command: 'new',
+      description: 'New conversation',
+      action: () => handleNewChat(),
+    },
+    {
+      command: 'shortcuts',
+      description: 'Show keyboard shortcuts',
+      action: () => setShowShortcutsDialog(true),
+    },
+    {
+      command: 'search',
+      description: 'Search in conversation',
+      action: () => setIsConversationSearchOpen(true),
+    },
+  ];
+
   // Keyboard shortcuts configuration
   const shortcuts: KeyboardShortcut[] = [
     // Navigation
@@ -126,6 +195,13 @@ export default function Home() {
       ctrl: true,
       callback: () => setIsSearchOpen(true),
       description: 'Open search',
+      category: 'Navigation',
+    },
+    {
+      key: 'f',
+      ctrl: true,
+      callback: () => setIsConversationSearchOpen(true),
+      description: 'Search in conversation',
       category: 'Navigation',
     },
     {
@@ -234,7 +310,12 @@ export default function Home() {
         setIsSearchOpen(false);
         setShowUserMenu(false);
         setShowShortcutsDialog(false);
+        setIsConversationSearchOpen(false);
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        contextMenu.hideContextMenu();
+        if (isConversationSearchOpen) {
+          clearSearch();
+        }
       },
       description: 'Close modals/dialogs',
       category: 'Actions',
@@ -353,6 +434,128 @@ export default function Home() {
     createNewConversation();
     clearMessages();
     setIsMobileSidebarOpen(false);
+  };
+
+  // Handle message editing
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: newContent,
+          userId: currentUser,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update message');
+      }
+
+      const data = await response.json();
+
+      // Update local messages state
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, content: newContent, editedAt: data.message.edited_at }
+            : msg
+        )
+      );
+    } catch (error) {
+      console.error('Error editing message:', error);
+      throw error;
+    }
+  };
+
+  // Get context menu items for a message
+  const getMessageContextMenuItems = (message: any, index: number): ContextMenuItem[] => {
+    const items: ContextMenuItem[] = [];
+
+    // Copy message
+    items.push({
+      label: 'Copy',
+      icon: '📋',
+      onClick: () => {
+        navigator.clipboard.writeText(message.content);
+        toast.success('Message copied to clipboard');
+      },
+    });
+
+    // Edit message (only for user's own messages)
+    if (message.role === 'user' && message.id) {
+      items.push({
+        label: 'Edit',
+        icon: '✏️',
+        onClick: () => {
+          // Trigger edit mode by clicking on the message
+          toast('Double-click message to edit', { icon: 'ℹ️' });
+        },
+      });
+    }
+
+    items.push({ label: '', icon: '', onClick: () => {}, divider: true });
+
+    // Share message (future feature)
+    items.push({
+      label: 'Share',
+      icon: '🔗',
+      disabled: true,
+      onClick: () => {},
+    });
+
+    return items;
+  };
+
+  // Get context menu items for a conversation
+  const getConversationContextMenuItems = (conv: any): ContextMenuItem[] => {
+    return [
+      {
+        label: 'Rename',
+        icon: '✏️',
+        onClick: () => {
+          toast('Conversation rename coming soon', { icon: '🚧' });
+        },
+      },
+      {
+        label: conv.is_pinned ? 'Unpin' : 'Pin',
+        icon: conv.is_pinned ? '📌' : '📍',
+        onClick: async () => {
+          await togglePin(conv.id, conv.is_pinned);
+        },
+      },
+      {
+        label: 'Duplicate',
+        icon: '📑',
+        disabled: true,
+        onClick: () => {},
+      },
+      { label: '', icon: '', onClick: () => {}, divider: true },
+      {
+        label: 'Export',
+        icon: '📤',
+        disabled: true,
+        onClick: () => {},
+      },
+      { label: '', icon: '', onClick: () => {}, divider: true },
+      {
+        label: 'Delete',
+        icon: '🗑️',
+        danger: true,
+        onClick: () => {
+          setConfirmDialog({
+            isOpen: true,
+            title: 'Delete Conversation',
+            message: 'Are you sure you want to delete this conversation? This cannot be undone.',
+            variant: 'danger',
+            onConfirm: async () => {
+              await deleteConversation(conv.id);
+              setConfirmDialog({ ...confirmDialog, isOpen: false });
+            },
+          });
+        },
+      },
+    ];
   };
 
   // Get time-based greeting in CET timezone
@@ -749,6 +952,21 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Conversation Search */}
+        <ConversationSearch
+          isOpen={isConversationSearchOpen}
+          searchQuery={searchQuery}
+          onSearchChange={updateSearchQuery}
+          totalMatches={totalMatches}
+          currentMatchIndex={currentMatchIndex}
+          onNext={nextMatch}
+          onPrevious={previousMatch}
+          onClose={() => {
+            setIsConversationSearchOpen(false);
+            clearSearch();
+          }}
+        />
+
         {/* Messages Area */}
         <div ref={containerRef} className="flex-1 overflow-y-auto p-4 relative">
           {messages.length === 0 ? (
@@ -770,14 +988,28 @@ export default function Home() {
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
               {messages.map((msg, idx) => (
-                <div key={idx} className="flex gap-4">
+                <div
+                  key={msg.id || idx}
+                  className="flex gap-4"
+                  onContextMenu={(e) => {
+                    contextMenu.showContextMenu(e, { message: msg, index: idx });
+                  }}
+                >
                   <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm ${
                     msg.role === 'user' ? 'bg-gray-700' : 'bg-gray-800'
                   }`}>
                     {msg.role === 'user' ? 'U' : 'AI'}
                   </div>
                   <div className="flex-1 pt-1">
-                    <FormattedMessage content={msg.content} />
+                    <EditableMessage
+                      id={msg.id}
+                      content={msg.content}
+                      role={msg.role}
+                      editedAt={msg.editedAt}
+                      isOwn={msg.userId === currentUser || !msg.userId}
+                      onSave={msg.id ? (newContent) => handleEditMessage(msg.id!, newContent) : undefined}
+                      highlight={searchQuery || undefined}
+                    />
                   </div>
                 </div>
               ))}
@@ -814,21 +1046,18 @@ export default function Home() {
         <div className={`border-t border-gray-800 bg-gray-950 p-3 md:p-4 ${isMobile ? 'safe-padding-bottom' : ''}`}>
           <div className="max-w-3xl mx-auto">
             <div className="flex items-end gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                placeholder="Ask me anything..."
-                disabled={sending}
-                className="flex-1 px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-base focus:outline-none focus:border-gray-600 transition-colors min-h-[44px]"
-              />
+              <div className="flex-1">
+                <SmartInput
+                  value={input}
+                  onChange={setInput}
+                  onSubmit={handleSendMessage}
+                  placeholder="Ask me anything..."
+                  disabled={sending}
+                  projects={projects.map(p => ({ id: p.id, name: p.name }))}
+                  tags={activeTagFilters}
+                  commands={slashCommands}
+                />
+              </div>
 
               <TouchButton
                 onClick={handleSendMessage}
@@ -944,6 +1173,21 @@ export default function Home() {
         open={showShortcutsDialog}
         onClose={() => setShowShortcutsDialog(false)}
         shortcuts={shortcuts}
+      />
+
+      {/* Context Menu */}
+      <ContextMenu
+        ref={contextMenu.menuRef}
+        isVisible={contextMenu.isVisible}
+        position={contextMenu.position}
+        items={
+          contextMenu.data?.message
+            ? getMessageContextMenuItems(contextMenu.data.message, contextMenu.data.index)
+            : contextMenu.data?.conversation
+            ? getConversationContextMenuItems(contextMenu.data.conversation)
+            : []
+        }
+        onClose={contextMenu.hideContextMenu}
       />
     </div>
   );

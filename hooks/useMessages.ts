@@ -3,9 +3,12 @@ import { scrollToBottom } from '@/lib/chat-utils';
 import toast from 'react-hot-toast';
 
 export interface Message {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
+  editedAt?: string | null;
+  userId?: string;
   projectId?: string;
   tags?: string[];
   modelInfo?: {
@@ -57,9 +60,12 @@ export function useMessages(
         if (data.conversation && data.conversation.messages) {
           console.log('[loadMessages] Found', data.conversation.messages.length, 'messages');
           const formattedMessages = data.conversation.messages.map((msg: any) => ({
+            id: msg.id,
             role: msg.role,
             content: msg.content,
             timestamp: msg.created_at,
+            editedAt: msg.edited_at,
+            userId: msg.user_id,
             modelInfo: msg.metadata?.modelInfo,
             metadata: msg.metadata,
           }));
