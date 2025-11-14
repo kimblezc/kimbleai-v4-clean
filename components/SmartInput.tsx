@@ -134,7 +134,7 @@ export default function SmartInput({
         }}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-base focus:outline-none focus:border-gray-600 transition-colors min-h-[44px]"
+        className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-base focus:outline-none focus:border-blue-500 transition-colors min-h-[44px]"
       />
 
       {/* Autocomplete Dropdown */}

@@ -11,7 +11,8 @@ import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShort
 import { useAutoScroll } from '@/hooks/useAutoScroll';
 import { useMessageSearch } from '@/hooks/useMessageSearch';
 import { useContextMenu } from '@/hooks/useContextMenu';
-import { useTheme } from '@/hooks/useTheme';
+// Dark mode removed - was not functional
+// import { useTheme } from '@/hooks/useTheme';
 import { SlashCommand } from '@/hooks/useAutocomplete';
 import toast from 'react-hot-toast';
 import FormattedMessage from '../components/FormattedMessage';
@@ -29,7 +30,8 @@ import { KeyboardShortcutsDialog } from '../components/KeyboardShortcutsDialog';
 import { MessageLengthIndicator } from '../components/ui/MessageLengthIndicator';
 import { ScrollToBottom } from '../components/ui/ScrollToBottom';
 import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
-import { ThemeToggle } from '../components/ui/ThemeToggle';
+// Dark mode removed - was not functional
+// import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
 import { CostWidget } from '../components/cost/CostWidget';
@@ -81,7 +83,8 @@ export default function Home() {
   const isMobile = deviceType === 'mobile';
 
   // Theme toggle
-  const { toggleTheme, resolvedTheme } = useTheme();
+  // Dark mode removed - was not functional
+  // const { toggleTheme, resolvedTheme } = useTheme();
 
   // Dynamic D&D facts - fetched from API every 30 seconds
   const { currentFact, loading: factLoading, error: factError } = useDndFacts(30000);
@@ -339,21 +342,21 @@ export default function Home() {
       description: 'Toggle tags',
       category: 'Actions',
     },
-    // View
-    {
-      key: 'd',
-      ctrl: true,
-      shift: true,
-      callback: () => {
-        toggleTheme();
-        toast(`Switched to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`, {
-          icon: resolvedTheme === 'dark' ? '☀️' : '🌙',
-          duration: 2000
-        });
-      },
-      description: 'Toggle dark mode',
-      category: 'View',
-    },
+    // Dark mode removed - was not functional
+    // {
+    //   key: 'd',
+    //   ctrl: true,
+    //   shift: true,
+    //   callback: () => {
+    //     toggleTheme();
+    //     toast(`Switched to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`, {
+    //       icon: resolvedTheme === 'dark' ? '☀️' : '🌙',
+    //       duration: 2000
+    //     });
+    //   },
+    //   description: 'Toggle dark mode',
+    //   category: 'View',
+    // },
     {
       key: 'i',
       ctrl: true,
@@ -914,10 +917,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Cost Widget, Theme Toggle & User Selector */}
+          {/* Cost Widget & User Selector */}
           <div className="flex items-center gap-4">
             <CostWidget />
-            <ThemeToggle />
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -1072,7 +1074,7 @@ export default function Home() {
                 onClick={handleSendMessage}
                 disabled={!input.trim() || sending}
                 size="md"
-                className={input.trim() && !sending ? 'bg-white text-black hover:bg-gray-200' : 'bg-gray-800 text-gray-600'}
+                className="bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700"
               >
                 {isMobile ? '→' : 'Send'}
               </TouchButton>
