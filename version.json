@@ -1,8 +1,8 @@
 {
-  "version": "8.16.0",
+  "version": "8.17.0",
   "commit": "ee5b604",
-  "lastUpdated": "2025-11-14T06:20:00.000Z",
-  "changelog": "⌨️ POWER USER FEATURES: Implemented 30+ keyboard shortcuts system with comprehensive UX improvements. Created useKeyboardShortcuts hook (handles both Ctrl/Cmd), CodeBlock component with copy button (hover to show, visual feedback with checkmark), MessageLengthIndicator (shows chars + token estimate, warns at 2000+ chars), KeyboardShortcutsDialog (accessible via ? key). Shortcuts: Cmd/Ctrl+K (search), Cmd/Ctrl+N (new chat), Cmd/Ctrl+/ (sidebar), Cmd/Ctrl+Enter (send), Esc (close modals), Cmd/Ctrl+J (quick switcher), Cmd/Ctrl+P (projects), Cmd/Ctrl+M (model selector), Cmd/Ctrl+T (tags), Cmd/Ctrl+I (focus input), Cmd/Ctrl+Shift+D (dark mode placeholder), ? (show shortcuts). Updated FormattedMessage to use CodeBlock with language detection. All code blocks now have copy functionality with toast notifications. ~500 lines added across 5 new files + app integration.",
+  "lastUpdated": "2025-11-14T08:30:00.000Z",
+  "changelog": "🔔 TOAST NOTIFICATIONS & AUTOSAVE + ⌨️ KEYBOARD SHORTCUTS: Comprehensive UX improvements. Toast system: Added react-hot-toast Toaster with dark theme, integrated in useMessages (errors), FileUploader (progress), useProjects (CRUD), useConversations (delete/create). Created useAutosave hook (2s delay, localStorage, draft restoration with toast). Keyboard shortcuts: 30+ shortcuts via useKeyboardShortcuts (Cmd/Ctrl+K search, N new chat, / sidebar, Enter send, M model, T tags, I focus, ? help). CodeBlock with copy button, MessageLengthIndicator (token estimate), KeyboardShortcutsDialog. ~800 lines added (6 new files, autosave + shortcuts fully integrated).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
