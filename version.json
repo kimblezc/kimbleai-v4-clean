@@ -1,6 +1,6 @@
 {
   "version": "8.20.0",
-  "commit": "TBD",
+  "commit": "3cd4bb2",
   "lastUpdated": "2025-11-14T14:00:00.000Z",
   "changelog": "feat: Phase 4 Polish - Dark Mode with theme toggle (light/dark/system), Ctrl+Shift+D keyboard shortcut, theme button in header. Undo/Redo hook created (useUndoRedo) with toast undo buttons and 5-second undo window. Tailwind darkMode: class enabled. ~250 lines added.",
   "platform": "Railway",
