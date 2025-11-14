@@ -13,6 +13,11 @@ interface FileUploadItem {
   fileId?: string;
   error?: string;
   result?: any;
+  uploadSpeed?: number; // MB/s
+  timeRemaining?: number; // seconds
+  uploadedBytes?: number;
+  startTime?: number;
+  abortController?: AbortController;
 }
 
 interface FileUploaderProps {
@@ -47,6 +52,20 @@ export default function FileUploader({
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
+
+  // Format upload speed
+  const formatSpeed = (bytesPerSecond: number): string => {
+    if (bytesPerSecond < 1024) return `${bytesPerSecond.toFixed(0)} B/s`;
+    if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
+    return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
+  };
+
+  // Format time remaining
+  const formatTimeRemaining = (seconds: number): string => {
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
   };
 
   // Get file icon
@@ -127,6 +146,8 @@ export default function FileUploader({
   // Upload single file
   const uploadFile = async (item: FileUploadItem) => {
     const uploadToastId = toast.loading(`Uploading ${item.file.name}...`);
+    const abortController = new AbortController();
+    const startTime = Date.now();
 
     try {
       const formData = new FormData();
@@ -134,16 +155,50 @@ export default function FileUploader({
       formData.append('userId', userId);
       formData.append('projectId', projectId);
 
+      // Update with abort controller and start time
       setUploadItems(prev => prev.map(i =>
         i.id === item.id
-          ? { ...i, status: 'uploading', progress: 10, message: 'Uploading...' }
+          ? {
+              ...i,
+              status: 'uploading',
+              progress: 10,
+              message: 'Uploading...',
+              abortController,
+              startTime,
+              uploadedBytes: 0
+            }
           : i
       ));
 
+      // Simulate progress updates (since we can't track actual XHR progress easily)
+      const progressInterval = setInterval(() => {
+        setUploadItems(prev => prev.map(i => {
+          if (i.id === item.id && i.status === 'uploading' && i.progress < 90) {
+            const elapsedSeconds = (Date.now() - (i.startTime || Date.now())) / 1000;
+            const estimatedTotalTime = elapsedSeconds / (i.progress / 100);
+            const remainingTime = estimatedTotalTime - elapsedSeconds;
+            const uploadedBytes = (i.file.size * i.progress) / 100;
+            const speed = uploadedBytes / elapsedSeconds;
+
+            return {
+              ...i,
+              progress: Math.min(i.progress + 5, 90),
+              uploadedBytes,
+              uploadSpeed: speed,
+              timeRemaining: remainingTime > 0 ? remainingTime : 0
+            };
+          }
+          return i;
+        }));
+      }, 500);
+
       const response = await fetch('/api/files/upload', {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: abortController.signal
       });
+
+      clearInterval(progressInterval);
 
       const result = await response.json();
 
@@ -248,6 +303,20 @@ export default function FileUploader({
       handleFiles(e.target.files);
     }
   }, [handleFiles]);
+
+  // Cancel upload
+  const cancelUpload = (id: string) => {
+    const item = uploadItems.find(i => i.id === id);
+    if (item?.abortController) {
+      item.abortController.abort();
+      setUploadItems(prev => prev.map(i =>
+        i.id === id
+          ? { ...i, status: 'failed', message: 'Upload cancelled', error: 'Cancelled by user' }
+          : i
+      ));
+      toast.error('Upload cancelled');
+    }
+  };
 
   // Remove item
   const removeItem = (id: string) => {
@@ -370,7 +439,18 @@ export default function FileUploader({
                           <span className="text-red-500 text-xl">✗</span>
                         )}
                         {['pending', 'uploading', 'processing'].includes(item.status) && (
-                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent" />
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent" />
+                            {item.status === 'uploading' && (
+                              <button
+                                onClick={() => cancelUpload(item.id)}
+                                className="text-red-400 hover:text-red-300 transition-colors text-xs px-2 py-1 bg-red-900/20 rounded"
+                                title="Cancel upload"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </>
                         )}
                         {(item.status === 'completed' || item.status === 'failed') && (
                           <button
@@ -383,9 +463,25 @@ export default function FileUploader({
                       </div>
                     </div>
 
-                    {/* Progress Bar */}
+                    {/* Progress Bar with detailed info */}
                     {['uploading', 'processing'].includes(item.status) && (
                       <div className="mb-2">
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                          <span>{item.progress}%</span>
+                          {item.status === 'uploading' && (
+                            <div className="flex items-center gap-2">
+                              {item.uploadSpeed && (
+                                <span>{formatSpeed(item.uploadSpeed)}</span>
+                              )}
+                              {item.timeRemaining && item.timeRemaining > 0 && (
+                                <span>{formatTimeRemaining(item.timeRemaining)} left</span>
+                              )}
+                              {item.uploadedBytes && (
+                                <span>{formatFileSize(item.uploadedBytes)} / {formatFileSize(item.file.size)}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
                           <div
                             className="bg-blue-500 h-full transition-all duration-300"

@@ -41,6 +41,24 @@ export function useConversations(userId: string) {
   const [loading, setLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [pinnedConversations, setPinnedConversations] = useState<Set<string>>(new Set());
+  const [recentConversations, setRecentConversations] = useState<Conversation[]>([]);
+
+  // Load recent conversation IDs from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('recent-conversations');
+    if (stored) {
+      try {
+        const recentIds = JSON.parse(stored) as string[];
+        // Filter conversations that match recent IDs
+        const recent = conversations.filter(c => recentIds.includes(c.id))
+          .sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id))
+          .slice(0, 5);
+        setRecentConversations(recent);
+      } catch (e) {
+        console.error('Failed to parse recent conversations:', e);
+      }
+    }
+  }, [conversations]);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -104,6 +122,26 @@ export function useConversations(userId: string) {
   const selectConversation = useCallback((conversationId: string) => {
     console.log('[useConversations] selectConversation called with ID:', conversationId);
     setCurrentConversationId(conversationId);
+
+    // Track in recent conversations
+    const stored = localStorage.getItem('recent-conversations');
+    let recentIds: string[] = [];
+    if (stored) {
+      try {
+        recentIds = JSON.parse(stored);
+      } catch (e) {
+        console.error('Failed to parse recent conversations:', e);
+      }
+    }
+
+    // Remove if already exists and add to front
+    recentIds = recentIds.filter(id => id !== conversationId);
+    recentIds.unshift(conversationId);
+
+    // Keep only last 5
+    recentIds = recentIds.slice(0, 5);
+
+    localStorage.setItem('recent-conversations', JSON.stringify(recentIds));
   }, []);
 
   const deleteConversation = useCallback(async (conversationId: string) => {
@@ -207,6 +245,7 @@ export function useConversations(userId: string) {
     conversations,
     groupedConversations,
     conversationsByProject,
+    recentConversations,
     loading,
     currentConversationId,
     pinnedConversations,

@@ -8,6 +8,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useDndFacts } from '@/hooks/useDndFacts';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
+import { useAutoScroll } from '@/hooks/useAutoScroll';
 import toast from 'react-hot-toast';
 import FormattedMessage from '../components/FormattedMessage';
 import GoogleServicesPanel from '../components/GoogleServicesPanel';
@@ -18,6 +19,8 @@ import { IconButton, TouchButton } from '../components/TouchButton';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { KeyboardShortcutsDialog } from '../components/KeyboardShortcutsDialog';
 import { MessageLengthIndicator } from '../components/ui/MessageLengthIndicator';
+import { ScrollToBottom } from '../components/ui/ScrollToBottom';
+import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
 import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
 import { CostWidget } from '../components/cost/CostWidget';
@@ -75,6 +78,7 @@ export default function Home() {
     currentConversationId,
     groupedConversations,
     conversationsByProject,
+    recentConversations,
     selectConversation,
     createNewConversation,
     deleteConversation,
@@ -96,6 +100,12 @@ export default function Home() {
     value: input,
     delay: 2000,
     showToast: false, // Don't show toast for every autosave
+  });
+
+  // Auto-scroll hook with manual override detection
+  const { containerRef, showScrollButton, newMessageCount, scrollToBottom } = useAutoScroll([messages], {
+    threshold: 100,
+    behavior: 'smooth',
   });
 
   // Load draft on mount or when conversation changes
@@ -144,6 +154,67 @@ export default function Home() {
       ctrl: true,
       callback: () => setIsSearchOpen(true),
       description: 'Quick switcher',
+      category: 'Navigation',
+    },
+    // Recent conversations shortcuts (Cmd/Ctrl + 1-5)
+    {
+      key: '1',
+      ctrl: true,
+      callback: () => {
+        if (recentConversations[0]) {
+          selectConversation(recentConversations[0].id);
+          setIsMobileSidebarOpen(false);
+        }
+      },
+      description: 'Jump to recent conversation 1',
+      category: 'Navigation',
+    },
+    {
+      key: '2',
+      ctrl: true,
+      callback: () => {
+        if (recentConversations[1]) {
+          selectConversation(recentConversations[1].id);
+          setIsMobileSidebarOpen(false);
+        }
+      },
+      description: 'Jump to recent conversation 2',
+      category: 'Navigation',
+    },
+    {
+      key: '3',
+      ctrl: true,
+      callback: () => {
+        if (recentConversations[2]) {
+          selectConversation(recentConversations[2].id);
+          setIsMobileSidebarOpen(false);
+        }
+      },
+      description: 'Jump to recent conversation 3',
+      category: 'Navigation',
+    },
+    {
+      key: '4',
+      ctrl: true,
+      callback: () => {
+        if (recentConversations[3]) {
+          selectConversation(recentConversations[3].id);
+          setIsMobileSidebarOpen(false);
+        }
+      },
+      description: 'Jump to recent conversation 4',
+      category: 'Navigation',
+    },
+    {
+      key: '5',
+      ctrl: true,
+      callback: () => {
+        if (recentConversations[4]) {
+          selectConversation(recentConversations[4].id);
+          setIsMobileSidebarOpen(false);
+        }
+      },
+      description: 'Jump to recent conversation 5',
       category: 'Navigation',
     },
     // Actions
@@ -431,6 +502,52 @@ export default function Home() {
 
         {/* Conversations List - Grouped by Project */}
         <div className="flex-1 overflow-y-auto px-3">
+          {/* Recent Conversations Section */}
+          {recentConversations.length > 0 && (
+            <div className="mb-4">
+              <div className="text-sm text-gray-500 font-medium px-2 mb-2 flex items-center gap-2">
+                <span>⭐ RECENT</span>
+              </div>
+              {recentConversations.map((conv) => (
+                <div
+                  key={conv.id}
+                  className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors ${
+                    currentConversationId === conv.id
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-400 hover:bg-gray-900'
+                  }`}
+                >
+                  <button
+                    onClick={() => {
+                      selectConversation(conv.id);
+                      setIsMobileSidebarOpen(false);
+                    }}
+                    className="flex-1 text-left min-w-0 px-1"
+                  >
+                    <div className="text-base truncate overflow-hidden text-ellipsis whitespace-nowrap">
+                      {conv.title || 'Untitled conversation'}
+                    </div>
+                    {(conv.updated_at || conv.created_at) && (
+                      <div className="text-sm text-gray-600 mt-0.5 truncate">
+                        {formatRelativeTime(conv.updated_at || conv.created_at)}
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await togglePin(conv.id, conv.is_pinned);
+                    }}
+                    className="flex-shrink-0 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-900/20 rounded p-1.5 transition-colors"
+                    title={conv.is_pinned ? "Unpin conversation" : "Pin conversation"}
+                  >
+                    {conv.is_pinned ? '📌' : '📍'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Unassigned conversations first */}
           {conversationsByProject['unassigned'] && conversationsByProject['unassigned'].length > 0 && (
             <div className="mb-4">
@@ -574,6 +691,9 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
+        {/* Breadcrumbs */}
+        <ResponsiveBreadcrumbs />
+
         {/* Header */}
         <div className="bg-gray-950 border-b border-gray-800 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -630,7 +750,7 @@ export default function Home() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div ref={containerRef} className="flex-1 overflow-y-auto p-4 relative">
           {messages.length === 0 ? (
             <div className="text-center mt-32 max-w-2xl mx-auto px-8">
               <div className="text-4xl text-gray-400 mb-3">{getGreeting()}</div>
@@ -679,6 +799,14 @@ export default function Home() {
 
               <div ref={messagesEndRef} />
             </div>
+          )}
+
+          {/* Scroll to Bottom Button */}
+          {showScrollButton && (
+            <ScrollToBottom
+              onClick={() => scrollToBottom(true)}
+              newMessageCount={newMessageCount}
+            />
           )}
         </div>
 
