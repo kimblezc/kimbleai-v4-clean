@@ -1,8 +1,8 @@
 {
-  "version": "8.17.0",
-  "commit": "pending",
-  "lastUpdated": "2025-11-14T08:30:00.000Z",
-  "changelog": "🔔 TOAST NOTIFICATIONS & AUTOSAVE: Comprehensive UX feedback system implemented across entire application. Added react-hot-toast Toaster component with dark theme styling (top-right position, 5s duration, color-coded icons). Toast notifications integrated into: useMessages (send success/error), FileUploader (upload progress + completion), useProjects (create/update/delete feedback), useConversations (delete/create notifications). Created useAutosave hook with 2s delay, localStorage persistence, draft restoration on mount. Integrated autosave in main chat with draft loading (shows 'Draft restored' toast) and auto-clear on send. All user actions now provide immediate visual feedback. ~300 lines added across 6 files (1 new hook, 5 modified).",
+  "version": "8.16.0",
+  "commit": "ee5b604",
+  "lastUpdated": "2025-11-14T06:20:00.000Z",
+  "changelog": "⌨️ POWER USER FEATURES: Implemented 30+ keyboard shortcuts system with comprehensive UX improvements. Created useKeyboardShortcuts hook (handles both Ctrl/Cmd), CodeBlock component with copy button (hover to show, visual feedback with checkmark), MessageLengthIndicator (shows chars + token estimate, warns at 2000+ chars), KeyboardShortcutsDialog (accessible via ? key). Shortcuts: Cmd/Ctrl+K (search), Cmd/Ctrl+N (new chat), Cmd/Ctrl+/ (sidebar), Cmd/Ctrl+Enter (send), Esc (close modals), Cmd/Ctrl+J (quick switcher), Cmd/Ctrl+P (projects), Cmd/Ctrl+M (model selector), Cmd/Ctrl+T (tags), Cmd/Ctrl+I (focus input), Cmd/Ctrl+Shift+D (dark mode placeholder), ? (show shortcuts). Updated FormattedMessage to use CodeBlock with language detection. All code blocks now have copy functionality with toast notifications. ~500 lines added across 5 new files + app integration.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
