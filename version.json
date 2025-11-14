@@ -1,6 +1,6 @@
 {
   "version": "8.19.1",
-  "commit": "cc47b91",
+  "commit": "de6ee66",
   "lastUpdated": "2025-11-14T12:30:00.000Z",
   "changelog": "fix: UI overlaps - draft toast position changed to bottom-left to avoid cost tracker, cost tracker expanded details now anchored to right with max-width to prevent viewport overflow. Build verified.",
   "platform": "Railway",
