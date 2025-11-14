@@ -1,8 +1,8 @@
 {
-  "version": "8.22.0",
-  "commit": "2d3d3c5",
-  "lastUpdated": "2025-11-14T14:45:00.000Z",
-  "changelog": "fix: Removed dark mode (non-functional) + fixed UI issues - Send button no longer turns white when text entered, chat input has blue focus border, dark mode completely removed (ThemeToggle, useTheme, keyboard shortcut). Search functionality verified working (Ctrl+K).",
+  "version": "8.23.0",
+  "commit": "652503b",
+  "lastUpdated": "2025-11-14T15:00:00.000Z",
+  "changelog": "fix: Global search now working - Replaced conversation-only search with UnifiedSearch that searches Gmail, Drive, Files, KB, Calendar. Ctrl+F now opens global search modal with source filtering. Previous fixes: Dark mode removed, send button styling fixed, chat input blue focus border.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
