@@ -1,8 +1,8 @@
 {
-  "version": "8.23.0",
-  "commit": "652503b",
-  "lastUpdated": "2025-11-14T15:00:00.000Z",
-  "changelog": "fix: Global search now working - Replaced conversation-only search with UnifiedSearch that searches Gmail, Drive, Files, KB, Calendar. Ctrl+F now opens global search modal with source filtering. Previous fixes: Dark mode removed, send button styling fixed, chat input blue focus border.",
+  "version": "8.24.0",
+  "commit": "9fdeba2",
+  "lastUpdated": "2025-11-14T17:45:00.000Z",
+  "changelog": "fix: Unified search OAuth token refresh - Fixed invalid_grant errors by integrating automatic token refresh. Gmail/Drive now auto-refresh expired tokens (5-min buffer). Created comprehensive test suite covering all 5 sources (Gmail, Drive, Local, KB, Calendar) + sample data generator. All search sources now working correctly.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
