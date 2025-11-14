@@ -62,6 +62,7 @@ export default function Home() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [isConversationSearchOpen, setIsConversationSearchOpen] = useState(false);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -208,8 +209,8 @@ export default function Home() {
     {
       key: 'f',
       ctrl: true,
-      callback: () => setIsConversationSearchOpen(true),
-      description: 'Search in conversation',
+      callback: () => setIsGlobalSearchOpen(true),
+      description: 'Global search (Chat, Drive, Mail)',
       category: 'Navigation',
     },
     {
@@ -963,19 +964,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Conversation Search */}
-        <ConversationSearch
-          isOpen={isConversationSearchOpen}
-          searchQuery={searchQuery}
-          onSearchChange={updateSearchQuery}
-          totalMatches={totalMatches}
-          currentMatchIndex={currentMatchIndex}
-          onNext={nextMatch}
-          onPrevious={previousMatch}
-          onClose={() => {
-            setIsConversationSearchOpen(false);
-            clearSearch();
-          }}
+        {/* Global Unified Search */}
+        <UnifiedSearch
+          isOpen={isGlobalSearchOpen}
+          onClose={() => setIsGlobalSearchOpen(false)}
         />
 
         {/* Messages Area */}

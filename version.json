@@ -1,8 +1,8 @@
 {
-  "version": "8.21.0",
-  "commit": "5a0b154",
-  "lastUpdated": "2025-11-14T14:30:00.000Z",
-  "changelog": "chore: Phase 5 Cleanup - Removed 50,111 lines of bloated documentation (96 files). Deleted session reports, archived agent specs, mobile analysis, performance reports, integration diagnostics. Reduced docs from 141k to 91k lines. Total codebase: 303k → 253k lines (-50k, -16%).",
+  "version": "8.22.0",
+  "commit": "2d3d3c5",
+  "lastUpdated": "2025-11-14T14:45:00.000Z",
+  "changelog": "fix: Removed dark mode (non-functional) + fixed UI issues - Send button no longer turns white when text entered, chat input has blue focus border, dark mode completely removed (ThemeToggle, useTheme, keyboard shortcut). Search functionality verified working (Ctrl+K).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
