@@ -1,6 +1,6 @@
 {
   "version": "8.18.0",
-  "commit": "2b553de",
+  "commit": "e0a3b9f",
   "lastUpdated": "2025-11-14T09:15:00.000Z",
   "changelog": "🎯 PHASE 2 CORE UX: Recent conversations, enhanced file uploads, auto-scroll, breadcrumbs. Recent Conversations: Added ⭐ RECENT section in sidebar (last 5 accessed), pin/unpin functionality, Cmd/Ctrl+1-5 keyboard shortcuts to jump to recent chats. FileUploader Enhanced: Detailed progress (upload speed MB/s, time remaining, uploaded/total size), cancel button during upload, multiple file queue management. Auto-Scroll: Smart detection of user scroll position, 'Scroll to bottom' button with new message count, End key shortcut, smooth animations. Breadcrumbs: Responsive component with route-based navigation (collapses on mobile). ~500 lines added (3 new files: ScrollToBottom.tsx, useAutoScroll.ts, Breadcrumbs.tsx). Build verified 0 errors.",
   "platform": "Railway",
