@@ -11,6 +11,7 @@ import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShort
 import { useAutoScroll } from '@/hooks/useAutoScroll';
 import { useMessageSearch } from '@/hooks/useMessageSearch';
 import { useContextMenu } from '@/hooks/useContextMenu';
+import { useTheme } from '@/hooks/useTheme';
 import { SlashCommand } from '@/hooks/useAutocomplete';
 import toast from 'react-hot-toast';
 import FormattedMessage from '../components/FormattedMessage';
@@ -28,6 +29,7 @@ import { KeyboardShortcutsDialog } from '../components/KeyboardShortcutsDialog';
 import { MessageLengthIndicator } from '../components/ui/MessageLengthIndicator';
 import { ScrollToBottom } from '../components/ui/ScrollToBottom';
 import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
 import { CostWidget } from '../components/cost/CostWidget';
@@ -77,6 +79,9 @@ export default function Home() {
   // Device detection for responsive design
   const deviceType = useDeviceType();
   const isMobile = deviceType === 'mobile';
+
+  // Theme toggle
+  const { toggleTheme, resolvedTheme } = useTheme();
 
   // Dynamic D&D facts - fetched from API every 30 seconds
   const { currentFact, loading: factLoading, error: factError } = useDndFacts(30000);
@@ -340,8 +345,11 @@ export default function Home() {
       ctrl: true,
       shift: true,
       callback: () => {
-        // Toggle dark mode (future feature)
-        toast('Dark mode toggle coming soon', { icon: '🌙', duration: 2000 });
+        toggleTheme();
+        toast(`Switched to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`, {
+          icon: resolvedTheme === 'dark' ? '☀️' : '🌙',
+          duration: 2000
+        });
       },
       description: 'Toggle dark mode',
       category: 'View',
@@ -906,13 +914,14 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Cost Widget & User Selector */}
+          {/* Cost Widget, Theme Toggle & User Selector */}
           <div className="flex items-center gap-4">
             <CostWidget />
+            <ThemeToggle />
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm transition-colors"
+                className="px-3 py-1.5 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 border border-gray-700 dark:border-gray-600 rounded-lg text-sm transition-colors"
               >
                 {currentUser === 'zach' ? 'Zach' : 'Rebecca'}
               </button>

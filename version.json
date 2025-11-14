@@ -1,8 +1,8 @@
 {
-  "version": "8.19.1",
-  "commit": "de6ee66",
-  "lastUpdated": "2025-11-14T12:30:00.000Z",
-  "changelog": "fix: UI overlaps - draft toast position changed to bottom-left to avoid cost tracker, cost tracker expanded details now anchored to right with max-width to prevent viewport overflow. Build verified.",
+  "version": "8.20.0",
+  "commit": "TBD",
+  "lastUpdated": "2025-11-14T14:00:00.000Z",
+  "changelog": "feat: Phase 4 Polish - Dark Mode with theme toggle (light/dark/system), Ctrl+Shift+D keyboard shortcut, theme button in header. Undo/Redo hook created (useUndoRedo) with toast undo buttons and 5-second undo window. Tailwind darkMode: class enabled. ~250 lines added.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
