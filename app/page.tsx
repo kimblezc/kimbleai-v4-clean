@@ -35,6 +35,7 @@ import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
 import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
 import { CostWidget } from '../components/cost/CostWidget';
+import IntegrationsSidebar from '../components/IntegrationsSidebar';
 import versionData from '../version.json';
 import { formatRelativeTime } from '@/lib/chat-utils';
 
@@ -63,6 +64,7 @@ export default function Home() {
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [isConversationSearchOpen, setIsConversationSearchOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [isIntegrationsSidebarOpen, setIsIntegrationsSidebarOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -146,7 +148,7 @@ export default function Home() {
     const draft = loadDraft();
     if (draft && draft !== input) {
       setInput(draft);
-      toast('Draft restored', { icon: '📝', duration: 3000, position: 'bottom-center' });
+      toast('Draft restored', { icon: '📝', duration: 3000 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConversationId]);
@@ -918,9 +920,16 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Cost Widget & User Selector */}
+          {/* Cost Widget, Integrations Button & User Selector */}
           <div className="flex items-center gap-4">
             <CostWidget />
+            <IconButton
+              icon={<span className="text-lg">🔌</span>}
+              label="Integrations"
+              onClick={() => setIsIntegrationsSidebarOpen(!isIntegrationsSidebarOpen)}
+              variant="secondary"
+              className="bg-gray-800 border border-gray-700 hover:bg-gray-700"
+            />
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -1084,7 +1093,7 @@ export default function Home() {
                 onClick={handleSendMessage}
                 disabled={!input.trim() || sending}
                 size="md"
-                className="bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700"
+                className="bg-gray-900 text-gray-400 hover:bg-gray-800 border border-gray-700"
               >
                 {isMobile ? '→' : 'Send'}
               </TouchButton>
@@ -1098,16 +1107,13 @@ export default function Home() {
             )}
 
             {/* Minimalist Model Indicator */}
-            <div className="flex items-center justify-between mt-2 px-1 text-xs text-gray-500">
+            <div className="flex items-center mt-2 px-1 text-xs text-gray-500">
               <span className="font-mono">
                 Model: {selectedModel === 'claude-sonnet-4-5' ? 'Claude Sonnet' :
                        selectedModel === 'gpt-4o' ? 'GPT-4o' :
                        selectedModel === 'gpt-4o-mini' ? 'GPT-4o Mini' :
                        selectedModel === 'claude-3-5-haiku' ? 'Claude Haiku' :
                        selectedModel}
-              </span>
-              <span className="text-[10px] opacity-70">
-                {selectedModel.includes('mini') || selectedModel.includes('haiku') ? 'Fast' : 'Quality'}
               </span>
             </div>
 
@@ -1209,6 +1215,12 @@ export default function Home() {
             : []
         }
         onClose={contextMenu.hideContextMenu}
+      />
+
+      {/* Integrations Sidebar */}
+      <IntegrationsSidebar
+        isOpen={isIntegrationsSidebarOpen}
+        onClose={() => setIsIntegrationsSidebarOpen(false)}
       />
     </div>
   );

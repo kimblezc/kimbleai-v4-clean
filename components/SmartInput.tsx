@@ -26,7 +26,7 @@ export default function SmartInput({
   files = [],
   commands = [],
 }: SmartInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const autocomplete = useAutocomplete(value, cursorPosition, {
@@ -120,21 +120,22 @@ export default function SmartInput({
 
   return (
     <div className="relative w-full">
-      <input
-        ref={inputRef}
-        type="text"
+      <textarea
+        ref={inputRef as any}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
           setCursorPosition(e.target.selectionStart || 0);
         }}
-        onKeyDown={handleKeyDown}
+        onKeyDown={handleKeyDown as any}
         onClick={(e) => {
           setCursorPosition(e.currentTarget.selectionStart || 0);
         }}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-base focus:outline-none focus:border-blue-500 transition-colors min-h-[44px]"
+        rows={2}
+        className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-base focus:outline-none focus:border-blue-500 transition-colors resize-none"
+        style={{ minHeight: '72px' }}
       />
 
       {/* Autocomplete Dropdown */}

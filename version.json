@@ -1,8 +1,8 @@
 {
-  "version": "8.26.0",
-  "commit": "bd8d359",
-  "lastUpdated": "2025-11-15T06:30:00.000Z",
-  "changelog": "fix: Three critical UX fixes - (1) D&D facts now truly random using pure random selection instead of server-side state that resets on Railway deploys. (2) Toast notifications moved to bottom-right from chat bar. (3) Version info moved to sidebar bottom (removed from bottom-right to clear space for toasts).",
+  "version": "8.27.0",
+  "commit": "40257bc",
+  "lastUpdated": "2025-11-15T19:30:00.000Z",
+  "changelog": "feat: UI improvements and integrations sidebar - (1) Draft toast now appears in bottom-right (fixed position config). (2) Send button background matches input bar (bg-gray-900). (3) Input textarea increased to 2 lines (72px min-height). (4) Removed stray 'quality' text under send button. (5) New IntegrationsSidebar component showing 15 integrations from INTEGRATION_RECOMMENDATIONS.md, accessible via 🔌 button in header.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
