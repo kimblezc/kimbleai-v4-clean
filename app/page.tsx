@@ -895,6 +895,13 @@ export default function Home() {
             </span>
           </a>
         </div>
+
+        {/* Version Info */}
+        <div className="p-3 border-t border-gray-900">
+          <div className="text-xs text-gray-600 text-center font-mono">
+            v{versionInfo.version} @ {versionInfo.commit}
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
