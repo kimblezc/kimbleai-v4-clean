@@ -50,6 +50,7 @@ function initializeCache() {
 
 /**
  * Select a fact from cache that hasn't been shown recently
+ * Uses truly random selection to work across server restarts
  */
 function selectFactFromCache(sessionShownFacts: string[]): CachedFact | null {
   // Filter out facts already shown this session
@@ -59,30 +60,18 @@ function selectFactFromCache(sessionShownFacts: string[]): CachedFact | null {
 
   if (unseenFacts.length === 0) {
     console.log('[DND Facts API] All facts shown this session, resetting...');
-    // All facts shown, return least-shown fact
-    const sorted = [...factCache].sort((a, b) => a.timesShown - b.timesShown);
-    return sorted[0];
+    // All facts shown, pick random fact from entire cache
+    const randomIndex = Math.floor(Math.random() * factCache.length);
+    return factCache[randomIndex];
   }
 
-  // Sort by times shown (prefer unseen/rarely shown facts)
-  const sorted = unseenFacts.sort((a, b) => a.timesShown - b.timesShown);
+  // Truly random selection from unseen facts
+  // This works even when server restarts reset the cache
+  const randomIndex = Math.floor(Math.random() * unseenFacts.length);
+  const selectedFact = unseenFacts[randomIndex];
 
-  // Take facts in bottom 50% (least shown)
-  const halfwayPoint = Math.ceil(sorted.length / 2);
-  const leastShown = sorted.slice(0, halfwayPoint);
-
-  // Convert to DndFact format for diversity selection
-  const factsForSelection: DndFact[] = leastShown.map(cached => ({
-    text: cached.text,
-    category: cached.category as any,
-    difficulty: 'medium' as const,
-  }));
-
-  // Use diversity selector to ensure category balance
-  const selectedFact = selectDiverseFact(factsForSelection, categoryTracker);
-
-  // Find original cached fact
-  return leastShown.find(cached => cached.text === selectedFact.text) || leastShown[0];
+  console.log(`[DND Facts API] Random selection: ${randomIndex + 1}/${unseenFacts.length} unseen facts`);
+  return selectedFact;
 }
 
 /**

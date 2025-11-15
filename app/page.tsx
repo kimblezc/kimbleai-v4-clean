@@ -990,15 +990,22 @@ export default function Home() {
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
-              {/* Project Header - Show project name in big letters above chats */}
+              {/* Project Header - ChatGPT style project header */}
               {currentProject && (
-                <div className="mb-8 pb-4 border-b border-gray-700">
-                  <h1 className="text-5xl font-bold text-white mb-2">
-                    {projects.find(p => p.id === currentProject)?.name || 'Project'}
-                  </h1>
-                  <p className="text-gray-400 text-lg">
-                    {conversations.filter(c => c.project_id === currentProject).length} conversation{conversations.filter(c => c.project_id === currentProject).length !== 1 ? 's' : ''}
-                  </p>
+                <div className="flex items-center gap-3 mb-6 pt-2">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xl font-bold">
+                      {(projects.find(p => p.id === currentProject)?.name || 'P')[0].toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-semibold text-white leading-tight">
+                      {projects.find(p => p.id === currentProject)?.name || 'Project'}
+                    </h1>
+                    <p className="text-sm text-gray-400 mt-0.5">
+                      {conversations.filter(c => c.project_id === currentProject).length} conversation{conversations.filter(c => c.project_id === currentProject).length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
               )}
               {messages.map((msg, idx) => (
