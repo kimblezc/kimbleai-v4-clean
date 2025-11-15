@@ -990,6 +990,17 @@ export default function Home() {
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
+              {/* Project Header - Show project name in big letters above chats */}
+              {currentProject && (
+                <div className="mb-8 pb-4 border-b border-gray-700">
+                  <h1 className="text-5xl font-bold text-white mb-2">
+                    {projects.find(p => p.id === currentProject)?.name || 'Project'}
+                  </h1>
+                  <p className="text-gray-400 text-lg">
+                    {conversations.filter(c => c.project_id === currentProject).length} conversation{conversations.filter(c => c.project_id === currentProject).length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
               {messages.map((msg, idx) => (
                 <div
                   key={msg.id || idx}

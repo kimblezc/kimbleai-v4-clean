@@ -1,8 +1,8 @@
 {
-  "version": "8.24.0",
-  "commit": "9fdeba2",
-  "lastUpdated": "2025-11-14T17:45:00.000Z",
-  "changelog": "fix: Unified search OAuth token refresh - Fixed invalid_grant errors by integrating automatic token refresh. Gmail/Drive now auto-refresh expired tokens (5-min buffer). Created comprehensive test suite covering all 5 sources (Gmail, Drive, Local, KB, Calendar) + sample data generator. All search sources now working correctly.",
+  "version": "8.25.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-15T06:00:00.000Z",
+  "changelog": "feat: Project view header - When clicking on a project, the project name now appears in big letters (5xl) above the associated chats with conversation count. Makes it easy to organize and navigate project-specific conversations.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
