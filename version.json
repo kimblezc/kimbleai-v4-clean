@@ -1,8 +1,8 @@
 {
-  "version": "8.25.0",
-  "commit": "96aff97",
-  "lastUpdated": "2025-11-15T06:00:00.000Z",
-  "changelog": "feat: Project view header - ChatGPT-style project header with circular gradient avatar, 2xl project name, and conversation count. When clicking on a project, displays all associated chats with clean, modern header for easy organization.",
+  "version": "8.26.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-15T06:30:00.000Z",
+  "changelog": "fix: Three critical UX fixes - (1) D&D facts now truly random using pure random selection instead of server-side state that resets on Railway deploys. (2) Toast notifications moved to bottom-right from chat bar. (3) Removed version number from sidebar bottom.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
