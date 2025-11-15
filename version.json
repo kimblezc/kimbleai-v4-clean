@@ -1,8 +1,8 @@
 {
   "version": "8.25.0",
-  "commit": "f9f5dd3",
+  "commit": "96aff97",
   "lastUpdated": "2025-11-15T06:00:00.000Z",
-  "changelog": "feat: Project view header - When clicking on a project, the project name now appears in big letters (5xl) above the associated chats with conversation count. Makes it easy to organize and navigate project-specific conversations.",
+  "changelog": "feat: Project view header - ChatGPT-style project header with circular gradient avatar, 2xl project name, and conversation count. When clicking on a project, displays all associated chats with clean, modern header for easy organization.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
