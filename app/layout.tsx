@@ -1,6 +1,5 @@
 import './globals.css'
 import { Providers } from './providers'
-import { VersionIndicator } from './components/VersionIndicator'
 
 export const metadata = {
   title: 'KimbleAI - Your AI Adventure Awaits',
@@ -42,7 +41,6 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       <body className="bg-black text-white antialiased">
         <Providers>
           {children}
-          <VersionIndicator />
         </Providers>
       </body>
     </html>
