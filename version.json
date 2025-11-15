@@ -1,6 +1,6 @@
 {
   "version": "8.26.0",
-  "commit": "pending",
+  "commit": "3044934",
   "lastUpdated": "2025-11-15T06:30:00.000Z",
   "changelog": "fix: Three critical UX fixes - (1) D&D facts now truly random using pure random selection instead of server-side state that resets on Railway deploys. (2) Toast notifications moved to bottom-right from chat bar. (3) Removed version number from sidebar bottom.",
   "platform": "Railway",
