@@ -5,12 +5,21 @@
 
 import { useState, useRef } from 'react';
 
+interface Utterance {
+  speaker: string;
+  text: string;
+  start: number;
+  end: number;
+}
+
 interface FileJob {
   id: string;
   file: File;
   status: 'pending' | 'uploading' | 'transcribing' | 'completed' | 'failed';
   progress: number;
   transcription?: string;
+  utterances?: Utterance[];
+  speakerCount?: number;
   error?: string;
   jobId?: string;
   service?: 'whisper' | 'assemblyai';
@@ -191,10 +200,18 @@ export default function MultiFileAudioUpload({
         const data = await response.json();
 
         if (data.status === 'completed' && data.result) {
+          // Extract speaker-labeled data if available (AssemblyAI)
+          const utterances = data.result.utterances || [];
+          const speakerCount = utterances.length > 0
+            ? new Set(utterances.map((u: any) => u.speaker)).size
+            : 0;
+
           updateJob(fileJobId, {
             status: 'completed',
             progress: 100,
-            transcription: data.result.text
+            transcription: data.result.text,
+            utterances: utterances,
+            speakerCount: speakerCount
           });
           return;
         }
@@ -532,11 +549,49 @@ export default function MultiFileAudioUpload({
                   borderRadius: '4px',
                   fontSize: '12px',
                   color: '#ccc',
-                  maxHeight: '100px',
+                  maxHeight: '150px',
                   overflowY: 'auto'
                 }}>
-                  {job.transcription.substring(0, 200)}
-                  {job.transcription.length > 200 && '...'}
+                  {/* Speaker count badge */}
+                  {job.speakerCount && job.speakerCount > 0 && (
+                    <div style={{
+                      fontSize: '10px',
+                      color: '#4a9eff',
+                      marginBottom: '6px',
+                      fontWeight: 'bold'
+                    }}>
+                      {job.speakerCount} Speaker{job.speakerCount > 1 ? 's' : ''} Detected
+                    </div>
+                  )}
+
+                  {/* Display speaker-labeled format if available */}
+                  {job.utterances && job.utterances.length > 0 ? (
+                    <div style={{ fontFamily: 'monospace', lineHeight: '1.6' }}>
+                      {job.utterances.slice(0, 3).map((utterance, idx) => {
+                        const minutes = Math.floor(utterance.start / 60000);
+                        const seconds = Math.floor((utterance.start % 60000) / 1000);
+                        const timestamp = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                        return (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <span style={{ color: '#888' }}>[{timestamp}]</span>{' '}
+                            <span style={{ color: '#4a9eff' }}>Speaker {utterance.speaker}:</span>{' '}
+                            <span>{utterance.text.substring(0, 80)}{utterance.text.length > 80 && '...'}</span>
+                          </div>
+                        );
+                      })}
+                      {job.utterances.length > 3 && (
+                        <div style={{ color: '#888', fontStyle: 'italic', marginTop: '6px' }}>
+                          + {job.utterances.length - 3} more utterances...
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {job.transcription.substring(0, 200)}
+                      {job.transcription.length > 200 && '...'}
+                    </>
+                  )}
                 </div>
               )}
             </div>
