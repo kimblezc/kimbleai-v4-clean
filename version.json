@@ -1,8 +1,8 @@
 {
-  "version": "8.30.0",
-  "commit": "a77a509",
-  "lastUpdated": "2025-11-16T08:45:00.000Z",
-  "changelog": "fix: Critical bug fixes + ChatGPT-style project view - (1) Fixed 'conversations is not defined' error by adding missing variable to destructuring (app/page.tsx:95). (2) Exposed setCurrentConversationId from useConversations hook for external use. (3) Implemented full ChatGPT-style project detail view: clicking project in sidebar now shows project header with icon, conversation count, and grid of all project conversations with titles, timestamps, summaries. (4) Added project-specific keyboard shortcut (Ctrl+P clears conversation). (5) Empty state when project has no conversations. Fixes runtime errors and implements major requested feature. ~80 lines added.",
+  "version": "8.32.0",
+  "commit": "PLACEHOLDER",
+  "lastUpdated": "2025-11-16T12:00:00.000Z",
+  "changelog": "feat: Add live recording with AssemblyAI real-time transcription - Created LiveRecording component with MediaRecorder API, integrated AssemblyAI WebSocket for real-time transcription, added tab navigation to TranscriptionModal (Upload | Live), mobile-optimized with haptic feedback and proper permissions, audio files saved to Supabase, transcripts to projects. ~600 lines added.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

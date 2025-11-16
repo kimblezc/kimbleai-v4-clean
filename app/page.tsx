@@ -30,6 +30,7 @@ import { KeyboardShortcutsDialog } from '../components/KeyboardShortcutsDialog';
 import { MessageLengthIndicator } from '../components/ui/MessageLengthIndicator';
 import { ScrollToBottom } from '../components/ui/ScrollToBottom';
 import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
+import TranscriptionModal from '../components/TranscriptionModal';
 // Dark mode removed - was not functional
 // import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useDeviceType } from '../components/ResponsiveLayout';
@@ -63,6 +64,7 @@ export default function Home() {
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [isConversationSearchOpen, setIsConversationSearchOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -325,6 +327,7 @@ export default function Home() {
         setShowUserMenu(false);
         setShowShortcutsDialog(false);
         setIsConversationSearchOpen(false);
+        setShowTranscriptionModal(false);
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         contextMenu.hideContextMenu();
         if (isConversationSearchOpen) {
@@ -965,6 +968,32 @@ export default function Home() {
           </a>
         </div>
 
+        {/* Guardian Dashboard Link */}
+        <div className="px-3 pb-3">
+          <a
+            href="/guardian"
+            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-900/20 to-cyan-900/20 hover:from-blue-800/30 hover:to-cyan-800/30 border border-blue-700/30 hover:border-blue-600/50 transition-all duration-200 group"
+          >
+            <span className="text-xl group-hover:scale-110 transition-transform">🛡️</span>
+            <span className="text-base font-medium text-blue-400 group-hover:text-blue-300">
+              Guardian Dashboard
+            </span>
+          </a>
+        </div>
+
+        {/* Transcription Button */}
+        <div className="px-3 pb-3">
+          <button
+            onClick={() => setShowTranscriptionModal(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-900/20 to-pink-900/20 hover:from-purple-800/30 hover:to-pink-800/30 border border-purple-700/30 hover:border-purple-600/50 transition-all duration-200 group"
+          >
+            <span className="text-xl group-hover:scale-110 transition-transform">🎤</span>
+            <span className="text-base font-medium text-purple-400 group-hover:text-purple-300">
+              Transcribe Audio
+            </span>
+          </button>
+        </div>
+
         {/* Version Info */}
         <div className="p-3 border-t border-gray-900">
           <div className="text-xs text-gray-600 text-center font-mono">
@@ -1355,6 +1384,14 @@ export default function Home() {
             : []
         }
         onClose={contextMenu.hideContextMenu}
+      />
+
+      {/* Transcription Modal */}
+      <TranscriptionModal
+        isOpen={showTranscriptionModal}
+        onClose={() => setShowTranscriptionModal(false)}
+        userId={currentUser}
+        projects={projects}
       />
     </div>
   );
