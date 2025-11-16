@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseDndFactsReturn {
   currentFact: string;
@@ -76,7 +76,7 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
   const sessionDataRef = useRef<SessionData>(loadSession());
   const fallbackIndexRef = useRef<number>(0);
 
-  const fetchFact = async () => {
+  const fetchFact = useCallback(async () => {
     setLoading(true);
     setError(null); // Clear any previous errors
 
@@ -85,7 +85,12 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
 
       // Send session data to API for smart fact selection
       // Base64 encode to handle emoji and special characters in HTTP headers (ISO-8859-1 requirement)
-      const sessionData = btoa(encodeURIComponent(session.shownFacts.join(',')));
+      const sessionString = session.shownFacts.join(',');
+      const encoded = btoa(encodeURIComponent(sessionString));
+      // If header too large (>7KB), send only last 50 facts to avoid HTTP header size limits
+      const sessionData = encoded.length > 7000
+        ? btoa(encodeURIComponent(session.shownFacts.slice(-50).join(',')))
+        : encoded;
       const response = await fetch('/api/dnd-facts', {
         headers: {
           'x-session-shown-facts': sessionData,
@@ -113,6 +118,7 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
       if (!session.shownFacts.includes(data.fact)) {
         session.shownFacts.push(data.fact);
         saveSession(session);
+        sessionDataRef.current = session; // BUG FIX: Sync ref with updated session
         console.log(`[useDndFacts] Session progress: ${session.shownFacts.length} facts seen`);
       }
 
@@ -138,7 +144,7 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty deps - all dependencies are refs or setState functions which are stable
 
   // Fetch initial fact
   useEffect(() => {
@@ -153,7 +159,7 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [intervalMs]);
+  }, [intervalMs, fetchFact]); // BUG FIX: Add fetchFact to dependencies to prevent stale closures
 
   return { currentFact, loading, error, sessionProgress, category };
 }

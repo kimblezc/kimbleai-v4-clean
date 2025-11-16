@@ -35,7 +35,6 @@ import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
 import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
 import { CostWidget } from '../components/cost/CostWidget';
-import IntegrationsSidebar from '../components/IntegrationsSidebar';
 import versionData from '../version.json';
 import { formatRelativeTime } from '@/lib/chat-utils';
 
@@ -64,7 +63,6 @@ export default function Home() {
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
   const [isConversationSearchOpen, setIsConversationSearchOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
-  const [isIntegrationsSidebarOpen, setIsIntegrationsSidebarOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -920,16 +918,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Cost Widget, Integrations Button & User Selector */}
+          {/* Cost Widget & User Selector */}
           <div className="flex items-center gap-4">
             <CostWidget />
-            <IconButton
-              icon={<span className="text-lg">🔌</span>}
-              label="Integrations"
-              onClick={() => setIsIntegrationsSidebarOpen(!isIntegrationsSidebarOpen)}
-              variant="secondary"
-              className="bg-gray-800 border border-gray-700 hover:bg-gray-700"
-            />
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -1092,8 +1083,8 @@ export default function Home() {
               <TouchButton
                 onClick={handleSendMessage}
                 disabled={!input.trim() || sending}
-                size="md"
-                className="bg-gray-900 text-gray-400 hover:bg-gray-800 border border-gray-700"
+                variant="ghost"
+                className="h-[72px] bg-gray-900 text-gray-400 hover:bg-gray-800 border border-gray-700 shadow-none"
               >
                 {isMobile ? '→' : 'Send'}
               </TouchButton>
@@ -1215,12 +1206,6 @@ export default function Home() {
             : []
         }
         onClose={contextMenu.hideContextMenu}
-      />
-
-      {/* Integrations Sidebar */}
-      <IntegrationsSidebar
-        isOpen={isIntegrationsSidebarOpen}
-        onClose={() => setIsIntegrationsSidebarOpen(false)}
       />
     </div>
   );
