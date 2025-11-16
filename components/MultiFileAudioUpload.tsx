@@ -13,6 +13,7 @@ interface FileJob {
   transcription?: string;
   error?: string;
   jobId?: string;
+  service?: 'whisper' | 'assemblyai';
 }
 
 interface MultiFileAudioUploadProps {
@@ -56,15 +57,15 @@ export default function MultiFileAudioUpload({
       return;
     }
 
-    // Validate file sizes - OpenAI Whisper has 25MB limit
-    const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB (Whisper's limit)
+    // Validate file sizes - AssemblyAI supports up to 5GB
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB (AssemblyAI limit)
     const tooLargeFiles = audioFiles.filter(f => f.size > MAX_FILE_SIZE);
 
     if (tooLargeFiles.length > 0) {
       const fileList = tooLargeFiles.map(f =>
         `${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`
       ).join('\n');
-      alert(`❌ File too large. Maximum size: 25MB for transcription.\n\n${fileList}\n\nPlease split or compress these files.`);
+      alert(`❌ File too large. Maximum size: 5GB for transcription.\n\n${fileList}\n\nPlease split or compress these files.`);
       return;
     }
 
@@ -116,21 +117,21 @@ export default function MultiFileAudioUpload({
     updateJob(job.id, { status: 'uploading', progress: 10 });
 
     try {
-      // Verify file size is within Whisper's limit
       const fileSizeMB = job.file.size / (1024 * 1024);
-      if (fileSizeMB >= 25) {
-        throw new Error('File too large. Maximum size: 25MB for transcription.');
-      }
 
       const formData = new FormData();
       formData.append('audio', job.file);
       formData.append('userId', userId);
       formData.append('projectId', projectId);
 
-      // Use OpenAI Whisper for all files
-      const endpoint = '/api/audio/transcribe-progress';
+      // Hybrid routing: <25MB → Whisper, 25MB-5GB → AssemblyAI
+      const endpoint = fileSizeMB < 25
+        ? '/api/audio/transcribe-progress'  // OpenAI Whisper: <25MB
+        : '/api/transcribe/assemblyai';      // AssemblyAI: 25MB-5GB
 
-      updateJob(job.id, { status: 'uploading', progress: 30 });
+      const service = fileSizeMB < 25 ? 'whisper' : 'assemblyai';
+
+      updateJob(job.id, { status: 'uploading', progress: 30, service });
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -181,7 +182,10 @@ export default function MultiFileAudioUpload({
       }
 
       try {
-        const statusEndpoint = `/api/audio/transcribe-progress?jobId=${transcriptionJobId}`;
+        // Route status polling based on which service was used
+        const statusEndpoint = endpoint.includes('whisper') || endpoint.includes('transcribe-progress')
+          ? `/api/audio/transcribe-progress?jobId=${transcriptionJobId}`
+          : `/api/transcribe/assemblyai?jobId=${transcriptionJobId}`;
 
         const response = await fetch(statusEndpoint);
         const data = await response.json();
@@ -449,6 +453,11 @@ export default function MultiFileAudioUpload({
                       ? `${(job.file.size / 1024 / 1024).toFixed(1)} MB`
                       : `${(job.file.size / 1024 / 1024 / 1024).toFixed(2)} GB`
                     })
+                    {job.service && (
+                      <span style={{ marginLeft: '8px', color: job.service === 'whisper' ? '#4a9eff' : '#ff9a4a' }}>
+                        • {job.service === 'whisper' ? 'OpenAI Whisper' : 'AssemblyAI'}
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
