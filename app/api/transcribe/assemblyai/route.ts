@@ -7,6 +7,7 @@ import { AudioAutoTagger, TranscriptAnalysis } from '@/lib/audio-auto-tagger';
 import { BackgroundIndexer } from '@/lib/background-indexer';
 import { zapierClient } from '@/lib/zapier-client';
 import { costMonitor } from '@/lib/cost-monitor';
+import { uploadTranscriptionToDrive, GoogleDriveHelpers } from '@/lib/google-drive-uploader';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -650,6 +651,69 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
     } catch (costError) {
       console.error('[CostMonitor] Failed to track transcription cost:', costError);
       // Continue even if cost tracking fails
+    }
+
+    // GOOGLE DRIVE INTEGRATION: Upload transcription outputs to Google Drive
+    try {
+      console.log(`[GoogleDrive] Starting upload for transcription ${jobId}`);
+
+      // Generate SRT subtitles from utterances
+      const srtSubtitles = GoogleDriveHelpers.generateSRT(result.utterances || []);
+
+      // Prepare outputs for upload
+      const outputs = {
+        transcriptText: result.text,
+        speakerLabeled: {
+          transcription_id: result.id || jobId,
+          audio_duration: result.audio_duration,
+          utterances: result.utterances || [],
+          speaker_count: result.utterances?.length || 0
+        },
+        srtSubtitles: srtSubtitles,
+        metadata: {
+          transcription_id: result.id || jobId,
+          filename: filename,
+          file_size_bytes: fileSize,
+          audio_duration_seconds: result.audio_duration,
+          audio_duration_hours: audioDurationHours,
+          speaker_count: result.utterances?.length || 0,
+          cost_usd: transcriptionCost,
+          service: 'assemblyai',
+          created_at: new Date().toISOString(),
+          auto_tags: autoTagAnalysis?.tags || [],
+          action_items: autoTagAnalysis?.actionItems || [],
+          key_topics: autoTagAnalysis?.keyTopics || [],
+          project_category: autoTagAnalysis?.projectCategory,
+          importance_score: autoTagAnalysis?.importanceScore
+        }
+      };
+
+      // Upload to Google Drive (async, non-blocking)
+      uploadTranscriptionToDrive(filename, result.id || jobId, outputs)
+        .then((driveResult) => {
+          if (driveResult.success) {
+            const successCount = driveResult.uploads.filter(u => u.success).length;
+            console.log(`[GoogleDrive] Upload complete: ${successCount}/${driveResult.uploads.length} files uploaded`);
+
+            // Log each uploaded file
+            driveResult.uploads.forEach((upload) => {
+              if (upload.success) {
+                console.log(`[GoogleDrive] ✓ ${upload.fileName} (ID: ${upload.fileId})`);
+              } else {
+                console.log(`[GoogleDrive] ✗ ${upload.fileName || 'unknown'} - ${upload.error}`);
+              }
+            });
+          } else {
+            console.log(`[GoogleDrive] Upload skipped or failed: ${driveResult.error}`);
+          }
+        })
+        .catch((driveError) => {
+          console.error('[GoogleDrive] Upload error:', driveError);
+          // Don't fail the transcription if Google Drive upload fails
+        });
+    } catch (driveError: any) {
+      console.error('[GoogleDrive] Failed to prepare upload:', driveError);
+      // Continue even if Google Drive upload fails
     }
 
     // Complete
