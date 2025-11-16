@@ -28,6 +28,19 @@ const jobStore = new Map<string, {
   startTime: number;
 }>();
 
+// Helper function to format timestamp in milliseconds to HH:MM:SS
+function formatTimestamp(milliseconds: number): string {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
 async function uploadToAssemblyAIStream(audioFile: File): Promise<string> {
   // Convert File to ArrayBuffer for upload (Vercel-compatible)
   const arrayBuffer = await audioFile.arrayBuffer();
@@ -714,6 +727,96 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
     } catch (driveError: any) {
       console.error('[GoogleDrive] Failed to prepare upload:', driveError);
       // Continue even if Google Drive upload fails
+    }
+
+    // CONVERSATION CREATION: Save transcription to conversation history
+    try {
+      console.log('[CONVERSATION] Creating conversation for transcription...');
+
+      // Generate conversation ID
+      const conversationId = `conv_transcription_${Date.now()}_${jobId.substring(0, 8)}`;
+
+      // Format speaker-labeled transcript for conversation
+      const speakerTranscript = result.utterances && result.utterances.length > 0
+        ? result.utterances
+            .map((u: any, idx: number) =>
+              `[${formatTimestamp(u.start)}] Speaker ${u.speaker}: ${u.text}`
+            )
+            .join('\n\n')
+        : result.text;
+
+      // Create conversation title from filename
+      const conversationTitle = `Audio Transcription: ${filename}`;
+
+      // Create conversation record
+      const { data: conversation, error: convError } = await supabase
+        .from('conversations')
+        .insert({
+          id: conversationId,
+          user_id: userId,
+          title: conversationTitle,
+          project_id: projectId || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (convError) {
+        console.error('[CONVERSATION] Failed to create conversation:', convError);
+        throw convError;
+      }
+
+      console.log('[CONVERSATION] Conversation created:', conversationId);
+
+      // Generate embedding for transcription (for semantic search)
+      let transcriptEmbedding: number[] | null = null;
+      try {
+        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: result.text.substring(0, 8000) // Limit to 8000 chars for embedding
+          })
+        });
+
+        if (embeddingResponse.ok) {
+          const embeddingData = await embeddingResponse.json();
+          transcriptEmbedding = embeddingData.data[0].embedding;
+          console.log('[CONVERSATION] Embedding generated successfully');
+        }
+      } catch (embError) {
+        console.error('[CONVERSATION] Embedding generation failed (continuing anyway):', embError);
+      }
+
+      // Create message record with speaker-labeled content
+      const messageContent = `# Audio Transcription\n\n**File:** ${filename}\n**Duration:** ${Math.floor(result.audio_duration / 60)}m ${Math.floor(result.audio_duration % 60)}s\n**Speakers:** ${result.utterances?.length || 0} detected\n**Service:** AssemblyAI with Speaker Diarization\n\n---\n\n## Transcript\n\n${speakerTranscript}`;
+
+      const { error: msgError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          user_id: userId,
+          role: 'assistant',
+          content: messageContent,
+          embedding: transcriptEmbedding,
+          created_at: new Date().toISOString()
+        });
+
+      if (msgError) {
+        console.error('[CONVERSATION] Failed to create message:', msgError);
+        throw msgError;
+      }
+
+      console.log('[CONVERSATION] Message created successfully. Transcription now in chat history!');
+
+    } catch (conversationError: any) {
+      console.error('[CONVERSATION] Failed to save to conversation history:', conversationError);
+      // Continue even if conversation creation fails (transcription still saved to audio_transcriptions table)
     }
 
     // Complete
