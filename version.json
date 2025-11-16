@@ -1,6 +1,6 @@
 {
   "version": "8.33.0",
-  "commit": "PENDING",
+  "commit": "0ed3baf",
   "lastUpdated": "2025-11-16T14:00:00.000Z",
   "changelog": "feat: Add transcription access to main page with project integration - Added microphone button (🎤) to sidebar with gradient styling, created TranscriptionModal with project selector, integrated with existing MultiFileAudioUpload, transcriptions save as conversations in selected project, mobile-responsive with 44px touch targets. ~100 lines modified.",
   "platform": "Railway",
