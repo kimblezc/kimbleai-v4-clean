@@ -1,8 +1,8 @@
 {
-  "version": "8.33.0",
-  "commit": "0ed3baf",
-  "lastUpdated": "2025-11-16T14:00:00.000Z",
-  "changelog": "feat: Add transcription access to main page with project integration - Added microphone button (🎤) to sidebar with gradient styling, created TranscriptionModal with project selector, integrated with existing MultiFileAudioUpload, transcriptions save as conversations in selected project, mobile-responsive with 44px touch targets. ~100 lines modified.",
+  "version": "8.34.0",
+  "commit": "8537797",
+  "lastUpdated": "2025-11-16T16:00:00.000Z",
+  "changelog": "fix: Transcription system improvements - Removed Guardian button (feature deleted), fixed microphone permission request button in LiveRecording, switched to OpenAI Whisper only (25MB max, AssemblyAI API disabled), added proper file size validation with clear error messages. ~150 lines modified.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
