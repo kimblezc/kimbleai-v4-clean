@@ -92,7 +92,9 @@ export default function Home() {
 
   const conversationsHook = useConversations(currentUser);
   const {
+    conversations,
     currentConversationId,
+    setCurrentConversationId,
     groupedConversations,
     conversationsByProject,
     recentConversations,
@@ -230,7 +232,10 @@ export default function Home() {
     {
       key: 'p',
       ctrl: true,
-      callback: () => selectProject(''),
+      callback: () => {
+        selectProject('');
+        setCurrentConversationId(null);
+      },
       description: 'Go to General project',
       category: 'Navigation',
     },
@@ -708,7 +713,11 @@ export default function Home() {
           <div className="text-sm text-gray-500 font-medium px-2 mb-2">PROJECTS</div>
           <div className="space-y-1">
             <button
-              onClick={() => selectProject('')}
+              onClick={() => {
+                selectProject('');
+                setCurrentConversationId(null);
+                setIsMobileSidebarOpen(false);
+              }}
               className={`w-full py-1.5 px-3 rounded-md text-base text-left transition-colors ${
                 !currentProject ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900'
               }`}
@@ -718,7 +727,11 @@ export default function Home() {
             {projects.map(project => (
               <div key={project.id} className="flex items-center gap-1">
                 <button
-                  onClick={() => selectProject(project.id)}
+                  onClick={() => {
+                    selectProject(project.id);
+                    setCurrentConversationId(null);
+                    setIsMobileSidebarOpen(false);
+                  }}
                   className={`flex-1 py-1.5 px-3 rounded-md text-base text-left transition-colors ${
                     currentProject === project.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900'
                   }`}
@@ -1028,7 +1041,75 @@ export default function Home() {
 
         {/* Messages Area */}
         <div ref={containerRef} className="flex-1 overflow-y-auto p-4 relative">
-          {messages.length === 0 ? (
+          {/* Project Detail View - shows when project is selected but no conversation is active */}
+          {currentProject && !currentConversationId && messages.length === 0 ? (
+            <div className="max-w-4xl mx-auto">
+              {/* Project Header */}
+              <div className="flex items-center gap-4 mb-8 pt-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-3xl font-bold">
+                    {(projects.find(p => p.id === currentProject)?.name || 'P')[0].toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-3xl font-semibold text-white leading-tight">
+                    {projects.find(p => p.id === currentProject)?.name || 'Project'}
+                  </h1>
+                  <p className="text-base text-gray-400 mt-1">
+                    {conversationsByProject[currentProject]?.length || 0} conversation{(conversationsByProject[currentProject]?.length || 0) !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+
+              {/* Conversations List */}
+              <div className="space-y-2">
+                <h2 className="text-lg font-medium text-gray-300 mb-4">Conversations</h2>
+                {conversationsByProject[currentProject] && conversationsByProject[currentProject].length > 0 ? (
+                  <div className="grid gap-3">
+                    {conversationsByProject[currentProject].map((conv) => (
+                      <button
+                        key={conv.id}
+                        onClick={() => {
+                          selectConversation(conv.id);
+                        }}
+                        className="flex items-start gap-4 p-4 bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 rounded-lg text-left transition-all group"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-gray-800 group-hover:bg-gray-700 flex items-center justify-center flex-shrink-0 transition-colors">
+                          <span className="text-xl">💬</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-medium text-white truncate group-hover:text-blue-400 transition-colors">
+                            {conv.title || 'Untitled conversation'}
+                          </h3>
+                          {(conv.updated_at || conv.created_at) && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {formatRelativeTime(conv.updated_at || conv.created_at)}
+                            </p>
+                          )}
+                          {conv.summary && (
+                            <p className="text-sm text-gray-400 mt-2 line-clamp-2">
+                              {conv.summary}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0 text-gray-600 group-hover:text-gray-400 transition-colors">
+                          →
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">📁</div>
+                    <p className="text-gray-400 text-lg mb-4">No conversations yet</p>
+                    <p className="text-gray-500 text-sm">
+                      Start a new conversation to add it to this project
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="text-center mt-32 max-w-2xl mx-auto px-8">
               <div className="text-4xl text-gray-400 mb-3">{getGreeting()}</div>
               <div className="text-2xl text-gray-600 italic leading-relaxed transition-opacity duration-500">

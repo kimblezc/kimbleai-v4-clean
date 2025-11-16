@@ -1,8 +1,8 @@
 {
-  "version": "8.29.0",
-  "commit": "6d2dbcf",
-  "lastUpdated": "2025-11-16T06:15:00.000Z",
-  "changelog": "feat: Projects functionality fully operational - (1) Verified all database tables exist (projects, project_tasks, project_collaborators). (2) Verified conversation-to-project linking works (code already implemented). (3) Added 'Assign to Project' context menu for existing conversations. (4) Added visual project indicator below chat input (shows current project selection). (5) Created comprehensive documentation (PROJECTS_DIAGNOSTIC_REPORT.md, PROJECTS_USER_GUIDE.md). Projects system is 100% functional: create/edit/delete projects, auto-link new conversations, group by project in sidebar, ChatGPT-style project headers. Issue was UX clarity, not broken functionality. ~100 lines added.",
+  "version": "8.30.0",
+  "commit": "TBD",
+  "lastUpdated": "2025-11-16T08:45:00.000Z",
+  "changelog": "fix: Critical bug fixes + ChatGPT-style project view - (1) Fixed 'conversations is not defined' error by adding missing variable to destructuring (app/page.tsx:95). (2) Exposed setCurrentConversationId from useConversations hook for external use. (3) Implemented full ChatGPT-style project detail view: clicking project in sidebar now shows project header with icon, conversation count, and grid of all project conversations with titles, timestamps, summaries. (4) Added project-specific keyboard shortcut (Ctrl+P clears conversation). (5) Empty state when project has no conversations. Fixes runtime errors and implements major requested feature. ~80 lines added.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

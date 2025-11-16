@@ -248,6 +248,7 @@ export function useConversations(userId: string) {
     recentConversations,
     loading,
     currentConversationId,
+    setCurrentConversationId,
     pinnedConversations,
     loadConversations,
     selectConversation,
