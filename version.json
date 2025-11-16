@@ -1,8 +1,8 @@
 {
-  "version": "8.37.0",
-  "commit": "0ec4905",
-  "lastUpdated": "2025-11-16T19:30:00.000Z",
-  "changelog": "fix: Update AssemblyAI API key to correct kimbleai2 key (b3a98632d1a34632bdeb1fcfdffe5e34) - Fixed 401 authentication errors on large file uploads by switching to verified working key. Updated Railway, .env.local, and .env.production.",
+  "version": "8.38.0",
+  "commit": "8e65f9b",
+  "lastUpdated": "2025-11-16T20:00:00.000Z",
+  "changelog": "feat: Complete transcription UX improvements - (1) Removed popup confirmation, files now auto-start transcription on upload (d89e262). (2) Added speaker-labeled transcription display with timestamps, speaker count badge, and formatted preview showing [MM:SS] Speaker X: text (8e65f9b). (3) Integrated transcriptions into conversation/chat history with semantic search embeddings (6a9692d). Transcriptions now appear in sidebar, support project assignment, and display speaker differentiation instead of plain text wall.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
