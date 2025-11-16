@@ -1,6 +1,6 @@
 {
   "version": "8.37.0",
-  "commit": "pending",
+  "commit": "0ec4905",
   "lastUpdated": "2025-11-16T19:30:00.000Z",
   "changelog": "fix: Update AssemblyAI API key to correct kimbleai2 key (b3a98632d1a34632bdeb1fcfdffe5e34) - Fixed 401 authentication errors on large file uploads by switching to verified working key. Updated Railway, .env.local, and .env.production.",
   "platform": "Railway",
