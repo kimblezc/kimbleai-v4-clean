@@ -44,7 +44,7 @@ export default function MultiFileAudioUpload({
     addFiles(files);
   };
 
-  const addFiles = (files: File[]) => {
+  const addFiles = async (files: File[]) => {
     const audioFiles = files.filter(f =>
       f.type.startsWith('audio/') ||
       f.name.endsWith('.m4a') ||
@@ -69,24 +69,6 @@ export default function MultiFileAudioUpload({
       return;
     }
 
-    // Calculate total size
-    const totalSizeMB = audioFiles.reduce((sum, f) => sum + f.size, 0) / (1024 * 1024);
-
-    // Show warning for large batches
-    if (audioFiles.length > 10 || totalSizeMB > 100) {
-      const confirmed = window.confirm(
-        `⚠️ LARGE BATCH WARNING ⚠️\n\n` +
-        `Files: ${audioFiles.length}\n` +
-        `Total Size: ${totalSizeMB.toFixed(2)} MB\n\n` +
-        `Processing time may take several minutes.\n\n` +
-        `Proceed with transcription?`
-      );
-
-      if (!confirmed) {
-        return;
-      }
-    }
-
     const newJobs: FileJob[] = audioFiles.map(file => ({
       id: generateId(),
       file,
@@ -95,6 +77,24 @@ export default function MultiFileAudioUpload({
     }));
 
     setJobs(prev => [...prev, ...newJobs]);
+
+    // Auto-start transcription immediately after adding files
+    // Process new jobs after state update completes
+    setTimeout(() => {
+      setProcessing(true);
+      processNewJobs(newJobs);
+    }, 100);
+  };
+
+  const processNewJobs = async (newJobs: FileJob[]) => {
+    for (const job of newJobs) {
+      await processFile(job);
+    }
+    setProcessing(false);
+
+    if (onComplete) {
+      onComplete(jobs);
+    }
   };
 
   const processAllFiles = async () => {
