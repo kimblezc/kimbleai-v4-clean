@@ -1,6 +1,6 @@
 {
   "version": "8.28.0",
-  "commit": "PENDING",
+  "commit": "27de9e0",
   "lastUpdated": "2025-11-16T00:00:00.000Z",
   "changelog": "fix: Critical UI/UX fixes - (1) Removed IntegrationsSidebar (not functional, just a list). (2) Fixed send button underglow by adding variant='ghost' and shadow-none. (3) Fixed send button alignment by matching textarea height (72px). (4) Fixed D&D facts repetition: synced sessionDataRef after updates, added HTTP header size limits (7KB max with fallback to last 50 facts), fixed race condition with useCallback and proper dependencies. All issues resolved.",
   "platform": "Railway",
