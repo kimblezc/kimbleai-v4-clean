@@ -537,6 +537,62 @@ export default function Home() {
         },
       },
       {
+        label: 'Assign to Project',
+        icon: '📁',
+        onClick: async () => {
+          // Create a simple project selector
+          const projectOptions = [
+            'Select a project:',
+            '',
+            '0: General (no project)',
+            ...projects.map((p, i) => `${i + 1}: ${p.name}`)
+          ].join('\n');
+
+          const selection = prompt(projectOptions + '\n\nEnter number:');
+
+          if (selection === null) return; // Cancelled
+
+          const index = parseInt(selection);
+          let projectId = '';
+
+          if (index === 0) {
+            projectId = ''; // General (unassigned)
+          } else if (index > 0 && index <= projects.length) {
+            projectId = projects[index - 1].id;
+          } else {
+            toast.error('Invalid selection');
+            return;
+          }
+
+          // Call API to assign project
+          try {
+            const response = await fetch('/api/conversations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'assign_project',
+                conversationId: conv.id,
+                userId: currentUser,
+                projectId: projectId || null
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to assign project');
+            }
+
+            // Reload conversations to show new grouping
+            await loadConversations();
+
+            const projectName = projectId ? projects.find(p => p.id === projectId)?.name : 'General';
+            toast.success(`Moved to ${projectName}`);
+          } catch (error) {
+            console.error('Error assigning project:', error);
+            toast.error('Failed to assign project');
+          }
+        },
+      },
+      {
         label: 'Duplicate',
         icon: '📑',
         disabled: true,
@@ -1097,8 +1153,8 @@ export default function Home() {
               </div>
             )}
 
-            {/* Minimalist Model Indicator */}
-            <div className="flex items-center mt-2 px-1 text-xs text-gray-500">
+            {/* Minimalist Model and Project Indicator */}
+            <div className="flex items-center justify-between mt-2 px-1 text-xs text-gray-500">
               <span className="font-mono">
                 Model: {selectedModel === 'claude-sonnet-4-5' ? 'Claude Sonnet' :
                        selectedModel === 'gpt-4o' ? 'GPT-4o' :
@@ -1106,6 +1162,18 @@ export default function Home() {
                        selectedModel === 'claude-3-5-haiku' ? 'Claude Haiku' :
                        selectedModel}
               </span>
+              {currentProject && (
+                <span className="flex items-center gap-1 text-blue-400 font-medium">
+                  <span>📁</span>
+                  <span>{projects.find(p => p.id === currentProject)?.name || 'Project'}</span>
+                </span>
+              )}
+              {!currentProject && (
+                <span className="flex items-center gap-1 text-gray-600">
+                  <span>📂</span>
+                  <span>General</span>
+                </span>
+              )}
             </div>
 
             {showTags && (

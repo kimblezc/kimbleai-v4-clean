@@ -1,8 +1,8 @@
 {
-  "version": "8.28.0",
-  "commit": "27de9e0",
-  "lastUpdated": "2025-11-16T00:00:00.000Z",
-  "changelog": "fix: Critical UI/UX fixes - (1) Removed IntegrationsSidebar (not functional, just a list). (2) Fixed send button underglow by adding variant='ghost' and shadow-none. (3) Fixed send button alignment by matching textarea height (72px). (4) Fixed D&D facts repetition: synced sessionDataRef after updates, added HTTP header size limits (7KB max with fallback to last 50 facts), fixed race condition with useCallback and proper dependencies. All issues resolved.",
+  "version": "8.29.0",
+  "commit": "d967768",
+  "lastUpdated": "2025-11-16T06:15:00.000Z",
+  "changelog": "feat: Projects functionality fully operational - (1) Verified all database tables exist (projects, project_tasks, project_collaborators). (2) Verified conversation-to-project linking works (code already implemented). (3) Added 'Assign to Project' context menu for existing conversations. (4) Added visual project indicator below chat input (shows current project selection). (5) Created comprehensive documentation (PROJECTS_DIAGNOSTIC_REPORT.md, PROJECTS_USER_GUIDE.md). Projects system is 100% functional: create/edit/delete projects, auto-link new conversations, group by project in sidebar, ChatGPT-style project headers. Issue was UX clarity, not broken functionality. ~100 lines added.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
