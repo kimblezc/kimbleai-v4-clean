@@ -1,8 +1,8 @@
 {
-  "version": "8.34.0",
-  "commit": "8537797",
-  "lastUpdated": "2025-11-16T16:00:00.000Z",
-  "changelog": "fix: Transcription system improvements - Removed Guardian button (feature deleted), fixed microphone permission request button in LiveRecording, switched to OpenAI Whisper only (25MB max, AssemblyAI API disabled), added proper file size validation with clear error messages. ~150 lines modified.",
+  "version": "8.35.0",
+  "commit": "f083084",
+  "lastUpdated": "2025-11-16T18:00:00.000Z",
+  "changelog": "fix: Re-enable AssemblyAI for large files (25MB-5GB hybrid routing) - Restored hybrid routing logic with Whisper for files <25MB and AssemblyAI for files 25MB-5GB, added service indicator in UI (blue for Whisper, orange for AssemblyAI), increased max file size back to 5GB. ~150 lines modified.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
