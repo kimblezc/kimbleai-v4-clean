@@ -1,8 +1,8 @@
 {
-  "version": "8.36.0",
-  "commit": "3c99293",
-  "lastUpdated": "2025-11-16T14:43:00.000Z",
-  "changelog": "feat: Add Google Drive integration for AssemblyAI transcription outputs - Created lib/google-drive-uploader.ts with service account auth, uploads 4 files per transcription (TXT, speaker-labeled JSON, SRT subtitles, metadata). Integration is async/non-blocking, gracefully skips if credentials not configured. ~300 lines added.",
+  "version": "8.37.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-16T19:30:00.000Z",
+  "changelog": "fix: Update AssemblyAI API key to correct kimbleai2 key (b3a98632d1a34632bdeb1fcfdffe5e34) - Fixed 401 authentication errors on large file uploads by switching to verified working key. Updated Railway, .env.local, and .env.production.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
