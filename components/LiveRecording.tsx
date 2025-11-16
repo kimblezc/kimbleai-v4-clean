@@ -46,6 +46,18 @@ export default function LiveRecording({
     }
   }, [transcript, partialTranscript]);
 
+  const requestMicrophonePermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      setPermissionGranted(true);
+      setError(null);
+    } catch (err: any) {
+      setPermissionGranted(false);
+      setError('Microphone permission denied. Please allow microphone access to use live recording.');
+    }
+  };
+
   const checkMicrophonePermission = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -320,7 +332,7 @@ export default function LiveRecording({
           {error || 'Please allow microphone access to use live recording.'}
         </div>
         <button
-          onClick={checkMicrophonePermission}
+          onClick={requestMicrophonePermission}
           style={{
             padding: '12px 24px',
             backgroundColor: '#4a9eff',

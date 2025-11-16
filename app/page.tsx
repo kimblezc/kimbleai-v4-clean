@@ -968,19 +968,6 @@ export default function Home() {
           </a>
         </div>
 
-        {/* Guardian Dashboard Link */}
-        <div className="px-3 pb-3">
-          <a
-            href="/guardian"
-            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-900/20 to-cyan-900/20 hover:from-blue-800/30 hover:to-cyan-800/30 border border-blue-700/30 hover:border-blue-600/50 transition-all duration-200 group"
-          >
-            <span className="text-xl group-hover:scale-110 transition-transform">🛡️</span>
-            <span className="text-base font-medium text-blue-400 group-hover:text-blue-300">
-              Guardian Dashboard
-            </span>
-          </a>
-        </div>
-
         {/* Transcription Button */}
         <div className="px-3 pb-3">
           <button

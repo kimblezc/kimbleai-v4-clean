@@ -56,32 +56,28 @@ export default function MultiFileAudioUpload({
       return;
     }
 
-    // Validate file sizes and show warnings
-    const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+    // Validate file sizes - OpenAI Whisper has 25MB limit
+    const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB (Whisper's limit)
     const tooLargeFiles = audioFiles.filter(f => f.size > MAX_FILE_SIZE);
 
     if (tooLargeFiles.length > 0) {
       const fileList = tooLargeFiles.map(f =>
-        `${f.name} (${(f.size / 1024 / 1024 / 1024).toFixed(2)} GB)`
+        `${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`
       ).join('\n');
-      alert(`❌ Files exceed 5GB limit:\n\n${fileList}\n\nMaximum file size: 5GB per file`);
+      alert(`❌ File too large. Maximum size: 25MB for transcription.\n\n${fileList}\n\nPlease split or compress these files.`);
       return;
     }
 
-    // Calculate total size and estimated cost
-    const totalSizeGB = audioFiles.reduce((sum, f) => sum + f.size, 0) / (1024 * 1024 * 1024);
-    const estimatedHours = totalSizeGB * 0.5; // Rough estimate: 2GB per hour
-    const estimatedCost = estimatedHours * 0.41; // $0.41/hour average
+    // Calculate total size
+    const totalSizeMB = audioFiles.reduce((sum, f) => sum + f.size, 0) / (1024 * 1024);
 
     // Show warning for large batches
-    if (totalSizeGB > 2 || estimatedCost > 10) {
+    if (audioFiles.length > 10 || totalSizeMB > 100) {
       const confirmed = window.confirm(
         `⚠️ LARGE BATCH WARNING ⚠️\n\n` +
         `Files: ${audioFiles.length}\n` +
-        `Total Size: ${totalSizeGB.toFixed(2)} GB\n` +
-        `Estimated Duration: ${estimatedHours.toFixed(1)} hours\n` +
-        `Estimated Cost: $${estimatedCost.toFixed(2)}\n\n` +
-        `Processing time: ${Math.ceil(estimatedHours * 1.5)}-${Math.ceil(estimatedHours * 2)} minutes\n\n` +
+        `Total Size: ${totalSizeMB.toFixed(2)} MB\n\n` +
+        `Processing time may take several minutes.\n\n` +
         `Proceed with transcription?`
       );
 
@@ -120,19 +116,19 @@ export default function MultiFileAudioUpload({
     updateJob(job.id, { status: 'uploading', progress: 10 });
 
     try {
+      // Verify file size is within Whisper's limit
+      const fileSizeMB = job.file.size / (1024 * 1024);
+      if (fileSizeMB >= 25) {
+        throw new Error('File too large. Maximum size: 25MB for transcription.');
+      }
+
       const formData = new FormData();
       formData.append('audio', job.file);
       formData.append('userId', userId);
       formData.append('projectId', projectId);
 
-      // Route based on file size
-      // Small files (<25MB): OpenAI Whisper (25MB API limit)
-      // Medium files (25MB-100MB): AssemblyAI
-      // Large files (100MB-5GB): AssemblyAI (handles up to 5GB)
-      const fileSizeMB = job.file.size / (1024 * 1024);
-      const endpoint = fileSizeMB < 25
-        ? '/api/audio/transcribe-progress'
-        : '/api/transcribe/assemblyai';
+      // Use OpenAI Whisper for all files
+      const endpoint = '/api/audio/transcribe-progress';
 
       updateJob(job.id, { status: 'uploading', progress: 30 });
 
@@ -185,9 +181,7 @@ export default function MultiFileAudioUpload({
       }
 
       try {
-        const statusEndpoint = endpoint.includes('whisper')
-          ? `/api/audio/transcribe-progress?jobId=${transcriptionJobId}`
-          : `/api/transcribe/assemblyai?jobId=${transcriptionJobId}`;
+        const statusEndpoint = `/api/audio/transcribe-progress?jobId=${transcriptionJobId}`;
 
         const response = await fetch(statusEndpoint);
         const data = await response.json();
