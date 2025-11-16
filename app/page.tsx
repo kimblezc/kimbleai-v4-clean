@@ -1203,7 +1203,7 @@ export default function Home() {
         {/* Input Area */}
         <div className={`border-t border-gray-800 bg-gray-950 p-3 md:p-4 ${isMobile ? 'safe-padding-bottom' : ''}`}>
           <div className="max-w-3xl mx-auto">
-            <div className="flex items-end gap-2">
+            <div className="flex items-start gap-2">
               <div className="flex-1">
                 <SmartInput
                   value={input}
@@ -1221,7 +1221,7 @@ export default function Home() {
                 onClick={handleSendMessage}
                 disabled={!input.trim() || sending}
                 variant="ghost"
-                className="h-[72px] bg-gray-900 text-gray-400 hover:bg-gray-800 border border-gray-700 shadow-none"
+                className="h-[72px] px-6 bg-gray-900 text-gray-400 hover:bg-gray-800 border border-gray-700 shadow-none"
               >
                 {isMobile ? '→' : 'Send'}
               </TouchButton>
