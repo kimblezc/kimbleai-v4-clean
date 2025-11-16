@@ -1,8 +1,8 @@
 {
-  "version": "8.35.0",
-  "commit": "f083084",
-  "lastUpdated": "2025-11-16T18:00:00.000Z",
-  "changelog": "fix: Re-enable AssemblyAI for large files (25MB-5GB hybrid routing) - Restored hybrid routing logic with Whisper for files <25MB and AssemblyAI for files 25MB-5GB, added service indicator in UI (blue for Whisper, orange for AssemblyAI), increased max file size back to 5GB. ~150 lines modified.",
+  "version": "8.36.0",
+  "commit": "3c99293",
+  "lastUpdated": "2025-11-16T14:43:00.000Z",
+  "changelog": "feat: Add Google Drive integration for AssemblyAI transcription outputs - Created lib/google-drive-uploader.ts with service account auth, uploads 4 files per transcription (TXT, speaker-labeled JSON, SRT subtitles, metadata). Integration is async/non-blocking, gracefully skips if credentials not configured. ~300 lines added.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
