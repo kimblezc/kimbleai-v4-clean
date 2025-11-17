@@ -732,6 +732,23 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
     // CONVERSATION CREATION: Save transcription to conversation history
     try {
       console.log('[CONVERSATION] Creating conversation for transcription...');
+      console.log('[CONVERSATION] User ID:', userId, 'Project ID:', projectId, 'Filename:', filename);
+
+      // Get user data to ensure proper UUID format
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .or(`id.eq.${userId},name.ilike.${userId},email.ilike.${userId}`)
+        .single();
+
+      if (userError || !userData) {
+        console.error('[CONVERSATION] User lookup failed:', userError);
+        console.error('[CONVERSATION] Attempted userId:', userId);
+        throw new Error(`User not found for userId: ${userId}`);
+      }
+
+      const actualUserId = userData.id; // Use UUID
+      console.log('[CONVERSATION] Found user:', userData.email, 'UUID:', actualUserId);
 
       // Generate conversation ID
       const conversationId = `conv_transcription_${Date.now()}_${jobId.substring(0, 8)}`;
@@ -748,14 +765,36 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
       // Create conversation title from filename
       const conversationTitle = `Audio Transcription: ${filename}`;
 
+      // Validate project_id exists if provided
+      let validProjectId = null;
+      if (projectId && projectId !== 'general') {
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('id', projectId)
+          .single();
+
+        if (projectError) {
+          console.warn('[CONVERSATION] Project validation failed:', projectError);
+          console.warn('[CONVERSATION] Using null project_id instead of:', projectId);
+        } else {
+          validProjectId = projectId;
+        }
+      }
+
+      console.log('[CONVERSATION] Creating conversation with ID:', conversationId);
+      console.log('[CONVERSATION] Title:', conversationTitle);
+      console.log('[CONVERSATION] User UUID:', actualUserId);
+      console.log('[CONVERSATION] Project ID:', validProjectId);
+
       // Create conversation record
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
           id: conversationId,
-          user_id: userId,
+          user_id: actualUserId, // Use UUID instead of string
           title: conversationTitle,
-          project_id: projectId || null,
+          project_id: validProjectId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -764,10 +803,16 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
 
       if (convError) {
         console.error('[CONVERSATION] Failed to create conversation:', convError);
+        console.error('[CONVERSATION] Conversation data:', JSON.stringify({
+          id: conversationId,
+          user_id: actualUserId,
+          title: conversationTitle,
+          project_id: validProjectId
+        }));
         throw convError;
       }
 
-      console.log('[CONVERSATION] Conversation created:', conversationId);
+      console.log('[CONVERSATION] Conversation created successfully:', conversationId);
 
       // Generate embedding for transcription (for semantic search)
       let transcriptEmbedding: number[] | null = null;
@@ -796,23 +841,36 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
       // Create message record with speaker-labeled content
       const messageContent = `# Audio Transcription\n\n**File:** ${filename}\n**Duration:** ${Math.floor(result.audio_duration / 60)}m ${Math.floor(result.audio_duration % 60)}s\n**Speakers:** ${result.utterances?.length || 0} detected\n**Service:** AssemblyAI with Speaker Diarization\n\n---\n\n## Transcript\n\n${speakerTranscript}`;
 
-      const { error: msgError } = await supabase
+      console.log('[CONVERSATION] Creating message in conversation:', conversationId);
+      console.log('[CONVERSATION] Message length:', messageContent.length, 'chars');
+      console.log('[CONVERSATION] Embedding:', transcriptEmbedding ? 'generated' : 'null');
+
+      const { data: messageData, error: msgError } = await supabase
         .from('messages')
         .insert({
           conversation_id: conversationId,
-          user_id: userId,
+          user_id: actualUserId, // Use UUID instead of string
           role: 'assistant',
           content: messageContent,
           embedding: transcriptEmbedding,
           created_at: new Date().toISOString()
-        });
+        })
+        .select()
+        .single();
 
       if (msgError) {
         console.error('[CONVERSATION] Failed to create message:', msgError);
+        console.error('[CONVERSATION] Message data:', JSON.stringify({
+          conversation_id: conversationId,
+          user_id: actualUserId,
+          role: 'assistant',
+          content_length: messageContent.length
+        }));
         throw msgError;
       }
 
-      console.log('[CONVERSATION] Message created successfully. Transcription now in chat history!');
+      console.log('[CONVERSATION] Message created successfully with ID:', messageData?.id);
+      console.log('[CONVERSATION] Transcription now in chat history! Conversation ID:', conversationId);
 
     } catch (conversationError: any) {
       console.error('[CONVERSATION] Failed to save to conversation history:', conversationError);
