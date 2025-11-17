@@ -1,8 +1,8 @@
 {
-  "version": "8.44.0",
-  "commit": "0ae165c",
-  "lastUpdated": "2025-11-17T13:36:00.000Z",
-  "changelog": "fix: Complete transcription bug fixes - UUID lookup, 431 errors, sidebar integration. Fixed user_id UUID vs string query issue, lowered client header threshold to 6KB, fixed conversation creation to use actualUserId. All three bugs resolved.",
+  "version": "8.45.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-17T14:30:00.000Z",
+  "changelog": "fix: CRITICAL - Fixed v8.44.0 actualUserId scope error. Use transcriptionData.user_id (saved UUID) instead of out-of-scope actualUserId variable for conversation creation. Prevents ReferenceError: actualUserId is not defined.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

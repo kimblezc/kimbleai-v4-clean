@@ -1279,10 +1279,16 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
       }
 
       // Create conversation record
+      // Get UUID from saved transcription record since actualUserId is out of scope here
+      const savedUserId = transcriptionData?.user_id;
+      if (!savedUserId) {
+        throw new Error('Missing user_id from transcription record');
+      }
+
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
-          user_id: actualUserId,  // Use actualUserId (UUID) not userId (string)
+          user_id: savedUserId,  // Use UUID from saved transcription record
           title: conversationTitle,
           project_id: validProjectId,
           created_at: new Date().toISOString(),
