@@ -1,7 +1,7 @@
 {
   "version": "8.44.0",
-  "commit": "TBD",
-  "lastUpdated": "2025-11-17T13:35:00.000Z",
+  "commit": "0ae165c",
+  "lastUpdated": "2025-11-17T13:36:00.000Z",
   "changelog": "fix: Complete transcription bug fixes - UUID lookup, 431 errors, sidebar integration. Fixed user_id UUID vs string query issue, lowered client header threshold to 6KB, fixed conversation creation to use actualUserId. All three bugs resolved.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
