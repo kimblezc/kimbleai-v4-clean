@@ -1,8 +1,8 @@
 {
-  "version": "8.43.0",
-  "commit": "4b5e9fb",
-  "lastUpdated": "2025-11-17T12:30:00.000Z",
-  "changelog": "fix: DnD facts header size + transcription sidebar integration. Fixed header size mismatch (client 6KB vs server 8KB) to prevent 431 errors. Added conversation creation to transcription API so transcriptions now appear in sidebar. Both bugs fixed.",
+  "version": "8.44.0",
+  "commit": "TBD",
+  "lastUpdated": "2025-11-17T13:35:00.000Z",
+  "changelog": "fix: Complete transcription bug fixes - UUID lookup, 431 errors, sidebar integration. Fixed user_id UUID vs string query issue, lowered client header threshold to 6KB, fixed conversation creation to use actualUserId. All three bugs resolved.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

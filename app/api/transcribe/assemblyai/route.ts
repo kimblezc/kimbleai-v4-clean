@@ -1282,7 +1282,7 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
-          user_id: userId,
+          user_id: actualUserId,  // Use actualUserId (UUID) not userId (string)
           title: conversationTitle,
           project_id: validProjectId,
           created_at: new Date().toISOString(),
