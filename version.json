@@ -1,8 +1,8 @@
 {
-  "version": "8.40.0",
-  "commit": "7270692",
-  "lastUpdated": "2025-11-17T08:05:00.000Z",
-  "changelog": "fix: Critical transcription bug fixes - Fixed AssemblyAI conversation integration (conversations now appear in sidebar!) and Whisper timeout issues. Root cause: userId was string instead of UUID, causing silent failures. Added user/project validation, enhanced error logging, and 300s timeout for Whisper (matching AssemblyAI). Build tested successfully. All transcriptions now properly integrate with chat history.",
+  "version": "8.41.0",
+  "commit": "e8ab616",
+  "lastUpdated": "2025-11-17T11:08:00.000Z",
+  "changelog": "fix: Critical transcription UUID bugs - Fixed userId string to UUID conversion for AutoTagging and conversation integration. Root cause: userId was string 'zach'/'rebecca' instead of UUID, causing silent failures in knowledge base storage and conversation creation. Moved user lookup to top of POST handler, changed projectId default from 'general' to null, ensured all database operations use actualUserId (UUID). Build tested successfully.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
