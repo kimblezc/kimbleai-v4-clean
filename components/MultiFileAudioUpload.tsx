@@ -287,6 +287,108 @@ export default function MultiFileAudioUpload({
     URL.revokeObjectURL(url);
   };
 
+  // Individual file download functions
+  const downloadPlainText = (job: FileJob) => {
+    if (!job.transcription) return;
+
+    const blob = new Blob([job.transcription], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${job.file.name.replace(/\.[^/.]+$/, '')}-transcript.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadSpeakerJSON = (job: FileJob) => {
+    if (!job.utterances || job.utterances.length === 0) return;
+
+    const jsonData = {
+      filename: job.file.name,
+      speakerCount: job.speakerCount || 0,
+      service: job.service || 'unknown',
+      utterances: job.utterances.map(u => ({
+        speaker: u.speaker,
+        text: u.text,
+        start: u.start,
+        end: u.end,
+        timestamp: formatTimestampForDownload(u.start)
+      }))
+    };
+
+    const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${job.file.name.replace(/\.[^/.]+$/, '')}-speakers.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadSRT = (job: FileJob) => {
+    if (!job.utterances || job.utterances.length === 0) return;
+
+    const srtContent = job.utterances.map((utterance, idx) => {
+      const startTime = formatSRTTimestamp(utterance.start);
+      const endTime = formatSRTTimestamp(utterance.end);
+      return `${idx + 1}\n${startTime} --> ${endTime}\nSpeaker ${utterance.speaker}: ${utterance.text}\n`;
+    }).join('\n');
+
+    const blob = new Blob([srtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${job.file.name.replace(/\.[^/.]+$/, '')}-subtitles.srt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadMetadata = (job: FileJob) => {
+    if (!job.transcription) return;
+
+    const metadata = {
+      filename: job.file.name,
+      fileSize: job.file.size,
+      service: job.service || 'unknown',
+      speakerCount: job.speakerCount || 0,
+      utteranceCount: job.utterances?.length || 0,
+      transcriptLength: job.transcription.length,
+      hasTimestamps: (job.utterances && job.utterances.length > 0) || false,
+      processedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${job.file.name.replace(/\.[^/.]+$/, '')}-metadata.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Helper functions for timestamp formatting
+  const formatTimestampForDownload = (milliseconds: number): string => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const formatSRTTimestamp = (milliseconds: number): string => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const ms = milliseconds % 1000;
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
+  };
+
   const totalFiles = jobs.length;
   const completed = jobs.filter(j => j.status === 'completed').length;
   const failed = jobs.filter(j => j.status === 'failed').length;
@@ -592,6 +694,93 @@ export default function MultiFileAudioUpload({
                       {job.transcription.length > 200 && '...'}
                     </>
                   )}
+                </div>
+              )}
+
+              {/* Individual Download Buttons */}
+              {job.status === 'completed' && job.transcription && (
+                <div style={{
+                  marginTop: '8px',
+                  display: 'flex',
+                  gap: '6px',
+                  flexWrap: 'wrap'
+                }}>
+                  <button
+                    onClick={() => downloadPlainText(job)}
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: '11px',
+                      backgroundColor: '#2a2a2a',
+                      color: '#4a9eff',
+                      border: '1px solid #4a9eff',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    title="Download plain text transcript"
+                  >
+                    📄 TXT
+                  </button>
+                  {job.utterances && job.utterances.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => downloadSpeakerJSON(job)}
+                        style={{
+                          padding: '6px 10px',
+                          fontSize: '11px',
+                          backgroundColor: '#2a2a2a',
+                          color: '#66ff66',
+                          border: '1px solid #44aa44',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="Download speaker-labeled JSON with timestamps"
+                      >
+                        🎤 Speakers JSON
+                      </button>
+                      <button
+                        onClick={() => downloadSRT(job)}
+                        style={{
+                          padding: '6px 10px',
+                          fontSize: '11px',
+                          backgroundColor: '#2a2a2a',
+                          color: '#ff9a4a',
+                          border: '1px solid #cc7733',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="Download SRT subtitles with speaker labels"
+                      >
+                        📺 SRT
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => downloadMetadata(job)}
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: '11px',
+                      backgroundColor: '#2a2a2a',
+                      color: '#ff66ff',
+                      border: '1px solid #aa44aa',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    title="Download metadata JSON with file info"
+                  >
+                    📊 Metadata
+                  </button>
                 </div>
               )}
             </div>
