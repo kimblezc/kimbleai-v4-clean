@@ -1,6 +1,6 @@
 {
   "version": "8.42.0",
-  "commit": "7d2b1d1",
+  "commit": "87fd8cc",
   "lastUpdated": "2025-11-17T12:00:00.000Z",
   "changelog": "fix: Critical API bugs - UUID lookup query, DnD facts 431, AssemblyAI verification. Fixed Supabase .or() query to handle both UUIDs and string names properly by checking UUID format first (prevents 'invalid input syntax for type uuid' error). Added 8KB header size limit to DnD facts API to prevent 431 Request Header Fields Too Large error. Verified AssemblyAI route exports POST/GET methods correctly. Build tested successfully.",
   "platform": "Railway",
