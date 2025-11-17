@@ -1,6 +1,6 @@
 {
   "version": "8.43.0",
-  "commit": "pending",
+  "commit": "4b5e9fb",
   "lastUpdated": "2025-11-17T12:30:00.000Z",
   "changelog": "fix: DnD facts header size + transcription sidebar integration. Fixed header size mismatch (client 6KB vs server 8KB) to prevent 431 errors. Added conversation creation to transcription API so transcriptions now appear in sidebar. Both bugs fixed.",
   "platform": "Railway",
