@@ -173,14 +173,21 @@ export async function GET(req: NextRequest) {
     let sessionShownFacts: string[] = [];
 
     if (sessionHeader) {
-      try {
-        // Decode base64 and URI component encoding
-        const decoded = decodeURIComponent(Buffer.from(sessionHeader, 'base64').toString('utf-8'));
-        sessionShownFacts = decoded ? decoded.split(',').map(f => f.trim()).filter(Boolean) : [];
-      } catch (err) {
-        console.error('[DND Facts API] Error decoding session header:', err);
-        // Fall back to treating as plain text for backwards compatibility
-        sessionShownFacts = sessionHeader.split(',').map(f => f.trim()).filter(Boolean);
+      // Limit header size to prevent 431 errors (max ~8KB is safe for most servers)
+      if (sessionHeader.length > 8000) {
+        console.warn('[DND Facts API] Session header too large (>8KB), resetting session');
+        // Reset session by treating as empty
+        sessionShownFacts = [];
+      } else {
+        try {
+          // Decode base64 and URI component encoding
+          const decoded = decodeURIComponent(Buffer.from(sessionHeader, 'base64').toString('utf-8'));
+          sessionShownFacts = decoded ? decoded.split(',').map(f => f.trim()).filter(Boolean) : [];
+        } catch (err) {
+          console.error('[DND Facts API] Error decoding session header:', err);
+          // Fall back to treating as plain text for backwards compatibility
+          sessionShownFacts = sessionHeader.split(',').map(f => f.trim()).filter(Boolean);
+        }
       }
     }
 

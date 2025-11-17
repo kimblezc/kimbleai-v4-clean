@@ -1,8 +1,8 @@
 {
-  "version": "8.41.0",
-  "commit": "e8ab616",
-  "lastUpdated": "2025-11-17T11:08:00.000Z",
-  "changelog": "fix: Critical transcription UUID bugs - Fixed userId string to UUID conversion for AutoTagging and conversation integration. Root cause: userId was string 'zach'/'rebecca' instead of UUID, causing silent failures in knowledge base storage and conversation creation. Moved user lookup to top of POST handler, changed projectId default from 'general' to null, ensured all database operations use actualUserId (UUID). Build tested successfully.",
+  "version": "8.42.0",
+  "commit": "7d2b1d1",
+  "lastUpdated": "2025-11-17T12:00:00.000Z",
+  "changelog": "fix: Critical API bugs - UUID lookup query, DnD facts 431, AssemblyAI verification. Fixed Supabase .or() query to handle both UUIDs and string names properly by checking UUID format first (prevents 'invalid input syntax for type uuid' error). Added 8KB header size limit to DnD facts API to prevent 431 Request Header Fields Too Large error. Verified AssemblyAI route exports POST/GET methods correctly. Build tested successfully.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

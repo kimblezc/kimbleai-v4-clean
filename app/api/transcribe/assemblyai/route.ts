@@ -341,11 +341,30 @@ export async function POST(request: NextRequest) {
 
       // CRITICAL: Get user UUID immediately to prevent string-to-UUID errors in AutoTagging
       console.log('[ASSEMBLYAI] Looking up user UUID for:', userId);
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, name, email')
-        .or(`id.eq.${userId},name.ilike.${userId},email.ilike.${userId}`)
-        .single();
+
+      // Check if userId is a valid UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+
+      let userData, userError;
+      if (isUUID) {
+        // Query by UUID
+        const result = await supabase
+          .from('users')
+          .select('id, name, email')
+          .eq('id', userId)
+          .single();
+        userData = result.data;
+        userError = result.error;
+      } else {
+        // Query by name or email
+        const result = await supabase
+          .from('users')
+          .select('id, name, email')
+          .or(`name.ilike.${userId},email.ilike.${userId}`)
+          .single();
+        userData = result.data;
+        userError = result.error;
+      }
 
       if (userError || !userData) {
         console.error('[ASSEMBLYAI] User lookup failed:', userError);
@@ -450,11 +469,30 @@ export async function POST(request: NextRequest) {
 
     // CRITICAL: Get user UUID immediately to prevent string-to-UUID errors in AutoTagging
     console.log('[ASSEMBLYAI] Looking up user UUID for:', userId);
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .or(`id.eq.${userId},name.ilike.${userId},email.ilike.${userId}`)
-      .single();
+
+    // Check if userId is a valid UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+
+    let userData, userError;
+    if (isUUID) {
+      // Query by UUID
+      const result = await supabase
+        .from('users')
+        .select('id, name, email')
+        .eq('id', userId)
+        .single();
+      userData = result.data;
+      userError = result.error;
+    } else {
+      // Query by name or email
+      const result = await supabase
+        .from('users')
+        .select('id, name, email')
+        .or(`name.ilike.${userId},email.ilike.${userId}`)
+        .single();
+      userData = result.data;
+      userError = result.error;
+    }
 
     if (userError || !userData) {
       console.error('[ASSEMBLYAI] User lookup failed:', userError);
