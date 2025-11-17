@@ -1,8 +1,8 @@
 {
-  "version": "8.39.0",
-  "commit": "acb6745",
-  "lastUpdated": "2025-11-17T07:30:00.000Z",
-  "changelog": "feat: 4-file download system for transcriptions - Added individual download buttons for each completed transcription: 📄 TXT (plain text), 🎤 Speakers JSON (structured utterances with timestamps), 📺 SRT (subtitle format with speaker labels), 📊 Metadata (file info and processing stats). Implemented helper functions for all file types with proper formatting. Color-coded buttons with tooltips. Only shows SRT/Speakers JSON when utterances available. Completes full transcription feature set: auto-start (d89e262), speaker-labeled UI (8e65f9b), conversation integration (6a9692d), and now multi-format downloads (acb6745).",
+  "version": "8.40.0",
+  "commit": "7270692",
+  "lastUpdated": "2025-11-17T08:05:00.000Z",
+  "changelog": "fix: Critical transcription bug fixes - Fixed AssemblyAI conversation integration (conversations now appear in sidebar!) and Whisper timeout issues. Root cause: userId was string instead of UUID, causing silent failures. Added user/project validation, enhanced error logging, and 300s timeout for Whisper (matching AssemblyAI). Build tested successfully. All transcriptions now properly integrate with chat history.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
