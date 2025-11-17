@@ -1,0 +1,82 @@
+Starting Container
+npm warn config production Use `--omit=dev` instead.
+
+> kimbleai-v4@8.18.0 start
+> next start
+
+   ▲ Next.js 15.5.3
+   - Local:        http://localhost:8080
+   - Network:      http://10.158.75.230:8080
+
+ ✓ Starting...
+fatal: not a git repository (or any of the parent directories): .git
+[CRON] Initializing cron jobs...
+[CRON] All cron jobs scheduled:
+[CRON] - Archie V1 (Simple): Every 12 hours at midnight & noon (0 0,12 * * *)
+[CRON] - Archie V2 (Complex): Daily at 3:00 AM (0 3 * * *)
+[CRON] - Backup: Daily at 2:00 AM (0 2 * * *)
+[CRON] - Index: Every 6 hours (0 */6 * * *)
+[CRON] - Index Attachments: Every 4 hours (0 */4 * * *)
+ ✓ Ready in 669ms
+
+# KIMBLEAI PROJECT STATE
+Version: 0.0.0
+Last Updated: 2025-11-17T07:38:32.278Z
+
+## WORKING:
+
+
+## BROKEN:
+
+
+## PENDING:
+
+
+## ZAPIER:
+- Tasks Used: 0/750
+- Active Workflows: NONE
+
+## NEXT ACTION:
+Create Zapier webhooks
+    
+Warning: Indexing all PDF objects
+[Claude] Client initialized: YES
+(node:15) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:15) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+[NextAuth] Stored tokens for zach - expires at: 2025-11-15T11:34:43.000Z
+[NextAuth] Stored tokens for zach - expires at: 2025-11-15T11:34:43.000Z
+[NextAuth] Stored tokens for zach - expires at: 2025-11-15T11:34:43.000Z
+================================================================================
+🛡️ SECURITY CHECK
+⏰ Time: 2025-11-17T07:56:07.064Z
+🌐 Path: /
+📧 Email: zach.kimble@gmail.com
+📍 IP: 84.172.248.77
+✅ ALLOWED: Authorized access
+================================================================================
+================================================================================
+🛡️ SECURITY CHECK
+⏰ Time: 2025-11-17T07:56:07.306Z
+🌐 Path: /api/conversations
+📧 Email: zach.kimble@gmail.com
+📍 IP: 84.172.248.77
+✅ ALLOWED: Authorized access
+================================================================================
+================================================================================
+🛡️ SECURITY CHECK
+⏰ Time: 2025-11-17T07:56:07.320Z
+🌐 Path: /api/projects
+📧 Email: zach.kimble@gmail.com
+📍 IP: 84.172.248.77
+✅ ALLOWED: Authorized access
+================================================================================
+[NextAuth] Stored tokens for zach - expires at: 2025-11-15T11:34:43.000Z
+================================================================================
+🛡️ SECURITY CHECK
+⏰ Time: 2025-11-17T07:56:07.789Z
+🌐 Path: /costs
+📧 Email: zach.kimble@gmail.com
+📍 IP: 84.172.248.77
+✅ ALLOWED: Authorized access
+================================================================================

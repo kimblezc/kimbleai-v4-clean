@@ -339,6 +339,25 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // CRITICAL: Get user UUID immediately to prevent string-to-UUID errors in AutoTagging
+      console.log('[ASSEMBLYAI] Looking up user UUID for:', userId);
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .or(`id.eq.${userId},name.ilike.${userId},email.ilike.${userId}`)
+        .single();
+
+      if (userError || !userData) {
+        console.error('[ASSEMBLYAI] User lookup failed:', userError);
+        return NextResponse.json(
+          { error: `User not found for userId: ${userId}` },
+          { status: 404 }
+        );
+      }
+
+      const actualUserId = userData.id; // Use UUID instead of string
+      console.log('[ASSEMBLYAI] Found user:', userData.email, 'UUID:', actualUserId);
+
       console.log(`[ASSEMBLYAI] Starting transcription for pre-uploaded file: ${filename}, size: ${(fileSize / 1024 / 1024).toFixed(2)}MB`);
 
       // Estimate audio duration and cost
@@ -347,7 +366,7 @@ export async function POST(request: NextRequest) {
       const estimatedCost = estimatedHours * 0.41;
 
       // COST MONITORING: Check budget limits BEFORE processing
-      const budgetCheck = await costMonitor.enforceApiCallBudget(userId, '/api/transcribe/assemblyai');
+      const budgetCheck = await costMonitor.enforceApiCallBudget(actualUserId, '/api/transcribe/assemblyai');
       if (!budgetCheck.allowed) {
         console.error(`[CostMonitor] Transcription blocked for user ${userId}: ${budgetCheck.reason}`);
         return NextResponse.json({
@@ -359,7 +378,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check daily limits (legacy check - will be replaced by cost monitor)
-      const limitCheck = await checkDailyLimits(userId, estimatedHours);
+      const limitCheck = await checkDailyLimits(actualUserId, estimatedHours);
       if (!limitCheck.allowed) {
         return NextResponse.json(
           {
@@ -388,8 +407,8 @@ export async function POST(request: NextRequest) {
         .from('audio_transcriptions')
         .insert({
           job_id: jobId,
-          user_id: userId,
-          project_id: projectId || 'general',
+          user_id: actualUserId,
+          project_id: projectId || null,
           filename: filename,
           file_size: fileSize,
           text: '',
@@ -403,7 +422,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Process in background with pre-uploaded URL
-      processAssemblyAIFromUrl(audioUrl, filename, fileSize, userId, projectId || 'general', jobId);
+      processAssemblyAIFromUrl(audioUrl, filename, fileSize, actualUserId, projectId || null, jobId);
 
       return NextResponse.json({
         success: true,
@@ -427,7 +446,26 @@ export async function POST(request: NextRequest) {
 
     const audioFile = formData.get('audio') as File;
     const userId = formData.get('userId') as string;
-    const projectId = formData.get('projectId') as string || 'general';
+    const projectId = formData.get('projectId') as string || null;
+
+    // CRITICAL: Get user UUID immediately to prevent string-to-UUID errors in AutoTagging
+    console.log('[ASSEMBLYAI] Looking up user UUID for:', userId);
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .or(`id.eq.${userId},name.ilike.${userId},email.ilike.${userId}`)
+      .single();
+
+    if (userError || !userData) {
+      console.error('[ASSEMBLYAI] User lookup failed:', userError);
+      return NextResponse.json(
+        { error: `User not found for userId: ${userId}` },
+        { status: 404 }
+      );
+    }
+
+    const actualUserId = userData.id; // Use UUID instead of string
+    console.log('[ASSEMBLYAI] Found user:', userData.email, 'UUID:', actualUserId);
 
     if (!audioFile) {
       return NextResponse.json(
@@ -445,7 +483,7 @@ export async function POST(request: NextRequest) {
     const estimatedCost = estimatedHours * 0.41;
 
     // Check daily limits BEFORE processing
-    const limitCheck = await checkDailyLimits(userId, estimatedHours);
+    const limitCheck = await checkDailyLimits(actualUserId, estimatedHours);
     if (!limitCheck.allowed) {
       return NextResponse.json(
         {
@@ -469,7 +507,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Process in background
-    processAssemblyAI(audioFile, userId, projectId, jobId);
+    processAssemblyAI(audioFile, actualUserId, projectId, jobId);
 
     return NextResponse.json({
       success: true,
@@ -732,23 +770,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
     // CONVERSATION CREATION: Save transcription to conversation history
     try {
       console.log('[CONVERSATION] Creating conversation for transcription...');
-      console.log('[CONVERSATION] User ID:', userId, 'Project ID:', projectId, 'Filename:', filename);
-
-      // Get user data to ensure proper UUID format
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, name, email')
-        .or(`id.eq.${userId},name.ilike.${userId},email.ilike.${userId}`)
-        .single();
-
-      if (userError || !userData) {
-        console.error('[CONVERSATION] User lookup failed:', userError);
-        console.error('[CONVERSATION] Attempted userId:', userId);
-        throw new Error(`User not found for userId: ${userId}`);
-      }
-
-      const actualUserId = userData.id; // Use UUID
-      console.log('[CONVERSATION] Found user:', userData.email, 'UUID:', actualUserId);
+      console.log('[CONVERSATION] User UUID:', userId, 'Project ID:', projectId, 'Filename:', filename);
 
       // Generate conversation ID
       const conversationId = `conv_transcription_${Date.now()}_${jobId.substring(0, 8)}`;
@@ -784,7 +806,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
 
       console.log('[CONVERSATION] Creating conversation with ID:', conversationId);
       console.log('[CONVERSATION] Title:', conversationTitle);
-      console.log('[CONVERSATION] User UUID:', actualUserId);
+      console.log('[CONVERSATION] User UUID:', userId); // userId is already UUID from processAssemblyAIFromUrl
       console.log('[CONVERSATION] Project ID:', validProjectId);
 
       // Create conversation record
@@ -792,7 +814,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
         .from('conversations')
         .insert({
           id: conversationId,
-          user_id: actualUserId, // Use UUID instead of string
+          user_id: userId, // userId is already UUID from processAssemblyAIFromUrl
           title: conversationTitle,
           project_id: validProjectId,
           created_at: new Date().toISOString(),
@@ -805,7 +827,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
         console.error('[CONVERSATION] Failed to create conversation:', convError);
         console.error('[CONVERSATION] Conversation data:', JSON.stringify({
           id: conversationId,
-          user_id: actualUserId,
+          user_id: userId,
           title: conversationTitle,
           project_id: validProjectId
         }));
@@ -849,7 +871,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
         .from('messages')
         .insert({
           conversation_id: conversationId,
-          user_id: actualUserId, // Use UUID instead of string
+          user_id: userId, // userId is already UUID from processAssemblyAIFromUrl
           role: 'assistant',
           content: messageContent,
           embedding: transcriptEmbedding,
@@ -862,7 +884,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
         console.error('[CONVERSATION] Failed to create message:', msgError);
         console.error('[CONVERSATION] Message data:', JSON.stringify({
           conversation_id: conversationId,
-          user_id: actualUserId,
+          user_id: userId,
           role: 'assistant',
           content_length: messageContent.length
         }));
