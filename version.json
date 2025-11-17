@@ -1,8 +1,8 @@
 {
-  "version": "8.38.0",
-  "commit": "8e65f9b",
-  "lastUpdated": "2025-11-16T20:00:00.000Z",
-  "changelog": "feat: Complete transcription UX improvements - (1) Removed popup confirmation, files now auto-start transcription on upload (d89e262). (2) Added speaker-labeled transcription display with timestamps, speaker count badge, and formatted preview showing [MM:SS] Speaker X: text (8e65f9b). (3) Integrated transcriptions into conversation/chat history with semantic search embeddings (6a9692d). Transcriptions now appear in sidebar, support project assignment, and display speaker differentiation instead of plain text wall.",
+  "version": "8.39.0",
+  "commit": "acb6745",
+  "lastUpdated": "2025-11-17T07:30:00.000Z",
+  "changelog": "feat: 4-file download system for transcriptions - Added individual download buttons for each completed transcription: 📄 TXT (plain text), 🎤 Speakers JSON (structured utterances with timestamps), 📺 SRT (subtitle format with speaker labels), 📊 Metadata (file info and processing stats). Implemented helper functions for all file types with proper formatting. Color-coded buttons with tooltips. Only shows SRT/Speakers JSON when utterances available. Completes full transcription feature set: auto-start (d89e262), speaker-labeled UI (8e65f9b), conversation integration (6a9692d), and now multi-format downloads (acb6745).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
