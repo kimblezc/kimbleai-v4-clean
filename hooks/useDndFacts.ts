@@ -87,8 +87,8 @@ export function useDndFacts(intervalMs: number = 30000): UseDndFactsReturn {
       // Base64 encode to handle emoji and special characters in HTTP headers (ISO-8859-1 requirement)
       const sessionString = session.shownFacts.join(',');
       const encoded = btoa(encodeURIComponent(sessionString));
-      // If header too large (>7KB), send only last 50 facts to avoid HTTP header size limits
-      const sessionData = encoded.length > 7000
+      // If header too large (>6KB), send only last 50 facts to avoid HTTP header size limits
+      const sessionData = encoded.length > 6000
         ? btoa(encodeURIComponent(session.shownFacts.slice(-50).join(',')))
         : encoded;
       const response = await fetch('/api/dnd-facts', {

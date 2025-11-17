@@ -1257,6 +1257,65 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
     console.log(`[CostMonitor] Tracked AssemblyAI transcription: $${transcriptionCost.toFixed(4)} (${audioDurationHours.toFixed(2)}h)`);
     console.log(`[ASSEMBLYAI] Job ${jobId} completed successfully`);
 
+    // CONVERSATION CREATION: Save transcription to conversation history
+    try {
+      console.log('[CONVERSATION] Creating conversation for transcription...');
+
+      // Create conversation title from filename
+      const conversationTitle = `Transcription: ${audioFile.name}`.substring(0, 100);
+
+      // Validate project_id exists if provided
+      let validProjectId = null;
+      if (projectId && projectId !== 'general') {
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('id', projectId)
+          .single();
+
+        if (!projectError && projectData) {
+          validProjectId = projectId;
+        }
+      }
+
+      // Create conversation record
+      const { data: conversation, error: convError } = await supabase
+        .from('conversations')
+        .insert({
+          user_id: userId,
+          title: conversationTitle,
+          project_id: validProjectId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (convError) {
+        console.error('[CONVERSATION] Failed to create conversation:', convError);
+      } else {
+        console.log('[CONVERSATION] Created conversation:', conversation.id);
+
+        // Add transcription as first message
+        const preview = result.text.substring(0, 500) + (result.text.length > 500 ? '...' : '');
+        const { error: msgError } = await supabase.from('messages').insert({
+          conversation_id: conversation.id,
+          role: 'assistant',
+          content: `📝 Transcription complete!\n\n**File**: ${audioFile.name}\n**Duration**: ${Math.floor(result.audio_duration / 60)}m ${Math.floor(result.audio_duration % 60)}s\n**Speakers**: ${result.speaker_labels?.length || 0}\n\n**Preview**:\n${preview}`,
+          created_at: new Date().toISOString()
+        });
+
+        if (msgError) {
+          console.error('[CONVERSATION] Failed to create message:', msgError);
+        } else {
+          console.log('[CONVERSATION] Transcription added to sidebar!');
+        }
+      }
+    } catch (convErr) {
+      console.error('[CONVERSATION] Failed to create conversation:', convErr);
+      // Don't fail the transcription if conversation creation fails
+    }
+
     // ZAPIER INTEGRATION: Send transcription complete webhook (async, non-blocking)
     if (autoTagAnalysis) {
       const hasUrgentTag = zapierClient.detectUrgentTag(result.text, autoTagAnalysis.tags);
