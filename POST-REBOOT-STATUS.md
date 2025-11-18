@@ -53,10 +53,24 @@ const sessionData = encoded.length > 6000  // CHANGED FROM 7000
 
 ---
 
-### 3. **Transcriptions Not Appearing in Sidebar** ⏳ IN PROGRESS (v8.44.0)
-**File**: `app/api/transcribe/assemblyai/route.ts` (line 1285)
-**Error**: `null value in column "id" of relation "conversations" violates not-null constraint`
-**Root Cause**: Conversation insert used `userId` (string) instead of `actualUserId` (UUID)
+### 3. **Transcriptions Not Appearing in Sidebar** 🚨 DATABASE SCHEMA MISMATCH (v8.44.0-v8.45.0)
+**Files**:
+- `app/api/transcribe/assemblyai/route.ts` (lines 1144-1285)
+- `sql/audio_transcriptions_schema.sql` (missing columns)
+
+**Error Evolution**:
+- v8.44.0: `ReferenceError: actualUserId is not defined` ✅ FIXED IN v8.45.0
+- v8.45.0: `Missing user_id from transcription record` - NEW ERROR
+- Root cause: `Could not find the 'metadata' column of 'audio_transcriptions' in the schema cache`
+
+**REAL ROOT CAUSE**: Database schema mismatch!
+- **Code expects** (line 1154): `metadata` JSONB column and `service` TEXT column
+- **Database has**: Neither column exists in `audio_transcriptions` table!
+- **Result**: Database insert FAILS silently → `transcriptionData` is null → conversation creation fails
+
+**Previous fixes were treating symptoms, not the disease:**
+- v8.44.0 tried to use out-of-scope `actualUserId` ❌ Wrong variable scoping
+- v8.45.0 tried to use `transcriptionData.user_id` ❌ But `transcriptionData` is null because insert failed!
 
 **Fix Applied**:
 ```typescript
