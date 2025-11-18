@@ -73,22 +73,26 @@ const sessionData = encoded.length > 6000  // CHANGED FROM 7000
 - v8.45.0 tried to use `transcriptionData.user_id` ❌ But `transcriptionData` is null because insert failed!
 
 **Fix Applied**:
-```typescript
-// Line 1285 - FIXED
-const { data: conversation, error: convError } = await supabase
-  .from('conversations')
-  .insert({
-    user_id: actualUserId,  // CHANGED FROM: userId
-    title: conversationTitle,
-    project_id: validProjectId,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  })
-  .select()
-  .single();
+```sql
+-- Migration: supabase/migrations/20251117_add_metadata_service_to_transcriptions.sql
+ALTER TABLE audio_transcriptions
+  ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS service TEXT DEFAULT 'assemblyai';
+
+-- GIN index for efficient JSONB queries
+CREATE INDEX IF NOT EXISTS idx_audio_transcriptions_metadata
+  ON audio_transcriptions USING GIN (metadata);
+
+-- B-tree index for service column
+CREATE INDEX IF NOT EXISTS idx_audio_transcriptions_service
+  ON audio_transcriptions(service);
 ```
 
-**Status**: Code fixed, building locally, needs testing
+**Status**: ✅ MIGRATION EXECUTED ON PRODUCTION (v8.46.0 @ 60cc6d7)
+- Migration file committed
+- SQL executed manually on Supabase production database
+- Database schema now matches code expectations
+- Ready for next transcription upload to verify end-to-end fix
 
 ---
 
@@ -100,18 +104,22 @@ const { data: conversation, error: convError } = await supabase
 | v8.41.0 | e8ab616 | ❌ Failed | UUID fix incomplete |
 | v8.42.0 | 87fd8cc | ⚠️ Partial | UUID fixed, 431 persisted |
 | v8.43.0 | 4b5e9fb | ⚠️ Partial | Header fixed, sidebar broken |
-| v8.44.0 | TBD | ⏳ Building | All fixes combined |
+| v8.44.0 | 33a8b31 | ❌ Failed | actualUserId scope error |
+| v8.45.0 | cd9ae5e | ❌ Failed | Missing user_id (transcriptionData was null) |
+| v8.46.0 | 60cc6d7 | ✅ DEPLOYED | Database schema fixed - metadata & service columns added |
 
 ---
 
 ## 🎯 Next Steps
 
-1. **⏳ Build Verification**: Local build running to verify all TypeScript compiles
-2. **⏳ Commit Changes**: Single commit with all fixes (v8.44.0)
-3. **⏳ Deploy to Railway**: Push to master, trigger Railway deployment
-4. **⏳ Integration Testing**: Upload audio file, verify:
-   - No UUID errors
-   - No 431 errors
+1. **✅ Migration Created**: Created supabase/migrations/20251117_add_metadata_service_to_transcriptions.sql
+2. **✅ Migration Executed**: SQL executed on production Supabase database (manual execution)
+3. **✅ Version Updated**: Bumped version to v8.46.0 (60cc6d7)
+4. **⏳ Awaiting Testing**: Waiting for next transcription upload to verify:
+   - No PGRST204 errors (metadata column found)
+   - Database insert succeeds
+   - transcriptionData contains user_id
+   - Conversation creation succeeds
    - Transcription appears in sidebar with preview message
 
 ---
