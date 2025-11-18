@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 import { AudioAutoTagger, TranscriptAnalysis } from '@/lib/audio-auto-tagger';
 import { BackgroundIndexer } from '@/lib/background-indexer';
 import { zapierClient } from '@/lib/zapier-client';
@@ -820,7 +821,7 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
         : result.text;
 
       // Create conversation title from filename
-      const conversationTitle = `Audio Transcription: ${filename}`;
+      const conversationTitle = `Transcription: ${filename}`;
 
       // Validate project_id exists if provided
       let validProjectId = null;
@@ -843,10 +844,15 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
       console.log('[CONVERSATION] User UUID:', userId); // userId is already UUID from processAssemblyAIFromUrl
       console.log('[CONVERSATION] Project ID:', validProjectId);
 
-      // Create conversation record (let database generate ID)
+      // Generate UUID for conversation (database doesn't auto-generate)
+      const conversationId = randomUUID();
+      console.log('[CONVERSATION] Generated conversation ID:', conversationId);
+
+      // Create conversation record with generated ID
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
+          id: conversationId, // FIXED: Generate UUID since database doesn't auto-generate
           user_id: userId, // userId is already UUID from processAssemblyAIFromUrl
           title: conversationTitle,
           project_id: validProjectId,
