@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 import { isResourceOwner, getUserByIdentifier } from '@/lib/user-utils';
 
 const supabase = createClient(
@@ -100,12 +101,14 @@ export async function POST(request: NextRequest) {
 
     // Store deletion info in a simple way using existing tables
     // We'll create a special "deleted project marker" conversation
+    // FIXED: Use proper UUID instead of string format for id
     const { error: deleteMarkerError } = await supabase
       .from('conversations')
       .insert({
-        id: `deleted_${projectId}_${Date.now()}`,
+        id: randomUUID(), // FIXED: Use UUID instead of "deleted_projectId_timestamp"
         user_id: userData.id,
         title: `DELETED_PROJECT_MARKER_${projectId}_${conversationsToUpdate.length}_conversations_moved`,
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
 

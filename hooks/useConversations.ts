@@ -244,8 +244,12 @@ export function useConversations(userId: string) {
   }, [currentConversationId, loadConversations]);
 
   useEffect(() => {
+    console.log('[useConversations] Initial load triggered for userId:', userId);
     loadConversations();
-  }, [loadConversations]);
+    // FIXED: Use userId as dependency instead of loadConversations
+    // Using loadConversations caused potential infinite loop since callback is recreated
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   return {
     conversations,

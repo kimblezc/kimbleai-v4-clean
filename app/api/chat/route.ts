@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 import OpenAI from 'openai';
 import { BackgroundIndexer } from '@/lib/background-indexer';
 import { AutoReferenceButler } from '@/lib/auto-reference-butler';
@@ -125,7 +126,8 @@ export async function POST(request: NextRequest) {
     const { messages, userId = 'zach', mode, agent, preferredModel } = requestData;
 
     // Generate new conversation ID if not provided (for new chats)
-    const conversationId = requestData.conversationId || `conv_${Date.now()}`;
+    // FIXED: Use proper UUID instead of "conv_timestamp" string format
+    const conversationId = requestData.conversationId || randomUUID();
 
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'No messages provided' }, { status: 400 });

@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -627,13 +628,9 @@ export class ProjectManager {
   // Private helper methods
 
   private generateProjectId(name: string): string {
-    const timestamp = Date.now();
-    const slug = name.toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .substring(0, 20);
-
-    return `proj_${slug}_${timestamp}`;
+    // FIXED: Use proper UUID instead of string format
+    // Old format "proj_slug_timestamp" caused UUID validation errors in database
+    return randomUUID();
   }
 
   private generateTaskId(): string {
