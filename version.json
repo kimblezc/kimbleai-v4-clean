@@ -1,8 +1,8 @@
 {
-  "version": "8.48.0",
-  "commit": "941f101",
-  "lastUpdated": "2025-11-18T16:16:00.000Z",
-  "changelog": "debug: Added comprehensive logging to projects/conversations APIs to diagnose empty lists. Build successful, deployment in progress.",
+  "version": "8.49.0",
+  "commit": "8c438a3",
+  "lastUpdated": "2025-11-18T16:22:00.000Z",
+  "changelog": "debug: Added frontend hook logging - Backend confirms 3 projects & 67 conversations fetched. Tracing why UI shows empty.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
