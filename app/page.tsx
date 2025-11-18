@@ -115,6 +115,18 @@ export default function Home() {
   const projectsHook = useProjects(currentUser);
   const { projects, currentProject, selectProject, updateProject, deleteProject } = projectsHook;
 
+  // DEBUG: Log projects state changes
+  useEffect(() => {
+    console.log('[page.tsx] Projects state updated:', projects.length, 'projects');
+    console.log('[page.tsx] Projects:', projects);
+  }, [projects]);
+
+  // DEBUG: Log conversations state changes
+  useEffect(() => {
+    console.log('[page.tsx] Conversations state updated:', conversations.length, 'conversations');
+    console.log('[page.tsx] Recent conversations:', recentConversations.length);
+  }, [conversations, recentConversations]);
+
   // Message search hook
   const messageSearch = useMessageSearch(messages);
   const {
