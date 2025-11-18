@@ -1,8 +1,8 @@
 {
-  "version": "8.46.0",
-  "commit": "60cc6d7",
-  "lastUpdated": "2025-11-17T19:30:00.000Z",
-  "changelog": "fix: DATABASE SCHEMA FIX - Added metadata (JSONB) and service (TEXT) columns to audio_transcriptions table. Root cause of transcription failures was missing columns causing PGRST204 error. Database insert failed silently → transcriptionData was null → conversation creation failed. Migration executed successfully on production Supabase.",
+  "version": "8.47.0",
+  "commit": "f55860d",
+  "lastUpdated": "2025-11-18T15:47:00.000Z",
+  "changelog": "chore: Force Railway redeploy with GitHub sync verified. Build successful, all environment variables validated, Railway project linked and ready for deployment.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
