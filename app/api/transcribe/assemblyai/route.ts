@@ -1064,6 +1064,30 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
 
 async function processAssemblyAI(audioFile: File, userId: string, projectId: string, jobId: string) {
   try {
+    // CRITICAL FIX: Convert userId string to actual UUID from database
+    // This was the root cause of transcriptions not appearing in sidebar
+    let actualUserId = userId;
+
+    // Check if userId is already a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+
+    if (!isUUID) {
+      // Resolve string userId (like "zach") to actual UUID
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, name')
+        .or(`name.ilike.${userId},email.ilike.${userId}`)
+        .single();
+
+      if (userError || !userData) {
+        console.error('[ASSEMBLYAI] Failed to resolve user:', userError);
+        throw new Error(`User not found: ${userId}`);
+      }
+
+      actualUserId = userData.id;
+      console.log(`[ASSEMBLYAI] Resolved user "${userId}" to UUID: ${actualUserId}`);
+    }
+
     // Update: Uploading
     updateJobStatus(jobId, 10, 'uploading');
 
@@ -1144,7 +1168,7 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
     const { data: transcriptionData, error: saveError } = await supabase
       .from('audio_transcriptions')
       .insert({
-        user_id: userId,
+        user_id: actualUserId, // FIXED: Use resolved UUID instead of string
         project_id: autoTagAnalysis?.projectCategory || projectId,
         filename: audioFile.name,
         file_size: audioFile.size,
@@ -1279,16 +1303,19 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
       }
 
       // Create conversation record
-      // Get UUID from saved transcription record since actualUserId is out of scope here
-      const savedUserId = transcriptionData?.user_id;
-      if (!savedUserId) {
-        throw new Error('Missing user_id from transcription record');
-      }
+      // Use actualUserId which was resolved at the start of this function
+      const savedUserId = actualUserId; // actualUserId is now in scope from the UUID resolution above
+
+      // FIXED: Generate UUID for conversation ID
+      const conversationId = randomUUID();
+      console.log('[CONVERSATION] Generated conversation ID:', conversationId);
+      console.log('[CONVERSATION] Using user UUID:', savedUserId);
 
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
-          user_id: savedUserId,  // Use UUID from saved transcription record
+          id: conversationId, // FIXED: Provide UUID for conversation
+          user_id: savedUserId,  // Use resolved UUID
           title: conversationTitle,
           project_id: validProjectId,
           created_at: new Date().toISOString(),
@@ -1306,6 +1333,7 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
         const preview = result.text.substring(0, 500) + (result.text.length > 500 ? '...' : '');
         const { error: msgError } = await supabase.from('messages').insert({
           conversation_id: conversation.id,
+          user_id: savedUserId, // FIXED: Add user_id to message (was missing!)
           role: 'assistant',
           content: `📝 Transcription complete!\n\n**File**: ${audioFile.name}\n**Duration**: ${Math.floor(result.audio_duration / 60)}m ${Math.floor(result.audio_duration % 60)}s\n**Speakers**: ${result.speaker_labels?.length || 0}\n\n**Preview**:\n${preview}`,
           created_at: new Date().toISOString()

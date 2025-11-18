@@ -79,8 +79,12 @@ export function useConversations(userId: string) {
             return false;
           }
           // Skip conversations with invalid ID formats
-          // FIXED: UUIDs are 36 characters, not 10. Changed to 32 (UUID without hyphens minimum)
-          if (c.id.length < 32) {
+          // FIXED: Proper UUID validation - UUIDs are 36 chars with hyphens
+          // Accept both standard UUIDs (36 chars) and compact UUIDs (32 chars without hyphens)
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          const compactUuidRegex = /^[0-9a-f]{32}$/i;
+          if (!uuidRegex.test(c.id) && !compactUuidRegex.test(c.id)) {
+            console.warn('[useConversations] Filtering invalid ID:', c.id);
             return false;
           }
           return true;
