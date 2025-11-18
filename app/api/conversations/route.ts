@@ -14,12 +14,17 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId');
     const limit = parseInt(searchParams.get('limit') || '20');
 
+    console.log('[Conversations API] GET request - userId:', userId, 'limit:', limit);
+
     // Get user using centralized helper
     const userData = await getUserByIdentifier(userId, supabase);
 
     if (!userData) {
+      console.error('[Conversations API] User not found:', userId);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    console.log('[Conversations API] User found, UUID:', userData.id);
 
     // Build query for conversations - try with project_id first, fallback if column doesn't exist
     let conversations;
@@ -45,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     if (queryWithProject.error) {
       // If project_id or other columns don't exist, try minimal query
-      console.warn('Full query failed, trying minimal query. Error:', queryWithProject.error);
+      console.warn('[Conversations API] Full query failed, trying minimal query. Error:', queryWithProject.error);
       const queryMinimal = await supabase
         .from('conversations')
         .select(`
@@ -60,9 +65,11 @@ export async function GET(request: NextRequest) {
 
       conversations = queryMinimal.data;
       error = queryMinimal.error;
+      console.log('[Conversations API] Minimal query result:', conversations?.length || 0, 'conversations');
     } else {
       conversations = queryWithProject.data;
       error = queryWithProject.error;
+      console.log('[Conversations API] Full query result:', conversations?.length || 0, 'conversations');
     }
 
     if (error) {

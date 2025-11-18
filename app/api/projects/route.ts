@@ -28,11 +28,14 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'list':
+        console.log('[Projects API] LIST request - userId:', userId, 'user.id:', user.id);
+
         // IMPROVED: Check cache first for project lists
         const cacheKey = `projects_list_${userId}`;
         const cached = projectCache.get(cacheKey);
 
         if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+          console.log('[Projects API] Returning cached data, age:', Math.round((Date.now() - cached.timestamp) / 1000), 'seconds');
           // Return cached data with cache indicator
           return NextResponse.json({
             ...cached.data,
@@ -42,12 +45,15 @@ export async function GET(request: NextRequest) {
         }
 
         // Cache miss - fetch fresh data
+        console.log('[Projects API] Cache miss, fetching from database...');
         let projects = [];
         try {
           projects = await projectManager.getUserProjects(user.id); // Use UUID, not string userId
+          console.log('[Projects API] Successfully fetched', projects.length, 'projects');
         } catch (error: any) {
           // If projects table doesn't exist, return empty array
-          console.warn('Projects table query failed (table may not exist):', error.message);
+          console.error('[Projects API] ERROR fetching projects:', error.message);
+          console.error('[Projects API] Error details:', error);
           projects = [];
         }
 
