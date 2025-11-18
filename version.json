@@ -1,6 +1,6 @@
 {
   "version": "9.2.0",
-  "commit": "pending",
+  "commit": "15f3ac7",
   "lastUpdated": "2025-11-18T21:00:00.000Z",
   "changelog": "fix: CRITICAL TRANSCRIPTION FIXES - Legacy processAssemblyAI now converts userId string to UUID, generates conversation UUID, adds user_id to messages. Fixed conversation filter to use proper UUID regex validation. Root cause: transcriptions used string userIds while queries expected UUIDs.",
   "platform": "Railway",
