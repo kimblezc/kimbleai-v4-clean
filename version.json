@@ -1,8 +1,8 @@
 {
-  "version": "8.49.0",
-  "commit": "8c438a3",
-  "lastUpdated": "2025-11-18T16:22:00.000Z",
-  "changelog": "debug: Added frontend hook logging - Backend confirms 3 projects & 67 conversations fetched. Tracing why UI shows empty.",
+  "version": "8.50.0",
+  "commit": "8ae68b2",
+  "lastUpdated": "2025-11-18T16:53:00.000Z",
+  "changelog": "debug: Page-level state tracking added. APIs work (3 projects, 67 convs). Tracing if React state updates reach UI rendering.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
