@@ -62,11 +62,15 @@ export function useConversations(userId: string) {
 
   const loadConversations = useCallback(async () => {
     try {
+      console.log('[useConversations] Loading conversations for user:', userId);
       setLoading(true);
       const response = await fetch(`/api/conversations?userId=${userId}&limit=100`);
+      console.log('[useConversations] API response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[useConversations] Raw API response:', data);
         const rawConvs = data.conversations || [];
+        console.log('[useConversations] Raw conversations count:', rawConvs.length);
 
         // Filter out test/invalid conversations
         const convs = rawConvs.filter((c: Conversation) => {
@@ -81,6 +85,8 @@ export function useConversations(userId: string) {
           return true;
         });
 
+        console.log('[useConversations] Filtered conversations count:', convs.length);
+        console.log('[useConversations] Setting conversations state');
         setConversations(convs);
 
         // Group conversations by date

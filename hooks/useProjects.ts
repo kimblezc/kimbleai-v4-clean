@@ -28,9 +28,12 @@ export function useProjects(userId: string) {
       console.log('[useProjects] API response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[useProjects] Raw API response:', data);
         console.log('[useProjects] Projects received:', data.projects?.length || 0, 'projects');
         console.log('[useProjects] Projects data:', data.projects);
+        console.log('[useProjects] Setting projects state with:', data.projects || []);
         setProjects(data.projects || []);
+        console.log('[useProjects] State update complete');
       } else {
         console.error('[useProjects] API returned error:', response.status, response.statusText);
       }
