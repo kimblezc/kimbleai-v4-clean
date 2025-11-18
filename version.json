@@ -1,8 +1,8 @@
 {
-  "version": "8.47.0",
-  "commit": "4a69e94",
-  "lastUpdated": "2025-11-18T15:56:00.000Z",
-  "changelog": "fix: Version tracking corrected to show accurate commit hash. Railway deployment triggered with GitHub sync verified. Build successful.",
+  "version": "8.48.0",
+  "commit": "941f101",
+  "lastUpdated": "2025-11-18T16:16:00.000Z",
+  "changelog": "debug: Added comprehensive logging to projects/conversations APIs to diagnose empty lists. Build successful, deployment in progress.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
