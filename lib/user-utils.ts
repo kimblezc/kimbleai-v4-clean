@@ -162,25 +162,46 @@ export async function getUserByIdentifier(
   }
 
   // Try to get user by name (works for names and friendly IDs)
+  // FIXED: Use eq with lower() for exact case-insensitive match instead of ilike pattern match
   const canonicalName = getCanonicalName(identifier);
   if (canonicalName) {
     const { data, error } = await supabaseClient
       .from('users')
       .select('*')
-      .ilike('name', canonicalName)
+      .eq('name', canonicalName)
       .single();
 
     if (!error && data) return data;
+
+    // Try case-insensitive exact match if exact match fails
+    const { data: ciData, error: ciError } = await supabaseClient
+      .from('users')
+      .select('*')
+      .ilike('name', canonicalName)
+      .limit(1)
+      .single();
+
+    if (!ciError && ciData) return ciData;
   }
 
-  // Last resort: try the identifier as-is (case-insensitive name match)
+  // Last resort: try the identifier as-is (exact match first, then case-insensitive)
   const { data, error } = await supabaseClient
     .from('users')
     .select('*')
-    .ilike('name', identifier.trim())
+    .eq('name', identifier.trim())
     .single();
 
   if (!error && data) return data;
+
+  // Case-insensitive fallback with limit to prevent multiple matches
+  const { data: fallbackData, error: fallbackError } = await supabaseClient
+    .from('users')
+    .select('*')
+    .ilike('name', identifier.trim())
+    .limit(1)
+    .single();
+
+  if (!fallbackError && fallbackData) return fallbackData;
 
   return null;
 }

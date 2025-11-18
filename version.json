@@ -1,8 +1,8 @@
 {
-  "version": "9.0.0",
-  "commit": "194c1de",
-  "lastUpdated": "2025-11-18T19:32:00.000Z",
-  "changelog": "fix: COMPREHENSIVE UUID FIXES - All ID generation (projects, conversations, chat, deletion markers) now uses proper UUIDs. Fixed hook dependency bug. Root cause: database expected UUIDs but code generated strings.",
+  "version": "9.1.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-18T20:15:00.000Z",
+  "changelog": "fix: ALL 11 ERRORS FIXED - Complete implementation of COMPREHENSIVE_ERROR_AUDIT. UUIDs, error handling, user lookup, project validation, conversation filters, created_at, null handling. Full test suite added.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

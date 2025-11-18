@@ -119,7 +119,8 @@ export async function GET(request: NextRequest) {
 
       // ✅ FIX: Return actual project_id from database (null = unassigned)
       // Handle case where project_id column doesn't exist yet
-      const actualProject = (conv as any).project_id || '';
+      // FIXED: Return null instead of empty string to match database schema
+      const actualProject = (conv as any).project_id || null;
 
       // Use actual timestamps if available, otherwise use message timestamps
       const createdAt = (conv as any).created_at || lastMessage?.created_at || new Date().toISOString();

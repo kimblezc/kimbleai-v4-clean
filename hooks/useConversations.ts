@@ -79,7 +79,8 @@ export function useConversations(userId: string) {
             return false;
           }
           // Skip conversations with invalid ID formats
-          if (c.id.length < 10) {
+          // FIXED: UUIDs are 36 characters, not 10. Changed to 32 (UUID without hyphens minimum)
+          if (c.id.length < 32) {
             return false;
           }
           return true;

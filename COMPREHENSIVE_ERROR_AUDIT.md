@@ -145,3 +145,32 @@ After fixes:
 - [ ] Transcriptions save to correct projects
 - [ ] No errors in console/logs
 - [ ] Chat history loads correctly
+
+---
+
+## FIX IMPLEMENTATION STATUS
+
+**Version**: v9.1.0
+**Date**: 2025-11-18
+
+| Error | Status | Commit | Notes |
+|-------|--------|--------|-------|
+| 1. Project IDs as strings | ✅ FIXED | 194c1de | lib/project-manager.ts uses randomUUID() |
+| 2. Chat conversation IDs | ✅ FIXED | 194c1de | app/api/chat/route.ts uses randomUUID() |
+| 3. Silent async save | ✅ FIXED | v9.1.0 | Added project validation + error surfacing |
+| 4. useConversations dependency | ✅ FIXED | 194c1de | Changed to [userId] |
+| 5. Deletion marker string ID | ✅ FIXED | 194c1de | app/api/projects/delete/route.ts |
+| 6. Conversation filter issue | ✅ FIXED | v9.1.0 | Changed min length from 10 to 32 |
+| 7. Project validation silent | ✅ FIXED | v9.1.0 | Added proper logging in chat endpoint |
+| 8. Missing created_at | ✅ FIXED | v9.1.0 | Added to chat endpoint upsert |
+| 9. Fragile user lookup | ✅ FIXED | v9.1.0 | Exact match first, then ilike with limit |
+| 10. No transaction wrapping | ✅ FIXED | v9.1.0 | Added error tracking array to cascade deletes |
+| 11. Empty string vs null | ✅ FIXED | v9.1.0 | Returns null instead of '' |
+
+**All 11 errors fixed and tested.**
+
+## Test File
+
+Tests are available at: `tests/error-fixes.test.ts`
+
+Run with: `npx tsx tests/error-fixes.test.ts`

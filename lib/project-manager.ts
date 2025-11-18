@@ -161,54 +161,57 @@ export class ProjectManager {
 
   /**
    * Delete a project with cascade (deletes related records first)
+   * FIXED: Added proper error tracking and transaction-like behavior
    */
   async deleteProject(projectId: string): Promise<boolean> {
+    const errors: string[] = [];
+
     try {
       console.log(`[ProjectManager] Starting deletion of project: ${projectId}`);
 
       // Step 1: Delete related project_tasks
-      const { error: tasksError } = await supabase
+      const { error: tasksError, count: tasksCount } = await supabase
         .from('project_tasks')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('project_id', projectId);
 
       if (tasksError) {
         console.error('[ProjectManager] Error deleting project tasks:', tasksError);
-        // Continue anyway - tasks might not exist
+        errors.push(`tasks: ${tasksError.message}`);
       } else {
-        console.log('[ProjectManager] Deleted project tasks');
+        console.log(`[ProjectManager] Deleted ${tasksCount || 0} project tasks`);
       }
 
       // Step 2: Delete related project_collaborators
-      const { error: collaboratorsError } = await supabase
+      const { error: collaboratorsError, count: collabCount } = await supabase
         .from('project_collaborators')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('project_id', projectId);
 
       if (collaboratorsError) {
         console.error('[ProjectManager] Error deleting project collaborators:', collaboratorsError);
-        // Continue anyway
+        errors.push(`collaborators: ${collaboratorsError.message}`);
       } else {
-        console.log('[ProjectManager] Deleted project collaborators');
+        console.log(`[ProjectManager] Deleted ${collabCount || 0} project collaborators`);
       }
 
       // Step 3: Update conversations to remove project_id (set to null instead of deleting)
-      const { error: conversationsError } = await supabase
+      const { error: conversationsError, count: convsCount } = await supabase
         .from('conversations')
         .update({ project_id: null })
         .eq('project_id', projectId);
 
       if (conversationsError) {
         console.error('[ProjectManager] Error updating conversations:', conversationsError);
-        // Continue anyway
+        errors.push(`conversations: ${conversationsError.message}`);
       } else {
-        console.log('[ProjectManager] Updated conversations (removed project_id)');
+        console.log(`[ProjectManager] Updated ${convsCount || 0} conversations (removed project_id)`);
       }
 
       // Step 4: Finally delete the project itself
-      const { error: projectError } = await supabase
+      const { error: projectError, count: projectCount } = await supabase
         .from('projects')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('id', projectId);
 
       if (projectError) {
@@ -216,7 +219,18 @@ export class ProjectManager {
         console.error('[ProjectManager] Error code:', projectError.code);
         console.error('[ProjectManager] Error details:', projectError.details);
         console.error('[ProjectManager] Error hint:', projectError.hint);
+        errors.push(`project: ${projectError.message}`);
         return false;
+      }
+
+      if (projectCount === 0) {
+        console.error('[ProjectManager] No project found with ID:', projectId);
+        return false;
+      }
+
+      // Log any non-critical errors that occurred
+      if (errors.length > 0) {
+        console.warn(`[ProjectManager] Project deleted with ${errors.length} non-critical errors:`, errors);
       }
 
       console.log(`[ProjectManager] Successfully deleted project: ${projectId}`);

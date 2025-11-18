@@ -1243,21 +1243,46 @@ ${formattedAutoContext}
     })();
 
     // 💾 DUAL-WRITE: Always save to Supabase for fast conversation list queries
-    // NON-BLOCKING: This runs in the background without delaying the response
+    // FIXED: Surface errors properly instead of silent failures
     // This ensures chats appear in the UI immediately, regardless of Drive storage status
     (async () => {
       try {
-        const { data: convData } = await supabase
+        // Validate project_id if provided
+        let validProjectId = null;
+        const requestedProjectId = lastMessage.projectId;
+        if (requestedProjectId && requestedProjectId !== '') {
+          const { data: projectExists, error: projectCheckError } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('id', requestedProjectId)
+            .single();
+
+          if (projectCheckError || !projectExists) {
+            console.warn(`[CHAT] Project validation failed for ID: ${requestedProjectId}`, projectCheckError);
+            // Don't fail the save, just use null
+          } else {
+            validProjectId = requestedProjectId;
+          }
+        }
+
+        const { data: convData, error: convError } = await supabase
           .from('conversations')
           .upsert({
             id: conversationId,
             user_id: userData.id,
             title: userMessage.substring(0, 50),
-            project_id: (lastMessage.projectId && lastMessage.projectId !== '') ? lastMessage.projectId : null, // Save project_id (null = unassigned)
+            project_id: validProjectId,
+            created_at: new Date().toISOString(), // FIXED: Add created_at for new conversations
             updated_at: new Date().toISOString()
           })
           .select()
           .single();
+
+        if (convError) {
+          console.error('🚨 Conversation upsert failed:', convError);
+          console.error('🚨 Conversation data:', { id: conversationId, user_id: userData.id });
+          throw convError;
+        }
 
         // Save user message to Supabase with embedding (parallel)
         const [userEmbedding, aiEmbedding] = await Promise.all([
@@ -1265,8 +1290,8 @@ ${formattedAutoContext}
           generateEmbedding(aiResponse)
         ]);
 
-        // Save both messages in parallel
-        await Promise.all([
+        // Save both messages in parallel with error checking
+        const [userMsgResult, aiMsgResult] = await Promise.all([
           supabase.from('messages').insert({
             conversation_id: conversationId,
             user_id: userData.id,
@@ -1283,9 +1308,17 @@ ${formattedAutoContext}
           })
         ]);
 
+        if (userMsgResult.error) {
+          console.error('🚨 User message insert failed:', userMsgResult.error);
+        }
+        if (aiMsgResult.error) {
+          console.error('🚨 AI message insert failed:', aiMsgResult.error);
+        }
+
         console.log('💾 Supabase storage: SUCCESS (dual-write enabled)');
-      } catch (supabaseError) {
+      } catch (supabaseError: any) {
         console.error('🚨 Supabase storage failed:', supabaseError);
+        console.error('🚨 Error details:', supabaseError.message || supabaseError);
       }
     })();
 
