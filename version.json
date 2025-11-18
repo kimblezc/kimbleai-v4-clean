@@ -1,8 +1,8 @@
 {
-  "version": "8.51.0",
-  "commit": "b8f3e0d",
-  "lastUpdated": "2025-11-18T18:28:00.000Z",
-  "changelog": "fix: CRITICAL - Transcription conversations now created with UUID. Root cause was missing ID generation for conversations table insert.",
+  "version": "9.0.0",
+  "commit": "194c1de",
+  "lastUpdated": "2025-11-18T19:32:00.000Z",
+  "changelog": "fix: COMPREHENSIVE UUID FIXES - All ID generation (projects, conversations, chat, deletion markers) now uses proper UUIDs. Fixed hook dependency bug. Root cause: database expected UUIDs but code generated strings.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
