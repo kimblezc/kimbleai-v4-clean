@@ -533,16 +533,6 @@ export default function Home() {
       });
     }
 
-    items.push({ label: '', icon: '', onClick: () => {}, divider: true });
-
-    // Share message (future feature)
-    items.push({
-      label: 'Share',
-      icon: '🔗',
-      disabled: true,
-      onClick: () => {},
-    });
-
     return items;
   };
 
@@ -640,19 +630,6 @@ export default function Home() {
             toast.error('Failed to assign project');
           }
         },
-      },
-      {
-        label: 'Duplicate',
-        icon: '📑',
-        disabled: true,
-        onClick: () => {},
-      },
-      { label: '', icon: '', onClick: () => {}, divider: true },
-      {
-        label: 'Export',
-        icon: '📤',
-        disabled: true,
-        onClick: () => {},
       },
       { label: '', icon: '', onClick: () => {}, divider: true },
       {

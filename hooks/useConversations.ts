@@ -202,6 +202,7 @@ export function useConversations(userId: string) {
         body: JSON.stringify({
           conversationId,
           pinned: newPinnedState,
+          userId,
         }),
       });
 
