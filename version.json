@@ -1,6 +1,6 @@
 {
   "version": "9.4.0",
-  "commit": "pending",
+  "commit": "7cfa5fd",
   "lastUpdated": "2025-11-18T22:00:00.000Z",
   "changelog": "fix: Removed duplicate cost tracking - transcriptions were being charged twice. Both processAssemblyAIFromUrl and processAssemblyAI had duplicate trackAPICall() calls with same timestamp causing double charges.",
   "platform": "Railway",
