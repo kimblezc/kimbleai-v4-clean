@@ -877,9 +877,15 @@ export default function Home() {
               {recentConversations.map((conv) => (
                 <div
                   key={conv.id}
-                  className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors ${
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    contextMenu.showContextMenu(e, { conversation: conv });
+                  }}
+                  className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors cursor-pointer ${
                     currentConversationId === conv.id
                       ? 'bg-blue-600 text-white'
+                      : selectedForMerge.includes(conv.id)
+                      ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
                       : 'text-gray-400 hover:bg-gray-900'
                   }`}
                 >
@@ -921,9 +927,15 @@ export default function Home() {
               {conversationsByProject['unassigned'].map((conv) => (
                 <div
                   key={conv.id}
-                  className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors ${
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    contextMenu.showContextMenu(e, { conversation: conv });
+                  }}
+                  className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors cursor-pointer ${
                     currentConversationId === conv.id
                       ? 'bg-gray-800 text-white'
+                      : selectedForMerge.includes(conv.id)
+                      ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
                       : 'text-gray-400 hover:bg-gray-900'
                   }`}
                 >
@@ -986,9 +998,15 @@ export default function Home() {
                   {convs.map((conv) => (
                     <div
                       key={conv.id}
-                      className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors ${
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        contextMenu.showContextMenu(e, { conversation: conv });
+                      }}
+                      className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors cursor-pointer ${
                         currentConversationId === conv.id
                           ? 'bg-gray-800 text-white'
+                          : selectedForMerge.includes(conv.id)
+                          ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
                           : 'text-gray-400 hover:bg-gray-900'
                       }`}
                     >
