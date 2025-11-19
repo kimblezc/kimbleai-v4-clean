@@ -78,6 +78,22 @@ export default function Home() {
     onConfirm: () => {},
   });
 
+  // Merge conversations state
+  const [mergeMode, setMergeMode] = useState(false);
+  const [selectedForMerge, setSelectedForMerge] = useState<string[]>([]);
+
+  // Rename dialog state
+  const [renameDialog, setRenameDialog] = useState<{
+    isOpen: boolean;
+    conversationId: string;
+    currentTitle: string;
+  }>({
+    isOpen: false,
+    conversationId: '',
+    currentTitle: '',
+  });
+  const [renameInput, setRenameInput] = useState('');
+
   // Refs for keyboard shortcuts
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +123,8 @@ export default function Home() {
     loading: conversationsLoading,
     loadConversations,
     removeOrphanedConversation,
+    renameConversation,
+    mergeConversations,
   } = conversationsHook;
 
   // ADDED: Pass loadConversations as callback to refresh sidebar after message sent
@@ -535,7 +553,12 @@ export default function Home() {
         label: 'Rename',
         icon: '✏️',
         onClick: () => {
-          toast('Conversation rename coming soon', { icon: '🚧' });
+          setRenameDialog({
+            isOpen: true,
+            conversationId: conv.id,
+            currentTitle: conv.title || ''
+          });
+          setRenameInput(conv.title || '');
         },
       },
       {
@@ -543,6 +566,23 @@ export default function Home() {
         icon: conv.is_pinned ? '📌' : '📍',
         onClick: async () => {
           await togglePin(conv.id, conv.is_pinned);
+        },
+      },
+      {
+        label: mergeMode ? (selectedForMerge.includes(conv.id) ? 'Deselect for Merge' : 'Select for Merge') : 'Merge with...',
+        icon: '🔗',
+        onClick: () => {
+          if (!mergeMode) {
+            setMergeMode(true);
+            setSelectedForMerge([conv.id]);
+            toast('Select conversations to merge, then click "Merge Selected"', { icon: '🔗' });
+          } else {
+            if (selectedForMerge.includes(conv.id)) {
+              setSelectedForMerge(prev => prev.filter(id => id !== conv.id));
+            } else {
+              setSelectedForMerge(prev => [...prev, conv.id]);
+            }
+          }
         },
       },
       {
@@ -711,6 +751,44 @@ export default function Home() {
             Search...
           </button>
         </div>
+
+        {/* Merge Mode Toolbar */}
+        {mergeMode && (
+          <div className="px-3 pb-2">
+            <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3">
+              <div className="text-sm text-blue-300 mb-2">
+                {selectedForMerge.length} selected for merge
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    if (selectedForMerge.length < 2) {
+                      toast.error('Select at least 2 conversations to merge');
+                      return;
+                    }
+                    const title = prompt('Enter title for merged conversation (optional):');
+                    await mergeConversations(selectedForMerge, title || undefined, false);
+                    setMergeMode(false);
+                    setSelectedForMerge([]);
+                  }}
+                  disabled={selectedForMerge.length < 2}
+                  className="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 rounded text-sm transition-colors"
+                >
+                  Merge
+                </button>
+                <button
+                  onClick={() => {
+                    setMergeMode(false);
+                    setSelectedForMerge([]);
+                  }}
+                  className="py-1.5 px-3 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Projects Section */}
         <div className="px-3 pb-2">
@@ -1351,6 +1429,51 @@ export default function Home() {
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
       />
+
+      {/* Rename Dialog */}
+      {renameDialog.isOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-neutral-800 rounded-lg p-6 w-96 max-w-[90vw]">
+            <h3 className="text-lg font-semibold mb-4">Rename Conversation</h3>
+            <input
+              type="text"
+              value={renameInput}
+              onChange={(e) => setRenameInput(e.target.value)}
+              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg mb-4 focus:outline-none focus:border-blue-500"
+              placeholder="Enter new title..."
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && renameInput.trim()) {
+                  renameConversation(renameDialog.conversationId, renameInput.trim());
+                  setRenameDialog({ isOpen: false, conversationId: '', currentTitle: '' });
+                } else if (e.key === 'Escape') {
+                  setRenameDialog({ isOpen: false, conversationId: '', currentTitle: '' });
+                }
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setRenameDialog({ isOpen: false, conversationId: '', currentTitle: '' })}
+                className="px-4 py-2 text-neutral-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (renameInput.trim()) {
+                    renameConversation(renameDialog.conversationId, renameInput.trim());
+                    setRenameDialog({ isOpen: false, conversationId: '', currentTitle: '' });
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
+                disabled={!renameInput.trim()}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Keyboard Shortcuts Dialog */}
       <KeyboardShortcutsDialog

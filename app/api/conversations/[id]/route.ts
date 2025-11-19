@@ -104,6 +104,90 @@ export async function GET(
   }
 }
 
+// PATCH - Update conversation (rename title)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: conversationId } = await params;
+    const body = await request.json();
+    const { userId = 'zach', title } = body;
+
+    console.log('[PATCH Conversations] Updating conversation:', conversationId, 'for user:', userId);
+
+    // Get user data using centralized helper
+    const userData = await getUserByIdentifier(userId, supabase);
+
+    if (!userData) {
+      console.error('[PATCH Conversations] User not found:', userId);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Verify conversation belongs to user
+    const { data: conversation, error: fetchError } = await supabase
+      .from('conversations')
+      .select('id, user_id')
+      .eq('id', conversationId)
+      .single();
+
+    if (fetchError || !conversation) {
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+    }
+
+    // Check ownership
+    const isOwner = conversation.user_id === userData.id || conversation.user_id === userId;
+    if (!isOwner) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Update the conversation
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (title !== undefined) {
+      updateData.title = title;
+    }
+
+    // Try UUID first, then string fallback
+    let updateError = null;
+    const { error: error1 } = await supabase
+      .from('conversations')
+      .update(updateData)
+      .eq('id', conversationId)
+      .eq('user_id', userData.id);
+
+    if (error1) {
+      const { error: error2 } = await supabase
+        .from('conversations')
+        .update(updateData)
+        .eq('id', conversationId)
+        .eq('user_id', userId);
+      updateError = error2;
+    }
+
+    if (updateError) {
+      console.error('[PATCH Conversations] Update error:', updateError);
+      return NextResponse.json({ error: 'Failed to update conversation' }, { status: 500 });
+    }
+
+    console.log('[PATCH Conversations] Successfully updated conversation');
+
+    return NextResponse.json({
+      success: true,
+      message: 'Conversation updated successfully'
+    });
+
+  } catch (error: any) {
+    console.error('[PATCH Conversations] Error:', error);
+    return NextResponse.json({
+      error: 'Failed to update conversation',
+      details: error.message
+    }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

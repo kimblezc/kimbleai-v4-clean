@@ -233,6 +233,78 @@ export function useConversations(userId: string) {
     toast.success('New conversation created');
   }, []);
 
+  const renameConversation = useCallback(async (conversationId: string, newTitle: string) => {
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          title: newTitle
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to rename conversation:', errorData);
+        toast.error('Failed to rename conversation');
+        throw new Error(errorData.error || 'Failed to rename conversation');
+      }
+
+      // Update local state
+      setConversations(prev => prev.map(c =>
+        c.id === conversationId ? { ...c, title: newTitle } : c
+      ));
+      toast.success('Conversation renamed');
+      await loadConversations();
+    } catch (error) {
+      console.error('Failed to rename conversation:', error);
+      toast.error('Failed to rename conversation');
+      throw error;
+    }
+  }, [userId, loadConversations]);
+
+  const mergeConversations = useCallback(async (
+    conversationIds: string[],
+    newTitle?: string,
+    deleteOriginals: boolean = false
+  ) => {
+    try {
+      const response = await fetch('/api/conversations/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationIds,
+          userId,
+          newTitle,
+          deleteOriginals
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to merge conversations:', errorData);
+        toast.error('Failed to merge conversations');
+        throw new Error(errorData.error || 'Failed to merge conversations');
+      }
+
+      const data = await response.json();
+      toast.success(`Merged ${conversationIds.length} conversations`);
+      await loadConversations();
+
+      // Select the newly merged conversation
+      if (data.conversation?.id) {
+        setCurrentConversationId(data.conversation.id);
+      }
+
+      return data.conversation;
+    } catch (error) {
+      console.error('Failed to merge conversations:', error);
+      toast.error('Failed to merge conversations');
+      throw error;
+    }
+  }, [userId, loadConversations]);
+
   const removeOrphanedConversation = useCallback((conversationId: string) => {
     console.log('[useConversations] Removing orphaned conversation:', conversationId);
 
@@ -271,5 +343,7 @@ export function useConversations(userId: string) {
     togglePin,
     createNewConversation,
     removeOrphanedConversation,
+    renameConversation,
+    mergeConversations,
   };
 }
