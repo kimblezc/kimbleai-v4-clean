@@ -79,9 +79,15 @@ export function formatProjectName(projectId: string): string {
  * Format timestamp to relative time string
  */
 export function formatRelativeTime(timestamp: string | Date): string {
+  // Parse timestamp - ISO strings are always UTC, Date objects use local time
   const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
   const now = new Date();
+
+  // Both getTime() return milliseconds since epoch (UTC), so comparison is correct
   const diffMs = now.getTime() - date.getTime();
+
+  // Debug: uncomment to troubleshoot timezone issues
+  // console.log('[formatRelativeTime] input:', timestamp, 'parsed:', date.toISOString(), 'now:', now.toISOString(), 'diff:', diffMs);
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
