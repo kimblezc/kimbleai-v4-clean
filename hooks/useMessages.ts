@@ -29,7 +29,8 @@ export interface Message {
 export function useMessages(
   conversationId: string | null,
   userId: string,
-  onNotFound?: (conversationId: string) => void
+  onNotFound?: (conversationId: string) => void,
+  onConversationUpdate?: () => void // Callback to refresh sidebar after message sent
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -189,6 +190,10 @@ export function useMessages(
             }
           }
         }
+        // ADDED: Trigger sidebar refresh after successful message to show new/updated conversation
+        if (onConversationUpdate) {
+          onConversationUpdate();
+        }
       } catch (error) {
         console.error('Error sending message:', error);
         toast.error('Failed to send message');
@@ -204,7 +209,7 @@ export function useMessages(
         setSending(false);
       }
     },
-    [conversationId, userId]
+    [conversationId, userId, onConversationUpdate]
   );
 
   const clearMessages = useCallback(() => {

@@ -1329,13 +1329,23 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
       } else {
         console.log('[CONVERSATION] Created conversation:', conversation.id);
 
-        // Add transcription as first message
-        const preview = result.text.substring(0, 500) + (result.text.length > 500 ? '...' : '');
+        // Add transcription as first message with FULL transcript and speaker labels
+        // FIXED: Show full transcript with speaker diarization instead of just preview
+        const speakerTranscript = result.utterances && result.utterances.length > 0
+          ? result.utterances
+              .map((u: any) =>
+                `[${formatTimestamp(u.start)}] Speaker ${u.speaker}: ${u.text}`
+              )
+              .join('\n\n')
+          : result.text;
+
+        const messageContent = `# Audio Transcription\n\n**File:** ${audioFile.name}\n**Duration:** ${Math.floor(result.audio_duration / 60)}m ${Math.floor(result.audio_duration % 60)}s\n**Speakers:** ${result.utterances?.length || 0} detected\n**Service:** AssemblyAI with Speaker Diarization\n\n---\n\n## Transcript\n\n${speakerTranscript}`;
+
         const { error: msgError } = await supabase.from('messages').insert({
           conversation_id: conversation.id,
           user_id: savedUserId, // FIXED: Add user_id to message (was missing!)
           role: 'assistant',
-          content: `📝 Transcription complete!\n\n**File**: ${audioFile.name}\n**Duration**: ${Math.floor(result.audio_duration / 60)}m ${Math.floor(result.audio_duration % 60)}s\n**Speakers**: ${result.speaker_labels?.length || 0}\n\n**Preview**:\n${preview}`,
+          content: messageContent,
           created_at: new Date().toISOString()
         });
 

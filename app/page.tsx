@@ -109,7 +109,8 @@ export default function Home() {
     removeOrphanedConversation,
   } = conversationsHook;
 
-  const messagesHook = useMessages(currentConversationId, currentUser, removeOrphanedConversation);
+  // ADDED: Pass loadConversations as callback to refresh sidebar after message sent
+  const messagesHook = useMessages(currentConversationId, currentUser, removeOrphanedConversation, loadConversations);
   const { messages, sending, messagesEndRef, sendMessage, clearMessages, setMessages } = messagesHook;
 
   const projectsHook = useProjects(currentUser);

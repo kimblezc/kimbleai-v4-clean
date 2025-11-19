@@ -1,8 +1,8 @@
 {
-  "version": "9.2.0",
-  "commit": "15f3ac7",
-  "lastUpdated": "2025-11-18T21:00:00.000Z",
-  "changelog": "fix: CRITICAL TRANSCRIPTION FIXES - Legacy processAssemblyAI now converts userId string to UUID, generates conversation UUID, adds user_id to messages. Fixed conversation filter to use proper UUID regex validation. Root cause: transcriptions used string userIds while queries expected UUIDs.",
+  "version": "9.3.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-18T21:30:00.000Z",
+  "changelog": "fix: Full transcript with speaker labels + real-time sidebar updates. Transcriptions now show complete speaker-diarized content instead of preview. Chat and transcription conversations appear in sidebar immediately without page refresh.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
