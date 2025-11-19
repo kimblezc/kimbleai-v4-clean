@@ -1,6 +1,6 @@
 {
   "version": "9.5.0",
-  "commit": "pending",
+  "commit": "6ca26dd",
   "lastUpdated": "2025-11-19T17:00:00.000Z",
   "changelog": "feat: Chat management features - Rename conversations (context menu + dialog), Merge multiple chats (combine transcriptions chronologically), Delete confirmation verified. New PATCH endpoint for rename, POST /api/conversations/merge endpoint for combining chats.",
   "platform": "Railway",
