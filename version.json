@@ -1,8 +1,8 @@
 {
-  "version": "9.3.0",
-  "commit": "77718fd",
-  "lastUpdated": "2025-11-18T21:30:00.000Z",
-  "changelog": "fix: Full transcript with speaker labels + real-time sidebar updates. Transcriptions now show complete speaker-diarized content instead of preview. Chat and transcription conversations appear in sidebar immediately without page refresh.",
+  "version": "9.4.0",
+  "commit": "pending",
+  "lastUpdated": "2025-11-18T22:00:00.000Z",
+  "changelog": "fix: Removed duplicate cost tracking - transcriptions were being charged twice. Both processAssemblyAIFromUrl and processAssemblyAI had duplicate trackAPICall() calls with same timestamp causing double charges.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

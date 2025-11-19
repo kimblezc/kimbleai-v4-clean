@@ -969,30 +969,9 @@ async function processAssemblyAIFromUrl(audioUrl: string, filename: string, file
       }));
     }
 
-    // COST TRACKING: Track AssemblyAI transcription cost
-    const audioDurationHours = (result.audio_duration || 0) / 3600; // Convert seconds to hours
-    const transcriptionCost = audioDurationHours * 0.41; // $0.41/hour with minimal features
+    // NOTE: Cost tracking already done above at lines 718-744
+    // Removed duplicate cost tracking that was causing double charges
 
-    await costMonitor.trackAPICall({
-      user_id: userId,
-      model: 'assemblyai-transcription',
-      endpoint: '/api/transcribe/assemblyai',
-      input_tokens: 0, // Not token-based
-      output_tokens: 0,
-      cost_usd: transcriptionCost,
-      timestamp: new Date().toISOString(),
-      metadata: {
-        filename: filename,
-        fileSize: fileSize,
-        duration_seconds: result.audio_duration,
-        duration_hours: audioDurationHours,
-        speakers: result.utterances?.length || 0,
-        project_id: projectId,
-        job_id: jobId,
-      },
-    });
-
-    console.log(`[CostMonitor] Tracked AssemblyAI transcription: $${transcriptionCost.toFixed(4)} (${audioDurationHours.toFixed(2)}h)`);
     console.log(`[ASSEMBLYAI] Job ${jobId} completed successfully`);
 
     // ZAPIER INTEGRATION: Send transcription complete webhook (async, non-blocking)
@@ -1255,30 +1234,9 @@ async function processAssemblyAI(audioFile: File, userId: string, projectId: str
       });
     }
 
-    // COST TRACKING: Track AssemblyAI transcription cost
-    const audioDurationHours = (result.audio_duration || 0) / 3600; // Convert seconds to hours
-    const transcriptionCost = audioDurationHours * 0.41; // $0.41/hour with minimal features
+    // NOTE: Cost tracking already done above at lines 1183-1211
+    // Removed duplicate cost tracking that was causing double charges
 
-    await costMonitor.trackAPICall({
-      user_id: userId,
-      model: 'assemblyai-transcription',
-      endpoint: '/api/transcribe/assemblyai',
-      input_tokens: 0, // Not token-based
-      output_tokens: 0,
-      cost_usd: transcriptionCost,
-      timestamp: new Date().toISOString(),
-      metadata: {
-        filename: audioFile.name,
-        fileSize: audioFile.size,
-        duration_seconds: result.audio_duration,
-        duration_hours: audioDurationHours,
-        speakers: result.speaker_labels?.length || 0,
-        project_id: projectId,
-        job_id: jobId,
-      },
-    });
-
-    console.log(`[CostMonitor] Tracked AssemblyAI transcription: $${transcriptionCost.toFixed(4)} (${audioDurationHours.toFixed(2)}h)`);
     console.log(`[ASSEMBLYAI] Job ${jobId} completed successfully`);
 
     // CONVERSATION CREATION: Save transcription to conversation history
