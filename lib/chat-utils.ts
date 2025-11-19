@@ -86,8 +86,8 @@ export function formatRelativeTime(timestamp: string | Date): string {
   // Both getTime() return milliseconds since epoch (UTC), so comparison is correct
   const diffMs = now.getTime() - date.getTime();
 
-  // Debug: uncomment to troubleshoot timezone issues
-  // console.log('[formatRelativeTime] input:', timestamp, 'parsed:', date.toISOString(), 'now:', now.toISOString(), 'diff:', diffMs);
+  // Debug: troubleshoot timezone issues
+  console.log('[formatRelativeTime] input:', timestamp, 'parsed:', date.toISOString(), 'now:', now.toISOString(), 'diffMs:', diffMs, 'diffMins:', Math.floor(diffMs / 60000));
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
