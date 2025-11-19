@@ -1,6 +1,6 @@
 {
   "version": "9.6.0",
-  "commit": "PENDING",
+  "commit": "8fde804",
   "lastUpdated": "2025-11-19T21:10:00.000Z",
   "changelog": "fix: Security & UX improvements - Added authorization check to Pin endpoint (CRITICAL: prevented unauthorized pin/unpin), Removed disabled menu items (Share, Duplicate, Export), Removed debug logging in formatRelativeTime. Build successful, 0 TypeScript errors.",
   "platform": "Railway",
