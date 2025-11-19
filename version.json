@@ -1,6 +1,6 @@
 {
   "version": "9.3.0",
-  "commit": "pending",
+  "commit": "77718fd",
   "lastUpdated": "2025-11-18T21:30:00.000Z",
   "changelog": "fix: Full transcript with speaker labels + real-time sidebar updates. Transcriptions now show complete speaker-diarized content instead of preview. Chat and transcription conversations appear in sidebar immediately without page refresh.",
   "platform": "Railway",
