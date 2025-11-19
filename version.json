@@ -1,8 +1,8 @@
 {
-  "version": "9.4.0",
-  "commit": "7cfa5fd",
-  "lastUpdated": "2025-11-18T22:00:00.000Z",
-  "changelog": "fix: Removed duplicate cost tracking - transcriptions were being charged twice. Both processAssemblyAIFromUrl and processAssemblyAI had duplicate trackAPICall() calls with same timestamp causing double charges.",
+  "version": "9.4.1",
+  "commit": "73c4372",
+  "lastUpdated": "2025-11-19T16:00:00.000Z",
+  "changelog": "fix: Added timezone debug comments to formatRelativeTime for investigating 59-minute timestamp issue",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
