@@ -1,6 +1,6 @@
 {
   "version": "9.7.1",
-  "commit": "pending",
+  "commit": "dd7645e",
   "lastUpdated": "2025-11-20T00:00:00.000Z",
   "changelog": "chore: Removed vestigial Guardian references - Guardian agent confirmed non-functional and removed from all documentation (CLAUDE.md), breadcrumbs (Breadcrumbs.tsx), and changelog entries. No functional code existed. Historical references preserved in archived docs.",
   "platform": "Railway",

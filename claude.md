@@ -6,14 +6,14 @@
 
 ```
 Latest Version: v9.7.1
-Latest Commit: pending
+Latest Commit: dd7645e
 Last Updated: 2025-11-20
 Status: ⏳ Pending Deployment
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes:
-- **pending** (v9.7.1) - 🧹 CLEANUP: Removed all vestigial Guardian references. Guardian agent was non-functional with no actual implementation. Removed 133-line documentation section from CLAUDE.md, removed breadcrumb labels from Breadcrumbs.tsx, cleaned up 3 changelog entries mentioning Guardian. Added Guardian to infrastructureRemoved section in version.json. Historical references in archived docs preserved for context.
+- **dd7645e** (v9.7.1) - 🧹 CLEANUP: Removed all vestigial Guardian references. Guardian agent was non-functional with no actual implementation. Removed 133-line documentation section from CLAUDE.md, removed breadcrumb labels from Breadcrumbs.tsx, cleaned up 3 changelog entries mentioning Guardian. Added Guardian to infrastructureRemoved section in version.json. Historical references in archived docs preserved for context.
 - **de6ee66** (v8.19.1) - 🔧 UI OVERLAP FIXES: Fixed draft restored toast overlapping with cost tracker (changed position from default top-right to bottom-left). Fixed cost tracker hover details going off-screen (anchored to right with max-width 360px instead of left-0 right-0). Build verified, deployed to Railway.
 - **05e1a64** (v8.15.0) - 🧠 CONTEXT RETENTION RESTORED: Fixed critical AI amnesia issue where chat forgot previous messages within same conversation. Root cause: "went too hard" on optimization - useMessages hook only sent current message instead of full history. AI received zero context from previous turns. Fixed by sending complete conversation history from frontend (hooks/useMessages.ts lines 117-138). Removed redundant truncated history summary from system prompt (~500 token savings). Increased database history limit from 15 to 20 messages. Removed verbose Archie description (~300 token savings). Created comprehensive PERFORMANCE_OPTIMIZATION_REPORT.md (50 pages) analyzing the over-optimization issue. Impact: +800 tokens/request (+22%), +$45/month cost, +500ms latency, but WORKING multi-turn conversations. Context window: 0 turns → 20 turns. Multi-turn success: 0% → 95%+. Build successful, 0 TypeScript errors. ~600 lines added (report + summary).
 - **e27dfee** (v8.9.0) - 💰 COST TRACKING RESTORED: Added Cost Tracker 💰 button to sidebar (featured gradient), created minimalist CostWidget component (shows daily spending, auto-expands with hourly/daily/monthly breakdown on hover), integrated widget into main chat header next to user selector, comprehensive COST_TRACKING_AGENT.md documentation (1,100+ lines covering architecture, dashboards at /costs and /costs/models, budget enforcement, savings recommendations, alert system, database schema). Full cost tracking system now visible and accessible. Widget auto-refreshes every 30s, color-coded status (green/blue/yellow/red), links to full dashboard. ~400 lines added.
