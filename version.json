@@ -1,6 +1,6 @@
 {
   "version": "9.7.0",
-  "commit": "PENDING",
+  "commit": "73078af",
   "lastUpdated": "2025-11-19T21:35:00.000Z",
   "changelog": "feat: Voice input for chat - Click microphone button in chat input to speak, real-time transcription using Web Speech API (Chrome/Safari), visual feedback with pulsing red button, auto-appends speech to text input. NEW: useVoiceInput hook (307 lines), updated SmartInput component with voice button. Works on PC and mobile. 0 TypeScript errors.",
   "platform": "Railway",
