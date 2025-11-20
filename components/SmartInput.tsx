@@ -2,6 +2,8 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useAutocomplete, AutocompleteSuggestion, SlashCommand } from '@/hooks/useAutocomplete';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
+import toast from 'react-hot-toast';
 
 interface SmartInputProps {
   value: string;
@@ -13,6 +15,7 @@ interface SmartInputProps {
   tags?: string[];
   files?: Array<{ id: string; name: string; path?: string }>;
   commands?: SlashCommand[];
+  enableVoiceInput?: boolean;
 }
 
 export default function SmartInput({
@@ -25,6 +28,7 @@ export default function SmartInput({
   tags = [],
   files = [],
   commands = [],
+  enableVoiceInput = true,
 }: SmartInputProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -44,6 +48,37 @@ export default function SmartInput({
     selectPrevious,
     applySuggestion,
   } = autocomplete;
+
+  // Voice input integration
+  const voiceInput = useVoiceInput({
+    continuous: true,
+    interimResults: true,
+    onTranscript: (transcript, isFinal) => {
+      if (isFinal) {
+        // Append final transcript to input
+        onChange(value + transcript + ' ');
+      }
+    },
+  });
+
+  // Show error toast when voice input fails
+  useEffect(() => {
+    if (voiceInput.error) {
+      toast.error(voiceInput.error);
+    }
+  }, [voiceInput.error]);
+
+  // Handle voice button click
+  const handleVoiceToggle = () => {
+    if (voiceInput.isListening) {
+      voiceInput.stopListening();
+      toast.success('Voice input stopped');
+    } else {
+      voiceInput.clearTranscript();
+      voiceInput.startListening();
+      toast.success('Voice input started - speak now!');
+    }
+  };
 
   // Update cursor position on input change
   useEffect(() => {
@@ -120,23 +155,54 @@ export default function SmartInput({
 
   return (
     <div className="relative w-full">
-      <textarea
-        ref={inputRef as any}
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setCursorPosition(e.target.selectionStart || 0);
-        }}
-        onKeyDown={handleKeyDown as any}
-        onClick={(e) => {
-          setCursorPosition(e.currentTarget.selectionStart || 0);
-        }}
-        placeholder={placeholder}
-        disabled={disabled}
-        rows={2}
-        className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-base focus:outline-none focus:border-blue-500 transition-colors resize-none"
-        style={{ minHeight: '72px' }}
-      />
+      <div className="relative">
+        <textarea
+          ref={inputRef as any}
+          value={value + (voiceInput.isListening ? voiceInput.interimTranscript : '')}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setCursorPosition(e.target.selectionStart || 0);
+          }}
+          onKeyDown={handleKeyDown as any}
+          onClick={(e) => {
+            setCursorPosition(e.currentTarget.selectionStart || 0);
+          }}
+          placeholder={placeholder}
+          disabled={disabled || voiceInput.isListening}
+          rows={2}
+          className={`w-full px-4 py-3 bg-gray-900 border rounded-lg text-base focus:outline-none transition-colors resize-none ${
+            voiceInput.isListening
+              ? 'border-red-500 bg-red-950/20'
+              : 'border-gray-700 focus:border-blue-500'
+          } ${enableVoiceInput ? 'pr-12' : ''}`}
+          style={{ minHeight: '72px' }}
+        />
+
+        {/* Voice Input Button */}
+        {enableVoiceInput && voiceInput.isSupported && (
+          <button
+            type="button"
+            onClick={handleVoiceToggle}
+            disabled={disabled}
+            className={`absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
+              voiceInput.isListening
+                ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+                : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white'
+            } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={voiceInput.isListening ? 'Stop voice input' : 'Start voice input'}
+          >
+            {voiceInput.isListening ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <rect x="6" y="4" width="8" height="12" rx="1" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" />
+              </svg>
+            )}
+          </button>
+        )}
+      </div>
 
       {/* Autocomplete Dropdown */}
       {isActive && suggestions.length > 0 && (

@@ -1,8 +1,8 @@
 {
-  "version": "9.6.0",
-  "commit": "8fde804",
-  "lastUpdated": "2025-11-19T21:10:00.000Z",
-  "changelog": "fix: Security & UX improvements - Added authorization check to Pin endpoint (CRITICAL: prevented unauthorized pin/unpin), Removed disabled menu items (Share, Duplicate, Export), Removed debug logging in formatRelativeTime. Build successful, 0 TypeScript errors.",
+  "version": "9.7.0",
+  "commit": "PENDING",
+  "lastUpdated": "2025-11-19T21:35:00.000Z",
+  "changelog": "feat: Voice input for chat - Click microphone button in chat input to speak, real-time transcription using Web Speech API (Chrome/Safari), visual feedback with pulsing red button, auto-appends speech to text input. NEW: useVoiceInput hook (307 lines), updated SmartInput component with voice button. Works on PC and mobile. 0 TypeScript errors.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
@@ -31,6 +31,7 @@
     "embeddings": "Embedding Cache - 445 lines with 80-90% hit rate",
     "knowledgeGraph": "Knowledge Graph - 553 lines with entity/relationship tracking",
     "database": "pgvector with HNSW indexes for fast similarity search",
-    "archie": "Simple git-based maintenance - 466 lines, hourly cron, auto-commits fixes"
+    "archie": "Simple git-based maintenance - 466 lines, hourly cron, auto-commits fixes",
+    "voiceInput": "Web Speech API - real-time speech-to-text in chat input"
   }
 }

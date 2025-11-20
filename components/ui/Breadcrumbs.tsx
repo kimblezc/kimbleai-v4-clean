@@ -34,7 +34,6 @@ export function Breadcrumbs() {
       // Custom labels for specific routes
       const customLabels: Record<string, string> = {
         'archie': 'Archie',
-        'guardian': 'Guardian',
         'projects': 'Projects',
         'tags': 'Tags',
         'files': 'Files',
@@ -109,7 +108,6 @@ export function ResponsiveBreadcrumbs() {
 
       const customLabels: Record<string, string> = {
         'archie': 'Archie',
-        'guardian': 'Guardian',
         'projects': 'Projects',
         'tags': 'Tags',
         'files': 'Files',
