@@ -376,7 +376,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     }, 100);
   }, [isListening]);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     if (!recognitionRef.current || !isSupported) {
       setError('Speech recognition not supported in this browser');
       return;
@@ -386,6 +386,26 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
 
     try {
       setError(null);
+
+      // Request microphone permission explicitly first
+      // This will trigger the browser's permission prompt
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Stop the stream immediately - we just needed permission
+        stream.getTracks().forEach(track => track.stop());
+      } catch (permErr: any) {
+        console.error('[VoiceInput] Microphone permission error:', permErr);
+        if (permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError') {
+          setError('Microphone access denied. Please click the microphone icon in your address bar and allow access, then try again.');
+        } else if (permErr.name === 'NotFoundError') {
+          setError('No microphone found. Please connect a microphone and try again.');
+        } else {
+          setError('Could not access microphone: ' + permErr.message);
+        }
+        return;
+      }
+
+      // Now start speech recognition
       recognitionRef.current.start();
     } catch (err: any) {
       if (err.name !== 'InvalidStateError') {

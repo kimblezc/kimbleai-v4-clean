@@ -1,8 +1,8 @@
 {
-  "version": "9.8.0",
-  "commit": "d18c188",
-  "lastUpdated": "2025-11-21T05:47:00.000Z",
-  "changelog": "feat: Advanced voice input for chat - Language selector (20 languages), voice commands (send, new line, clear, undo, stop), punctuation commands (period, comma, question mark, etc.), audio level visualization, enhanced error handling. Full integration in SmartInput component.",
+  "version": "9.8.1",
+  "commit": "PENDING",
+  "lastUpdated": "2025-11-21T20:39:00.000Z",
+  "changelog": "fix: Voice input microphone permission - Added explicit getUserMedia permission request before starting speech recognition. This triggers browser's permission prompt and provides better error messages for denied/missing microphone access.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
