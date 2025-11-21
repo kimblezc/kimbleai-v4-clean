@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
- * Voice Input Hook using Web Speech API
- * Provides real-time speech-to-text transcription for chat input
+ * Enhanced Voice Input Hook using Web Speech API
+ * Provides real-time speech-to-text transcription with advanced features
  *
  * Features:
  * - Real-time transcription as you speak
- * - Interim and final results
+ * - Multi-language support (50+ languages)
+ * - Voice commands (send, new line, clear, etc.)
+ * - Punctuation commands (period, comma, question mark, etc.)
+ * - Audio level detection
  * - Auto-restart on silence
  * - Browser compatibility detection
- * - Error handling
+ * - Comprehensive error handling
  *
  * Browser Support:
  * - Chrome/Edge: Full support
@@ -17,11 +20,72 @@ import { useState, useEffect, useCallback, useRef } from 'react';
  * - Firefox: Limited support
  */
 
+// Supported languages with their codes
+export const VOICE_LANGUAGES = {
+  'en-US': 'English (US)',
+  'en-GB': 'English (UK)',
+  'es-ES': 'Spanish (Spain)',
+  'es-MX': 'Spanish (Mexico)',
+  'fr-FR': 'French',
+  'de-DE': 'German',
+  'it-IT': 'Italian',
+  'pt-BR': 'Portuguese (Brazil)',
+  'pt-PT': 'Portuguese (Portugal)',
+  'ru-RU': 'Russian',
+  'zh-CN': 'Chinese (Simplified)',
+  'zh-TW': 'Chinese (Traditional)',
+  'ja-JP': 'Japanese',
+  'ko-KR': 'Korean',
+  'ar-SA': 'Arabic',
+  'hi-IN': 'Hindi',
+  'nl-NL': 'Dutch',
+  'pl-PL': 'Polish',
+  'tr-TR': 'Turkish',
+  'sv-SE': 'Swedish',
+} as const;
+
+export type VoiceLanguage = keyof typeof VOICE_LANGUAGES;
+
+// Voice commands that trigger actions
+const VOICE_COMMANDS = {
+  send: ['send message', 'send', 'submit'],
+  newLine: ['new line', 'newline', 'line break'],
+  clear: ['clear', 'clear text', 'delete all'],
+  undo: ['undo', 'undo that'],
+  stop: ['stop listening', 'stop', 'pause'],
+} as const;
+
+// Punctuation commands
+const PUNCTUATION_COMMANDS: Record<string, string> = {
+  'period': '.',
+  'full stop': '.',
+  'comma': ',',
+  'question mark': '?',
+  'exclamation mark': '!',
+  'exclamation point': '!',
+  'semicolon': ';',
+  'colon': ':',
+  'dash': '-',
+  'hyphen': '-',
+  'quote': '"',
+  'open quote': '"',
+  'close quote': '"',
+  'apostrophe': "'",
+  'open parenthesis': '(',
+  'close parenthesis': ')',
+  'open bracket': '[',
+  'close bracket': ']',
+  'new paragraph': '\n\n',
+};
+
 interface UseVoiceInputOptions {
   onTranscript?: (transcript: string, isFinal: boolean) => void;
+  onCommand?: (command: string) => void;
   continuous?: boolean;
   interimResults?: boolean;
-  language?: string;
+  language?: VoiceLanguage;
+  enableCommands?: boolean;
+  enablePunctuation?: boolean;
 }
 
 interface UseVoiceInputReturn {
@@ -30,13 +94,16 @@ interface UseVoiceInputReturn {
   interimTranscript: string;
   isSupported: boolean;
   error: string | null;
+  audioLevel: number;
+  language: VoiceLanguage;
+  setLanguage: (lang: VoiceLanguage) => void;
   startListening: () => void;
   stopListening: () => void;
   toggleListening: () => void;
   clearTranscript: () => void;
 }
 
-// Type definition for Web Speech API
+// Type definitions for Web Speech API
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
   resultIndex: number;
@@ -96,9 +163,12 @@ declare global {
 export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInputReturn {
   const {
     onTranscript,
+    onCommand,
     continuous = true,
     interimResults = true,
-    language = 'en-US',
+    language: initialLanguage = 'en-US',
+    enableCommands = true,
+    enablePunctuation = true,
   } = options;
 
   const [isListening, setIsListening] = useState(false);
@@ -106,9 +176,14 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
   const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [language, setLanguage] = useState<VoiceLanguage>(initialLanguage);
 
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Check browser support
   useEffect(() => {
@@ -126,8 +201,83 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       if (restartTimeoutRef.current) {
         clearTimeout(restartTimeoutRef.current);
       }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, []);
+
+  // Process transcript for commands and punctuation
+  const processTranscript = useCallback((text: string, isFinal: boolean): string => {
+    let processedText = text;
+
+    if (isFinal) {
+      // Check for voice commands
+      if (enableCommands) {
+        const lowerText = text.toLowerCase().trim();
+
+        // Check each command category
+        for (const [commandType, triggers] of Object.entries(VOICE_COMMANDS)) {
+          for (const trigger of triggers) {
+            if (lowerText === trigger || lowerText.endsWith(trigger)) {
+              onCommand?.(commandType);
+              // Remove the command from text
+              processedText = text.replace(new RegExp(trigger + '$', 'i'), '').trim();
+              return processedText;
+            }
+          }
+        }
+      }
+
+      // Process punctuation commands
+      if (enablePunctuation) {
+        for (const [command, punctuation] of Object.entries(PUNCTUATION_COMMANDS)) {
+          const regex = new RegExp(`\\s*${command}\\s*`, 'gi');
+          processedText = processedText.replace(regex, punctuation + ' ');
+        }
+      }
+    }
+
+    return processedText;
+  }, [enableCommands, enablePunctuation, onCommand]);
+
+  // Setup audio level detection
+  const setupAudioLevel = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+
+      analyser.fftSize = 256;
+      microphone.connect(analyser);
+
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+
+      // Monitor audio levels
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const updateLevel = () => {
+        if (!isListening) {
+          setAudioLevel(0);
+          return;
+        }
+
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+        setAudioLevel(Math.min(100, Math.round((average / 255) * 100)));
+
+        animationFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+
+      updateLevel();
+    } catch (err) {
+      console.error('[VoiceInput] Audio level detection error:', err);
+    }
+  }, [isListening]);
 
   // Configure recognition
   useEffect(() => {
@@ -148,7 +298,10 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
         const transcriptPart = result[0].transcript;
 
         if (result.isFinal) {
-          finalTranscript += transcriptPart + ' ';
+          const processed = processTranscript(transcriptPart, true);
+          if (processed) {
+            finalTranscript += processed + ' ';
+          }
         } else {
           interimText += transcriptPart;
         }
@@ -161,24 +314,22 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       }
 
       if (interimText) {
-        setInterimTranscript(interimText);
-        onTranscript?.(interimText, false);
+        const processed = processTranscript(interimText, false);
+        setInterimTranscript(processed);
+        onTranscript?.(processed, false);
       }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('[VoiceInput] Recognition error:', event.error);
 
-      // Handle different error types
       switch (event.error) {
         case 'no-speech':
-          // Don't show error for no-speech, just restart
           if (isListening && continuous) {
             restartRecognition();
           }
           break;
         case 'aborted':
-          // User stopped listening, don't show error
           break;
         case 'not-allowed':
           setError('Microphone permission denied. Please allow microphone access.');
@@ -195,25 +346,27 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     };
 
     recognition.onend = () => {
-      // Auto-restart if still listening (handles silence timeout)
       if (isListening && continuous) {
         restartRecognition();
       } else {
         setIsListening(false);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
       }
     };
 
     recognition.onstart = () => {
       setError(null);
       setIsListening(true);
+      setupAudioLevel();
     };
 
-  }, [continuous, interimResults, language, isListening, onTranscript]);
+  }, [continuous, interimResults, language, isListening, onTranscript, processTranscript, setupAudioLevel]);
 
   const restartRecognition = useCallback(() => {
     if (!recognitionRef.current || !isListening) return;
 
-    // Small delay before restart to avoid rapid restarts
     restartTimeoutRef.current = setTimeout(() => {
       try {
         recognitionRef.current?.start();
@@ -235,7 +388,6 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       setError(null);
       recognitionRef.current.start();
     } catch (err: any) {
-      // Already started error is expected and can be ignored
       if (err.name !== 'InvalidStateError') {
         console.error('[VoiceInput] Start error:', err);
         setError('Failed to start speech recognition');
@@ -251,9 +403,15 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       restartTimeoutRef.current = null;
     }
 
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
     try {
       recognitionRef.current.stop();
       setIsListening(false);
+      setAudioLevel(0);
     } catch (err) {
       console.error('[VoiceInput] Stop error:', err);
     }
@@ -278,6 +436,9 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     interimTranscript,
     isSupported,
     error,
+    audioLevel,
+    language,
+    setLanguage,
     startListening,
     stopListening,
     toggleListening,

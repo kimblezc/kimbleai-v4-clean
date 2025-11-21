@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useAutocomplete, AutocompleteSuggestion, SlashCommand } from '@/hooks/useAutocomplete';
-import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { useVoiceInput, VOICE_LANGUAGES, VoiceLanguage } from '@/hooks/useVoiceInput';
 import toast from 'react-hot-toast';
 
 interface SmartInputProps {
@@ -32,6 +32,7 @@ export default function SmartInput({
 }: SmartInputProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
   const autocomplete = useAutocomplete(value, cursorPosition, {
     projects,
@@ -49,14 +50,43 @@ export default function SmartInput({
     applySuggestion,
   } = autocomplete;
 
-  // Voice input integration
+  // Voice input integration with advanced features
   const voiceInput = useVoiceInput({
     continuous: true,
     interimResults: true,
+    enableCommands: true,
+    enablePunctuation: true,
     onTranscript: (transcript, isFinal) => {
       if (isFinal) {
         // Append final transcript to input
         onChange(value + transcript + ' ');
+      }
+    },
+    onCommand: (command) => {
+      // Handle voice commands
+      switch (command) {
+        case 'send':
+          onSubmit();
+          voiceInput.stopListening();
+          toast.success('Message sent!');
+          break;
+        case 'newLine':
+          onChange(value + '\n');
+          break;
+        case 'clear':
+          onChange('');
+          toast.success('Text cleared');
+          break;
+        case 'undo':
+          // Simple undo - remove last word
+          const words = value.trim().split(/\s+/);
+          words.pop();
+          onChange(words.join(' ') + ' ');
+          break;
+        case 'stop':
+          voiceInput.stopListening();
+          toast.success('Voice input stopped');
+          break;
       }
     },
   });
@@ -76,7 +106,7 @@ export default function SmartInput({
     } else {
       voiceInput.clearTranscript();
       voiceInput.startListening();
-      toast.success('Voice input started - speak now!');
+      toast.success(`Voice input started (${voiceInput.language}) - speak now!`);
     }
   };
 
@@ -155,6 +185,22 @@ export default function SmartInput({
 
   return (
     <div className="relative w-full">
+      {/* Audio Level Visualization - appears above input when listening */}
+      {voiceInput.isListening && voiceInput.audioLevel > 0 && (
+        <div className="absolute -top-8 left-0 right-0 h-6 flex items-center gap-2 px-4">
+          <span className="text-xs text-gray-500 flex-shrink-0">Volume:</span>
+          <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-green-600 to-red-600 transition-all duration-100 rounded-full"
+              style={{ width: `${voiceInput.audioLevel}%` }}
+            />
+          </div>
+          <span className="text-xs text-gray-500 flex-shrink-0 w-8 text-right">
+            {voiceInput.audioLevel}%
+          </span>
+        </div>
+      )}
+
       <div className="relative">
         <textarea
           ref={inputRef as any}
@@ -174,33 +220,82 @@ export default function SmartInput({
             voiceInput.isListening
               ? 'border-red-500 bg-red-950/20'
               : 'border-gray-700 focus:border-blue-500'
-          } ${enableVoiceInput ? 'pr-12' : ''}`}
+          } ${enableVoiceInput ? 'pr-24' : ''}`}
           style={{ minHeight: '72px' }}
         />
 
-        {/* Voice Input Button */}
+        {/* Voice Input Controls */}
         {enableVoiceInput && voiceInput.isSupported && (
-          <button
-            type="button"
-            onClick={handleVoiceToggle}
-            disabled={disabled}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
-              voiceInput.isListening
-                ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
-                : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white'
-            } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={voiceInput.isListening ? 'Stop voice input' : 'Start voice input'}
-          >
-            {voiceInput.isListening ? (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <rect x="6" y="4" width="8" height="12" rx="1" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" />
-              </svg>
-            )}
-          </button>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            {/* Language Selector Button */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowLanguageSelector(!showLanguageSelector)}
+                disabled={disabled || voiceInput.isListening}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Change voice language"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+              </button>
+
+              {/* Language Selector Dropdown */}
+              {showLanguageSelector && (
+                <div className="absolute bottom-full right-0 mb-2 w-64 max-h-80 overflow-y-auto bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50">
+                  <div className="p-2 border-b border-gray-800">
+                    <div className="text-xs font-medium text-gray-400 uppercase">Voice Language</div>
+                  </div>
+                  <div className="p-1">
+                    {Object.entries(VOICE_LANGUAGES).map(([code, name]) => (
+                      <button
+                        key={code}
+                        onClick={() => {
+                          voiceInput.setLanguage(code as VoiceLanguage);
+                          setShowLanguageSelector(false);
+                          toast.success(`Language changed to ${name}`);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm rounded transition-colors ${
+                          voiceInput.language === code
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-300 hover:bg-gray-800'
+                        }`}
+                      >
+                        {name}
+                        {voiceInput.language === code && (
+                          <span className="ml-2 text-xs">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Voice Input Button */}
+            <button
+              type="button"
+              onClick={handleVoiceToggle}
+              disabled={disabled}
+              className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
+                voiceInput.isListening
+                  ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white'
+              } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={voiceInput.isListening ? 'Stop voice input' : 'Start voice input'}
+            >
+              {voiceInput.isListening ? (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <rect x="6" y="4" width="8" height="12" rx="1" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" />
+                </svg>
+              )}
+            </button>
+          </div>
         )}
       </div>
 

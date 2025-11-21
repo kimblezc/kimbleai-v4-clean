@@ -1,8 +1,8 @@
 {
-  "version": "9.7.1",
-  "commit": "dd7645e",
-  "lastUpdated": "2025-11-20T00:00:00.000Z",
-  "changelog": "chore: Removed vestigial Guardian references - Guardian agent confirmed non-functional and removed from all documentation (CLAUDE.md), breadcrumbs (Breadcrumbs.tsx), and changelog entries. No functional code existed. Historical references preserved in archived docs.",
+  "version": "9.8.0",
+  "commit": "d18c188",
+  "lastUpdated": "2025-11-21T05:47:00.000Z",
+  "changelog": "feat: Advanced voice input for chat - Language selector (20 languages), voice commands (send, new line, clear, undo, stop), punctuation commands (period, comma, question mark, etc.), audio level visualization, enhanced error handling. Full integration in SmartInput component.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
