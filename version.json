@@ -1,8 +1,8 @@
 {
-  "version": "10.0.0",
-  "commit": "b8a2767",
-  "lastUpdated": "2025-11-22T22:00:00.000Z",
-  "changelog": "feat: Complete 11-Service Integration (Phases 1-5) - Added Gemini 2.5 Flash/Pro (FREE), DeepSeek bulk processing, Perplexity AI search, ElevenLabs TTS, FLUX image generation, and integrations management UI. Total cost reduction: $22-32/month (44-64%). All services production-ready with comprehensive testing and documentation.",
+  "version": "10.0.1",
+  "commit": "5105eff",
+  "lastUpdated": "2025-11-22T23:00:00.000Z",
+  "changelog": "feat: Main page capabilities showcase - Added prominent display of all 11 integrated AI services on main page empty state. Visual cards show Gemini Flash (DEFAULT), Gemini Pro, DeepSeek bulk processing, Perplexity search, ElevenLabs TTS, and FLUX images with pricing and stats. Added Integrations ⚡ button to sidebar for easy access to management page. Users now immediately see system capabilities and cost savings (90%+ FREE tier, $22-32/month savings).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
@@ -61,19 +61,25 @@
     "phase3": {
       "version": "10.0.0",
       "services": ["Perplexity Sonar Pro", "ElevenLabs Turbo v2.5"],
-      "status": "deploying",
+      "status": "deployed",
       "cost": "$0-1/month"
     },
     "phase4": {
       "version": "10.0.0",
       "services": ["FLUX 1.1 Pro"],
-      "status": "deploying",
+      "status": "deployed",
       "cost": "$0-3/month"
     },
     "phase5": {
       "version": "10.0.0",
       "services": ["Integrations Management UI"],
-      "status": "deploying",
+      "status": "deployed",
+      "cost": "$0/month"
+    },
+    "phase6": {
+      "version": "10.0.1",
+      "services": ["Main Page Capabilities Showcase"],
+      "status": "deployed",
       "cost": "$0/month"
     }
   },
