@@ -12,6 +12,24 @@ export interface ModelConfig {
 }
 
 export const AVAILABLE_MODELS: Record<string, ModelConfig> = {
+  // === GEMINI MODELS (Google) - FREE TIER ===
+  'gemini-2.5-flash': {
+    model: 'gemini-2.5-flash',
+    maxTokens: 8096,
+    temperature: 0.7,
+    description: 'Google Gemini 2.5 Flash - DEFAULT MODEL (Free: 1,500 RPD) - Fast, multimodal, best for general tasks',
+    useCases: ['general chat', 'quick answers', 'simple tasks', 'image analysis', 'high-volume requests'],
+    costMultiplier: 0 // FREE tier (1,500 requests/day)
+  },
+  'gemini-2.5-pro': {
+    model: 'gemini-2.5-pro',
+    maxTokens: 8096,
+    temperature: 0.7,
+    description: 'Google Gemini 2.5 Pro - Premium model (Free: 50 RPD) - Advanced reasoning, complex analysis',
+    useCases: ['complex reasoning', 'advanced analysis', 'detailed research', 'coding', 'technical problems'],
+    costMultiplier: 1 // FREE tier (50 requests/day), then $1.50/$6 per million tokens
+  },
+
   // === CLAUDE MODELS (Anthropic) ===
   'claude-sonnet-4-5': {
     model: 'claude-sonnet-4-5',
@@ -283,105 +301,112 @@ export class ModelSelector {
 
       let selectedModel: ModelConfig | undefined;
 
+      // === GEMINI-FIRST STRATEGY (Phase 2a) ===
+      // Gemini Flash is FREE tier (1,500 RPD) and excellent for 90% of use cases
+      // Only use other models for specific high-complexity tasks
+
       // === COST-OPTIMIZED SELECTION ===
       if (userPref === 'cost') {
-        if (complexity === 'simple') {
-          selectedModel = AVAILABLE_MODELS['claude-3-5-haiku']; // Most cost-effective
+        // Gemini Flash is cheapest (FREE tier) - use for everything
+        if (complexity === 'simple' || complexity === 'medium') {
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // FREE tier
         } else {
-          selectedModel = AVAILABLE_MODELS['gpt-4o-mini']; // Good balance for medium tasks
+          // For complex tasks, Flash is still free, so use it first
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // FREE tier
         }
       }
 
       // === SPEED-OPTIMIZED SELECTION ===
       else if (userPref === 'speed') {
-        if (complexity === 'simple' || taskTypes.includes('file_processing')) {
-          selectedModel = AVAILABLE_MODELS['claude-3-5-haiku']; // Fastest for simple tasks
-        } else {
-          selectedModel = AVAILABLE_MODELS['gpt-4o-mini']; // Fast enough for most tasks
-        }
+        // Gemini Flash is fastest (free tier advantage)
+        selectedModel = AVAILABLE_MODELS['gemini-2.5-flash'];
       }
 
       // === TASK-SPECIFIC SELECTION ===
 
-      // REASONING & MATH: o1/GPT-5 models excel at complex reasoning
+      // IMAGE ANALYSIS: Gemini Flash excels at multimodal (images, vision tasks)
+      else if (taskTypes.some(t => ['file_processing', 'analysis'].includes(t)) &&
+               /image|photo|picture|vision/.test(context.messageContent.toLowerCase())) {
+        selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // Fast multimodal
+      }
+
+      // REASONING & MATH: Gemini Pro for complex, Flash for simple
       else if (taskTypes.includes('reasoning')) {
         if (complexity === 'complex') {
-          selectedModel = AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['o1'] ?? AVAILABLE_MODELS['claude-sonnet-4-5'];
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-pro'] ?? AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['o1'];
         } else {
-          selectedModel = AVAILABLE_MODELS['gpt-5-mini'] ?? AVAILABLE_MODELS['o1-mini'] ?? AVAILABLE_MODELS['gpt-4o'];
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // Flash handles most reasoning
         }
       }
 
-      // CODING TASKS: GPT-5/o1-mini for complex, gpt-4o for standard
+      // CODING TASKS: Gemini Pro for complex, Flash for standard
       else if (taskTypes.includes('coding')) {
         if (complexity === 'complex') {
-          selectedModel = AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['o1-mini'] ?? AVAILABLE_MODELS['gpt-4o'];
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-pro'] ?? AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['o1-mini'];
         } else {
-          selectedModel = AVAILABLE_MODELS['gpt-4o'];
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // Flash is excellent for coding
         }
       }
 
-      // CREATIVE WRITING: Claude excels at creative content
+      // CREATIVE WRITING: Claude or Gemini
       else if (taskTypes.includes('creative')) {
         if (complexity === 'complex') {
           selectedModel = AVAILABLE_MODELS['claude-sonnet-4-5'];
         } else {
-          selectedModel = AVAILABLE_MODELS['claude-3-5-haiku'];
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // Flash works well for creative
         }
       }
 
-      // ANALYSIS: Claude for nuanced, o1 for technical
+      // ANALYSIS: Gemini Pro for complex, Flash for simple
       else if (taskTypes.includes('analysis')) {
-        const isTechnicalAnalysis = context.messageContent.toLowerCase().includes('technical') ||
-                                     context.messageContent.toLowerCase().includes('scientific');
-        if (complexity === 'complex' && isTechnicalAnalysis) {
-          selectedModel = AVAILABLE_MODELS['o1'] ?? AVAILABLE_MODELS['claude-sonnet-4-5'];
-        } else if (complexity === 'complex') {
-          selectedModel = AVAILABLE_MODELS['claude-sonnet-4-5'];
+        if (complexity === 'complex') {
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-pro'] ?? AVAILABLE_MODELS['claude-sonnet-4-5'];
         } else {
-          selectedModel = AVAILABLE_MODELS['gpt-4o-mini'];
+          selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // Flash for simple analysis
         }
       }
 
-      // FILE PROCESSING: Fast models preferred
+      // FILE PROCESSING: Gemini Flash is fastest
       else if (taskTypes.includes('file_processing')) {
-        selectedModel = AVAILABLE_MODELS['claude-3-5-haiku'];
+        selectedModel = AVAILABLE_MODELS['gemini-2.5-flash'];
       }
 
       // === DEFAULT SELECTION BY COMPLEXITY ===
+      // Prioritize Gemini Flash for 90% of general requests
       else {
         switch (complexity) {
           case 'simple':
-            selectedModel = AVAILABLE_MODELS['claude-3-5-haiku'];
+            selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // FREE, fast, excellent quality
             break;
           case 'medium':
-            selectedModel = AVAILABLE_MODELS['gpt-5-mini'] ?? AVAILABLE_MODELS['gpt-4o-mini'];
+            selectedModel = AVAILABLE_MODELS['gemini-2.5-flash']; // Flash handles medium complexity well
             break;
           case 'complex':
-            selectedModel = AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['claude-sonnet-4-5'];
+            // For complex tasks, try Pro first (still free tier), fallback to other models
+            selectedModel = AVAILABLE_MODELS['gemini-2.5-pro'] ?? AVAILABLE_MODELS['gpt-5'] ?? AVAILABLE_MODELS['claude-sonnet-4-5'];
             break;
           default:
-            selectedModel = AVAILABLE_MODELS['gpt-4o-mini'];
+            selectedModel = AVAILABLE_MODELS['gemini-2.5-flash'];
         }
       }
 
       // Guaranteed safe fallback if somehow nothing was selected
       if (!selectedModel) {
-        console.warn('[ModelSelector] No model selected, using fallback: claude-sonnet-4-5');
-        selectedModel = AVAILABLE_MODELS['claude-sonnet-4-5'];
+        console.warn('[ModelSelector] No model selected, using fallback: gemini-2.5-flash');
+        selectedModel = AVAILABLE_MODELS['gemini-2.5-flash'];
       }
 
       return selectedModel;
     } catch (error) {
       console.error('[ModelSelector] Error in selectModel:', error);
-      // Return guaranteed safe fallback on any error
-      return AVAILABLE_MODELS['claude-sonnet-4-5'] ?? {
-        model: 'claude-sonnet-4-5',
+      // Return guaranteed safe fallback on any error (Gemini Flash - FREE tier)
+      return AVAILABLE_MODELS['gemini-2.5-flash'] ?? {
+        model: 'gemini-2.5-flash',
         maxTokens: 8096,
-        temperature: 1.0,
-        description: 'Claude Sonnet 4.5 (emergency fallback)',
+        temperature: 0.7,
+        description: 'Gemini 2.5 Flash (emergency fallback)',
         useCases: [],
-        costMultiplier: 8
+        costMultiplier: 0 // FREE tier
       };
     }
   }

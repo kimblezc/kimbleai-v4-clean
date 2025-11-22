@@ -12,6 +12,7 @@ import { embeddingCache } from '@/lib/embedding-cache';
 import { costMonitor } from '@/lib/cost-monitor';
 import { PromptCache } from '@/lib/prompt-cache';
 import { ClaudeClient, type ClaudeModel, type ClaudeMessage } from '@/lib/claude-client';
+import { GeminiClient, type GeminiModel, type GeminiMessage } from '@/lib/gemini-client';
 import { getUserByIdentifier } from '@/lib/user-utils';
 
 const supabase = createClient(
@@ -35,10 +36,27 @@ const claudeClient = process.env.ANTHROPIC_API_KEY ? new ClaudeClient({
   }
 }) : null;
 
+// Initialize Gemini client for FREE tier models (Phase 2a)
+const geminiClient = process.env.GOOGLE_AI_API_KEY ? new GeminiClient({
+  apiKey: process.env.GOOGLE_AI_API_KEY,
+  defaultModel: 'gemini-2.5-flash', // DEFAULT MODEL (FREE 1,500 RPD)
+  maxTokens: 4096,
+  temperature: 0.7,
+  onCost: async (cost, model) => {
+    console.log(`[Gemini] API call cost: $${cost.toFixed(4)} (${model})`);
+  }
+}) : null;
+
 // Log Claude availability
 console.log(`[Claude] Client initialized: ${claudeClient ? 'YES' : 'NO (missing ANTHROPIC_API_KEY)'}`);
 if (!claudeClient) {
   console.log('[Claude] Will fallback to OpenAI models only');
+}
+
+// Log Gemini availability
+console.log(`[Gemini] Client initialized: ${geminiClient ? 'YES' : 'NO (missing GOOGLE_AI_API_KEY)'}`);
+if (!geminiClient) {
+  console.log('[Gemini] Will fallback to other models');
 }
 
 // PERFORMANCE OPTIMIZED: Use embedding cache instead of direct API calls
@@ -70,7 +88,8 @@ export async function GET() {
       claudeIntegration: true,
       models: {
         openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-5-flash', 'gpt-5'],
-        claude: ['opus-4-1', 'sonnet-4-5', 'haiku-4-5', '3-5-haiku', '3-haiku']
+        claude: ['opus-4-1', 'sonnet-4-5', 'haiku-4-5', '3-5-haiku', '3-haiku'],
+        gemini: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-pro']
       }
     },
     functions: [
@@ -455,21 +474,52 @@ ${formattedAutoContext}
     let isClaudeModel = selectedModel.model.startsWith('claude-') ||
       ['claude-opus-4-1', 'claude-4-sonnet', 'claude-sonnet-4-5', 'claude-haiku-4-5', 'claude-3-5-haiku', 'claude-3-haiku'].includes(selectedModel.model);
 
-    // CRITICAL: If Claude model selected but no API key available, fallback to OpenAI
+    // Detect if this is a Gemini model (Phase 2a)
+    let isGeminiModel = selectedModel.model.startsWith('gemini-') ||
+      ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-2.0-pro'].includes(selectedModel.model);
+
+    // CRITICAL: If Claude model selected but no API key available, fallback to Gemini or OpenAI
     if (isClaudeModel && !claudeClient) {
-      console.warn('[Claude] Model selected but ANTHROPIC_API_KEY not available, falling back to OpenAI');
+      console.warn('[Claude] Model selected but ANTHROPIC_API_KEY not available, falling back to Gemini');
+      if (geminiClient) {
+        selectedModel = {
+          model: 'gemini-2.5-flash',
+          maxTokens: 4096,
+          temperature: 0.7,
+          description: 'Gemini Flash (fallback due to missing Claude API key)',
+          useCases: ['fallback'],
+          costMultiplier: 0
+        };
+        isClaudeModel = false;
+        isGeminiModel = true;
+      } else {
+        selectedModel = {
+          model: 'gpt-4o-mini',
+          maxTokens: 4096,
+          temperature: 0.7,
+          description: 'GPT-4o Mini (fallback due to missing Claude/Gemini API keys)',
+          useCases: ['fallback'],
+          costMultiplier: 1
+        };
+        isClaudeModel = false;
+      }
+    }
+
+    // CRITICAL: If Gemini model selected but no API key available, fallback to OpenAI
+    if (isGeminiModel && !geminiClient) {
+      console.warn('[Gemini] Model selected but GOOGLE_AI_API_KEY not available, falling back to OpenAI');
       selectedModel = {
         model: 'gpt-4o-mini',
         maxTokens: 4096,
         temperature: 0.7,
-        description: 'GPT-4o Mini (fallback due to missing Claude API key)',
+        description: 'GPT-4o Mini (fallback due to missing Gemini API key)',
         useCases: ['fallback'],
         costMultiplier: 1
       };
-      isClaudeModel = false; // Update flag since we're now using OpenAI
+      isGeminiModel = false;
     }
 
-    console.log(`[MODEL] Provider: ${isClaudeModel ? 'Claude (Anthropic)' : 'GPT (OpenAI)'}`);
+    console.log(`[MODEL] Provider: ${isClaudeModel ? 'Claude (Anthropic)' : isGeminiModel ? 'Gemini (Google)' : 'GPT (OpenAI)'}`);
     console.log(`[MODEL] Final selected model: ${selectedModel.model}`);
 
     // For Claude models, use automatic task-based selection if no specific model provided
@@ -481,6 +531,18 @@ ${formattedAutoContext}
         console.log(`[Claude] Auto-selected: ${claudeModelToUse}`);
       } else {
         claudeModelToUse = selectedModel.model as ClaudeModel;
+      }
+    }
+
+    // For Gemini models, use automatic task-based selection if no specific model provided (Phase 2a)
+    let geminiModelToUse: GeminiModel | null = null;
+    if (isGeminiModel && geminiClient) {
+      if (!preferredModel) {
+        // Auto-select best Gemini model for the task (defaults to Flash for most tasks)
+        geminiModelToUse = geminiClient.selectModelForTask(currentUserMessage, 'cost');
+        console.log(`[Gemini] Auto-selected: ${geminiModelToUse}`);
+      } else {
+        geminiModelToUse = selectedModel.model as GeminiModel;
       }
     }
 
@@ -840,6 +902,61 @@ ${formattedAutoContext}
         }, { status: 503 });
       }
     }
+    // GEMINI API ROUTE (Phase 2a)
+    else if (isGeminiModel && geminiModelToUse && geminiClient) {
+      try {
+        openaiStartTime = Date.now();
+        console.log(`[Gemini] Calling API with model: ${geminiModelToUse}`);
+        console.log(`⏱️ [Performance] Elapsed time before Gemini call: ${openaiStartTime - requestStartTime}ms`);
+
+        // Check timeout before expensive Gemini call
+        const remainingTime = getRemainingTime();
+        if (remainingTime < 10000) {
+          console.error('[Timeout] Insufficient time for Gemini call');
+          return NextResponse.json({
+            error: 'Request timeout',
+            details: 'Not enough time remaining to process your request',
+            suggestion: 'Try a simpler query or break your request into smaller parts'
+          }, { status: 504 });
+        }
+
+        // Convert messages to Gemini format
+        const geminiMessages: GeminiMessage[] = messages.map((msg: any) => ({
+          role: msg.role === 'system' ? 'user' : msg.role,
+          content: msg.content
+        }));
+
+        // Call Gemini API
+        const geminiResponse = await geminiClient.sendMessage(geminiMessages, {
+          model: geminiModelToUse,
+          system: systemMessageContent,
+          maxTokens: 4096,
+          temperature: 0.7
+        });
+
+        openaiEndTime = Date.now();
+        console.log(`⏱️ [Performance] Gemini API call completed in ${openaiEndTime - openaiStartTime}ms`);
+
+        aiResponse = geminiResponse.content;
+        inputTokens = geminiResponse.usage.inputTokens;
+        outputTokens = geminiResponse.usage.outputTokens;
+        cost = geminiResponse.cost;
+
+        console.log(`[Gemini] Response received: ${aiResponse.substring(0, 100)}...`);
+        console.log(`[Gemini] Tokens: ${inputTokens} in + ${outputTokens} out = $${cost.toFixed(4)}`);
+
+      } catch (apiError: any) {
+        console.error('[Gemini] API call failed:', apiError);
+        console.error('[Gemini] Model:', geminiModelToUse);
+        console.error('[Gemini] Error details:', apiError.message);
+
+        return NextResponse.json({
+          error: 'Gemini AI service temporarily unavailable',
+          details: `Failed to get response from Gemini: ${apiError.message}`,
+          model: geminiModelToUse
+        }, { status: 503 });
+      }
+    }
     // OPENAI API ROUTE
     else {
       try {
@@ -926,10 +1043,15 @@ ${formattedAutoContext}
       }
     } // End of OpenAI/Claude conditional
 
-    // COST TRACKING: Track API call (works for both OpenAI and Claude)
+    // COST TRACKING: Track API call (works for OpenAI, Claude, and Gemini)
+    const actualModel = isClaudeModel && claudeModelToUse ? claudeModelToUse
+                      : isGeminiModel && geminiModelToUse ? geminiModelToUse
+                      : selectedModel.model;
+    const provider = isClaudeModel ? 'Claude' : isGeminiModel ? 'Gemini' : 'OpenAI';
+
     await costMonitor.trackAPICall({
       user_id: userData.id,
-      model: isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model,
+      model: actualModel,
       endpoint: '/api/chat',
       input_tokens: inputTokens,
       output_tokens: outputTokens,
@@ -937,13 +1059,13 @@ ${formattedAutoContext}
       timestamp: new Date().toISOString(),
       metadata: {
         conversation_id: conversationId,
-        provider: isClaudeModel ? 'Claude' : 'OpenAI',
+        provider: provider,
         reasoning_level: selectedModel.reasoningLevel || 'none',
         has_function_calls: false,
       },
     });
 
-    console.log(`[CostMonitor] Tracked chat API call: ${isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model} - $${cost.toFixed(4)} (${inputTokens} in + ${outputTokens} out)`);
+    console.log(`[CostMonitor] Tracked chat API call: ${actualModel} - $${cost.toFixed(4)} (${inputTokens} in + ${outputTokens} out)`);
 
     // PERFORMANCE TRACKING: Track model performance metrics
     const responseTime = openaiEndTime - openaiStartTime;
@@ -951,9 +1073,10 @@ ${formattedAutoContext}
     const complexity = taskContext ? ModelSelector['analyzeComplexity'](taskContext.messageContent) : 'medium';
 
     try {
+      const providerName = isClaudeModel ? 'anthropic' : isGeminiModel ? 'google' : 'openai';
       await supabase.from('model_performance_metrics').insert({
-        model: isClaudeModel && claudeModelToUse ? claudeModelToUse : selectedModel.model,
-        provider: isClaudeModel ? 'anthropic' : 'openai',
+        model: actualModel,
+        provider: providerName,
         task_type: taskTypes[0] || 'general_chat',
         task_complexity: complexity,
         response_time_ms: responseTime,

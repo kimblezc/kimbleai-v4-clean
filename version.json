@@ -1,8 +1,8 @@
 {
-  "version": "9.8.1",
-  "commit": "22150d8",
-  "lastUpdated": "2025-11-21T20:47:00.000Z",
-  "changelog": "fix: Voice input microphone permission - Added explicit getUserMedia permission request before starting speech recognition. This triggers browser's permission prompt and provides better error messages for denied/missing microphone access.",
+  "version": "9.10.0",
+  "commit": "8bb9376",
+  "lastUpdated": "2025-11-22T21:16:00.000Z",
+  "changelog": "feat: Phase 2 AI Integration - Google Gemini 2.5 Pro/Flash (FREE 1,500 RPD) + DeepSeek V3.2 bulk processing. Added Gemini as DEFAULT model to chat API with automatic selection (Gemini Flash prioritized for 90%+ requests). Bulk processing endpoint supports 100+ docs with 4 task types (summarize/extract/categorize/analyze). Cost-optimized: Gemini FREE tier + DeepSeek $0.27/$1.10 per 1M tokens = ~$20-30/month savings vs current OpenAI-only approach.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
@@ -38,6 +38,8 @@
     "knowledgeGraph": "Knowledge Graph - 553 lines with entity/relationship tracking",
     "database": "pgvector with HNSW indexes for fast similarity search",
     "archie": "Simple git-based maintenance - 466 lines, hourly cron, auto-commits fixes",
-    "voiceInput": "Web Speech API - real-time speech-to-text in chat input"
+    "voiceInput": "Web Speech API - real-time speech-to-text in chat input",
+    "gemini": "Google Gemini 2.5 Flash/Pro - FREE tier (1,500/50 RPD) as DEFAULT chat models",
+    "deepseek": "DeepSeek V3.2 bulk processing - 100+ docs, 4 task types, $0.27/$1.10 per 1M tokens"
   }
 }
