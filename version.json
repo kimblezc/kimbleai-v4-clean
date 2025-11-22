@@ -1,6 +1,6 @@
 {
   "version": "9.10.0",
-  "commit": "8bb9376",
+  "commit": "e45d7ac",
   "lastUpdated": "2025-11-22T21:16:00.000Z",
   "changelog": "feat: Phase 2 AI Integration - Google Gemini 2.5 Pro/Flash (FREE 1,500 RPD) + DeepSeek V3.2 bulk processing. Added Gemini as DEFAULT model to chat API with automatic selection (Gemini Flash prioritized for 90%+ requests). Bulk processing endpoint supports 100+ docs with 4 task types (summarize/extract/categorize/analyze). Cost-optimized: Gemini FREE tier + DeepSeek $0.27/$1.10 per 1M tokens = ~$20-30/month savings vs current OpenAI-only approach.",
   "platform": "Railway",
