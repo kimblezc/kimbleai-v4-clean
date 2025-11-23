@@ -1,6 +1,6 @@
 {
   "version": "10.1.0",
-  "commit": "PENDING",
+  "commit": "b843fd4",
   "lastUpdated": "2025-11-23T08:20:00.000Z",
   "changelog": "feat: AI Services UI Integration - Integrated all pending AI services into UI. DeepSeek Bulk Processing: Added sidebar button + /bulk command, opens modal for 100+ document processing. FeatureGuide updated: Keyboard Shortcuts button (opens dialog with all shortcuts), updated all features with actual usage instructions, honest status (implemented vs coming soon). BulkProcessModal: Full dark theme conversion to match app aesthetic. All integrations minimal and non-intrusive.",
   "platform": "Railway",
