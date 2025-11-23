@@ -1,8 +1,8 @@
 {
-  "version": "10.2.1",
-  "commit": "52770a0",
-  "lastUpdated": "2025-11-23T11:00:00.000Z",
-  "changelog": "fix: Bulk processing user validation - Fixed 401 'Failed to validate user' error by adding missing supabase parameter to getUserByIdentifier call. DeepSeek bulk processing now works correctly.",
+  "version": "10.2.2",
+  "commit": "315335d",
+  "lastUpdated": "2025-11-23T12:00:00.000Z",
+  "changelog": "fix: User validation for all AI services + Complete manual testing docs - Fixed 401 errors in image generation and search endpoints. Created comprehensive MANUAL_INTEGRATION_TESTS.md with step-by-step procedures for all 11 integrations. Identified missing API keys (DeepSeek, Perplexity, ElevenLabs, Replicate) that need to be set in Railway.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
