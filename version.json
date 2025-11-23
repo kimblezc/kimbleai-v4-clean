@@ -1,8 +1,8 @@
 {
-  "version": "10.2.0",
-  "commit": "17e56a2",
-  "lastUpdated": "2025-11-23T09:00:00.000Z",
-  "changelog": "feat: Complete AI Services UI Integration (Phases 2-4) - Perplexity Search: /search command with inline results, citations, and related questions ($0.005/search). ElevenLabs Voice: Speaker icons on AI messages, hover-to-reveal, read aloud with pause/stop (FREE 10K chars/mo). FLUX Images: /image command with aspect ratio support (1:1, 16:9, etc), inline display ($0.055 each, 5/day limit). All features ultra-minimal dark design, fully functional, FeatureGuide updated with complete usage instructions.",
+  "version": "10.2.1",
+  "commit": "52770a0",
+  "lastUpdated": "2025-11-23T11:00:00.000Z",
+  "changelog": "fix: Bulk processing user validation - Fixed 401 'Failed to validate user' error by adding missing supabase parameter to getUserByIdentifier call. DeepSeek bulk processing now works correctly.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
