@@ -1,8 +1,8 @@
 {
-  "version": "10.1.0",
-  "commit": "b843fd4",
-  "lastUpdated": "2025-11-23T08:20:00.000Z",
-  "changelog": "feat: AI Services UI Integration - Integrated all pending AI services into UI. DeepSeek Bulk Processing: Added sidebar button + /bulk command, opens modal for 100+ document processing. FeatureGuide updated: Keyboard Shortcuts button (opens dialog with all shortcuts), updated all features with actual usage instructions, honest status (implemented vs coming soon). BulkProcessModal: Full dark theme conversion to match app aesthetic. All integrations minimal and non-intrusive.",
+  "version": "10.2.0",
+  "commit": "17e56a2",
+  "lastUpdated": "2025-11-23T09:00:00.000Z",
+  "changelog": "feat: Complete AI Services UI Integration (Phases 2-4) - Perplexity Search: /search command with inline results, citations, and related questions ($0.005/search). ElevenLabs Voice: Speaker icons on AI messages, hover-to-reveal, read aloud with pause/stop (FREE 10K chars/mo). FLUX Images: /image command with aspect ratio support (1:1, 16:9, etc), inline display ($0.055 each, 5/day limit). All features ultra-minimal dark design, fully functional, FeatureGuide updated with complete usage instructions.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
