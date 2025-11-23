@@ -13,6 +13,7 @@ import { useMessageSearch } from '@/hooks/useMessageSearch';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import { usePerplexitySearch } from '@/hooks/usePerplexitySearch';
 import { useVoiceOutput } from '@/hooks/useVoiceOutput';
+import { useImageGeneration } from '@/hooks/useImageGeneration';
 // Dark mode removed - was not functional
 // import { useTheme } from '@/hooks/useTheme';
 import { SlashCommand } from '@/hooks/useAutocomplete';
@@ -26,6 +27,7 @@ import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
 import UnifiedSearch from '../components/search/UnifiedSearch';
 import SearchResults from '../components/SearchResults';
+import GeneratedImage from '../components/GeneratedImage';
 import { ModelSelector, type AIModel } from '../components/model-selector/ModelSelector';
 import { IconButton, TouchButton } from '../components/TouchButton';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -162,6 +164,9 @@ export default function Home() {
   // Voice output hook
   const voiceOutput = useVoiceOutput();
 
+  // Image generation hook
+  const imageGeneration = useImageGeneration(currentUser);
+
   // Autosave hook - saves draft every 2 seconds
   const { clearDraft, loadDraft } = useAutosave({
     key: `chat-draft-${currentConversationId || 'new'}`,
@@ -228,6 +233,11 @@ export default function Home() {
       command: 'search',
       description: 'AI web search with citations (Perplexity)',
       action: () => toast('Usage: /search [your query here]', { icon: 'ℹ️' }),
+    },
+    {
+      command: 'image',
+      description: 'Generate image with FLUX ($0.055 each)',
+      action: () => toast('Usage: /image [prompt] or /image 16:9 [prompt]', { icon: 'ℹ️' }),
     },
     {
       command: 'bulk',
@@ -488,6 +498,36 @@ export default function Home() {
         clearDraft();
         toast('Searching...', { icon: '🔍', duration: 2000 });
         const result = await perplexitySearch.search(args);
+        return;
+      }
+
+      // Handle /image command
+      if (command === 'image') {
+        if (!args) {
+          toast.error('Usage: /image [prompt]');
+          return;
+        }
+        setInput('');
+        clearDraft();
+
+        // Parse aspect ratio if provided (e.g., "/image 16:9 landscape photo")
+        const parts = args.split(' ');
+        const validRatios = ['1:1', '16:9', '9:16', '4:3', '3:4'];
+        let aspectRatio: '1:1' | '16:9' | '9:16' | '4:3' | '3:4' = '1:1';
+        let prompt = args;
+
+        if (validRatios.includes(parts[0])) {
+          aspectRatio = parts[0] as '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+          prompt = parts.slice(1).join(' ');
+        }
+
+        if (!prompt.trim()) {
+          toast.error('Please provide an image description');
+          return;
+        }
+
+        toast('Generating image...', { icon: '🎨', duration: 2000 });
+        const result = await imageGeneration.generate(prompt, { aspectRatio });
         return;
       }
 
@@ -1309,6 +1349,26 @@ export default function Home() {
                     >
                       Clear results
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Generated Image (if any) */}
+              {imageGeneration.image && (
+                <div className="flex gap-4 mb-6 pb-6 border-b border-gray-800">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm bg-purple-900">
+                    🎨
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <div className="text-xs text-gray-500 font-mono mb-2">GENERATED IMAGE</div>
+                    <GeneratedImage
+                      imageUrl={imageGeneration.image.imageUrl}
+                      prompt={imageGeneration.image.prompt}
+                      aspectRatio={imageGeneration.image.aspectRatio}
+                      cost={imageGeneration.image.cost}
+                      generationTime={imageGeneration.image.generationTime}
+                      onClear={() => imageGeneration.clearImage()}
+                    />
                   </div>
                 </div>
               )}

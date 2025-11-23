@@ -72,10 +72,13 @@ const FEATURES: Feature[] = [
     label: 'Image Generation',
     description: 'FLUX 1.1 Pro images ($0.055 each).',
     usage: [
-      'Coming soon - /image [prompt] command',
-      'Describe what you want to generate',
-      'High-quality images in ~10 seconds'
-    ]
+      'Type: /image [description]',
+      'Optional aspect ratio: /image 16:9 [description]',
+      'Supported: 1:1, 16:9, 9:16, 4:3, 3:4',
+      'High-quality images in ~10 seconds',
+      'Limit: 5 images/day'
+    ],
+    example: '/image sunset over ocean'
   },
   {
     id: 'shortcuts',
