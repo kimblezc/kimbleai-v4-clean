@@ -36,6 +36,7 @@ import TranscriptionModal from '../components/TranscriptionModal';
 import { useDeviceType } from '../components/ResponsiveLayout';
 import D20Dice from '../components/D20Dice';
 import { CostWidget } from '../components/cost/CostWidget';
+import FeatureGuide from '../components/FeatureGuide';
 import versionData from '../version.json';
 import { formatRelativeTime } from '@/lib/chat-utils';
 
@@ -1029,42 +1030,21 @@ export default function Home() {
             })}
         </div>
 
-        {/* Archie Dashboard Link */}
-        <div className="p-3 border-t border-gray-900">
+        {/* Utility Links */}
+        <div className="p-3 border-t border-gray-900 space-y-1">
           <a
             href="/agent"
-            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-900/20 to-emerald-900/20 hover:from-green-800/30 hover:to-emerald-800/30 border border-green-700/30 hover:border-green-600/50 transition-all duration-200 group"
+            className="flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-500 hover:text-gray-400 hover:bg-gray-900/50 transition-colors"
           >
-            <span className="text-xl group-hover:scale-110 transition-transform">🦉</span>
-            <span className="text-base font-medium text-green-400 group-hover:text-green-300">
-              Archie Dashboard
-            </span>
+            <span>🦉</span>
+            <span>Archie</span>
           </a>
-        </div>
-
-        {/* Integrations Link */}
-        <div className="px-3 pb-3">
-          <a
-            href="/integrations"
-            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-900/20 to-indigo-900/20 hover:from-blue-800/30 hover:to-indigo-800/30 border border-blue-700/30 hover:border-blue-600/50 transition-all duration-200 group"
-          >
-            <span className="text-xl group-hover:scale-110 transition-transform">⚡</span>
-            <span className="text-base font-medium text-blue-400 group-hover:text-blue-300">
-              Integrations
-            </span>
-          </a>
-        </div>
-
-        {/* Transcription Button */}
-        <div className="px-3 pb-3">
           <button
             onClick={() => setShowTranscriptionModal(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-900/20 to-pink-900/20 hover:from-purple-800/30 hover:to-pink-800/30 border border-purple-700/30 hover:border-purple-600/50 transition-all duration-200 group"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-500 hover:text-gray-400 hover:bg-gray-900/50 transition-colors text-left"
           >
-            <span className="text-xl group-hover:scale-110 transition-transform">🎤</span>
-            <span className="text-base font-medium text-purple-400 group-hover:text-purple-300">
-              Transcribe Audio
-            </span>
+            <span>🎤</span>
+            <span>Transcribe</span>
           </button>
         </div>
 
@@ -1077,7 +1057,8 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col md:flex-row">
+        <div className="flex-1 flex flex-col">
         {/* Breadcrumbs */}
         <ResponsiveBreadcrumbs />
 
@@ -1213,163 +1194,20 @@ export default function Home() {
               </div>
             </div>
           ) : messages.length === 0 ? (
-            <div className="max-w-6xl mx-auto px-4 mt-8">
-              {/* Greeting */}
-              <div className="text-center mb-12">
-                <div className="text-4xl text-gray-400 mb-3">{getGreeting()}</div>
-                <div className="text-2xl text-gray-600 italic leading-relaxed transition-opacity duration-500">
-                  {factLoading ? (
-                    <span className="text-gray-700">Loading new fact...</span>
-                  ) : (
-                    `"${currentFact}"`
-                  )}
-                </div>
-                {factError && (
-                  <div className="text-sm text-yellow-600 mt-2">
-                    {factError}
-                  </div>
+            <div className="text-center mt-32 max-w-2xl mx-auto px-8">
+              <div className="text-4xl text-gray-400 mb-3">{getGreeting()}</div>
+              <div className="text-2xl text-gray-600 italic leading-relaxed transition-opacity duration-500">
+                {factLoading ? (
+                  <span className="text-gray-700">Loading new fact...</span>
+                ) : (
+                  `"${currentFact}"`
                 )}
               </div>
-
-              {/* Capabilities Showcase */}
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  11 AI Services Integrated
-                </h2>
-                <p className="text-center text-gray-500 mb-8">
-                  90%+ FREE tier usage • $22-32/month cost savings • 44-64% reduction
-                </p>
-
-                {/* Service Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                  {/* Gemini Flash - DEFAULT */}
-                  <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border border-green-700/30 rounded-lg p-5 hover:border-green-600/50 transition-all">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="text-3xl">🚀</span>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-green-400 mb-1">Gemini 2.5 Flash</h3>
-                        <p className="text-xs text-green-300/60 font-mono">DEFAULT MODEL</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">Fast, multimodal AI with 1M context window. Handles 90% of requests.</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-green-400 font-semibold">FREE</span>
-                      <span className="text-gray-500">1,500 RPD</span>
-                    </div>
-                  </div>
-
-                  {/* Gemini Pro */}
-                  <div className="bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border border-blue-700/30 rounded-lg p-5 hover:border-blue-600/50 transition-all">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="text-3xl">🧠</span>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-blue-400 mb-1">Gemini 2.5 Pro</h3>
-                        <p className="text-xs text-blue-300/60 font-mono">PREMIUM MODEL</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">Advanced reasoning with 2M context for complex tasks.</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-blue-400 font-semibold">FREE</span>
-                      <span className="text-gray-500">50 RPD</span>
-                    </div>
-                  </div>
-
-                  {/* DeepSeek Bulk */}
-                  <div className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border border-purple-700/30 rounded-lg p-5 hover:border-purple-600/50 transition-all">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="text-3xl">📚</span>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-purple-400 mb-1">DeepSeek Bulk</h3>
-                        <p className="text-xs text-purple-300/60 font-mono">100+ DOCUMENTS</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">Process hundreds of documents in parallel. 4 task types.</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-purple-400 font-semibold">$0.27/$1.10</span>
-                      <span className="text-gray-500">per 1M tokens</span>
-                    </div>
-                  </div>
-
-                  {/* Perplexity Search */}
-                  <div className="bg-gradient-to-br from-orange-900/20 to-red-900/20 border border-orange-700/30 rounded-lg p-5 hover:border-orange-600/50 transition-all">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="text-3xl">🔍</span>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-orange-400 mb-1">Perplexity Search</h3>
-                        <p className="text-xs text-orange-300/60 font-mono">AI WEB SEARCH</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">Better than Google with automatic citations and sources.</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-orange-400 font-semibold">$0.005</span>
-                      <span className="text-gray-500">per search</span>
-                    </div>
-                  </div>
-
-                  {/* ElevenLabs TTS */}
-                  <div className="bg-gradient-to-br from-teal-900/20 to-cyan-900/20 border border-teal-700/30 rounded-lg p-5 hover:border-teal-600/50 transition-all">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="text-3xl">🎙️</span>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-teal-400 mb-1">ElevenLabs TTS</h3>
-                        <p className="text-xs text-teal-300/60 font-mono">VOICE OUTPUT</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">High-quality text-to-speech for voice responses.</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-teal-400 font-semibold">FREE</span>
-                      <span className="text-gray-500">10K chars/mo</span>
-                    </div>
-                  </div>
-
-                  {/* FLUX Images */}
-                  <div className="bg-gradient-to-br from-pink-900/20 to-rose-900/20 border border-pink-700/30 rounded-lg p-5 hover:border-pink-600/50 transition-all">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="text-3xl">🎨</span>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-pink-400 mb-1">FLUX 1.1 Pro</h3>
-                        <p className="text-xs text-pink-300/60 font-mono">IMAGE GEN</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">Ultra-high quality image generation in ~10 seconds.</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-pink-400 font-semibold">$0.055</span>
-                      <span className="text-gray-500">per image</span>
-                    </div>
-                  </div>
+              {factError && (
+                <div className="text-sm text-yellow-600 mt-2">
+                  {factError}
                 </div>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-400 mb-1">11</div>
-                    <div className="text-xs text-gray-500">Services Integrated</div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-green-400 mb-1">90%+</div>
-                    <div className="text-xs text-gray-500">FREE Tier Usage</div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-purple-400 mb-1">$22-32</div>
-                    <div className="text-xs text-gray-500">Monthly Savings</div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-orange-400 mb-1">44-64%</div>
-                    <div className="text-xs text-gray-500">Cost Reduction</div>
-                  </div>
-                </div>
-
-                {/* View All Link */}
-                <div className="text-center">
-                  <a
-                    href="/integrations"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-lg text-white font-medium transition-all shadow-lg hover:shadow-xl"
-                  >
-                    <span>View All Integrations</span>
-                    <span>→</span>
-                  </a>
-                </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
@@ -1534,6 +1372,12 @@ export default function Home() {
               </div>
             )}
           </div>
+        </div>
+        </div>
+
+        {/* Right Sidebar - Feature Guide (Desktop only) */}
+        <div className="hidden md:block">
+          <FeatureGuide />
         </div>
       </div>
 
