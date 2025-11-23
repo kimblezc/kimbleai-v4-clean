@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
     // Validate user
     let user;
     try {
-      user = await getUserByIdentifier(userId);
+      user = await getUserByIdentifier(userId, supabase);
       if (!user) {
         return NextResponse.json(
           { error: 'User not found' },
