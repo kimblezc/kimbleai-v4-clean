@@ -11,6 +11,8 @@ import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShort
 import { useAutoScroll } from '@/hooks/useAutoScroll';
 import { useMessageSearch } from '@/hooks/useMessageSearch';
 import { useContextMenu } from '@/hooks/useContextMenu';
+import { usePerplexitySearch } from '@/hooks/usePerplexitySearch';
+import { useVoiceOutput } from '@/hooks/useVoiceOutput';
 // Dark mode removed - was not functional
 // import { useTheme } from '@/hooks/useTheme';
 import { SlashCommand } from '@/hooks/useAutocomplete';
@@ -23,6 +25,7 @@ import ContextMenu, { ContextMenuItem } from '../components/ui/ContextMenu';
 import GoogleServicesPanel from '../components/GoogleServicesPanel';
 import LoadingScreen from '../components/LoadingScreen';
 import UnifiedSearch from '../components/search/UnifiedSearch';
+import SearchResults from '../components/SearchResults';
 import { ModelSelector, type AIModel } from '../components/model-selector/ModelSelector';
 import { IconButton, TouchButton } from '../components/TouchButton';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -153,6 +156,12 @@ export default function Home() {
   // Context menu hook
   const contextMenu = useContextMenu();
 
+  // Perplexity search hook
+  const perplexitySearch = usePerplexitySearch(currentUser);
+
+  // Voice output hook
+  const voiceOutput = useVoiceOutput();
+
   // Autosave hook - saves draft every 2 seconds
   const { clearDraft, loadDraft } = useAutosave({
     key: `chat-draft-${currentConversationId || 'new'}`,
@@ -217,8 +226,8 @@ export default function Home() {
     },
     {
       command: 'search',
-      description: 'Search in conversation',
-      action: () => setIsConversationSearchOpen(true),
+      description: 'AI web search with citations (Perplexity)',
+      action: () => toast('Usage: /search [your query here]', { icon: 'ℹ️' }),
     },
     {
       command: 'bulk',
@@ -461,7 +470,40 @@ export default function Home() {
 
   const handleSendMessage = async () => {
     if (!input.trim() || sending) return;
-    const messageContent = input;
+    const messageContent = input.trim();
+
+    // Check for slash commands
+    if (messageContent.startsWith('/')) {
+      const parts = messageContent.split(' ');
+      const command = parts[0].substring(1); // Remove the /
+      const args = parts.slice(1).join(' ');
+
+      // Handle /search command
+      if (command === 'search') {
+        if (!args) {
+          toast.error('Usage: /search [query]');
+          return;
+        }
+        setInput('');
+        clearDraft();
+        toast('Searching...', { icon: '🔍', duration: 2000 });
+        const result = await perplexitySearch.search(args);
+        return;
+      }
+
+      // Handle other slash commands from the list
+      const slashCmd = slashCommands.find(cmd => cmd.command === command);
+      if (slashCmd) {
+        setInput('');
+        clearDraft();
+        slashCmd.action();
+        return;
+      }
+
+      // Unknown command
+      toast.error(`Unknown command: /${command}`);
+      return;
+    }
 
     // Auto-select model based on query type
     const autoModel = getAutoSelectedModel(messageContent);
@@ -1243,6 +1285,34 @@ export default function Home() {
                   </div>
                 </div>
               )}
+              {/* Search Results (if any) */}
+              {perplexitySearch.result && (
+                <div className="flex gap-4 mb-6 pb-6 border-b border-gray-800">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm bg-blue-900">
+                    🔍
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <div className="text-xs text-gray-500 font-mono mb-2">SEARCH RESULTS</div>
+                    <SearchResults
+                      answer={perplexitySearch.result.answer}
+                      citations={perplexitySearch.result.citations}
+                      relatedQuestions={perplexitySearch.result.relatedQuestions}
+                      cost={perplexitySearch.result.metadata.cost}
+                      onRelatedQuestionClick={async (question) => {
+                        toast('Searching...', { icon: '🔍', duration: 2000 });
+                        await perplexitySearch.search(question);
+                      }}
+                    />
+                    <button
+                      onClick={() => perplexitySearch.clearResults()}
+                      className="mt-2 text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                    >
+                      Clear results
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {messages.map((msg, idx) => (
                 <div
                   key={msg.id || idx}

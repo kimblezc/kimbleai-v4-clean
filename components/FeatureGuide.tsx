@@ -46,12 +46,14 @@ const FEATURES: Feature[] = [
   {
     id: 'search',
     label: 'AI Search',
-    description: 'Perplexity search with citations ($0.005/search).',
+    description: 'Perplexity AI search with citations ($0.005/search).',
     usage: [
-      'Coming soon - UI integration pending',
-      'Will support: /search [query] command',
-      'Returns AI-powered web search with citations'
-    ]
+      'Type: /search [your query]',
+      'Example: /search latest AI developments',
+      'Returns answer + citations + related questions',
+      'Click related questions to search again'
+    ],
+    example: '/search what is quantum computing'
   },
   {
     id: 'voice-output',
