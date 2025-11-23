@@ -1,8 +1,8 @@
 {
-  "version": "10.0.1",
-  "commit": "5105eff",
-  "lastUpdated": "2025-11-22T23:00:00.000Z",
-  "changelog": "feat: Main page capabilities showcase - Added prominent display of all 11 integrated AI services on main page empty state. Visual cards show Gemini Flash (DEFAULT), Gemini Pro, DeepSeek bulk processing, Perplexity search, ElevenLabs TTS, and FLUX images with pricing and stats. Added Integrations ⚡ button to sidebar for easy access to management page. Users now immediately see system capabilities and cost savings (90%+ FREE tier, $22-32/month savings).",
+  "version": "10.0.2",
+  "commit": "7941c45",
+  "lastUpdated": "2025-11-23T06:45:00.000Z",
+  "changelog": "feat: Ultra-minimalist UI redesign - Removed all bright colors and gradients. Clean main page with just greeting + D&D facts. Added subtle right sidebar feature guide (desktop only) with hover/click for usage details. Honest implementation status shown (many features pending UI integration). All buttons now minimal gray with subtle hover states. Pure dark aesthetic throughout.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
