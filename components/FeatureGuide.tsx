@@ -60,10 +60,12 @@ const FEATURES: Feature[] = [
     label: 'Voice Output',
     description: 'ElevenLabs text-to-speech. FREE (10K chars/month).',
     usage: [
-      'Coming soon - speaker button on AI messages',
-      'Click speaker icon to hear response',
+      'Hover over any AI response',
+      'Click speaker icon (🔊) to hear message',
+      'Click pause (⏸) to stop playback',
       'Uses Rachel voice (calm, conversational)'
-    ]
+    ],
+    example: 'Hover AI message → Click 🔊 → Listen'
   },
   {
     id: 'image-gen',

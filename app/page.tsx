@@ -1316,7 +1316,7 @@ export default function Home() {
               {messages.map((msg, idx) => (
                 <div
                   key={msg.id || idx}
-                  className="flex gap-4"
+                  className="flex gap-4 group"
                   onContextMenu={(e) => {
                     contextMenu.showContextMenu(e, { message: msg, index: idx });
                   }}
@@ -1337,6 +1337,23 @@ export default function Home() {
                       highlight={searchQuery || undefined}
                     />
                   </div>
+                  {/* Voice Output Button (AI messages only) */}
+                  {msg.role === 'assistant' && (
+                    <button
+                      onClick={() => voiceOutput.speak(msg.content, currentUser)}
+                      disabled={voiceOutput.isLoading}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-400 disabled:text-gray-700 text-sm"
+                      title="Read aloud"
+                    >
+                      {voiceOutput.isLoading ? (
+                        <span className="animate-spin">⏳</span>
+                      ) : voiceOutput.isPlaying ? (
+                        <span onClick={(e) => { e.stopPropagation(); voiceOutput.stop(); }}>⏸</span>
+                      ) : (
+                        '🔊'
+                      )}
+                    </button>
+                  )}
                 </div>
               ))}
 
