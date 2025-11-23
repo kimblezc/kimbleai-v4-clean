@@ -31,6 +31,7 @@ import { MessageLengthIndicator } from '../components/ui/MessageLengthIndicator'
 import { ScrollToBottom } from '../components/ui/ScrollToBottom';
 import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
 import TranscriptionModal from '../components/TranscriptionModal';
+import BulkProcessModal from '../components/BulkProcessModal';
 // Dark mode removed - was not functional
 // import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useDeviceType } from '../components/ResponsiveLayout';
@@ -66,6 +67,7 @@ export default function Home() {
   const [isConversationSearchOpen, setIsConversationSearchOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
+  const [showBulkProcessModal, setShowBulkProcessModal] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -217,6 +219,11 @@ export default function Home() {
       command: 'search',
       description: 'Search in conversation',
       action: () => setIsConversationSearchOpen(true),
+    },
+    {
+      command: 'bulk',
+      description: 'Open bulk processing (100+ documents)',
+      action: () => setShowBulkProcessModal(true),
     },
   ];
 
@@ -1046,6 +1053,13 @@ export default function Home() {
             <span>🎤</span>
             <span>Transcribe</span>
           </button>
+          <button
+            onClick={() => setShowBulkProcessModal(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-500 hover:text-gray-400 hover:bg-gray-900/50 transition-colors text-left"
+          >
+            <span>📦</span>
+            <span>Bulk Process</span>
+          </button>
         </div>
 
         {/* Version Info */}
@@ -1377,7 +1391,7 @@ export default function Home() {
 
         {/* Right Sidebar - Feature Guide (Desktop only) */}
         <div className="hidden md:block">
-          <FeatureGuide />
+          <FeatureGuide onShowShortcuts={() => setShowShortcutsDialog(true)} />
         </div>
       </div>
 
@@ -1498,6 +1512,13 @@ export default function Home() {
         onClose={() => setShowTranscriptionModal(false)}
         userId={currentUser}
         projects={projects}
+      />
+
+      {/* Bulk Process Modal */}
+      <BulkProcessModal
+        isOpen={showBulkProcessModal}
+        onClose={() => setShowBulkProcessModal(false)}
+        userId={currentUser}
       />
     </div>
   );

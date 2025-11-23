@@ -320,20 +320,20 @@ export default function BulkProcessModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div className="relative w-full max-w-2xl rounded-lg bg-gray-900 border border-gray-700 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between border-b pb-4">
+        <div className="mb-6 flex items-center justify-between border-b border-gray-800 pb-4">
           <div>
-            <h2 className="text-2xl font-bold">Bulk Processing</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-2xl font-bold text-white">Bulk Processing</h2>
+            <p className="text-sm text-gray-400">
               Process up to 100 documents with DeepSeek V3.2
             </p>
           </div>
           <button
             onClick={handleClose}
             disabled={isProcessing}
-            className="text-2xl text-gray-500 hover:text-gray-700 disabled:opacity-50"
+            className="text-2xl text-gray-400 hover:text-white disabled:opacity-50"
           >
             ×
           </button>
@@ -343,22 +343,22 @@ export default function BulkProcessModal({
         {results && summary ? (
           <div className="space-y-6">
             {/* Summary Stats */}
-            <div className="grid grid-cols-2 gap-4 rounded-lg bg-blue-50 p-4">
+            <div className="grid grid-cols-2 gap-4 rounded-lg bg-gray-800 border border-gray-700 p-4">
               <div>
-                <p className="text-sm text-gray-600">Total Documents</p>
-                <p className="text-2xl font-bold">{summary.total}</p>
+                <p className="text-sm text-gray-400">Total Documents</p>
+                <p className="text-2xl font-bold text-white">{summary.total}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Successful</p>
-                <p className="text-2xl font-bold text-green-600">{summary.successful}</p>
+                <p className="text-sm text-gray-400">Successful</p>
+                <p className="text-2xl font-bold text-green-400">{summary.successful}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Cost</p>
-                <p className="text-2xl font-bold text-orange-600">${summary.totalCost}</p>
+                <p className="text-sm text-gray-400">Cost</p>
+                <p className="text-2xl font-bold text-orange-400">${summary.totalCost}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Time</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm text-gray-400">Time</p>
+                <p className="text-2xl font-bold text-white">
                   {(summary.totalTime / 1000).toFixed(1)}s
                 </p>
               </div>
@@ -366,15 +366,15 @@ export default function BulkProcessModal({
 
             {/* Errors Summary */}
             {summary.failed > 0 && (
-              <div className="rounded-lg bg-red-50 p-4">
-                <p className="font-semibold text-red-800">
+              <div className="rounded-lg bg-red-900/20 border border-red-800 p-4">
+                <p className="font-semibold text-red-400">
                   {summary.failed} document(s) failed to process
                 </p>
                 <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
                   {results
                     .filter((r) => r.status === 'failed')
                     .map((result) => (
-                      <p key={result.documentId} className="text-sm text-red-700">
+                      <p key={result.documentId} className="text-sm text-red-300">
                         {result.filename}: {result.error}
                       </p>
                     ))}
@@ -383,14 +383,14 @@ export default function BulkProcessModal({
             )}
 
             {/* Results List */}
-            <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border">
+            <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-gray-700">
               {results
                 .filter((r) => r.status === 'success')
                 .slice(0, 5)
                 .map((result) => (
-                  <div key={result.documentId} className="border-b p-3 last:border-b-0">
-                    <p className="font-semibold">{result.filename}</p>
-                    <p className="line-clamp-2 text-sm text-gray-600">
+                  <div key={result.documentId} className="border-b border-gray-800 p-3 last:border-b-0">
+                    <p className="font-semibold text-white">{result.filename}</p>
+                    <p className="line-clamp-2 text-sm text-gray-400">
                       {result.result?.substring(0, 200)}...
                     </p>
                   </div>
@@ -401,19 +401,19 @@ export default function BulkProcessModal({
             <div className="flex gap-2">
               <Button
                 onClick={handleExportResults}
-                className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+                className="flex-1 bg-blue-600 text-white hover:bg-blue-700 border-0"
               >
                 Export Results
               </Button>
               <Button
                 onClick={handleReset}
-                className="flex-1 bg-gray-200 text-gray-800 hover:bg-gray-300"
+                className="flex-1 bg-gray-700 text-white hover:bg-gray-600 border-0"
               >
                 Process More
               </Button>
               <Button
                 onClick={handleClose}
-                className="flex-1 bg-gray-600 text-white hover:bg-gray-700"
+                className="flex-1 bg-gray-800 border border-gray-700 text-white hover:bg-gray-700"
               >
                 Close
               </Button>
@@ -427,11 +427,11 @@ export default function BulkProcessModal({
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className="rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 p-8 text-center transition-colors hover:border-blue-500 hover:bg-blue-100"
+              className="rounded-lg border-2 border-dashed border-gray-600 bg-gray-800/50 p-8 text-center transition-colors hover:border-blue-500 hover:bg-gray-800"
             >
               <div className="text-4xl mb-2">📁</div>
-              <p className="mb-2 font-semibold">Drop files here or click to upload</p>
-              <p className="mb-4 text-sm text-gray-600">
+              <p className="mb-2 font-semibold text-white">Drop files here or click to upload</p>
+              <p className="mb-4 text-sm text-gray-400">
                 Supports text, PDF, DOCX, JSON, HTML (max 10 MB each, max 100 files)
               </p>
               <input
@@ -445,7 +445,7 @@ export default function BulkProcessModal({
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessing}
-                className="bg-blue-600 text-white hover:bg-blue-700"
+                className="bg-blue-600 text-white hover:bg-blue-700 border-0"
               >
                 Choose Files
               </Button>
@@ -454,33 +454,33 @@ export default function BulkProcessModal({
             {/* Uploaded Files List */}
             {uploadedFiles.length > 0 && (
               <div className="space-y-2">
-                <p className="font-semibold">
+                <p className="font-semibold text-white">
                   Uploaded Files ({uploadedFiles.length}/{MAX_FILES})
                 </p>
-                <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border">
+                <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-700 bg-gray-800">
                   {uploadedFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between border-b p-2 last:border-b-0"
+                      className="flex items-center justify-between border-b border-gray-700 p-2 last:border-b-0"
                     >
                       <div className="flex-1">
-                        <p className="text-sm font-medium">{file.file.name}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-medium text-white">{file.file.name}</p>
+                        <p className="text-xs text-gray-400">
                           {(file.file.size / 1024).toFixed(1)} KB
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         {file.status === 'loaded' ? (
-                          <span className="text-xs font-semibold text-green-600">✓ Ready</span>
+                          <span className="text-xs font-semibold text-green-400">✓ Ready</span>
                         ) : file.status === 'failed' ? (
-                          <span className="text-xs font-semibold text-red-600">✗ Error</span>
+                          <span className="text-xs font-semibold text-red-400">✗ Error</span>
                         ) : (
-                          <span className="text-xs font-semibold text-blue-600">Loading...</span>
+                          <span className="text-xs font-semibold text-blue-400">Loading...</span>
                         )}
                         <button
                           onClick={() => removeFile(file.id)}
                           disabled={isProcessing}
-                          className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                          className="text-red-400 hover:text-red-300 disabled:opacity-50"
                         >
                           ✕
                         </button>
@@ -493,7 +493,7 @@ export default function BulkProcessModal({
 
             {/* Task Selection */}
             <div>
-              <label className="mb-2 block font-semibold">Processing Task</label>
+              <label className="mb-2 block font-semibold text-white">Processing Task</label>
               <div className="grid grid-cols-2 gap-2">
                 {(Object.keys(TASK_DESCRIPTIONS) as TaskType[]).map((task) => (
                   <button
@@ -502,12 +502,12 @@ export default function BulkProcessModal({
                     disabled={isProcessing}
                     className={`rounded-lg border-2 p-3 text-left transition-all ${
                       selectedTask === task
-                        ? 'border-blue-600 bg-blue-50 font-semibold'
-                        : 'border-gray-300 hover:border-blue-300'
+                        ? 'border-blue-600 bg-blue-900/30 font-semibold text-white'
+                        : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-blue-500'
                     } disabled:opacity-50`}
                   >
                     <p className="font-semibold capitalize">{task}</p>
-                    <p className="text-xs text-gray-600">{TASK_DESCRIPTIONS[task]}</p>
+                    <p className="text-xs text-gray-400">{TASK_DESCRIPTIONS[task]}</p>
                   </button>
                 ))}
               </div>
@@ -515,7 +515,7 @@ export default function BulkProcessModal({
 
             {/* Custom Instructions */}
             <div>
-              <label className="mb-2 block font-semibold">
+              <label className="mb-2 block font-semibold text-white">
                 Custom Instructions (Optional)
               </label>
               <textarea
@@ -523,7 +523,7 @@ export default function BulkProcessModal({
                 onChange={(e) => setCustomInstructions(e.target.value)}
                 disabled={isProcessing}
                 placeholder="Override the default task instructions with your own..."
-                className="w-full rounded-lg border border-gray-300 p-3 disabled:bg-gray-100"
+                className="w-full rounded-lg border border-gray-700 bg-gray-800 text-white p-3 disabled:bg-gray-900 disabled:opacity-50 placeholder-gray-500"
                 rows={3}
               />
             </div>
@@ -532,10 +532,10 @@ export default function BulkProcessModal({
             {isProcessing && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">Processing...</p>
-                  <p className="text-sm text-gray-600">{Math.round(processingProgress)}%</p>
+                  <p className="text-sm font-semibold text-white">Processing...</p>
+                  <p className="text-sm text-gray-400">{Math.round(processingProgress)}%</p>
                 </div>
-                <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-full rounded-full bg-gray-700">
                   <div
                     className="h-full rounded-full bg-blue-600 transition-all"
                     style={{ width: `${processingProgress}%` }}
@@ -549,21 +549,21 @@ export default function BulkProcessModal({
               <Button
                 onClick={handleStartProcessing}
                 disabled={isProcessing || uploadedFiles.filter((f) => f.status === 'loaded').length === 0}
-                className="flex-1 bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400"
+                className="flex-1 bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-800 disabled:text-gray-500 border-0"
               >
                 {isProcessing ? 'Processing...' : 'Start Processing'}
               </Button>
               <Button
                 onClick={handleReset}
                 disabled={isProcessing}
-                className="flex-1 bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50"
+                className="flex-1 bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50 border-0"
               >
                 Clear All
               </Button>
               <Button
                 onClick={handleClose}
                 disabled={isProcessing}
-                className="flex-1 bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50"
+                className="flex-1 bg-gray-800 border border-gray-700 text-white hover:bg-gray-700 disabled:opacity-50"
               >
                 Close
               </Button>

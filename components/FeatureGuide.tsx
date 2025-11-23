@@ -12,6 +12,18 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
+    id: 'bulk-processing',
+    label: 'Bulk Processing',
+    description: 'Process 100+ documents via DeepSeek V3.2.',
+    usage: [
+      'Click "Bulk Process" in sidebar',
+      'Or type /bulk in chat',
+      'Upload files and select task type',
+      'Supports: summarize, extract, categorize, analyze'
+    ],
+    example: 'Upload 100 PDFs → Click "Summarize" → Export results'
+  },
+  {
     id: 'gemini-flash',
     label: 'Gemini Flash',
     description: 'Fast, default AI model. FREE tier (1,500 requests/day).',
@@ -32,23 +44,13 @@ const FEATURES: Feature[] = [
     ]
   },
   {
-    id: 'bulk-processing',
-    label: 'Bulk Processing',
-    description: 'Process 100+ documents via DeepSeek.',
-    usage: [
-      'Not yet implemented in UI',
-      'Will be available in future update',
-      'Use /api/bulk-process endpoint directly'
-    ]
-  },
-  {
     id: 'search',
     label: 'AI Search',
-    description: 'Perplexity search with citations.',
+    description: 'Perplexity search with citations ($0.005/search).',
     usage: [
-      'Not yet implemented in UI',
-      'Will be available in future update',
-      'Use /api/search endpoint directly'
+      'Coming soon - UI integration pending',
+      'Will support: /search [query] command',
+      'Returns AI-powered web search with citations'
     ]
   },
   {
@@ -56,9 +58,9 @@ const FEATURES: Feature[] = [
     label: 'Voice Output',
     description: 'ElevenLabs text-to-speech. FREE (10K chars/month).',
     usage: [
-      'Not yet implemented in UI',
-      'Will be available in future update',
-      'Use /api/tts endpoint directly'
+      'Coming soon - speaker button on AI messages',
+      'Click speaker icon to hear response',
+      'Uses Rachel voice (calm, conversational)'
     ]
   },
   {
@@ -66,14 +68,31 @@ const FEATURES: Feature[] = [
     label: 'Image Generation',
     description: 'FLUX 1.1 Pro images ($0.055 each).',
     usage: [
-      'Not yet implemented in UI',
-      'Will be available in future update',
-      'Use FLUX client directly'
+      'Coming soon - /image [prompt] command',
+      'Describe what you want to generate',
+      'High-quality images in ~10 seconds'
     ]
+  },
+  {
+    id: 'shortcuts',
+    label: 'Keyboard Shortcuts',
+    description: 'Power user shortcuts for faster navigation.',
+    usage: [
+      'Press ? to view all shortcuts',
+      'Ctrl+N: New conversation',
+      'Ctrl+K: Search conversations',
+      'Ctrl+/: Toggle sidebar',
+      'Ctrl+1-5: Jump to recent chats'
+    ],
+    example: 'Press ? anytime to see full list'
   }
 ];
 
-export default function FeatureGuide() {
+interface ShortcutGuideProps {
+  onShowShortcuts: () => void;
+}
+
+export default function FeatureGuide({ onShowShortcuts }: ShortcutGuideProps) {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [expandedFeature, setExpandedFeature] = useState<string | null>(null);
 
@@ -98,7 +117,14 @@ export default function FeatureGuide() {
             }}
           >
             <button
-              onClick={() => setExpandedFeature(expandedFeature === feature.id ? null : feature.id)}
+              onClick={() => {
+                // Special handling for shortcuts button
+                if (feature.id === 'shortcuts' && onShowShortcuts) {
+                  onShowShortcuts();
+                } else {
+                  setExpandedFeature(expandedFeature === feature.id ? null : feature.id);
+                }
+              }}
               className="w-full text-left px-3 py-2 rounded text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-900/50 transition-colors"
             >
               {feature.label}
