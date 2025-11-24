@@ -1,6 +1,6 @@
 {
   "version": "10.3.1",
-  "commit": "pending",
+  "commit": "3992f01",
   "lastUpdated": "2025-11-24T17:00:00.000Z",
   "changelog": "✨ LOW-PRIORITY POLISH: Completed all remaining mobile enhancements. (1) AudioUpload.tsx - Replaced window.confirm with touch-friendly ConfirmDialog component, mobile-optimized cost warning with swipe-to-dismiss. (2) Integration Health Dashboard - Created comprehensive /integrations/health page monitoring all 11 integrations real-time: status indicators (active/degraded/offline/optional), response times, error rates, auto-refresh every 60s, summary cards (active count, avg response, error rate), alert system for degraded services. (3) Offline Page - Created beautiful /offline.html with auto-retry, connection polling every 5s, animated gradient design, feature list. Updated service worker to cache offline.html and serve it on navigation failures. (4) Service Worker - Updated cache version to v4-3.0-mobile-polish. All changes additive, 0 breaking changes. Build successful (new page /integrations/health added to routes). Complete mobile optimization now at 98%.",
   "platform": "Railway",
