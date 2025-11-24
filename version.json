@@ -1,8 +1,8 @@
 {
-  "version": "10.2.2",
-  "commit": "315335d",
-  "lastUpdated": "2025-11-23T12:00:00.000Z",
-  "changelog": "fix: User validation for all AI services + Complete manual testing docs - Fixed 401 errors in image generation and search endpoints. Created comprehensive MANUAL_INTEGRATION_TESTS.md with step-by-step procedures for all 11 integrations. Identified missing API keys (DeepSeek, Perplexity, ElevenLabs, Replicate) that need to be set in Railway.",
+  "version": "10.2.3",
+  "commit": "1372e35",
+  "lastUpdated": "2025-11-24T12:00:00.000Z",
+  "changelog": "docs: Comprehensive Mobile UI/UX Review (23 issues identified) - Created MOBILE_UI_REVIEW.md analyzing all mobile breakpoints. Found 4 critical, 6 high, 10 medium, 3 low priority issues. Includes code examples, testing matrix, 4-week fix plan, and accessibility audit. Estimated 76 hours development time.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
