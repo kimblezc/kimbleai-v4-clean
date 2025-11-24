@@ -1,7 +1,7 @@
 // KimbleAI v4 Service Worker
 // Provides offline support and caching
 
-const CACHE_VERSION = 'kimbleai-v4-2.0-d20-fix';
+const CACHE_VERSION = 'kimbleai-v4-3.0-mobile-polish';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -12,7 +12,8 @@ const STATIC_ASSETS = [
   '/globals.css',
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/offline.html'
 ];
 
 // Install event - cache static assets
@@ -142,7 +143,7 @@ self.addEventListener('fetch', (event) => {
 
           // Return offline page for navigation requests
           if (request.mode === 'navigate') {
-            return caches.match('/');
+            return caches.match('/offline.html');
           }
 
           // Return error for other requests

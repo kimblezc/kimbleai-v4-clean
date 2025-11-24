@@ -4,6 +4,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface AudioUploadProps {
   userId: string;
@@ -28,6 +29,9 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
     status: 'idle'
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCostWarning, setShowCostWarning] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [costDetails, setCostDetails] = useState({ size: 0, hours: 0, cost: 0 });
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup progress interval on unmount
@@ -47,20 +51,31 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
 
     // Show cost warning for files that will cost more than $1
     if (estimatedCost > 1.00) {
-      const confirmed = window.confirm(
-        `⚠️ COST WARNING ⚠️\n\n` +
-        `File: ${file.name} (${fileSizeMB.toFixed(1)}MB)\n` +
-        `Estimated duration: ${estimatedHours.toFixed(1)} hours\n` +
-        `Estimated cost: $${estimatedCost.toFixed(2)}\n\n` +
-        `Daily limit: 10 hours / $5.00\n\n` +
-        `Proceed with transcription?`
-      );
-
-      if (!confirmed) {
-        setError('Transcription cancelled by user');
-        return;
-      }
+      setCostDetails({ size: fileSizeMB, hours: estimatedHours, cost: estimatedCost });
+      setPendingFile(file);
+      setShowCostWarning(true);
+      return;
     }
+
+    // Proceed directly if cost is low
+    await processTranscription(file);
+  };
+
+  const handleCostWarningConfirm = async () => {
+    setShowCostWarning(false);
+    if (pendingFile) {
+      await processTranscription(pendingFile);
+      setPendingFile(null);
+    }
+  };
+
+  const handleCostWarningCancel = () => {
+    setShowCostWarning(false);
+    setPendingFile(null);
+    setError('Transcription cancelled by user');
+  };
+
+  const processTranscription = async (file: File) => {
 
     setUploading(true);
     setError('');
@@ -463,6 +478,16 @@ export default function AudioUpload({ userId, projectId = 'general', onTranscrip
           </div>
         </div>
       )}
+
+      {/* Cost Warning Dialog */}
+      <ConfirmDialog
+        isOpen={showCostWarning}
+        onClose={handleCostWarningCancel}
+        onConfirm={handleCostWarningConfirm}
+        title="⚠️ Cost Warning"
+        message={`File: ${pendingFile?.name || ''} (${costDetails.size.toFixed(1)}MB)\nEstimated duration: ${costDetails.hours.toFixed(1)} hours\nEstimated cost: $${costDetails.cost.toFixed(2)}\n\nDaily limit: 10 hours / $5.00\n\nProceed with transcription?`}
+        variant="warning"
+      />
     </div>
   );
 }
