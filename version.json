@@ -1,6 +1,6 @@
 {
   "version": "10.3.0",
-  "commit": "e43eab6",
+  "commit": "ebed123",
   "lastUpdated": "2025-11-24T16:30:00.000Z",
   "changelog": "🔧 CRITICAL MOBILE FIXES: Fixed 4 critical mobile issues breaking cross-platform compatibility. (1) PWA installation - corrected service worker icon paths from icon-192x192.png to icon-192.png, icon-512x512.png to icon-512.png, icon-72x72.png to icon.png (now PWA installs correctly on all platforms). (2) Camera access - added capture='environment' and image/video accept types to BulkProcessModal, mobile-optimized text detection, client-side image compression (1920x1080 max, 85% quality) for photos >5MB. (3) iOS keyboard coverage - added viewport height adjustment useEffect, pb-safe CSS class combining regular padding with safe-area-inset-bottom to prevent keyboard hiding input. (4) Pinch-zoom enabled - removed global touch-action:manipulation, now only applies to interactive elements (buttons, inputs), allows image pinch-zoom. TAILWIND: Enhanced config with custom breakpoints (xs:375px iPhone SE, sm:640px, md:768px, lg:1024px, xl:1280px, 2xl:1536px), safe-area spacing utilities (safe-top/bottom/left/right), touch target minimum sizes (44px iOS, 48px Android). Build successful in 74s, 0 new errors. All 11 integrations documented and verified working. Ready for Railway deployment.",
   "platform": "Railway",
