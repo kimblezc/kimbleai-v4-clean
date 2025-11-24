@@ -109,6 +109,19 @@ export default function Home() {
   const deviceType = useDeviceType();
   const isMobile = deviceType === 'mobile';
 
+  // iOS keyboard viewport height fix
+  useEffect(() => {
+    if (isMobile) {
+      const handleResize = () => {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      };
+      handleResize();
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, [isMobile]);
+
   // Theme toggle
   // Dark mode removed - was not functional
   // const { toggleTheme, resolvedTheme } = useTheme();

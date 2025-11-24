@@ -11,8 +11,8 @@ const STATIC_ASSETS = [
   '/',
   '/globals.css',
   '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Install event - cache static assets
@@ -176,8 +176,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'KimbleAI Notification';
   const options = {
     body: data.body || 'You have a new notification',
-    icon: '/icon-192x192.png',
-    badge: '/icon-72x72.png',
+    icon: '/icon-192.png',
+    badge: '/icon.png',
     tag: data.tag || 'kimbleai-notification',
     data: data.data || {},
     vibrate: [200, 100, 200],

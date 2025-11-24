@@ -43,6 +43,11 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* iOS keyboard-safe padding (combines regular padding with safe area) */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+  }
+
   /* Scrollable areas */
   .scroll-mobile {
     -webkit-overflow-scrolling: touch;
@@ -340,13 +345,9 @@
   }
 }
 
-/* Prevent zoom on double-tap */
-* {
+/* Prevent zoom on double-tap for interactive elements only */
+button, a, input, select, textarea, [role="button"], [onclick] {
   touch-action: manipulation;
-}
-
-/* Improve tap highlight */
-button, a, input, select, textarea {
   -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
 }
 

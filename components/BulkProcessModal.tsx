@@ -81,10 +81,76 @@ export default function BulkProcessModal({
   const dragOverRef = useRef(false);
 
   /**
+   * Compress image file for mobile optimization
+   */
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas context unavailable'));
+            return;
+          }
+
+          // Calculate dimensions (max 1920x1080)
+          const maxWidth = 1920;
+          const maxHeight = 1080;
+          let { width, height } = img;
+
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to compress image'));
+                return;
+              }
+              resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+            },
+            'image/jpeg',
+            0.85
+          );
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  /**
    * Extract text content from file
    */
   const extractFileContent = async (file: File): Promise<string> => {
     try {
+      // Image files - compress if needed, then return base64 or description
+      if (file.type.startsWith('image/')) {
+        // Compress if larger than 5MB
+        const finalFile = file.size > 5 * 1024 * 1024 ? await compressImage(file) : file;
+        return `[Image: ${finalFile.name}, ${(finalFile.size / 1024).toFixed(1)} KB]`;
+      }
+
+      // Video files
+      if (file.type.startsWith('video/')) {
+        return `[Video: ${file.name}, ${(file.size / 1024 / 1024).toFixed(1)} MB]`;
+      }
+
       // Text files
       if (file.type.startsWith('text/')) {
         return await file.text();
@@ -430,9 +496,13 @@ export default function BulkProcessModal({
               className="rounded-lg border-2 border-dashed border-gray-600 bg-gray-800/50 p-8 text-center transition-colors hover:border-blue-500 hover:bg-gray-800"
             >
               <div className="text-4xl mb-2">📁</div>
-              <p className="mb-2 font-semibold text-white">Drop files here or click to upload</p>
+              <p className="mb-2 font-semibold text-white">
+                {typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                  ? 'Tap to upload or take photo'
+                  : 'Drop files here or click to upload'}
+              </p>
               <p className="mb-4 text-sm text-gray-400">
-                Supports text, PDF, DOCX, JSON, HTML (max 10 MB each, max 100 files)
+                Supports images, text, PDF, DOCX, JSON, HTML (max 10 MB each, max 100 files)
               </p>
               <input
                 ref={fileInputRef}
@@ -440,7 +510,8 @@ export default function BulkProcessModal({
                 multiple
                 onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
                 className="hidden"
-                accept=".txt,.pdf,.docx,.json,.html,.eml,.msg"
+                accept="image/*,video/*,.pdf,.docx,.txt,.json,.html,.eml,.msg"
+                capture="environment"
               />
               <Button
                 onClick={() => fileInputRef.current?.click()}
