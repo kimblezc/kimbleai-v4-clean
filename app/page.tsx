@@ -1141,6 +1141,13 @@ export default function Home() {
             <span>🦉</span>
             <span>Archie</span>
           </a>
+          <a
+            href="/integrations/health"
+            className="flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-500 hover:text-gray-400 hover:bg-gray-900/50 transition-colors"
+          >
+            <span>🔌</span>
+            <span>Integrations</span>
+          </a>
           <button
             onClick={() => setShowTranscriptionModal(true)}
             className="w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-500 hover:text-gray-400 hover:bg-gray-900/50 transition-colors text-left"

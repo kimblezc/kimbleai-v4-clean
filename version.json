@@ -1,8 +1,8 @@
 {
-  "version": "10.3.1",
-  "commit": "3992f01",
-  "lastUpdated": "2025-11-24T17:00:00.000Z",
-  "changelog": "✨ LOW-PRIORITY POLISH: Completed all remaining mobile enhancements. (1) AudioUpload.tsx - Replaced window.confirm with touch-friendly ConfirmDialog component, mobile-optimized cost warning with swipe-to-dismiss. (2) Integration Health Dashboard - Created comprehensive /integrations/health page monitoring all 11 integrations real-time: status indicators (active/degraded/offline/optional), response times, error rates, auto-refresh every 60s, summary cards (active count, avg response, error rate), alert system for degraded services. (3) Offline Page - Created beautiful /offline.html with auto-retry, connection polling every 5s, animated gradient design, feature list. Updated service worker to cache offline.html and serve it on navigation failures. (4) Service Worker - Updated cache version to v4-3.0-mobile-polish. All changes additive, 0 breaking changes. Build successful (new page /integrations/health added to routes). Complete mobile optimization now at 98%.",
+  "version": "10.3.2",
+  "commit": "pending",
+  "lastUpdated": "2025-11-24T18:30:00.000Z",
+  "changelog": "✨ UNIFIED INTEGRATION DASHBOARD: Combined all 22 integrations (11 user-facing + 11 infrastructure) into single health dashboard at /integrations/health. Features: (1) Category filtering - All/User-Facing/Infrastructure tabs with purple/green badges. (2) Enhanced metrics - 5 summary cards (Active, User-Facing, Infrastructure, Avg Response, Error Rate). (3) Integration details - Each card shows category badge, status, response time, error rate, cost. (4) Sidebar link - Added 🔌 Integrations button between Archie and Transcribe. (5) Back navigation - Link to return to main chat. User-facing integrations: Vercel AI SDK, Redis Cache, Gemini Flash/Pro, DeepSeek, Perplexity, ElevenLabs, FLUX, Voice Input, pgvector, Knowledge Graph. Infrastructure integrations: OpenAI, Claude, Google Workspace, AssemblyAI, Zapier, Cost Monitor, NextAuth, Supabase, GitHub, Notion, Todoist. Build successful. All integrations now visible in one unified dashboard with comprehensive filtering.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
@@ -91,19 +91,25 @@
     "phase8": {
       "version": "10.3.1",
       "services": ["Mobile Polish & Integration Dashboard"],
+      "status": "deployed",
+      "cost": "$0/month"
+    },
+    "phase9": {
+      "version": "10.3.2",
+      "services": ["Unified Integration Dashboard (22 integrations)"],
       "status": "ready-for-deploy",
       "cost": "$0/month"
     }
   },
   "totalMetrics": {
-    "servicesIntegrated": 11,
-    "linesOfCode": "~5400+",
+    "servicesIntegrated": 22,
+    "linesOfCode": "~5900+",
     "monthlyCostBefore": "$50",
     "monthlyCostAfter": "$18-28",
     "monthlySavings": "$22-32",
     "savingsPercentage": "44-64%",
-    "freeT ierUsage": "90%+",
-    "documentationPages": "~2200 lines",
+    "freeTierUsage": "90%+",
+    "documentationPages": "~2300 lines",
     "mobileCompatibility": "98%"
   }
 }
