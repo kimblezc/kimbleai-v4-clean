@@ -5,102 +5,21 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v9.7.1
-Latest Commit: dd7645e
-Last Updated: 2025-11-20
-Status: ⏳ Pending Deployment
+Latest Version: v10.3.3
+Latest Commit: pending
+Last Updated: 2025-11-25
+Status: ⏳ Ready for Deployment
 Live URL: https://www.kimbleai.com
 ```
 
-### Recent Changes:
-- **dd7645e** (v9.7.1) - 🧹 CLEANUP: Removed all vestigial Guardian references. Guardian agent was non-functional with no actual implementation. Removed 133-line documentation section from CLAUDE.md, removed breadcrumb labels from Breadcrumbs.tsx, cleaned up 3 changelog entries mentioning Guardian. Added Guardian to infrastructureRemoved section in version.json. Historical references in archived docs preserved for context.
-- **de6ee66** (v8.19.1) - 🔧 UI OVERLAP FIXES: Fixed draft restored toast overlapping with cost tracker (changed position from default top-right to bottom-left). Fixed cost tracker hover details going off-screen (anchored to right with max-width 360px instead of left-0 right-0). Build verified, deployed to Railway.
-- **05e1a64** (v8.15.0) - 🧠 CONTEXT RETENTION RESTORED: Fixed critical AI amnesia issue where chat forgot previous messages within same conversation. Root cause: "went too hard" on optimization - useMessages hook only sent current message instead of full history. AI received zero context from previous turns. Fixed by sending complete conversation history from frontend (hooks/useMessages.ts lines 117-138). Removed redundant truncated history summary from system prompt (~500 token savings). Increased database history limit from 15 to 20 messages. Removed verbose Archie description (~300 token savings). Created comprehensive PERFORMANCE_OPTIMIZATION_REPORT.md (50 pages) analyzing the over-optimization issue. Impact: +800 tokens/request (+22%), +$45/month cost, +500ms latency, but WORKING multi-turn conversations. Context window: 0 turns → 20 turns. Multi-turn success: 0% → 95%+. Build successful, 0 TypeScript errors. ~600 lines added (report + summary).
-- **e27dfee** (v8.9.0) - 💰 COST TRACKING RESTORED: Added Cost Tracker 💰 button to sidebar (featured gradient), created minimalist CostWidget component (shows daily spending, auto-expands with hourly/daily/monthly breakdown on hover), integrated widget into main chat header next to user selector, comprehensive COST_TRACKING_AGENT.md documentation (1,100+ lines covering architecture, dashboards at /costs and /costs/models, budget enforcement, savings recommendations, alert system, database schema). Full cost tracking system now visible and accessible. Widget auto-refreshes every 30s, color-coded status (green/blue/yellow/red), links to full dashboard. ~400 lines added.
-- **4fdc22c** (v8.7.0) - 🔧 CRITICAL FIXES: Fixed NEXTAUTH_URL domain redirect issue (updated Railway env var from kimbleai-production-efed.up.railway.app to https://kimbleai.com - users now stay on kimbleai.com in address bar). Integrated all session improvements: Archie cron scheduling (instrumentation.ts with node-cron), Mobile Phase 2 complete (PWA icons, haptics, swipe gestures, PromptDialog), Mobile Phase 1 deployed (touch targets, responsive sidebar, ConfirmDialog). Total ~1,000 lines added this session.
-- **9d80597** (v8.7.0) - 🔧 NEXTAUTH_URL FIX: Updated Railway environment variable NEXTAUTH_URL from Railway URL to https://kimbleai.com to prevent domain redirect in browser address bar. Triggered redeployment.
-- **e549212** (v8.0.3) - 🔧 CRON FIX FOR RAILWAY: Fixed Archie not running for 10 days. Implemented in-process node-cron scheduler (lib/cron-scheduler.ts) with CRON_SECRET authentication. Added Next.js instrumentation hook to initialize cron jobs on server start. Schedules: Archie (every hour), Backup (daily 2am), Index (every 6 hours), Index Attachments (every 4 hours). Only runs in Railway production environment. Build tested successfully.
-- **ed89f7f** (v8.6.0) - 📱 MOBILE UX PHASE 2: Advanced mobile interactions complete! PWA icons generated (D20 design with sharp: 192/512px standard + maskable + apple-touch-icon, total 6 files), PromptDialog component (mobile-optimized text input, 44px touch targets, 16px font prevents iOS zoom, validation, swipe-to-dismiss), haptic feedback system (5 patterns: light/medium/heavy/error/success, integrated into TouchButton/ConfirmDialog/PromptDialog), swipe gestures (useSwipe hook with 4 directions, visual feedback, 100px threshold for dismiss), performance verified (build successful, 0 new TS errors, bundle unchanged at 102 KB). Desktop 100% preserved. ~800 lines added. See MOBILE_PHASE2_COMPLETE.md for details.
-- **50c0fac** (v8.5.0) - 📱 MOBILE UX PHASE 1: Critical mobile optimizations complete! Touch targets fixed (44px min for all buttons via btn-touch class), responsive sidebar (90vw on mobile with proper z-index layering), mobile-optimized modals (slide from bottom with swipe indicator, proper safe-area-inset), ConfirmDialog component (replaces window.confirm, touch-friendly, proper variant styling), PWA manifest configured (standalone mode, proper theme colors). Desktop functionality 100% preserved. All changes additive. See MOBILE_PHASE1_COMPLETE.md for full documentation.
-- **047f7e8** (v8.0.3) - 🔧 CRITICAL FIXES: (1) Fixed projects disappearing on refresh - corrected useEffect dependency from [loadProjects] to [userId] to prevent infinite re-renders in useProjects hook. (2) Fixed conversations returning 404 when clicked - added fallback query to check string user_id if UUID query fails, handles both new conversations (UUID) and old ones (string "zach"/"rebecca"). Both issues completely resolved.
-- **a52f49d** (v7.8.1) - 🔧 OVERNIGHT IMPROVEMENTS: Fixed Card import case-sensitivity warnings (changed 5 files from 'Card' to 'card' to prevent Linux/macOS issues). Added CardHeader/CardTitle/CardDescription/CardContent exports to fix analytics page import errors. Conversation fixes from v6.1.1 already in place (project-based grouping working). Database migration file ready at supabase/migrations/fix-conversations-schema.sql but needs manual execution (will fix 30 orphaned messages and add missing created_at column).
-- **6647c44** (v7.7.4) - 🦉 COMPREHENSIVE LOGGING DASHBOARD: Completely revamped /agent dashboard with parsed commit analysis, color-coded fix type breakdown (🔧 lint, 🧹 dead code, 🐛 type error, 📦 dependency), individual fix cards, statistics (total fixes, commits, last run), layman explanations section, technical details, and created ARCHIE-LOGGING.md guide. Dashboard now production-ready for monitoring all Archie activity in readable format.
-- **9f455c9** (v7.7.3) - 🦉 UX IMPROVEMENT: Added Archie Dashboard button to sidebar for easy access. Green owl button with gradient background and hover effects positioned above version info. Users can now click directly to /agent to monitor Archie's activity without typing the URL.
-- **ad93693** (v7.7.2) - 🦉 ARCHIE AI ENHANCEMENT: Enhanced Archie with AI-powered iterative fixing! Now uses GPT-4o to fix complex TypeScript errors with retry logic (up to 3 attempts), tests each fix with tsc/lint, rolls back on failure, and uses progressively aggressive strategies (minimal changes → type assertions → any types). Added comprehensive logging for each fix attempt. Manual trigger tested and working at /api/archie/run?trigger=manual.
-- **a4db07f** (v7.7.1) - 🦉 ARCHIE SIMPLIFICATION: Removed complex Archie 2.0 (database, approval queues, SSE streams) and replaced with simple git-based version at lib/archie-agent.ts. Auto-fixes lint/dead code/patches, commits to git, runs hourly via cron. Dashboard at /agent shows git commits by Archie. Archived old API routes. Changed D&D fact rotation from 8 to 30 seconds for better readability.
-- **83d8ae3** (v7.7.0) - 🦉 ARCHIE 2.0 INITIAL (later simplified): First attempt at complex approval system - was over-engineered, replaced in v7.7.1 with simpler approach
-- **79d7ac3** (v7.6.4) - CRITICAL FIX: React Error #310 resolved with shuffled queue approach - Moved shuffleArray outside component, use ref-based queue of shuffled indices, empty dependency array prevents recreation, maintains full random non-repeating feature
-- **00ba6e9** (v7.6.3) - FEATURE: Fantasy-themed fonts - Replaced Inter/Space Grotesk with Cinzel (elegant Roman serif for headers) and Crimson Text (readable serif for body), improved typography with 16px base size, 1.6 line-height, and letter-spacing for D&D rulebook aesthetic
-- **8a2f887** (v7.6.2) - HOTFIX: Empty dependency array fix - Changed useEffect from [currentFactIndex] to [] to prevent re-creation on every fact change, uses functional setState for prevIndex access
-- **1d43080** (v7.6.2) - HOTFIX: React Error #310 crash - Fixed infinite render loop caused by nested state updates in D&D facts rotation, imported missing useRef hook, refactored to use useRef for tracking used indices (single state update per interval)
-- **1b5b670** (v7.6.1) - FEATURE: 20 D&D facts with smart rotation - Expanded to 20 curated facts mixing surface-level and deep lore (THAC0, Vecna, Lady of Pain, Spelljammer, Blood War), smart rotation tracks used facts and never repeats until all shown, provides 2min 40sec of unique content before any repeats
-- **39ca25b** (v7.6.0) - FEATURE: Rotating D&D facts on empty state - Removed large "KimbleAI" branding from center, added 10 rotating D&D facts that change every 8 seconds, kept time-based greetings, cleaner minimal UI, changed input placeholder to "Ask me anything..."
-- **7ce3fa4** (v7.5.7) - HOTFIX: Fixed TypeError in conversation sorting - Added defensive null checks for conversations without timestamps, prevents 'Cannot read properties of undefined (reading getTime)' error
-- **38e311d** (v7.5.6) - UX: Added timestamps to conversation sidebar + sorted conversations newest to oldest - Shows relative time (e.g., '2h ago') for each chat, conversations now properly sorted within each group
-- **60b37e5** (v7.5.5) - HOTFIX: Fixed 500 error on page load - Improved error handling with detailed logging, added minimal field fallback query, JavaScript-based sorting backup, resilient timestamp handling using message timestamps when conversation timestamps missing
-- **5322b57** (v7.5.4) - FINAL FIX: Removed ALL hardcoded user lookups + fixed userId dependency + chronological sorting - Fixed useMessages dependency array, replaced all hardcoded user queries with getUserByIdentifier in conversations & chat APIs, added full timestamps with newest-first sorting, created cleanup script for orphaned conversations
-- **af78dbf** (v7.5.3) - FIX: Added robust error handling and filtered test conversations - Graceful 404 handling, removed test data from sidebar
-- **d459cd0** (v7.5.2) - FIX: Added GET method to conversations API - Eliminates 405 errors, enables proper conversation loading with messages
-- **1f0b147** (v7.5.1) - CRITICAL HOTFIX: Fixed circular dependency causing "Cannot access 'c' before initialization" - Moved useEffect after function definitions
-- **ee47d21** (v7.5.0) - FEATURE: Auto-load conversation messages when clicking sidebar chats - Added useEffect to automatically fetch and display old conversations
-- **72da669** (v7.4.7) - CRITICAL FIX: Use user.id UUID instead of userId string in projects API - Fixed 500 errors by using actual UUID from user object for owner_id, created_by, assigned_to fields
-- **5dd16a4** (v7.4.6) - COMPREHENSIVE FIX: Complete UUID handling across all API endpoints - Added getUserByIdentifier() helper, fixed delete/edit authorization on projects/tags, eliminated all UUID errors
-- **78ee567** (v7.4.5) - COMPREHENSIVE FIX: Added flexible user ID mapper (mapUserIdentifier) to handle UUIDs, friendly IDs, and names - eliminates recurring UUID mismatch errors across entire codebase
-- **2076386** (v7.4.4) - FIXED: Project delete returning 403 Forbidden - corrected column name from user_id to owner_id in /api/projects/delete authorization check
-- **a88ca85** (v7.4.3) - CRITICAL FIX: Added ANTHROPIC_API_KEY fallback to prevent 503 errors when Claude models selected without credentials
-- **d4d6069** (v7.4.2) - CRITICAL FIX: ModelSelector error handling - Fixed 503 errors by adding robust fallback logic
-- **c358233** (v7.4.1) - DEBUG: Temporarily bypassed ModelSelector to isolate 503 cause
-- **0342d07** (v7.4.1) - BUGFIX: Removed duplicate DESKTOP-UN6T850 route files causing 503/500 API errors
-- **265e08e** (v7.4.0) - Smart model selection system + Tags feature + MCP cleanup (see full details below)
-- **4487124** (v7.3.5) - Added SSE streaming to chat API - messages now display in real-time with typing animation
-- **323d5b3** (v7.3.4) - Switched default model back to Claude Sonnet 4.5 after Anthropic credits added
-- **5b9e36e** (v7.3.3) - Fixed chat API request format - useMessages now sends correct messages array
-- **927777e** (v7.3.2) - Fixed critical chat endpoint crash caused by undefined mcpTools reference
-- **58b17b7** (v7.3.1) - Added project rename and delete with inline action buttons (✏️ 🗑️)
-- **44b1e9f** (v7.3.0) - Version tracking update for integrated features
-- **4cd2712** (v7.3.0) - Integrated tag and project systems with D20 in header - Full CRUD + tag management UI
-- **8e79aca** (v7.2.0) - Complete page.tsx refactoring: 4,041 → 430 lines (89% reduction) with custom hooks
-- **72c26ab** (v6.1.4) - Fixed syntax error in MCP stdio logging, updated NEXTAUTH_URL to Railway
-- **d34f2f0** (v6.1.4) - Added enhanced stdio process logging for MCP debugging (had syntax error)
-- **aa6a1e4** (v6.1.3) - Fixed MCP popup errors: Replaced alert() with toast notifications, added detailed error logging
-- **1b8a853** (v6.1.0) - Railway migration complete: Fixed broadcastActivity imports, deployed successfully with MCP stdio support
-- **4fd5c74** (v6.1.0) - Fixed Select component exports for workflow compatibility
-- **ef3c114** (v6.1.0) - Fixed initial broadcastActivity import errors in mcp-tool-executor
-- **4559253** (v6.1.0) - Railway migration preparation: Configuration, scripts, and documentation for MCP stdio support
-- **b8770c5** (v6.0.10) - Fixed MCP manager timeouts by adding initializeWithoutConnect method
-- **fa7ff80** (v6.0.9) - Fixed MCP manager auto-initialization on serverless cold starts
-- **069cb1a** (v6.0.8) - Added error logging to MCP servers GET endpoint to debug 500 error
-- **755f924** (v6.0.7) - Added comprehensive error logging for project deletion and MCP installation debugging
-- **7ed63ae** (v6.0.6) - Fixed MCP filesystem server installation (process.cwd() browser error)
-- **94c34db** (v6.0.5) - Fixed project deletion with cascading deletes for related records
+### Recent Changes (Last 5 Only):
+- **pending** (v10.3.3) - 🧹 DOCUMENTATION CLEANUP: Archived 26+ docs (~564KB), optimized CLAUDE.md, created ACTIVE_DOCS.md index
+- **5af0426** (v10.3.2) - ✨ UNIFIED INTEGRATION DASHBOARD: Combined all 22 integrations into /integrations/health
+- **dd7645e** (v9.7.1) - 🧹 CLEANUP: Removed all vestigial Guardian references
+- **de6ee66** (v8.19.1) - 🔧 UI OVERLAP FIXES: Fixed draft restored toast overlapping with cost tracker
+- **05e1a64** (v8.15.0) - 🧠 CONTEXT RETENTION RESTORED: Fixed critical AI amnesia issue
 
-### v7.4.0 Detailed Feature Breakdown:
-**Smart Model Selection System:**
-- Intelligent model selector with task complexity analysis (simple/medium/complex)
-- Automatic task type detection (coding, analysis, creative, reasoning, file_processing)
-- User preference support (cost/speed/quality optimization)
-- Integrated Claude (Sonnet 4.5, Haiku, Opus) and GPT models
-- Performance tracking and cost monitoring per model
-- Automatic fallback handling for unavailable models
-
-**Tags System:**
-- Full CRUD API for tags (/api/tags, /api/tags/stats)
-- Tags management UI at /app/tags
-- Tag utilities library (lib/tag-utils.ts)
-- Database migration (add-tags-table.sql)
-- Tag associations for conversations and projects
-
-**React Hooks & Utilities:**
-- useConversations.ts - Conversation management hook
-- useMessages.ts - Message handling hook
-- useProjects.ts - Project operations hook
-- lib/chat-utils.ts - Chat utility functions
-
-**MCP System Cleanup:**
-- Archived all MCP docs to docs/archive/mcp-removed-2025-10-30/
-- Removed deprecated MCP endpoints and components
-- Database cleanup script (cleanup-mcp.sql)
-- Preserved documentation for future reference
+**Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 
 **Purpose**: This section serves as a checkpoint to ensure all changes are properly versioned, committed, and deployed. Every modification to the codebase must update this section with the new version and commit hash.
 
