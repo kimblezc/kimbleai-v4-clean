@@ -1,6 +1,6 @@
 {
   "version": "10.3.3",
-  "commit": "pending",
+  "commit": "ccfd13e",
   "lastUpdated": "2025-11-25T08:50:00.000Z",
   "changelog": "🧹 DOCUMENTATION CLEANUP: Archived 26+ redundant documentation files (~564KB) to reduce VS Code memory usage and fix crashes. Organized into dated folders: 2025-01-reports (8 files), 2025-01-guides (5 files), 2025-01-testing (5 files), 2025-01-mobile (3 files), 2025-01-misc (8 files), 2025-01-changelog (63 entries). Reduced CLAUDE.md from 63 changelog entries to 5 most recent. Created ACTIVE_DOCS.md index. Root markdown files reduced from 35+ to 16 active docs. Build verified successful. Result: Cleaner codebase, faster IDE performance, easier navigation, all historical content preserved in archives.",
   "platform": "Railway",
