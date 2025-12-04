@@ -774,7 +774,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-black text-white">
+    <div className="flex h-screen bg-black text-white overflow-hidden">
       <style jsx>{`
         @media (max-width: 768px) {
           .sidebar {
@@ -782,10 +782,11 @@ export default function Home() {
             left: ${isMobileSidebarOpen ? '0' : '-100%'};
             top: 0;
             bottom: 0;
-            z-index: 1000;
-            width: 90vw;
-            max-width: 280px;
-            transition: left 0.3s ease;
+            z-index: var(--z-sidebar);
+            width: 85vw;
+            max-width: 320px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(0);
           }
         }
       `}</style>
@@ -794,7 +795,8 @@ export default function Home() {
       {isMobile && (
         <TouchButton
           onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-          className="md:hidden fixed top-4 left-4 z-50 bg-gray-800 border border-gray-700"
+          className="md:hidden fixed top-4 left-4 bg-gray-800 border border-gray-700"
+          style={{ zIndex: 'var(--z-maximum)' }}
           size="sm"
           variant="secondary"
         >
@@ -802,16 +804,17 @@ export default function Home() {
         </TouchButton>
       )}
 
-      {/* Sidebar Overlay (mobile) */}
+      {/* Sidebar Backdrop (mobile) */}
       {isMobileSidebarOpen && (
         <div
           onClick={() => setIsMobileSidebarOpen(false)}
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm md:hidden"
+          style={{ zIndex: 'var(--z-modal-backdrop)' }}
         />
       )}
 
       {/* Sidebar */}
-      <div className="sidebar w-64 bg-gray-950 border-r border-gray-800 flex flex-col">
+      <div className={`sidebar w-64 bg-gray-950 border-r border-gray-800 flex flex-col ${isMobileSidebarOpen && isMobile ? '' : ''}`}>
         {/* New Chat Button */}
         <div className="p-3">
           <button
@@ -1173,13 +1176,13 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col md:flex-row">
-        <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex flex-col md:flex-row overflow-hidden ${isMobileSidebarOpen && isMobile ? 'blur-sm pointer-events-none' : ''}`}>
+        <div className="flex-1 flex flex-col overflow-hidden">
         {/* Breadcrumbs */}
         <ResponsiveBreadcrumbs />
 
         {/* Header */}
-        <div className="bg-gray-950 border-b border-gray-800 px-4 py-3 flex items-center justify-between">
+        <div className="bg-gray-950 border-b border-gray-800 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <D20Dice size={40} spinning={true} />
             <div>
@@ -1198,7 +1201,7 @@ export default function Home() {
                 {currentUser === 'zach' ? 'Zach' : 'Rebecca'}
               </button>
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-gray-900 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
+              <div className="absolute right-0 mt-2 w-40 bg-gray-900 border border-gray-700 rounded-lg shadow-lg py-1" style={{ zIndex: 'var(--z-dropdown)' }}>
                 <button
                   onClick={() => {
                     setCurrentUser('zach');
@@ -1240,7 +1243,7 @@ export default function Home() {
         />
 
         {/* Messages Area */}
-        <div ref={containerRef} className="flex-1 overflow-y-auto p-4 relative">
+        <div ref={containerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 relative">
           {/* Project Detail View - shows when project is selected but no conversation is active */}
           {currentProject && !currentConversationId && messages.length === 0 ? (
             <div className="max-w-4xl mx-auto">
@@ -1565,7 +1568,8 @@ export default function Home() {
       {/* Model Selector Modal */}
       {showModelSelector && (
         <div
-          className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center"
+          style={{ zIndex: 'var(--z-modal)' }}
           onClick={() => setShowModelSelector(false)}
         >
           <div
@@ -1608,7 +1612,7 @@ export default function Home() {
 
       {/* Rename Dialog */}
       {renameDialog.isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center" style={{ zIndex: 'var(--z-modal)' }}>
           <div className="bg-neutral-800 rounded-lg p-6 w-96 max-w-[90vw]">
             <h3 className="text-lg font-semibold mb-4">Rename Conversation</h3>
             <input

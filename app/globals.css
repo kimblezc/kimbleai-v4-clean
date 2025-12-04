@@ -4,6 +4,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Z-Index Hierarchy - Consistent scale across entire app */
+:root {
+  --z-base: 1;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-toast: 70;
+  --z-tooltip: 80;
+  --z-sidebar: 90;
+  --z-maximum: 100;
+}
+
 /* Mobile-First Responsive Design */
 @layer base {
   html {
@@ -64,7 +79,8 @@
 
   /* Hide sidebar on mobile, show as overlay */
   .sidebar {
-    @apply fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300;
+    @apply fixed inset-y-0 left-0 w-80 transform transition-transform duration-300;
+    z-index: var(--z-sidebar);
   }
 
   .sidebar.closed {
@@ -73,15 +89,17 @@
 
   /* Mobile bottom navigation */
   .mobile-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-40;
+    @apply fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800;
+    z-index: var(--z-fixed);
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   /* Floating action button */
   .fab {
-    @apply fixed bottom-20 right-4 w-14 h-14 rounded-full shadow-lg z-40;
+    @apply fixed bottom-20 right-4 w-14 h-14 rounded-full shadow-lg;
     @apply flex items-center justify-center;
     @apply bg-blue-600 hover:bg-blue-700 text-white;
+    z-index: var(--z-fixed);
   }
 
   /* Mobile-friendly inputs */
@@ -102,8 +120,14 @@
 
   /* Mobile-friendly modals */
   .modal {
-    @apply fixed inset-0 z-50;
+    @apply fixed inset-0;
     @apply flex items-end sm:items-center justify-center;
+    z-index: var(--z-modal);
+  }
+
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm;
+    z-index: var(--z-modal-backdrop);
   }
 
   .modal-content {

@@ -68,7 +68,8 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 z-[100] flex items-end sm:items-center justify-center p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+      style={{ zIndex: 'var(--z-modal)' }}
       onClick={onCancel}
     >
       <div

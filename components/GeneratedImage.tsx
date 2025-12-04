@@ -27,13 +27,13 @@ export default function GeneratedImage({
   onClear,
 }: GeneratedImageProps) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-w-full">
       {/* Image */}
       <div className="relative w-full max-w-2xl border border-gray-800 rounded-lg overflow-hidden bg-gray-900">
         <img
           src={imageUrl}
           alt={prompt}
-          className="w-full h-auto"
+          className="w-full h-auto max-h-[500px] object-contain"
           style={{ display: 'block' }}
         />
       </div>
