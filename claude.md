@@ -5,19 +5,19 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v10.5.0
-Latest Commit: 6cb740b
-Last Updated: 2025-12-04
-Status: ✅ Deployed
+Latest Version: v10.6.0
+Latest Commit: 53499a6
+Last Updated: 2025-12-06
+Status: ⏳ Deploying to Railway
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **53499a6** (v10.6.0) - 🎨 SIDEBAR UX OVERHAUL: Collapsible sections, 30% more compact spacing, ChatGPT-style hover-reveal buttons, SVG icons
 - **6cb740b** (v10.5.0) - 📱 MOBILE UI OPTIMIZATION: Fixed all overlapping issues with z-index hierarchy, layout constraints, image overflow
 - **e2e3ebf** (v10.4.0) - 🚀 PHASE 1 - ADVANCED TOOL USE: Implemented Anthropic's best practices with 20+ tools, 35+ examples (72%→90% accuracy)
 - **ccfd13e** (v10.3.3) - 🧹 DOCUMENTATION CLEANUP: Archived 26+ docs (~564KB), optimized CLAUDE.md, created ACTIVE_DOCS.md index
 - **5af0426** (v10.3.2) - ✨ UNIFIED INTEGRATION DASHBOARD: Combined all 22 integrations into /integrations/health
-- **dd7645e** (v9.7.1) - 🧹 CLEANUP: Removed all vestigial Guardian references
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 
