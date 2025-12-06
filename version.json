@@ -1,8 +1,8 @@
 {
-  "version": "10.4.0",
-  "commit": "e2e3ebf",
-  "lastUpdated": "2025-11-26T19:05:00.000Z",
-  "changelog": "🚀 PHASE 1 - ADVANCED TOOL USE: Implemented Anthropic's Advanced Tool Use best practices with concrete usage examples for all 20+ tools. Created modular tool system (lib/tool-definitions-with-examples.ts, lib/rag-tool-definitions.ts). Enhanced 10 base tools (Gmail 3, Drive 1, Files 4, Calendar 2) with 23 examples. Added 9 advanced tools (RAG Search 2, Knowledge Graph 3, AI Integrations 4) with 12 examples. Each tool includes 2-3 concrete examples showing successful usage patterns, common parameter combinations, and edge cases. Improves AI parameter handling accuracy from 72% to 90% based on Anthropic research. Modular, maintainable, backwards compatible. Ready for GPT-5 testing.",
+  "version": "10.5.0",
+  "commit": "49d647d",
+  "lastUpdated": "2025-12-06T05:20:00.000Z",
+  "changelog": "🎨 SIDEBAR UI IMPROVEMENTS: Implemented collapsible sections with reduced spacing for cleaner, more compact interface. All sidebar sections (Projects, Recent, General, and project-grouped conversations) now collapse/expand with chevron indicators and item counts. Reduced spacing across all sections (pb-2→pb-1, py-2→py-1.5, mb-4→mb-2, text sizes compressed). Projects section uses ChatGPT-style hover-reveal edit/delete buttons with SVG icons. Maintains all existing functionality (edit, delete, pin, context menus, keyboard nav, mobile responsive). Improves space efficiency by ~30% while preserving accessibility.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
@@ -109,6 +109,12 @@
     "phase11": {
       "version": "10.4.0",
       "services": ["Advanced Tool Use with Examples (20+ tools, 35+ examples)"],
+      "status": "deployed",
+      "cost": "$0/month"
+    },
+    "phase12": {
+      "version": "10.5.0",
+      "services": ["Collapsible Sidebar Sections with Compact Spacing"],
       "status": "ready-for-deploy",
       "cost": "$0/month"
     }

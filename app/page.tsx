@@ -37,6 +37,7 @@ import { ScrollToBottom } from '../components/ui/ScrollToBottom';
 import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
 import TranscriptionModal from '../components/TranscriptionModal';
 import BulkProcessModal from '../components/BulkProcessModal';
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 // Dark mode removed - was not functional
 // import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useDeviceType } from '../components/ResponsiveLayout';
@@ -101,6 +102,25 @@ export default function Home() {
     currentTitle: '',
   });
   const [renameInput, setRenameInput] = useState('');
+
+  // Collapsible section state
+  const [sectionCollapsed, setSectionCollapsed] = useState<{
+    projects: boolean;
+    recent: boolean;
+    general: boolean;
+    [key: string]: boolean;
+  }>({
+    projects: false,
+    recent: false,
+    general: false,
+  });
+
+  const toggleSection = (section: string) => {
+    setSectionCollapsed(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   // Refs for keyboard shortcuts
   const inputRef = useRef<HTMLInputElement>(null);
@@ -874,65 +894,77 @@ export default function Home() {
         )}
 
         {/* Projects Section */}
-        <div className="px-3 pb-2">
-          <div className="text-sm text-gray-500 font-medium px-2 mb-2">PROJECTS</div>
-          <div className="space-y-1">
+        <div className="px-3 pb-1">
+          <CollapsibleSection
+            title="PROJECTS"
+            count={projects.length + 1}
+            isCollapsed={sectionCollapsed.projects}
+            onToggle={() => toggleSection('projects')}
+          >
             <button
               onClick={() => {
                 selectProject('');
                 setCurrentConversationId(null);
                 setIsMobileSidebarOpen(false);
               }}
-              className={`w-full py-1.5 px-3 rounded-md text-base text-left transition-colors ${
+              className={`w-full py-1 px-3 rounded-md text-sm text-left transition-colors ${
                 !currentProject ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900'
               }`}
             >
               General
             </button>
             {projects.map(project => (
-              <div key={project.id} className="flex items-center gap-1">
+              <div key={project.id} className="group-hover-actions flex items-center rounded-md hover:bg-gray-900 transition-colors">
                 <button
                   onClick={() => {
                     selectProject(project.id);
                     setCurrentConversationId(null);
                     setIsMobileSidebarOpen(false);
                   }}
-                  className={`flex-1 py-1.5 px-3 rounded-md text-base text-left transition-colors ${
-                    currentProject === project.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900'
+                  className={`flex-1 py-1 px-3 text-left min-w-0 rounded-md text-sm ${
+                    currentProject === project.id ? 'active text-white' : 'text-gray-400'
                   }`}
                 >
                   {project.name}
                 </button>
-                <IconButton
-                  icon={<span className="text-base">✏️</span>}
-                  label="Edit project"
-                  onClick={() => {
-                    const newName = prompt(`Edit project name:`, project.name);
-                    if (newName && newName !== project.name) {
-                      updateProject(project.id, { name: newName });
-                    }
-                  }}
-                  variant="ghost"
-                  className="text-gray-600 hover:text-blue-400"
-                />
-                <IconButton
-                  icon={<span className="text-base">🗑️</span>}
-                  label="Delete project"
-                  onClick={() => {
-                    setConfirmDialog({
-                      isOpen: true,
-                      title: 'Delete Project',
-                      message: `Are you sure you want to delete "${project.name}"? This action cannot be undone.`,
-                      variant: 'danger',
-                      onConfirm: () => {
-                        deleteProject(project.id);
-                        setConfirmDialog({ ...confirmDialog, isOpen: false });
-                      },
-                    });
-                  }}
-                  variant="ghost"
-                  className="text-gray-600 hover:text-red-500"
-                />
+                <div className="flex items-center gap-0.5 pr-1">
+                  <button
+                    className="action-button sidebar-icon-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newName = prompt(`Edit project name:`, project.name);
+                      if (newName && newName !== project.name) {
+                        updateProject(project.id, { name: newName });
+                      }
+                    }}
+                    title="Edit project"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    className="action-button sidebar-icon-button text-red-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDialog({
+                        isOpen: true,
+                        title: 'Delete Project',
+                        message: `Are you sure you want to delete "${project.name}"? This action cannot be undone.`,
+                        variant: 'danger',
+                        onConfirm: () => {
+                          deleteProject(project.id);
+                          setConfirmDialog({ ...confirmDialog, isOpen: false });
+                        },
+                      });
+                    }}
+                    title="Delete project"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))}
             <button
@@ -942,123 +974,133 @@ export default function Home() {
                   projectsHook.createProject({ name, status: 'active' });
                 }
               }}
-              className="w-full py-1.5 px-3 rounded-md text-base text-left text-gray-500 hover:bg-gray-900 transition-colors"
+              className="w-full py-1 px-3 rounded-md text-sm text-left text-gray-500 hover:bg-gray-900 transition-colors"
             >
               + New project
             </button>
-          </div>
+          </CollapsibleSection>
         </div>
 
         {/* Conversations List - Grouped by Project */}
         <div className="flex-1 overflow-y-auto px-3">
           {/* Recent Conversations Section */}
           {recentConversations.length > 0 && (
-            <div className="mb-4">
-              <div className="text-sm text-gray-500 font-medium px-2 mb-2 flex items-center gap-2">
-                <span>⭐ RECENT</span>
-              </div>
-              {recentConversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    contextMenu.showContextMenu(e, { conversation: conv });
-                  }}
-                  className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors cursor-pointer ${
-                    currentConversationId === conv.id
-                      ? 'bg-blue-600 text-white'
-                      : selectedForMerge.includes(conv.id)
-                      ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
-                      : 'text-gray-400 hover:bg-gray-900'
-                  }`}
-                >
-                  <button
-                    onClick={() => {
-                      selectConversation(conv.id);
-                      setIsMobileSidebarOpen(false);
+            <div className="mb-2">
+              <CollapsibleSection
+                title="⭐ RECENT"
+                count={recentConversations.length}
+                isCollapsed={sectionCollapsed.recent}
+                onToggle={() => toggleSection('recent')}
+              >
+                {recentConversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      contextMenu.showContextMenu(e, { conversation: conv });
                     }}
-                    className="flex-1 text-left min-w-0 px-1"
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors cursor-pointer ${
+                      currentConversationId === conv.id
+                        ? 'bg-blue-600 text-white'
+                        : selectedForMerge.includes(conv.id)
+                        ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
+                        : 'text-gray-400 hover:bg-gray-900'
+                    }`}
                   >
-                    <div className="text-base truncate overflow-hidden text-ellipsis whitespace-nowrap">
-                      {conv.title || 'Untitled conversation'}
-                    </div>
-                    {(conv.updated_at || conv.created_at) && (
-                      <div className="text-sm text-gray-600 mt-0.5 truncate">
-                        {formatRelativeTime(conv.updated_at || conv.created_at)}
+                    <button
+                      onClick={() => {
+                        selectConversation(conv.id);
+                        setIsMobileSidebarOpen(false);
+                      }}
+                      className="flex-1 text-left min-w-0 px-1"
+                    >
+                      <div className="text-sm truncate overflow-hidden text-ellipsis whitespace-nowrap">
+                        {conv.title || 'Untitled conversation'}
                       </div>
-                    )}
-                  </button>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      await togglePin(conv.id, conv.is_pinned);
-                    }}
-                    className="flex-shrink-0 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-900/20 rounded p-1.5 transition-colors"
-                    title={conv.is_pinned ? "Unpin conversation" : "Pin conversation"}
-                  >
-                    {conv.is_pinned ? '📌' : '📍'}
-                  </button>
-                </div>
-              ))}
+                      {(conv.updated_at || conv.created_at) && (
+                        <div className="text-xs text-gray-600 mt-0.5 truncate">
+                          {formatRelativeTime(conv.updated_at || conv.created_at)}
+                        </div>
+                      )}
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await togglePin(conv.id, conv.is_pinned);
+                      }}
+                      className="flex-shrink-0 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-900/20 rounded p-1 transition-colors"
+                      title={conv.is_pinned ? "Unpin conversation" : "Pin conversation"}
+                    >
+                      {conv.is_pinned ? '📌' : '📍'}
+                    </button>
+                  </div>
+                ))}
+              </CollapsibleSection>
             </div>
           )}
 
           {/* Unassigned conversations first */}
           {conversationsByProject['unassigned'] && conversationsByProject['unassigned'].length > 0 && (
-            <div className="mb-4">
-              <div className="text-sm text-gray-500 font-medium px-2 mb-2">GENERAL</div>
-              {conversationsByProject['unassigned'].map((conv) => (
-                <div
-                  key={conv.id}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    contextMenu.showContextMenu(e, { conversation: conv });
-                  }}
-                  className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors cursor-pointer ${
-                    currentConversationId === conv.id
-                      ? 'bg-gray-800 text-white'
-                      : selectedForMerge.includes(conv.id)
-                      ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
-                      : 'text-gray-400 hover:bg-gray-900'
-                  }`}
-                >
-                  <button
-                    onClick={() => {
-                      selectConversation(conv.id);
-                      setIsMobileSidebarOpen(false);
+            <div className="mb-2">
+              <CollapsibleSection
+                title="GENERAL"
+                count={conversationsByProject['unassigned'].length}
+                isCollapsed={sectionCollapsed.general}
+                onToggle={() => toggleSection('general')}
+              >
+                {conversationsByProject['unassigned'].map((conv) => (
+                  <div
+                    key={conv.id}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      contextMenu.showContextMenu(e, { conversation: conv });
                     }}
-                    className="flex-1 text-left min-w-0 px-1"
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors cursor-pointer ${
+                      currentConversationId === conv.id
+                        ? 'bg-gray-800 text-white'
+                        : selectedForMerge.includes(conv.id)
+                        ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
+                        : 'text-gray-400 hover:bg-gray-900'
+                    }`}
                   >
-                    <div className="text-base truncate overflow-hidden text-ellipsis whitespace-nowrap">
-                      {conv.title || 'Untitled conversation'}
-                    </div>
-                    {(conv.updated_at || conv.created_at) && (
-                      <div className="text-sm text-gray-600 mt-0.5 truncate">
-                        {formatRelativeTime(conv.updated_at || conv.created_at)}
+                    <button
+                      onClick={() => {
+                        selectConversation(conv.id);
+                        setIsMobileSidebarOpen(false);
+                      }}
+                      className="flex-1 text-left min-w-0 px-1"
+                    >
+                      <div className="text-sm truncate overflow-hidden text-ellipsis whitespace-nowrap">
+                        {conv.title || 'Untitled conversation'}
                       </div>
-                    )}
-                  </button>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      setConfirmDialog({
-                        isOpen: true,
-                        title: 'Delete Conversation',
-                        message: 'Are you sure you want to delete this conversation? This cannot be undone.',
-                        variant: 'danger',
-                        onConfirm: async () => {
-                          await deleteConversation(conv.id);
-                          setConfirmDialog({ ...confirmDialog, isOpen: false });
-                        }
-                      });
-                    }}
-                    className="flex-shrink-0 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded p-1.5 transition-colors"
-                    title="Delete conversation"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              ))}
+                      {(conv.updated_at || conv.created_at) && (
+                        <div className="text-xs text-gray-600 mt-0.5 truncate">
+                          {formatRelativeTime(conv.updated_at || conv.created_at)}
+                        </div>
+                      )}
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setConfirmDialog({
+                          isOpen: true,
+                          title: 'Delete Conversation',
+                          message: 'Are you sure you want to delete this conversation? This cannot be undone.',
+                          variant: 'danger',
+                          onConfirm: async () => {
+                            await deleteConversation(conv.id);
+                            setConfirmDialog({ ...confirmDialog, isOpen: false });
+                          }
+                        });
+                      }}
+                      className="flex-shrink-0 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded p-1 transition-colors"
+                      title="Delete conversation"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </CollapsibleSection>
             </div>
           )}
 
@@ -1073,63 +1115,66 @@ export default function Home() {
               const projectName = project?.name || projectId;
 
               return (
-                <div key={projectId} className="mb-4">
-                  <div className="text-sm text-gray-500 font-medium px-2 mb-2 flex items-center justify-between">
-                    <span>{projectName.toUpperCase()}</span>
-                    <span className="text-gray-600 text-xs">({convs.length})</span>
-                  </div>
-                  {convs.map((conv) => (
-                    <div
-                      key={conv.id}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        contextMenu.showContextMenu(e, { conversation: conv });
-                      }}
-                      className={`flex items-center gap-2 px-2 py-2 rounded-md mb-1 transition-colors cursor-pointer ${
-                        currentConversationId === conv.id
-                          ? 'bg-gray-800 text-white'
-                          : selectedForMerge.includes(conv.id)
-                          ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
-                          : 'text-gray-400 hover:bg-gray-900'
-                      }`}
-                    >
-                      <button
-                        onClick={() => {
-                          selectConversation(conv.id);
-                          setIsMobileSidebarOpen(false);
+                <div key={projectId} className="mb-2">
+                  <CollapsibleSection
+                    title={projectName.toUpperCase()}
+                    count={convs.length}
+                    isCollapsed={sectionCollapsed[projectId] || false}
+                    onToggle={() => toggleSection(projectId)}
+                  >
+                    {convs.map((conv) => (
+                      <div
+                        key={conv.id}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          contextMenu.showContextMenu(e, { conversation: conv });
                         }}
-                        className="flex-1 text-left min-w-0 px-1"
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors cursor-pointer ${
+                          currentConversationId === conv.id
+                            ? 'bg-gray-800 text-white'
+                            : selectedForMerge.includes(conv.id)
+                            ? 'bg-blue-900/50 text-blue-300 border border-blue-600'
+                            : 'text-gray-400 hover:bg-gray-900'
+                        }`}
                       >
-                        <div className="text-base truncate overflow-hidden text-ellipsis whitespace-nowrap">
-                          {conv.title || 'Untitled conversation'}
-                        </div>
-                        {(conv.updated_at || conv.created_at) && (
-                          <div className="text-sm text-gray-600 mt-0.5 truncate">
-                            {formatRelativeTime(conv.updated_at || conv.created_at)}
+                        <button
+                          onClick={() => {
+                            selectConversation(conv.id);
+                            setIsMobileSidebarOpen(false);
+                          }}
+                          className="flex-1 text-left min-w-0 px-1"
+                        >
+                          <div className="text-sm truncate overflow-hidden text-ellipsis whitespace-nowrap">
+                            {conv.title || 'Untitled conversation'}
                           </div>
-                        )}
-                      </button>
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          setConfirmDialog({
-                            isOpen: true,
-                            title: 'Delete Conversation',
-                            message: 'Are you sure you want to delete this conversation? This cannot be undone.',
-                            variant: 'danger',
-                            onConfirm: async () => {
-                              await deleteConversation(conv.id);
-                              setConfirmDialog({ ...confirmDialog, isOpen: false });
-                            }
-                          });
-                        }}
-                        className="flex-shrink-0 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded p-1.5 transition-colors"
-                        title="Delete conversation"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  ))}
+                          {(conv.updated_at || conv.created_at) && (
+                            <div className="text-xs text-gray-600 mt-0.5 truncate">
+                              {formatRelativeTime(conv.updated_at || conv.created_at)}
+                            </div>
+                          )}
+                        </button>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setConfirmDialog({
+                              isOpen: true,
+                              title: 'Delete Conversation',
+                              message: 'Are you sure you want to delete this conversation? This cannot be undone.',
+                              variant: 'danger',
+                              onConfirm: async () => {
+                                await deleteConversation(conv.id);
+                                setConfirmDialog({ ...confirmDialog, isOpen: false });
+                              }
+                            });
+                          }}
+                          className="flex-shrink-0 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded p-1 transition-colors"
+                          title="Delete conversation"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))}
+                  </CollapsibleSection>
                 </div>
               );
             })}

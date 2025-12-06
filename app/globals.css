@@ -481,3 +481,129 @@ button, a, input, select, textarea, [role="button"], [onclick] {
 .scrollbar-track-transparent::-webkit-scrollbar-track {
   background-color: transparent;
 }
+
+/* ============================================
+   SIDEBAR IMPROVEMENTS - ChatGPT Style
+   ============================================ */
+
+/* Hover-reveal action buttons */
+.group-hover-actions .action-button {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.group-hover-actions:hover .action-button {
+  opacity: 1;
+}
+
+.group-hover-actions .action-button-always-visible {
+  opacity: 1;
+}
+
+/* Mobile: Always show action buttons on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .group-hover-actions .action-button {
+    opacity: 0.6;
+  }
+  .group-hover-actions:active .action-button {
+    opacity: 1;
+  }
+}
+
+/* ChatGPT-style sidebar item */
+.sidebar-item {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-item:hover {
+  background-color: rgba(55, 65, 81, 0.5);
+}
+
+.sidebar-item.active {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: rgb(59, 130, 246);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Smooth collapse/expand animations */
+@keyframes collapse {
+  from {
+    max-height: 2000px;
+    opacity: 1;
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes expand {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 2000px;
+    opacity: 1;
+  }
+}
+
+.collapsible-enter {
+  animation: expand 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.collapsible-exit {
+  animation: collapse 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Compact sidebar spacing utilities */
+.sidebar-section-title {
+  @apply text-xs text-gray-500 font-medium tracking-wider uppercase;
+}
+
+.sidebar-item-compact {
+  @apply py-1 px-2 text-sm;
+}
+
+.sidebar-item-title {
+  @apply text-sm text-gray-300 truncate;
+}
+
+.sidebar-item-subtitle {
+  @apply text-xs text-gray-600;
+}
+
+/* Icon button styles for sidebar */
+.sidebar-icon-button {
+  @apply p-1 rounded hover:bg-gray-800 transition-colors;
+}
+
+.sidebar-icon-button:hover {
+  @apply bg-gray-700;
+}
+
+.sidebar-icon-button:active {
+  @apply bg-gray-600;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .group-hover-actions .action-button,
+  .sidebar-item,
+  .collapsible-enter,
+  .collapsible-exit {
+    transition: none;
+    animation: none;
+  }
+}
