@@ -5,14 +5,15 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v10.6.0
-Latest Commit: 53499a6
+Latest Version: v10.6.1
+Latest Commit: f9e3ffb
 Last Updated: 2025-12-06
-Status: ⏳ Deploying to Railway
+Status: ⏳ Ready for Deployment
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **f9e3ffb** (v10.6.1) - ✅ COMPREHENSIVE SIDEBAR TESTS: 170+ assertions covering component, interactions, accessibility, performance
 - **53499a6** (v10.6.0) - 🎨 SIDEBAR UX OVERHAUL: Collapsible sections, 30% more compact spacing, ChatGPT-style hover-reveal buttons, SVG icons
 - **6cb740b** (v10.5.0) - 📱 MOBILE UI OPTIMIZATION: Fixed all overlapping issues with z-index hierarchy, layout constraints, image overflow
 - **e2e3ebf** (v10.4.0) - 🚀 PHASE 1 - ADVANCED TOOL USE: Implemented Anthropic's best practices with 20+ tools, 35+ examples (72%→90% accuracy)
