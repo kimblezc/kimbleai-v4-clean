@@ -1,6 +1,6 @@
 {
   "version": "10.5.0",
-  "commit": "49d647d",
+  "commit": "53499a6",
   "lastUpdated": "2025-12-06T05:20:00.000Z",
   "changelog": "🎨 SIDEBAR UI IMPROVEMENTS: Implemented collapsible sections with reduced spacing for cleaner, more compact interface. All sidebar sections (Projects, Recent, General, and project-grouped conversations) now collapse/expand with chevron indicators and item counts. Reduced spacing across all sections (pb-2→pb-1, py-2→py-1.5, mb-4→mb-2, text sizes compressed). Projects section uses ChatGPT-style hover-reveal edit/delete buttons with SVG icons. Maintains all existing functionality (edit, delete, pin, context menus, keyboard nav, mobile responsive). Improves space efficiency by ~30% while preserving accessibility.",
   "platform": "Railway",
