@@ -6,9 +6,9 @@
 
 ```
 Latest Version: v10.6.1
-Latest Commit: f9e3ffb
+Latest Commit: 3dfe522
 Last Updated: 2025-12-06
-Status: ⏳ Ready for Deployment
+Status: 🚀 Deploying to Railway (Auto-deploy from GitHub)
 Live URL: https://www.kimbleai.com
 ```
 
