@@ -1,6 +1,6 @@
 {
   "version": "10.6.2",
-  "commit": "PENDING",
+  "commit": "6c9e21d",
   "lastUpdated": "2025-12-14T15:30:00.000Z",
   "changelog": "🔧 CRITICAL AUTH FIX: Fixed NEXTAUTH_URL mismatch (kimbleai.com → www.kimbleai.com) that was causing all Google OAuth integrations to fail. Restored Gmail, Drive, Calendar APIs + cron jobs (Archie, Guardian, Index Attachments). All automated tests pass. Users must re-authenticate. Comprehensive documentation in NEXTAUTH_URL_FIX.md.",
   "platform": "Railway",
