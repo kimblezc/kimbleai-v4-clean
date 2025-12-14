@@ -5,19 +5,19 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v10.6.1
-Latest Commit: 5c9b5f5
+Latest Version: v10.6.2
+Latest Commit: PENDING
 Last Updated: 2025-12-14
-Status: 🚀 Deploying to Railway (triggered)
+Status: 🚀 Deployed to Railway (AUTH FIX APPLIED)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **PENDING** (v10.6.2) - 🔧 CRITICAL AUTH FIX: Fixed NEXTAUTH_URL mismatch causing all Google OAuth failures (Gmail, Drive, Calendar, cron jobs). Users must re-authenticate.
 - **5c9b5f5** (v10.6.1) - 🔧 VERSION FIX: Updated version.json to v10.6.1 @ 4823295, phase 13 deployment status - POC documentation complete
 - **0369b2e** (v10.6.1) - 📋 POC DOCUMENTATION: Comprehensive test results (87% ready), all 22 integrations documented, file handling verified
 - **f9e3ffb** (v10.6.1) - ✅ COMPREHENSIVE SIDEBAR TESTS: 170+ assertions covering component, interactions, accessibility, performance
 - **53499a6** (v10.6.0) - 🎨 SIDEBAR UX OVERHAUL: Collapsible sections, 30% more compact spacing, ChatGPT-style hover-reveal buttons, SVG icons
-- **6cb740b** (v10.5.0) - 📱 MOBILE UI OPTIMIZATION: Fixed all overlapping issues with z-index hierarchy, layout constraints, image overflow
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 

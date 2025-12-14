@@ -1,8 +1,8 @@
 {
-  "version": "10.6.1",
-  "commit": "4823295",
-  "lastUpdated": "2025-12-14T08:47:00.000Z",
-  "changelog": "✅ COMPREHENSIVE TESTING & POC DOCUMENTATION: Added 170+ sidebar interaction tests covering collapsible sections, hover-reveal buttons, accessibility, and performance. Created comprehensive POC documentation (INTEGRATION_TEST_SUMMARY.md, POC_TEST_RESULTS.md) showing 87% system readiness, all 22 integrations documented, file handling fully operational. Includes sidebar UX overhaul (v10.6.0) with collapsible sections, compact spacing, ChatGPT-style hover-reveal buttons, and SVG icons.",
+  "version": "10.6.2",
+  "commit": "PENDING",
+  "lastUpdated": "2025-12-14T15:30:00.000Z",
+  "changelog": "🔧 CRITICAL AUTH FIX: Fixed NEXTAUTH_URL mismatch (kimbleai.com → www.kimbleai.com) that was causing all Google OAuth integrations to fail. Restored Gmail, Drive, Calendar APIs + cron jobs (Archie, Guardian, Index Attachments). All automated tests pass. Users must re-authenticate. Comprehensive documentation in NEXTAUTH_URL_FIX.md.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
@@ -121,6 +121,12 @@
     "phase13": {
       "version": "10.6.1",
       "services": ["Comprehensive Sidebar Tests & POC Documentation"],
+      "status": "deployed",
+      "cost": "$0/month"
+    },
+    "phase14": {
+      "version": "10.6.2",
+      "services": ["NEXTAUTH_URL Fix - All Google OAuth Integrations Restored"],
       "status": "deployed",
       "cost": "$0/month"
     }
