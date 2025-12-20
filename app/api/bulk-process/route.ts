@@ -181,13 +181,14 @@ export async function POST(request: NextRequest) {
     );
 
     // Get DeepSeek client
-    let deepseekClient;
-    try {
-      deepseekClient = getDeepSeekClient();
-    } catch (error) {
-      console.error(`[BULK-PROCESS] DeepSeek client initialization failed: ${error}`);
+    const deepseekClient = getDeepSeekClient();
+    if (!deepseekClient) {
+      console.error('[BULK-PROCESS] DeepSeek API key not configured');
       return NextResponse.json(
-        { error: 'DeepSeek service not available' },
+        {
+          error: 'DeepSeek service not configured',
+          message: 'DEEPSEEK_API_KEY environment variable is required for bulk processing. Get your API key from https://platform.deepseek.com/api_keys'
+        },
         { status: 503 }
       );
     }

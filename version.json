@@ -1,8 +1,8 @@
 {
-  "version": "10.6.2",
-  "commit": "6c9e21d",
-  "lastUpdated": "2025-12-14T15:30:00.000Z",
-  "changelog": "🔧 CRITICAL AUTH FIX: Fixed NEXTAUTH_URL mismatch (kimbleai.com → www.kimbleai.com) that was causing all Google OAuth integrations to fail. Restored Gmail, Drive, Calendar APIs + cron jobs (Archie, Guardian, Index Attachments). All automated tests pass. Users must re-authenticate. Comprehensive documentation in NEXTAUTH_URL_FIX.md.",
+  "version": "10.7.0",
+  "commit": "TBD",
+  "lastUpdated": "2025-12-20T00:00:00.000Z",
+  "changelog": "🔧 FILE UPLOAD FIX: Comprehensive file upload system overhaul. Made DeepSeek optional (only for bulk processing), improved error handling with detailed logging, added 50+ comprehensive tests. Fixed 'processing failed' and 'DeepSeek service not available' errors. All file types (audio, images, PDFs, documents, spreadsheets, emails) now process correctly with better error messages.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
@@ -127,6 +127,12 @@
     "phase14": {
       "version": "10.6.2",
       "services": ["NEXTAUTH_URL Fix - All Google OAuth Integrations Restored"],
+      "status": "deployed",
+      "cost": "$0/month"
+    },
+    "phase15": {
+      "version": "10.7.0",
+      "services": ["File Upload System Fixes & Comprehensive Tests"],
       "status": "deployed",
       "cost": "$0/month"
     }

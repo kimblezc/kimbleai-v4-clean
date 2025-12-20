@@ -784,46 +784,81 @@ export async function processFile(
   const fileName = file.name.toLowerCase();
   const fileType = file.type.toLowerCase();
 
-  // Audio files
-  if (FILE_LIMITS.audio.mimeTypes.some(t => fileType.includes(t.split('/')[1]))) {
-    const result = await processAudioFile(file, userId, projectId, fileId, driveUrl);
-    return { ...result, processingType: 'audio' };
-  }
+  console.log(`[FILE-PROCESSOR] Processing ${file.name} (type: ${fileType}, size: ${file.size} bytes)`);
 
-  // Image files
-  if (fileType.startsWith('image/')) {
-    const result = await processImageFile(file, userId, projectId, fileId, driveUrl);
-    return { ...result, processingType: 'image' };
-  }
+  try {
+    // Audio files
+    if (FILE_LIMITS.audio.mimeTypes.some(t => fileType.includes(t.split('/')[1]))) {
+      console.log(`[FILE-PROCESSOR] Detected audio file: ${file.name}`);
+      const result = await processAudioFile(file, userId, projectId, fileId, driveUrl);
+      if (!result.success) {
+        console.error(`[FILE-PROCESSOR] Audio processing failed: ${result.error}`);
+      }
+      return { ...result, processingType: 'audio' };
+    }
 
-  // PDF files
-  if (fileName.endsWith('.pdf')) {
-    const result = await processPDFFile(file, userId, projectId, fileId, driveUrl);
-    return { ...result, processingType: 'pdf' };
-  }
+    // Image files
+    if (fileType.startsWith('image/')) {
+      console.log(`[FILE-PROCESSOR] Detected image file: ${file.name}`);
+      const result = await processImageFile(file, userId, projectId, fileId, driveUrl);
+      if (!result.success) {
+        console.error(`[FILE-PROCESSOR] Image processing failed: ${result.error}`);
+      }
+      return { ...result, processingType: 'image' };
+    }
 
-  // Spreadsheet files
-  if (fileName.endsWith('.csv') || fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-    const result = await processSpreadsheetFile(file, userId, projectId, fileId, driveUrl);
-    return { ...result, processingType: 'spreadsheet' };
-  }
+    // PDF files
+    if (fileName.endsWith('.pdf')) {
+      console.log(`[FILE-PROCESSOR] Detected PDF file: ${file.name}`);
+      const result = await processPDFFile(file, userId, projectId, fileId, driveUrl);
+      if (!result.success) {
+        console.error(`[FILE-PROCESSOR] PDF processing failed: ${result.error}`);
+      }
+      return { ...result, processingType: 'pdf' };
+    }
 
-  // Email files
-  if (fileName.endsWith('.eml') || fileName.endsWith('.msg')) {
-    const result = await processEmailFile(file, userId, projectId, fileId, driveUrl);
-    return { ...result, processingType: 'email' };
-  }
+    // Spreadsheet files
+    if (fileName.endsWith('.csv') || fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+      console.log(`[FILE-PROCESSOR] Detected spreadsheet file: ${file.name}`);
+      const result = await processSpreadsheetFile(file, userId, projectId, fileId, driveUrl);
+      if (!result.success) {
+        console.error(`[FILE-PROCESSOR] Spreadsheet processing failed: ${result.error}`);
+      }
+      return { ...result, processingType: 'spreadsheet' };
+    }
 
-  // Document files (must be last as it's the catch-all)
-  if (fileName.endsWith('.docx') || fileName.endsWith('.txt') || fileName.endsWith('.md') || fileName.endsWith('.rtf')) {
-    const result = await processDocumentFile(file, userId, projectId, fileId, driveUrl);
-    return { ...result, processingType: 'document' };
-  }
+    // Email files
+    if (fileName.endsWith('.eml') || fileName.endsWith('.msg')) {
+      console.log(`[FILE-PROCESSOR] Detected email file: ${file.name}`);
+      const result = await processEmailFile(file, userId, projectId, fileId, driveUrl);
+      if (!result.success) {
+        console.error(`[FILE-PROCESSOR] Email processing failed: ${result.error}`);
+      }
+      return { ...result, processingType: 'email' };
+    }
 
-  return {
-    success: false,
-    error: 'Unsupported file type'
-  };
+    // Document files (must be last as it's the catch-all)
+    if (fileName.endsWith('.docx') || fileName.endsWith('.txt') || fileName.endsWith('.md') || fileName.endsWith('.rtf')) {
+      console.log(`[FILE-PROCESSOR] Detected document file: ${file.name}`);
+      const result = await processDocumentFile(file, userId, projectId, fileId, driveUrl);
+      if (!result.success) {
+        console.error(`[FILE-PROCESSOR] Document processing failed: ${result.error}`);
+      }
+      return { ...result, processingType: 'document' };
+    }
+
+    console.error(`[FILE-PROCESSOR] Unsupported file type: ${file.name} (type: ${fileType})`);
+    return {
+      success: false,
+      error: `Unsupported file type: ${fileType}. Supported types: audio, images, PDFs, documents, spreadsheets, emails.`
+    };
+  } catch (error: any) {
+    console.error(`[FILE-PROCESSOR] Unexpected error processing ${file.name}:`, error);
+    return {
+      success: false,
+      error: `Processing error: ${error.message || 'Unknown error'}`
+    };
+  }
 }
 
 // Validation helper

@@ -1,6 +1,6 @@
 {
   "name": "kimbleai-v4",
-  "version": "10.6.1",
+  "version": "10.7.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

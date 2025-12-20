@@ -405,11 +405,12 @@ export class DeepSeekClient {
 // Create and export singleton instance
 let deepseekClient: DeepSeekClient | null = null;
 
-export function getDeepSeekClient(): DeepSeekClient {
+export function getDeepSeekClient(): DeepSeekClient | null {
   if (!deepseekClient) {
     const apiKey = process.env.DEEPSEEK_API_KEY;
-    if (!apiKey) {
-      throw new Error('DEEPSEEK_API_KEY environment variable is required');
+    if (!apiKey || apiKey.trim() === '') {
+      console.warn('[DeepSeek] DEEPSEEK_API_KEY not configured - bulk processing unavailable');
+      return null;
     }
 
     deepseekClient = new DeepSeekClient({
