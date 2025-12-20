@@ -5,19 +5,19 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v10.6.2
-Latest Commit: 6c9e21d
-Last Updated: 2025-12-14
-Status: 🚀 Deployed to Railway (AUTH FIX APPLIED)
+Latest Version: v10.7.0
+Latest Commit: b314b37
+Last Updated: 2025-12-20
+Status: 🚀 Deployed to Railway (FILE UPLOAD FIXES APPLIED)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **b314b37** (v10.7.0) - 🔧 FILE UPLOAD FIX: Comprehensive overhaul - DeepSeek optional, enhanced error handling, 50+ tests. Fixed "processing failed" and "DeepSeek service not available" errors.
 - **6c9e21d** (v10.6.2) - 🔧 CRITICAL AUTH FIX: Fixed NEXTAUTH_URL mismatch causing all Google OAuth failures (Gmail, Drive, Calendar, cron jobs). Users must re-authenticate.
 - **5c9b5f5** (v10.6.1) - 🔧 VERSION FIX: Updated version.json to v10.6.1 @ 4823295, phase 13 deployment status - POC documentation complete
 - **0369b2e** (v10.6.1) - 📋 POC DOCUMENTATION: Comprehensive test results (87% ready), all 22 integrations documented, file handling verified
 - **f9e3ffb** (v10.6.1) - ✅ COMPREHENSIVE SIDEBAR TESTS: 170+ assertions covering component, interactions, accessibility, performance
-- **53499a6** (v10.6.0) - 🎨 SIDEBAR UX OVERHAUL: Collapsible sections, 30% more compact spacing, ChatGPT-style hover-reveal buttons, SVG icons
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 
