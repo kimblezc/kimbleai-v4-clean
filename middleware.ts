@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   '/api/transcribe', // Transcription endpoints (use userId for auth)
   '/api/health', // Health check endpoint (for monitoring)
   '/api/status', // Status endpoint (for monitoring)
+  '/api/version', // Version endpoint (for deployment verification)
   '/api/test-assemblyai', // TEMPORARY: AssemblyAI diagnostics
   '/api/backup/cron', // Cron jobs (protected by CRON_SECRET in route)
   '/api/index/cron', // Cron jobs (protected by CRON_SECRET in route)
