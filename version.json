@@ -1,6 +1,6 @@
 {
   "version": "10.7.0",
-  "commit": "TBD",
+  "commit": "b314b37",
   "lastUpdated": "2025-12-20T00:00:00.000Z",
   "changelog": "🔧 FILE UPLOAD FIX: Comprehensive file upload system overhaul. Made DeepSeek optional (only for bulk processing), improved error handling with detailed logging, added 50+ comprehensive tests. Fixed 'processing failed' and 'DeepSeek service not available' errors. All file types (audio, images, PDFs, documents, spreadsheets, emails) now process correctly with better error messages.",
   "platform": "Railway",
