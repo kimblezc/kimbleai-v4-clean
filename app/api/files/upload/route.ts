@@ -81,10 +81,10 @@ export async function POST(request: NextRequest) {
         file_type: file.type,
         file_size: file.size,
         status: 'processing',
-        category: validation.category,
         metadata: {
           originalName: file.name,
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
+          category: validation.category
         }
       })
       .select()
@@ -349,11 +349,11 @@ export async function PUT(request: NextRequest) {
           file_type: file.type,
           file_size: file.size,
           status: 'processing',
-          category: validation.category,
           metadata: {
             originalName: file.name,
             uploadedAt: new Date().toISOString(),
-            batchUpload: true
+            batchUpload: true,
+            category: validation.category
           }
         });
 
