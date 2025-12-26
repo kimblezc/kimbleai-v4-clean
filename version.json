@@ -1,8 +1,8 @@
 {
-  "version": "10.7.1",
-  "commit": "75ea23b",
-  "lastUpdated": "2025-12-24T00:00:00.000Z",
-  "changelog": "🔧 DATABASE FIX: Fixed 'category' column error in file uploads. The uploaded_files table doesn't have a category column - now storing category in metadata JSONB field instead. Resolves 'Could not find the category column' database errors.",
+  "version": "10.7.2",
+  "commit": "2f33446",
+  "lastUpdated": "2025-12-26T00:00:00.000Z",
+  "changelog": "🔧 COMPLETE DATABASE FIX: Fixed ALL database column errors in file uploads. The uploaded_files table only has basic columns (id, user_id, filename, file_type, file_size, metadata). All other data (category, status, project_id, processing_result, etc.) now stored in metadata JSONB field. Fixes 'category', 'project_id', and 'status' column errors.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
