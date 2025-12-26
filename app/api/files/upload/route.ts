@@ -76,15 +76,15 @@ export async function POST(request: NextRequest) {
       .insert({
         id: fileId,
         user_id: userData.id,
-        project_id: projectId,
         filename: file.name,
         file_type: file.type,
         file_size: file.size,
-        status: 'processing',
         metadata: {
           originalName: file.name,
           uploadedAt: new Date().toISOString(),
-          category: validation.category
+          category: validation.category,
+          projectId: projectId,
+          status: 'processing'
         }
       })
       .select()
@@ -157,12 +157,21 @@ async function processFileAsync(
       });
 
       // Update file record
+      const { data: currentFile } = await supabase
+        .from('uploaded_files')
+        .select('metadata')
+        .eq('id', fileId)
+        .single();
+
       await supabase
         .from('uploaded_files')
         .update({
-          status: 'completed',
-          processing_result: result.data,
-          processed_at: new Date().toISOString()
+          metadata: {
+            ...(currentFile?.metadata || {}),
+            status: 'completed',
+            processingResult: result.data,
+            processedAt: new Date().toISOString()
+          }
         })
         .eq('id', fileId);
 
@@ -195,11 +204,20 @@ async function processFileAsync(
       });
 
       // Update file record
+      const { data: currentFile } = await supabase
+        .from('uploaded_files')
+        .select('metadata')
+        .eq('id', fileId)
+        .single();
+
       await supabase
         .from('uploaded_files')
         .update({
-          status: 'failed',
-          error_message: result.error
+          metadata: {
+            ...(currentFile?.metadata || {}),
+            status: 'failed',
+            errorMessage: result.error
+          }
         })
         .eq('id', fileId);
 
@@ -216,11 +234,20 @@ async function processFileAsync(
       error: error.message
     });
 
+    const { data: currentFile } = await supabase
+      .from('uploaded_files')
+      .select('metadata')
+      .eq('id', fileId)
+      .single();
+
     await supabase
       .from('uploaded_files')
       .update({
-        status: 'failed',
-        error_message: error.message
+        metadata: {
+          ...(currentFile?.metadata || {}),
+          status: 'failed',
+          errorMessage: error.message
+        }
       })
       .eq('id', fileId);
   }
@@ -251,11 +278,13 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (fileRecord) {
+        const metadata = fileRecord.metadata as any || {};
+        const status = metadata.status || 'unknown';
         return NextResponse.json({
-          status: fileRecord.status,
-          progress: fileRecord.status === 'completed' ? 100 : 0,
-          message: fileRecord.status === 'completed' ? 'Processing completed' : 'File not found',
-          data: fileRecord.processing_result
+          status: status,
+          progress: status === 'completed' ? 100 : 0,
+          message: status === 'completed' ? 'Processing completed' : 'File not found',
+          data: metadata.processingResult
         });
       }
 
@@ -344,16 +373,16 @@ export async function PUT(request: NextRequest) {
         .insert({
           id: fileId,
           user_id: userData.id,
-          project_id: projectId,
           filename: file.name,
           file_type: file.type,
           file_size: file.size,
-          status: 'processing',
           metadata: {
             originalName: file.name,
             uploadedAt: new Date().toISOString(),
             batchUpload: true,
-            category: validation.category
+            category: validation.category,
+            projectId: projectId,
+            status: 'processing'
           }
         });
 
