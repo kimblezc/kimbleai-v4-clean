@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { processFile, validateFile } from '@/lib/file-processors';
+import { getUserId, prepareUploadedFileData, safeInsert, updateMetadata } from '@/lib/schema-validator';
 import crypto from 'crypto';
 
 const supabase = createClient(
@@ -46,6 +47,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get user UUID (schema-validated)
+    const userUUID = await getUserId(supabase, userId);
+    if (!userUUID) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     // Generate unique file ID (proper UUID v4 format)
     const fileId = crypto.randomUUID();
 
@@ -56,44 +66,36 @@ export async function POST(request: NextRequest) {
       message: 'Uploading file...'
     });
 
-    // Get or create user
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
+    // Prepare data with schema validation
+    const fileData = prepareUploadedFileData({
+      filename: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      userId: userUUID,
+      category: validation.category,
+      projectId: projectId,
+      status: 'processing'
+    });
 
-    if (!userData) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
+    // Override ID to use our generated one
+    fileData.id = fileId;
 
-    // Create file record
-    const { data: fileRecord, error: fileError } = await supabase
-      .from('uploaded_files')
-      .insert({
-        id: fileId,
-        user_id: userData.id,
-        filename: file.name,
-        file_type: file.type,
-        file_size: file.size,
-        metadata: {
-          originalName: file.name,
-          uploadedAt: new Date().toISOString(),
-          category: validation.category,
-          projectId: projectId,
-          status: 'processing'
-        }
-      })
-      .select()
-      .single();
+    // Safe insert with schema validation
+    const { data: fileRecord, error: fileError, validation: schemaValidation } = await safeInsert(
+      supabase,
+      'uploaded_files',
+      fileData
+    );
 
     if (fileError) {
       console.error('[UPLOAD] Database error:', fileError);
+      console.error('[UPLOAD] Schema validation:', schemaValidation);
       return NextResponse.json(
-        { error: 'Failed to create file record', details: fileError.message },
+        {
+          error: 'Failed to create file record',
+          details: fileError.message,
+          schemaErrors: schemaValidation?.errors
+        },
         { status: 500 }
       );
     }
@@ -106,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Process file asynchronously (don't wait for completion)
-    processFileAsync(file, userData.id, projectId, fileId);
+    processFileAsync(file, userUUID, projectId, fileId);
 
     // Return immediately with file ID for progress tracking
     return NextResponse.json({
@@ -156,24 +158,12 @@ async function processFileAsync(
         data: result.data
       });
 
-      // Update file record
-      const { data: currentFile } = await supabase
-        .from('uploaded_files')
-        .select('metadata')
-        .eq('id', fileId)
-        .single();
-
-      await supabase
-        .from('uploaded_files')
-        .update({
-          metadata: {
-            ...(currentFile?.metadata || {}),
-            status: 'completed',
-            processingResult: result.data,
-            processedAt: new Date().toISOString()
-          }
-        })
-        .eq('id', fileId);
+      // Update file record with schema-safe metadata update
+      await updateMetadata(supabase, 'uploaded_files', fileId, {
+        status: 'completed',
+        processingResult: result.data,
+        processedAt: new Date().toISOString()
+      });
 
       // Log to Zapier
       if (process.env.ZAPIER_WEBHOOK_URL) {
@@ -203,23 +193,11 @@ async function processFileAsync(
         error: result.error
       });
 
-      // Update file record
-      const { data: currentFile } = await supabase
-        .from('uploaded_files')
-        .select('metadata')
-        .eq('id', fileId)
-        .single();
-
-      await supabase
-        .from('uploaded_files')
-        .update({
-          metadata: {
-            ...(currentFile?.metadata || {}),
-            status: 'failed',
-            errorMessage: result.error
-          }
-        })
-        .eq('id', fileId);
+      // Update file record with schema-safe metadata update
+      await updateMetadata(supabase, 'uploaded_files', fileId, {
+        status: 'failed',
+        errorMessage: result.error
+      });
 
       console.error(`[UPLOAD] Failed to process ${file.name}: ${result.error}`);
     }
@@ -234,22 +212,10 @@ async function processFileAsync(
       error: error.message
     });
 
-    const { data: currentFile } = await supabase
-      .from('uploaded_files')
-      .select('metadata')
-      .eq('id', fileId)
-      .single();
-
-    await supabase
-      .from('uploaded_files')
-      .update({
-        metadata: {
-          ...(currentFile?.metadata || {}),
-          status: 'failed',
-          errorMessage: error.message
-        }
-      })
-      .eq('id', fileId);
+    await updateMetadata(supabase, 'uploaded_files', fileId, {
+      status: 'failed',
+      errorMessage: error.message
+    });
   }
 }
 
@@ -346,14 +312,9 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get user
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('name', userId === 'rebecca' ? 'Rebecca' : 'Zach')
-      .single();
-
-    if (!userData) {
+    // Get user UUID (schema-validated)
+    const userUUID = await getUserId(supabase, userId);
+    if (!userUUID) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -367,24 +328,32 @@ export async function PUT(request: NextRequest) {
       const fileId = crypto.randomUUID();
       fileIds.push(fileId);
 
-      // Create file record
-      await supabase
-        .from('uploaded_files')
-        .insert({
-          id: fileId,
-          user_id: userData.id,
-          filename: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          metadata: {
-            originalName: file.name,
-            uploadedAt: new Date().toISOString(),
-            batchUpload: true,
-            category: validation.category,
-            projectId: projectId,
-            status: 'processing'
-          }
-        });
+      // Prepare data with schema validation
+      const fileData = prepareUploadedFileData({
+        filename: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        userId: userUUID,
+        category: validation.category,
+        projectId: projectId,
+        status: 'processing'
+      });
+
+      // Override ID and add batch flag
+      fileData.id = fileId;
+      fileData.metadata.batchUpload = true;
+
+      // Safe insert with schema validation
+      const { error: insertError } = await safeInsert(
+        supabase,
+        'uploaded_files',
+        fileData
+      );
+
+      if (insertError) {
+        console.error(`[UPLOAD] Failed to insert ${file.name}:`, insertError);
+        continue;  // Skip this file but continue with others
+      }
 
       // Initialize progress
       uploadProgress.set(fileId, {
@@ -394,7 +363,7 @@ export async function PUT(request: NextRequest) {
       });
 
       // Process asynchronously
-      processFileAsync(file, userData.id, projectId, fileId);
+      processFileAsync(file, userUUID, projectId, fileId);
     }
 
     return NextResponse.json({
