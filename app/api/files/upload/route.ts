@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique file ID
-    const fileId = `file_${crypto.randomBytes(16).toString('hex')}`;
+    // Generate unique file ID (proper UUID v4 format)
+    const fileId = crypto.randomUUID();
 
     // Initialize progress tracking
     uploadProgress.set(fileId, {
@@ -364,7 +364,7 @@ export async function PUT(request: NextRequest) {
     const fileIds: string[] = [];
 
     for (const { file, validation } of validations) {
-      const fileId = `file_${crypto.randomBytes(16).toString('hex')}`;
+      const fileId = crypto.randomUUID();
       fileIds.push(fileId);
 
       // Create file record
