@@ -37,6 +37,7 @@ import { ScrollToBottom } from '../components/ui/ScrollToBottom';
 import { ResponsiveBreadcrumbs } from '../components/ui/Breadcrumbs';
 import TranscriptionModal from '../components/TranscriptionModal';
 import BulkProcessModal from '../components/BulkProcessModal';
+import FileUploadModal from '../components/FileUploadModal';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 // Dark mode removed - was not functional
 // import { ThemeToggle } from '../components/ui/ThemeToggle';
@@ -74,6 +75,7 @@ export default function Home() {
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [showTranscriptionModal, setShowTranscriptionModal] = useState(false);
   const [showBulkProcessModal, setShowBulkProcessModal] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -407,6 +409,8 @@ export default function Home() {
         setShowShortcutsDialog(false);
         setIsConversationSearchOpen(false);
         setShowTranscriptionModal(false);
+        setShowBulkProcessModal(false);
+        setShowFileUploadModal(false);
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         contextMenu.hideContextMenu();
         if (isConversationSearchOpen) {
@@ -1197,6 +1201,13 @@ export default function Home() {
             <span>Integrations</span>
           </a>
           <button
+            onClick={() => setShowFileUploadModal(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-500 hover:text-gray-400 hover:bg-gray-900/50 transition-colors text-left"
+          >
+            <span>📁</span>
+            <span>Upload Files</span>
+          </button>
+          <button
             onClick={() => setShowTranscriptionModal(true)}
             className="w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-500 hover:text-gray-400 hover:bg-gray-900/50 transition-colors text-left"
           >
@@ -1735,6 +1746,14 @@ export default function Home() {
         isOpen={showBulkProcessModal}
         onClose={() => setShowBulkProcessModal(false)}
         userId={currentUser}
+      />
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        isOpen={showFileUploadModal}
+        onClose={() => setShowFileUploadModal(false)}
+        userId={currentUser}
+        projectId={currentProject || 'general'}
       />
     </div>
   );
