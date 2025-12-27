@@ -1,8 +1,8 @@
 {
-  "version": "10.7.2",
-  "commit": "2f33446",
+  "version": "10.7.3",
+  "commit": "8a37aff",
   "lastUpdated": "2025-12-26T00:00:00.000Z",
-  "changelog": "🔧 COMPLETE DATABASE FIX: Fixed ALL database column errors in file uploads. The uploaded_files table only has basic columns (id, user_id, filename, file_type, file_size, metadata). All other data (category, status, project_id, processing_result, etc.) now stored in metadata JSONB field. Fixes 'category', 'project_id', and 'status' column errors.",
+  "changelog": "🔧 UUID FIX: Fixed file ID format to use proper UUID v4 instead of custom 'file_' prefix. Database expects UUID type, not custom strings. Combined with v10.7.2 database schema fixes, file uploads should now work completely.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
