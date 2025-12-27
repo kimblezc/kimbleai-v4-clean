@@ -1,6 +1,6 @@
 {
   "version": "10.7.5",
-  "commit": "e6ea042",
+  "commit": "e53e67f",
   "lastUpdated": "2025-12-27T00:00:00.000Z",
   "changelog": "📁 FILE UPLOAD UI: Added drag-and-drop file upload button to main page sidebar. Easy access to file upload modal from chat interface with full drag-and-drop support.",
   "platform": "Railway",
