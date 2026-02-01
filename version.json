@@ -1,6 +1,6 @@
 {
   "version": "10.8.0",
-  "commit": "9e2c8b3",
+  "commit": "202844a",
   "lastUpdated": "2026-02-01T00:00:00.000Z",
   "changelog": "📦 5GB FILE SUPPORT: Increased file upload limit from 50MB to 5GB for large transcription files. Supports AssemblyAI and Deepgram for processing up to 5GB audio files.",
   "platform": "Railway",
