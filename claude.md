@@ -5,19 +5,20 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v10.7.3
-Latest Commit: 8a37aff
-Last Updated: 2025-12-26
-Status: 🚀 Deployed to Railway (UUID FIX APPLIED)
+Latest Version: v10.7.5
+Latest Commit: e53e67f
+Last Updated: 2025-12-27
+Status: 🚀 Deployed to Railway (FILE UPLOAD UI)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **e53e67f** (v10.7.5) - 📁 FILE UPLOAD UI: Added drag-and-drop file upload button to main page sidebar. Easy access to file upload modal from chat interface.
+- **797c18d** (v10.7.4) - 🛡️ SCHEMA VALIDATION SYSTEM: Comprehensive database schema validation to prevent ALL future column/type mismatch errors. Created DATABASE_SCHEMA.md, schema-validator.ts, and complete test suite.
 - **8a37aff** (v10.7.3) - 🔧 UUID FIX: Fixed file ID format to use proper UUID v4. Database expects UUID type, not 'file_' prefix strings.
 - **2f33446** (v10.7.2) - 🔧 COMPLETE DATABASE FIX: Fixed ALL column errors (category, project_id, status). Everything now stored in metadata JSONB field.
 - **75ea23b** (v10.7.1) - 🔧 DATABASE FIX: Fixed 'category' column error in file uploads. Category now stored in metadata JSONB field instead of non-existent column.
 - **b314b37** (v10.7.0) - 🔧 FILE UPLOAD FIX: Comprehensive overhaul - DeepSeek optional, enhanced error handling, 50+ tests. Fixed "processing failed" and "DeepSeek service not available" errors.
-- **6c9e21d** (v10.6.2) - 🔧 CRITICAL AUTH FIX: Fixed NEXTAUTH_URL mismatch causing all Google OAuth failures (Gmail, Drive, Calendar, cron jobs). Users must re-authenticate.
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 

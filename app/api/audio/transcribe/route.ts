@@ -7,6 +7,11 @@ import { createClient } from '@supabase/supabase-js';
 import { generateEmbedding } from '@/lib/embeddings';
 import { trackAPICall, enforceApiCallBudget, calculateCost } from '@/lib/cost-monitor';
 
+// Configuration for large file uploads
+export const runtime = 'nodejs';
+export const maxDuration = 300; // 5 minutes max execution time
+export const maxRequestBodySize = '5gb'; // Allow up to 5GB audio files
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });

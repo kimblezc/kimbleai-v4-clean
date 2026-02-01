@@ -20,7 +20,7 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb',
+      bodySizeLimit: '5gb', // Support large transcription files (up to 5GB)
     },
   },
   env: {

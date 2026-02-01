@@ -6,6 +6,7 @@ import OpenAI from 'openai';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes max (same as AssemblyAI)
+export const maxRequestBodySize = '5gb'; // Allow up to 5GB audio files
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
