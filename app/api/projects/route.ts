@@ -1,415 +1,144 @@
+/**
+ * Projects API Endpoint
+ *
+ * CRUD operations for projects with comprehensive logging
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { ProjectManager } from '@/lib/project-manager';
-import { getUserByIdentifier } from '@/lib/user-utils';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/auth-options';
+import { projectQueries } from '@/lib/db/queries';
+import {
+  asyncHandler,
+  AuthenticationError,
+  validateRequired,
+} from '@/lib/utils/errors';
+import { logger } from '@/lib/utils/logger';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = 'nodejs';
 
-// IMPROVED: Simple in-memory cache for project lists
-const projectCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 30000; // 30 seconds
+/**
+ * GET: List all projects
+ */
+export const GET = asyncHandler(async (req: NextRequest) => {
+  const startTime = Date.now();
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || 'zach-admin-001';
-    const action = searchParams.get('action') || 'list';
-    const projectId = searchParams.get('projectId');
+  // 1. Authenticate
+  const session = await getServerSession(authOptions);
 
-    const projectManager = ProjectManager.getInstance();
-
-    const user = await getUserByIdentifier(userId, supabase);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    switch (action) {
-      case 'list':
-        console.log('[Projects API] LIST request - userId:', userId, 'user.id:', user.id);
-
-        // IMPROVED: Check cache first for project lists
-        const cacheKey = `projects_list_${userId}`;
-        const cached = projectCache.get(cacheKey);
-
-        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-          console.log('[Projects API] Returning cached data, age:', Math.round((Date.now() - cached.timestamp) / 1000), 'seconds');
-          // Return cached data with cache indicator
-          return NextResponse.json({
-            ...cached.data,
-            cached: true,
-            cacheAge: Math.round((Date.now() - cached.timestamp) / 1000)
-          });
-        }
-
-        // Cache miss - fetch fresh data
-        console.log('[Projects API] Cache miss, fetching from database...');
-        let projects = [];
-        try {
-          projects = await projectManager.getUserProjects(user.id); // Use UUID, not string userId
-          console.log('[Projects API] Successfully fetched', projects.length, 'projects');
-        } catch (error: any) {
-          // If projects table doesn't exist, return empty array
-          console.error('[Projects API] ERROR fetching projects:', error.message);
-          console.error('[Projects API] Error details:', error);
-          projects = [];
-        }
-
-        const responseData = {
-          success: true,
-          projects: projects,
-          total: projects.length
-        };
-
-        // Store in cache
-        projectCache.set(cacheKey, {
-          data: responseData,
-          timestamp: Date.now()
-        });
-
-        // Clean up old cache entries (simple cleanup)
-        if (projectCache.size > 100) {
-          const now = Date.now();
-          for (const [key, value] of projectCache.entries()) {
-            if (now - value.timestamp > CACHE_TTL * 2) {
-              projectCache.delete(key);
-            }
-          }
-        }
-
-        return NextResponse.json(responseData);
-
-      case 'get':
-        if (!projectId) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-        const project = await projectManager.getProject(projectId);
-        if (!project) {
-          return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-        }
-        return NextResponse.json({ success: true, project });
-
-      case 'analytics':
-        if (!projectId) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-        const analytics = await projectManager.getProjectAnalytics(projectId);
-        return NextResponse.json({ success: true, analytics });
-
-      case 'tasks':
-        if (!projectId) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-        const tasks = await projectManager.getProjectTasks(projectId);
-        return NextResponse.json({ success: true, tasks });
-
-      case 'collaborators':
-        if (!projectId) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-        const collaborators = await projectManager.getProjectCollaborators(projectId);
-        return NextResponse.json({ success: true, collaborators });
-
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    }
-
-  } catch (error: any) {
-    console.error('Projects GET error:', error);
-    return NextResponse.json({
-      error: 'Failed to fetch projects',
-      details: error.message
-    }, { status: 500 });
+  if (!session?.user?.id) {
+    throw new AuthenticationError();
   }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { action, userId = 'zach-admin-001', projectData, taskData, collaboratorData } = body;
+  const userId = session.user.id;
 
-    const projectManager = ProjectManager.getInstance();
+  logger.apiRequest({
+    method: 'GET',
+    path: '/api/projects',
+    userId,
+  });
 
-    const user = await getUserByIdentifier(userId, supabase);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+  // 2. Parse query params
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get('status') as 'active' | 'archived' | 'completed' | null;
+  const sortBy = searchParams.get('sortBy') as 'recent' | 'alpha' | 'priority' | 'deadline' | null;
 
-    // Helper function to invalidate cache for a user
-    const invalidateCache = (uid: string) => {
-      projectCache.delete(`projects_list_${uid}`);
-    };
+  // 3. Get projects
+  const projects = await logger.measure(
+    'Get all projects',
+    async () => await projectQueries.getAll(userId, {
+      status: status || undefined,
+      sortBy: sortBy || 'recent',
+    }),
+    { userId, status, sortBy }
+  );
 
-    switch (action) {
-      case 'create':
-        // Permission check: Zach (admin) can create projects
-        // Skip permission check since getUserByIdentifier already validates user exists
+  logger.dbQuery({
+    table: 'projects',
+    operation: 'SELECT',
+    userId,
+    durationMs: Date.now() - startTime,
+  });
 
-        try {
-          const newProject = await projectManager.createProject({
-            name: projectData.name,
-            description: projectData.description,
-            owner_id: user.id, // FIXED: Use actual UUID from user object
-            priority: projectData.priority || 'medium',
-            status: 'active',
-            tags: projectData.tags || [],
-            metadata: {
-              created_at: new Date().toISOString(),
-              created_by: user.id, // FIXED: Use actual UUID
-              ...projectData.metadata
-            }
-          });
+  // 4. Log and return
+  const durationMs = Date.now() - startTime;
 
-          // Invalidate cache after creating project
-          invalidateCache(userId);
+  logger.apiResponse({
+    method: 'GET',
+    path: '/api/projects',
+    status: 200,
+    durationMs,
+    userId,
+  });
 
-          return NextResponse.json({
-            success: true,
-            project: newProject,
-            message: 'Project created successfully'
-          });
-        } catch (error: any) {
-          console.error('Project creation failed:', error);
-          console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            stack: error.stack
-          });
-          return NextResponse.json({
-            success: false,
-            error: `Database error: ${error.message || 'Unknown error'}`,
-            details: error.details || error.hint || 'No additional details',
-            code: error.code
-          }, { status: 503 });
-        }
+  return NextResponse.json({ projects, count: projects.length });
+});
 
-      case 'update':
-        if (!projectData.id) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
+/**
+ * POST: Create new project
+ */
+export const POST = asyncHandler(async (req: NextRequest) => {
+  const startTime = Date.now();
 
-        const updatedProject = await projectManager.updateProject(projectData.id, {
-          name: projectData.name,
-          description: projectData.description,
-          priority: projectData.priority,
-          status: projectData.status,
-          tags: projectData.tags,
-          metadata: {
-            ...projectData.metadata,
-            updated_at: new Date().toISOString(),
-            updated_by: userId
-          }
-        });
+  // 1. Authenticate
+  const session = await getServerSession(authOptions);
 
-        // Invalidate cache after updating project
-        invalidateCache(userId);
-
-        return NextResponse.json({
-          success: true,
-          project: updatedProject,
-          message: 'Project updated successfully'
-        });
-
-      case 'archive':
-        if (!projectData.id) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-
-        await projectManager.updateProject(projectData.id, {
-          status: 'archived'
-        });
-
-        // Invalidate cache after archiving project
-        invalidateCache(userId);
-
-        return NextResponse.json({
-          success: true,
-          message: 'Project archived successfully'
-        });
-
-      case 'delete':
-        // Permission check: Zach (admin) can delete projects
-        // Skip permission check since getUserByIdentifier already validates user exists
-
-        if (!projectData.id) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-
-        await projectManager.deleteProject(projectData.id);
-
-        // Invalidate cache after deleting project
-        invalidateCache(userId);
-
-        return NextResponse.json({
-          success: true,
-          message: 'Project deleted successfully'
-        });
-
-      case 'add_task':
-        if (!projectData.id) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-
-        const task = await supabase
-          .from('project_tasks')
-          .insert({
-            project_id: projectData.id,
-            title: taskData.title,
-            description: taskData.description,
-            assigned_to: taskData.assigned_to || user.id, // FIXED: Use actual UUID
-            priority: taskData.priority || 'medium',
-            status: 'pending',
-            due_date: taskData.due_date,
-            created_by: user.id, // FIXED: Use actual UUID
-            metadata: taskData.metadata || {}
-          })
-          .select()
-          .single();
-
-        return NextResponse.json({
-          success: true,
-          task: task.data,
-          message: 'Task added successfully'
-        });
-
-      case 'update_task':
-        if (!taskData.id) {
-          return NextResponse.json({ error: 'Task ID required' }, { status: 400 });
-        }
-
-        const updatedTask = await supabase
-          .from('project_tasks')
-          .update({
-            title: taskData.title,
-            description: taskData.description,
-            status: taskData.status,
-            priority: taskData.priority,
-            due_date: taskData.due_date,
-            completed_at: taskData.status === 'completed' ? new Date().toISOString() : null,
-            metadata: {
-              ...taskData.metadata,
-              updated_at: new Date().toISOString(),
-              updated_by: userId
-            }
-          })
-          .eq('id', taskData.id)
-          .select()
-          .single();
-
-        return NextResponse.json({
-          success: true,
-          task: updatedTask.data,
-          message: 'Task updated successfully'
-        });
-
-      case 'add_collaborator':
-        if (!projectData.id) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-
-        const collaboration = await supabase
-          .from('project_collaborators')
-          .insert({
-            project_id: projectData.id,
-            user_id: collaboratorData.user_id,
-            role: collaboratorData.role || 'member',
-            permissions: collaboratorData.permissions || {},
-            added_by: userId
-          })
-          .select()
-          .single();
-
-        return NextResponse.json({
-          success: true,
-          collaboration: collaboration.data,
-          message: 'Collaborator added successfully'
-        });
-
-      case 'sync_google_data':
-        if (!projectData.id) {
-          return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
-        }
-
-        let syncResults = {
-          drive_files: 0,
-          gmail_messages: 0,
-          calendar_events: 0
-        };
-
-        try {
-          const [driveSync, gmailSync, calendarSync] = await Promise.all([
-            fetch(`${process.env.NEXTAUTH_URL}/api/google/drive`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'sync_project_files',
-                userId: userId,
-                projectId: projectData.id
-              })
-            }),
-
-            fetch(`${process.env.NEXTAUTH_URL}/api/google/gmail`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'sync_project_emails',
-                userId: userId,
-                projectId: projectData.id
-              })
-            }),
-
-            fetch(`${process.env.NEXTAUTH_URL}/api/google/calendar`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'sync_to_knowledge',
-                userId: userId,
-                timeRange: {
-                  start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                  end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-                }
-              })
-            })
-          ]);
-
-          if (driveSync.ok) {
-            const driveData = await driveSync.json();
-            syncResults.drive_files = driveData.filesSynced || 0;
-          }
-
-          if (gmailSync.ok) {
-            const gmailData = await gmailSync.json();
-            syncResults.gmail_messages = gmailData.messagesFound || 0;
-          }
-
-          if (calendarSync.ok) {
-            const calendarData = await calendarSync.json();
-            syncResults.calendar_events = calendarData.syncedEvents || 0;
-          }
-
-        } catch (syncError) {
-          console.error('Google sync error:', syncError);
-        }
-
-        return NextResponse.json({
-          success: true,
-          syncResults,
-          message: 'Google data sync completed'
-        });
-
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    }
-
-  } catch (error: any) {
-    console.error('Projects POST error:', error);
-    return NextResponse.json({
-      error: 'Failed to process project request',
-      details: error.message
-    }, { status: 500 });
+  if (!session?.user?.id) {
+    throw new AuthenticationError();
   }
-}
+
+  const userId = session.user.id;
+
+  // 2. Parse and validate body
+  const body = await req.json();
+
+  validateRequired(body, ['name']);
+
+  const { name, description, color, icon, priority } = body;
+
+  logger.apiRequest({
+    method: 'POST',
+    path: '/api/projects',
+    userId,
+    body: { name },
+  });
+
+  // 3. Create project
+  const project = await logger.measure(
+    'Create project',
+    async () => await projectQueries.create(userId, {
+      name,
+      description,
+      color,
+      icon,
+      priority,
+    }),
+    { userId, projectName: name }
+  );
+
+  logger.dbQuery({
+    table: 'projects',
+    operation: 'INSERT',
+    userId,
+    durationMs: Date.now() - startTime,
+  });
+
+  logger.info('Project created successfully', {
+    userId,
+    projectId: project.id,
+    projectName: project.name,
+  });
+
+  // 4. Log and return
+  const durationMs = Date.now() - startTime;
+
+  logger.apiResponse({
+    method: 'POST',
+    path: '/api/projects',
+    status: 201,
+    durationMs,
+    userId,
+  });
+
+  return NextResponse.json(project, { status: 201 });
+});

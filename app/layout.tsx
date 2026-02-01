@@ -1,48 +1,49 @@
-import './globals.css'
-import { Providers } from './providers'
+/**
+ * Root Layout
+ *
+ * D&D-themed dark mode layout with providers
+ */
 
-export const metadata = {
-  title: 'KimbleAI - Your AI Adventure Awaits',
-  description: 'Where AI meets adventure. Organize, collaborate, and embark on your quest with intelligent assistance',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'KimbleAI',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-    viewportFit: 'cover',
-  },
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#030712' },
-    { media: '(prefers-color-scheme: light)', color: '#030712' },
-  ],
-}
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { Providers } from './providers';
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'KimbleAI v5 - D&D AI Assistant',
+  description: 'AI-powered assistant with smart model routing, multimodal capabilities, and D&D integration',
+  icons: {
+    icon: '/favicon.ico',
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className="dark">
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icon.png" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap" rel="stylesheet" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="KimbleAI" />
-      </head>
-      <body className="bg-black text-white antialiased">
+      <body className={`${inter.className} bg-gray-900 text-gray-100 antialiased`}>
         <Providers>
-          {children}
+          <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
+            {/* Background Pattern - D&D-themed */}
+            <div className="fixed inset-0 opacity-5 pointer-events-none">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l25.98 15v30L30 60 4.02 45V15z' fill='%23fff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+                backgroundSize: '60px 60px',
+              }} />
+            </div>
+
+            {/* Main Content */}
+            <div className="relative z-10">
+              {children}
+            </div>
+          </div>
         </Providers>
       </body>
     </html>
-  )
+  );
 }

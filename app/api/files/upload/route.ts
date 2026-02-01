@@ -1,388 +1,125 @@
-// app/api/files/upload/route.ts
-// Enhanced file upload endpoint with multi-file support and comprehensive processing
+/**
+ * File Upload API Endpoint
+ *
+ * Upload and process files with text extraction, summarization, and embedding
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { processFile, validateFile } from '@/lib/file-processors';
-import { getUserId, prepareUploadedFileData, safeInsert, updateMetadata } from '@/lib/schema-validator';
-import crypto from 'crypto';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/auth-options';
+import { supabase } from '@/lib/db/client';
+import { FileService } from '@/lib/services/file-service';
+import {
+  asyncHandler,
+  AuthenticationError,
+  ValidationError,
+} from '@/lib/utils/errors';
+import { logger } from '@/lib/utils/logger';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = 'nodejs';
+export const maxDuration = 300; // 5 minutes max execution time
 
-// Store upload progress in memory (for 2 users, this is fine)
-const uploadProgress = new Map<string, {
-  status: 'processing' | 'completed' | 'failed';
-  progress: number;
-  message: string;
-  fileId?: string;
-  data?: any;
-  error?: string;
-}>();
+/**
+ * POST: Upload and process file
+ */
+export const POST = asyncHandler(async (req: NextRequest) => {
+  const startTime = Date.now();
 
-export async function POST(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const userId = formData.get('userId') as string || 'zach';
-    const projectId = formData.get('projectId') as string || 'general';
+  // 1. Authenticate
+  const session = await getServerSession(authOptions);
 
-    if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
-    }
-
-    console.log(`[UPLOAD] Received ${file.name} (${file.size} bytes) from user ${userId}`);
-
-    // Validate file
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      return NextResponse.json(
-        { error: validation.error },
-        { status: 400 }
-      );
-    }
-
-    // Get user UUID (schema-validated)
-    const userUUID = await getUserId(supabase, userId);
-    if (!userUUID) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Generate unique file ID (proper UUID v4 format)
-    const fileId = crypto.randomUUID();
-
-    // Initialize progress tracking
-    uploadProgress.set(fileId, {
-      status: 'processing',
-      progress: 10,
-      message: 'Uploading file...'
-    });
-
-    // Prepare data with schema validation
-    const fileData = prepareUploadedFileData({
-      filename: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      userId: userUUID,
-      category: validation.category,
-      projectId: projectId,
-      status: 'processing'
-    });
-
-    // Override ID to use our generated one
-    fileData.id = fileId;
-
-    // Safe insert with schema validation
-    const { data: fileRecord, error: fileError, validation: schemaValidation } = await safeInsert(
-      supabase,
-      'uploaded_files',
-      fileData
-    );
-
-    if (fileError) {
-      console.error('[UPLOAD] Database error:', fileError);
-      console.error('[UPLOAD] Schema validation:', schemaValidation);
-      return NextResponse.json(
-        {
-          error: 'Failed to create file record',
-          details: fileError.message,
-          schemaErrors: schemaValidation?.errors
-        },
-        { status: 500 }
-      );
-    }
-
-    // Update progress
-    uploadProgress.set(fileId, {
-      status: 'processing',
-      progress: 30,
-      message: 'Processing file...'
-    });
-
-    // Process file asynchronously (don't wait for completion)
-    processFileAsync(file, userUUID, projectId, fileId);
-
-    // Return immediately with file ID for progress tracking
-    return NextResponse.json({
-      success: true,
-      fileId: fileId,
-      status: 'processing',
-      message: 'File uploaded and queued for processing',
-      filename: file.name,
-      size: file.size,
-      category: validation.category
-    });
-
-  } catch (error: any) {
-    console.error('[UPLOAD] Error:', error);
-    return NextResponse.json(
-      { error: 'Upload failed', details: error.message },
-      { status: 500 }
-    );
+  if (!session?.user?.id) {
+    throw new AuthenticationError();
   }
-}
 
-// Asynchronous file processing
-async function processFileAsync(
-  file: File,
-  userId: string,
-  projectId: string,
-  fileId: string
-) {
-  try {
-    // Update progress
-    uploadProgress.set(fileId, {
-      status: 'processing',
-      progress: 50,
-      message: 'Analyzing file content...'
-    });
+  const userId = session.user.id;
 
-    // Process file
-    const result = await processFile(file, userId, projectId, fileId);
+  logger.apiRequest({
+    method: 'POST',
+    path: '/api/files/upload',
+    userId,
+  });
 
-    if (result.success) {
-      // Update progress
-      uploadProgress.set(fileId, {
-        status: 'completed',
-        progress: 100,
-        message: 'Processing completed',
-        fileId: fileId,
-        data: result.data
-      });
+  // 2. Parse form data
+  const formData = await req.formData();
+  const file = formData.get('file') as File | null;
+  const conversationId = formData.get('conversationId') as string | null;
+  const projectId = formData.get('projectId') as string | null;
+  const extractText = formData.get('extractText') !== 'false';
+  const summarize = formData.get('summarize') !== 'false';
+  const generateEmbedding = formData.get('generateEmbedding') !== 'false';
 
-      // Update file record with schema-safe metadata update
-      await updateMetadata(supabase, 'uploaded_files', fileId, {
-        status: 'completed',
-        processingResult: result.data,
-        processedAt: new Date().toISOString()
-      });
-
-      // Log to Zapier
-      if (process.env.ZAPIER_WEBHOOK_URL) {
-        fetch(process.env.ZAPIER_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: 'FILE_PROCESSED',
-            fileId: fileId,
-            filename: file.name,
-            fileSize: file.size,
-            processingType: result.processingType,
-            userId: userId,
-            projectId: projectId,
-            timestamp: new Date().toISOString()
-          })
-        }).catch(console.error);
-      }
-
-      console.log(`[UPLOAD] Successfully processed ${file.name} (${fileId})`);
-    } else {
-      // Update progress with error
-      uploadProgress.set(fileId, {
-        status: 'failed',
-        progress: 0,
-        message: 'Processing failed',
-        error: result.error
-      });
-
-      // Update file record with schema-safe metadata update
-      await updateMetadata(supabase, 'uploaded_files', fileId, {
-        status: 'failed',
-        errorMessage: result.error
-      });
-
-      console.error(`[UPLOAD] Failed to process ${file.name}: ${result.error}`);
-    }
-
-  } catch (error: any) {
-    console.error('[UPLOAD] Processing error:', error);
-
-    uploadProgress.set(fileId, {
-      status: 'failed',
-      progress: 0,
-      message: 'Processing failed',
-      error: error.message
-    });
-
-    await updateMetadata(supabase, 'uploaded_files', fileId, {
-      status: 'failed',
-      errorMessage: error.message
-    });
+  if (!file) {
+    throw new ValidationError('File is required');
   }
-}
 
-// GET endpoint for progress tracking
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const fileId = searchParams.get('fileId');
-
-    if (!fileId) {
-      return NextResponse.json(
-        { error: 'File ID required' },
-        { status: 400 }
-      );
-    }
-
-    // Check progress
-    const progress = uploadProgress.get(fileId);
-
-    if (!progress) {
-      // Check database for completed files
-      const { data: fileRecord } = await supabase
-        .from('uploaded_files')
-        .select('*')
-        .eq('id', fileId)
-        .single();
-
-      if (fileRecord) {
-        const metadata = fileRecord.metadata as any || {};
-        const status = metadata.status || 'unknown';
-        return NextResponse.json({
-          status: status,
-          progress: status === 'completed' ? 100 : 0,
-          message: status === 'completed' ? 'Processing completed' : 'File not found',
-          data: metadata.processingResult
-        });
-      }
-
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(progress);
-
-  } catch (error: any) {
-    console.error('[UPLOAD] Progress check error:', error);
-    return NextResponse.json(
-      { error: 'Failed to check progress', details: error.message },
-      { status: 500 }
-    );
+  // 3. Validate file size (50 MB limit)
+  const maxSize = 50 * 1024 * 1024; // 50 MB
+  if (file.size > maxSize) {
+    throw new ValidationError(`File size exceeds limit of 50 MB`);
   }
-}
 
-// Batch upload endpoint
-export async function PUT(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    const userId = formData.get('userId') as string || 'zach';
-    const projectId = formData.get('projectId') as string || 'general';
+  logger.info('File upload requested', {
+    userId,
+    fileName: file.name,
+    fileSize: file.size,
+    mimeType: file.type,
+    conversationId: conversationId || undefined,
+    projectId: projectId || undefined,
+    extractText,
+    summarize,
+    generateEmbedding,
+  });
 
-    // Get all files
-    const files: File[] = [];
-    for (const [key, value] of formData.entries()) {
-      if (key.startsWith('file') && value instanceof File) {
-        files.push(value);
-      }
-    }
+  // 4. Process file
+  const fileService = new FileService(supabase);
 
-    if (files.length === 0) {
-      return NextResponse.json(
-        { error: 'No files provided' },
-        { status: 400 }
-      );
-    }
+  const result = await logger.measure(
+    'Process uploaded file',
+    async () => await fileService.processFile(userId, file, {
+      extractText,
+      summarize,
+      generateEmbedding,
+      conversationId: conversationId || undefined,
+      projectId: projectId || undefined,
+    }),
+    { userId, fileName: file.name, fileSize: file.size }
+  );
 
-    console.log(`[UPLOAD] Batch upload: ${files.length} files from user ${userId}`);
+  logger.info('File upload and processing completed', {
+    userId,
+    fileId: result.fileId,
+    fileName: result.fileName,
+    hasExtractedText: !!result.extractedText,
+    hasSummary: !!result.summary,
+    hasEmbedding: !!result.embedding,
+    processingDurationMs: result.processingDurationMs,
+    costUsd: result.costUsd,
+  });
 
-    // Validate all files
-    const validations = files.map(file => ({
-      file,
-      validation: validateFile(file)
-    }));
+  // 5. Log and return
+  const durationMs = Date.now() - startTime;
 
-    const invalidFiles = validations.filter(v => !v.validation.valid);
-    if (invalidFiles.length > 0) {
-      return NextResponse.json({
-        error: 'Some files are invalid',
-        invalidFiles: invalidFiles.map(v => ({
-          filename: v.file.name,
-          error: v.validation.error
-        }))
-      }, { status: 400 });
-    }
+  logger.apiResponse({
+    method: 'POST',
+    path: '/api/files/upload',
+    status: 201,
+    durationMs,
+    userId,
+  });
 
-    // Get user UUID (schema-validated)
-    const userUUID = await getUserId(supabase, userId);
-    if (!userUUID) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Create file records and start processing
-    const fileIds: string[] = [];
-
-    for (const { file, validation } of validations) {
-      const fileId = crypto.randomUUID();
-      fileIds.push(fileId);
-
-      // Prepare data with schema validation
-      const fileData = prepareUploadedFileData({
-        filename: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        userId: userUUID,
-        category: validation.category,
-        projectId: projectId,
-        status: 'processing'
-      });
-
-      // Override ID and add batch flag
-      fileData.id = fileId;
-      fileData.metadata.batchUpload = true;
-
-      // Safe insert with schema validation
-      const { error: insertError } = await safeInsert(
-        supabase,
-        'uploaded_files',
-        fileData
-      );
-
-      if (insertError) {
-        console.error(`[UPLOAD] Failed to insert ${file.name}:`, insertError);
-        continue;  // Skip this file but continue with others
-      }
-
-      // Initialize progress
-      uploadProgress.set(fileId, {
-        status: 'processing',
-        progress: 10,
-        message: 'Queued for processing...'
-      });
-
-      // Process asynchronously
-      processFileAsync(file, userUUID, projectId, fileId);
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: `${files.length} files uploaded and queued for processing`,
-      fileIds: fileIds,
-      files: files.map((file, index) => ({
-        fileId: fileIds[index],
-        filename: file.name,
-        size: file.size,
-        status: 'processing'
-      }))
-    });
-
-  } catch (error: any) {
-    console.error('[UPLOAD] Batch upload error:', error);
-    return NextResponse.json(
-      { error: 'Batch upload failed', details: error.message },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json(
+    {
+      fileId: result.fileId,
+      fileName: result.fileName,
+      fileSize: result.fileSize,
+      mimeType: result.mimeType,
+      extractedText: result.extractedText,
+      summary: result.summary,
+      hasEmbedding: !!result.embedding,
+      processingDurationMs: result.processingDurationMs,
+      costUsd: result.costUsd,
+    },
+    { status: 201 }
+  );
+});

@@ -1,331 +1,149 @@
+/**
+ * Conversations API Endpoint
+ *
+ * List and create conversations
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { getUserByIdentifier } from '@/lib/user-utils';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/auth-options';
+import { conversationQueries } from '@/lib/db/queries';
+import {
+  asyncHandler,
+  AuthenticationError,
+  validateRequired,
+} from '@/lib/utils/errors';
+import { logger } from '@/lib/utils/logger';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || 'zach';
-    const projectId = searchParams.get('projectId');
-    const limit = parseInt(searchParams.get('limit') || '20');
+/**
+ * GET: List all conversations
+ */
+export const GET = asyncHandler(async (req: NextRequest) => {
+  const startTime = Date.now();
 
-    console.log('[Conversations API] GET request - userId:', userId, 'limit:', limit);
+  // 1. Authenticate
+  const session = await getServerSession(authOptions);
 
-    // Get user using centralized helper
-    const userData = await getUserByIdentifier(userId, supabase);
-
-    if (!userData) {
-      console.error('[Conversations API] User not found:', userId);
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    console.log('[Conversations API] User found, UUID:', userData.id);
-
-    // Build query for conversations - try with project_id first, fallback if column doesn't exist
-    let conversations;
-    let error;
-
-    // Try querying with project_id column (new schema)
-    // FIXED: Order by updated_at descending (newest first) and include timestamps
-    const queryWithProject = await supabase
-      .from('conversations')
-      .select(`
-        id,
-        title,
-        user_id,
-        project_id,
-        created_at,
-        updated_at,
-        is_pinned,
-        messages(id, content, role, created_at)
-      `)
-      .eq('user_id', userData.id)
-      .order('updated_at', { ascending: false })
-      .limit(limit);
-
-    if (queryWithProject.error) {
-      // If project_id or other columns don't exist, try minimal query
-      console.warn('[Conversations API] Full query failed, trying minimal query. Error:', queryWithProject.error);
-      const queryMinimal = await supabase
-        .from('conversations')
-        .select(`
-          id,
-          title,
-          user_id,
-          messages(id, content, role, created_at)
-        `)
-        .eq('user_id', userData.id)
-        .order('id', { ascending: false })
-        .limit(limit);
-
-      conversations = queryMinimal.data;
-      error = queryMinimal.error;
-      console.log('[Conversations API] Minimal query result:', conversations?.length || 0, 'conversations');
-    } else {
-      conversations = queryWithProject.data;
-      error = queryWithProject.error;
-      console.log('[Conversations API] Full query result:', conversations?.length || 0, 'conversations');
-    }
-
-    if (error) {
-      console.error('Conversations fetch error:', error);
-      console.error('Error code:', error.code);
-      console.error('Error details:', error.details);
-      console.error('Error hint:', error.hint);
-      return NextResponse.json({
-        error: 'Failed to fetch conversations',
-        details: error.message,
-        code: error.code,
-        hint: error.hint
-      }, { status: 500 });
-    }
-
-    // Get deleted projects for this user to avoid recreating them
-    const { data: deletedProjectMarkers } = await supabase
-      .from('conversations')
-      .select('title')
-      .eq('user_id', userData.id)
-      .like('title', 'DELETED_PROJECT_MARKER_%');
-
-    const deletedProjectIds = new Set(
-      deletedProjectMarkers?.map(marker =>
-        marker.title?.replace('DELETED_PROJECT_MARKER_', '')
-      ).filter(Boolean) || []
-    );
-
-    // Filter out deleted project marker conversations from display
-    const realConversations = conversations?.filter(conv =>
-      !conv.title?.startsWith('DELETED_PROJECT_MARKER_')
-    ) || [];
-
-    // Format conversations for frontend with auto-project assignment
-    const formattedConversations = realConversations?.map(conv => {
-      const messageCount = conv.messages?.length || 0;
-      const lastMessage = conv.messages?.[0]; // Latest message (due to ordering)
-
-      // DISABLED: Auto-detect project from content since we don't have metadata column
-      // User wants manual project assignment only
-      // const projectFromTitle = autoDetectProject(conv.title || '');
-      // const projectFromContent = lastMessage ? autoDetectProject(lastMessage.content) : '';
-      // const autoDetected = projectFromTitle || projectFromContent;
-
-      // Only use auto-detected project if it hasn't been deleted
-      // const detectedProject = (autoDetected && !deletedProjectIds.has(autoDetected)) ? autoDetected : '';
-
-      // ✅ FIX: Return actual project_id from database (null = unassigned)
-      // Handle case where project_id column doesn't exist yet
-      // FIXED: Return null instead of empty string to match database schema
-      const actualProject = (conv as any).project_id || null;
-
-      // Use actual timestamps if available, otherwise use message timestamps
-      const createdAt = (conv as any).created_at || lastMessage?.created_at || new Date().toISOString();
-      const updatedAt = (conv as any).updated_at || lastMessage?.created_at || createdAt;
-
-      return {
-        id: conv.id,
-        title: conv.title || 'Untitled Conversation',
-        project_id: actualProject, // FIXED: Changed from 'project' to 'project_id' to match frontend expectation
-        messageCount,
-        lastMessage: lastMessage ? formatTimeAgo(lastMessage.created_at) : 'No messages',
-        created_at: createdAt,
-        updated_at: updatedAt,
-        is_pinned: (conv as any).is_pinned || false,
-        preview: lastMessage?.content?.substring(0, 100) + '...' || ''
-      };
-    }) || [];
-
-    // Sort by updated_at in JavaScript if database ordering failed
-    formattedConversations.sort((a, b) =>
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-    );
-
-    // Group by project if needed
-    const groupedByProject = formattedConversations.reduce((acc, conv) => {
-      const project = conv.project_id || 'unassigned'; // FIXED: Use project_id and default to 'unassigned'
-      if (!acc[project]) acc[project] = [];
-      acc[project].push(conv);
-      return acc;
-    }, {} as Record<string, any[]>);
-
-    return NextResponse.json({
-      success: true,
-      conversations: formattedConversations,
-      groupedByProject,
-      totalConversations: formattedConversations.length,
-      projectFilter: projectId
-    });
-
-  } catch (error: any) {
-    console.error('Conversations API error:', error);
-    return NextResponse.json({
-      error: 'Failed to fetch conversations',
-      details: error.message
-    }, { status: 500 });
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const { action, conversationId, userId = 'zach', messages, projectId } = await request.json();
-
-    // Get user using centralized helper
-    const userData = await getUserByIdentifier(userId, supabase);
-
-    if (!userData) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Handle project assignment action
-    if (action === 'assign_project') {
-      if (!conversationId || projectId === undefined) {
-        return NextResponse.json({ error: 'Conversation ID and Project ID required' }, { status: 400 });
-      }
-
-      // ✅ FIX: Actually update project_id column (null = unassign)
-      const { error: updateError } = await supabase
-        .from('conversations')
-        .update({
-          project_id: projectId || null, // Allow null to unassign from project
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', conversationId)
-        .eq('user_id', userData.id);
-
-      if (updateError) {
-        return NextResponse.json({
-          error: 'Failed to assign project',
-          details: updateError.message
-        }, { status: 500 });
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: projectId ? 'Project assigned successfully' : 'Project unassigned successfully',
-        conversationId,
-        projectId
-      });
-    }
-
-    // Fetch specific conversation with messages
-    const { data: conversation, error } = await supabase
-      .from('conversations')
-      .select(`
-        *,
-        messages(*)
-      `)
-      .eq('id', conversationId)
-      .eq('user_id', userData.id)
-      .single();
-
-    if (error || !conversation) {
-      return NextResponse.json({
-        error: 'Conversation not found',
-        details: error?.message
-      }, { status: 404 });
-    }
-
-    // Format messages for frontend
-    const formattedMessages = conversation.messages
-      .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      .map((msg: any) => ({
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.created_at
-      }));
-
-    return NextResponse.json({
-      success: true,
-      conversation: {
-        id: conversation.id,
-        title: conversation.title,
-        project_id: (conversation as any).project_id || '', // FIXED: Changed from 'project' to 'project_id' to match frontend expectation
-        messages: formattedMessages
-      }
-    });
-
-  } catch (error: any) {
-    console.error('Load conversation error:', error);
-    return NextResponse.json({
-      error: 'Failed to load conversation',
-      details: error.message
-    }, { status: 500 });
-  }
-}
-
-function formatTimeAgo(dateString: string): string {
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffInMs = now.getTime() - date.getTime();
-
-  const seconds = Math.floor(diffInMs / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  const weeks = Math.floor(days / 7);
-
-  if (seconds < 60) return seconds === 1 ? '1 second ago' : `${seconds} seconds ago`;
-  if (minutes < 60) return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
-  if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-  if (days < 7) return days === 1 ? '1 day ago' : `${days} days ago`;
-  return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
-}
-
-function autoDetectProject(content: string): string {
-  if (!content) return '';
-
-  const lowerContent = content.toLowerCase();
-
-  // Development & Technical Projects
-  if (lowerContent.includes('kimbleai') || lowerContent.includes('development') ||
-      lowerContent.includes('code') || lowerContent.includes('api') ||
-      lowerContent.includes('react') || lowerContent.includes('nextjs') ||
-      lowerContent.includes('typescript') || lowerContent.includes('build') ||
-      lowerContent.includes('deploy') || lowerContent.includes('technical documents')) {
-    return 'development';
+  if (!session?.user?.id) {
+    throw new AuthenticationError();
   }
 
-  // Personal & Family
-  if (lowerContent.includes('rebecca') || lowerContent.includes('wife') ||
-      lowerContent.includes('family') || lowerContent.includes('pet') ||
-      lowerContent.includes('dog') || lowerContent.includes('home') ||
-      lowerContent.includes('personal')) {
-    return 'personal';
+  const userId = session.user.id;
+
+  logger.apiRequest({
+    method: 'GET',
+    path: '/api/conversations',
+    userId,
+  });
+
+  // 2. Parse query params
+  const { searchParams } = new URL(req.url);
+  const projectId = searchParams.get('projectId');
+  const limit = parseInt(searchParams.get('limit') || '50');
+  const offset = parseInt(searchParams.get('offset') || '0');
+
+  // 3. Get conversations
+  const conversations = await logger.measure(
+    'Get all conversations',
+    async () => await conversationQueries.getAll(userId, {
+      projectId: projectId || undefined,
+      limit,
+      offset,
+    }),
+    { userId, projectId: projectId || undefined, limit, offset }
+  );
+
+  logger.dbQuery({
+    table: 'conversations',
+    operation: 'SELECT',
+    userId,
+    durationMs: Date.now() - startTime,
+  });
+
+  // 4. Log and return
+  const durationMs = Date.now() - startTime;
+
+  logger.apiResponse({
+    method: 'GET',
+    path: '/api/conversations',
+    status: 200,
+    durationMs,
+    userId,
+  });
+
+  return NextResponse.json({
+    conversations: conversations || [],
+    count: conversations?.length || 0,
+    limit,
+    offset,
+  });
+});
+
+/**
+ * POST: Create new conversation
+ */
+export const POST = asyncHandler(async (req: NextRequest) => {
+  const startTime = Date.now();
+
+  // 1. Authenticate
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new AuthenticationError();
   }
 
-  // Travel & Planning
-  if (lowerContent.includes('travel') || lowerContent.includes('trip') ||
-      lowerContent.includes('rome') || lowerContent.includes('vacation') ||
-      lowerContent.includes('planning')) {
-    return 'travel';
-  }
+  const userId = session.user.id;
 
-  // Finance & Business
-  if (lowerContent.includes('budget') || lowerContent.includes('financial') ||
-      lowerContent.includes('allocation') || lowerContent.includes('project alpha') ||
-      lowerContent.includes('project beta') || lowerContent.includes('deadline')) {
-    return 'business';
-  }
+  // 2. Parse and validate body
+  const body = await req.json();
 
-  // Automotive
-  if (lowerContent.includes('tesla') || lowerContent.includes('car') ||
-      lowerContent.includes('license plate') || lowerContent.includes('vehicle') ||
-      lowerContent.includes('model 3') || lowerContent.includes('model y')) {
-    return 'automotive';
-  }
+  validateRequired(body, ['title']);
 
-  // Gaming & DND
-  if (lowerContent.includes('dnd') || lowerContent.includes('d&d') ||
-      lowerContent.includes('campaign') || lowerContent.includes('dungeon') ||
-      lowerContent.includes('dragon') || lowerContent.includes('character') ||
-      lowerContent.includes('gaming') || lowerContent.includes('rpg') ||
-      lowerContent.includes('dice') || lowerContent.includes('adventure')) {
-    return 'gaming';
-  }
+  const { title, projectId, model } = body;
 
-  return '';
-}
+  logger.apiRequest({
+    method: 'POST',
+    path: '/api/conversations',
+    userId,
+    body: { title, projectId },
+  });
+
+  // 3. Create conversation
+  const conversation = await logger.measure(
+    'Create conversation',
+    async () => await conversationQueries.create(userId, {
+      title,
+      projectId,
+      model,
+    }),
+    { userId, title, projectId }
+  );
+
+  logger.dbQuery({
+    table: 'conversations',
+    operation: 'INSERT',
+    userId,
+    durationMs: Date.now() - startTime,
+  });
+
+  logger.info('Conversation created successfully', {
+    userId,
+    conversationId: conversation.id,
+    title: conversation.title,
+  });
+
+  // 4. Log and return
+  const durationMs = Date.now() - startTime;
+
+  logger.apiResponse({
+    method: 'POST',
+    path: '/api/conversations',
+    status: 201,
+    durationMs,
+    userId,
+  });
+
+  return NextResponse.json(conversation, { status: 201 });
+});
