@@ -173,7 +173,7 @@ export default function Sidebar() {
           {/* Footer */}
           <div className="p-4 border-t border-gray-800">
             <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>v5.0.0</span>
+              <span>v{process.env.NEXT_PUBLIC_APP_VERSION || '11.0.0'}</span>
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 Online
