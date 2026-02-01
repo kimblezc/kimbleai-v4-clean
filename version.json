@@ -1,8 +1,8 @@
 {
-  "version": "10.7.5",
-  "commit": "e53e67f",
-  "lastUpdated": "2025-12-27T00:00:00.000Z",
-  "changelog": "📁 FILE UPLOAD UI: Added drag-and-drop file upload button to main page sidebar. Easy access to file upload modal from chat interface with full drag-and-drop support.",
+  "version": "10.8.0",
+  "commit": "a687163",
+  "lastUpdated": "2026-02-01T00:00:00.000Z",
+  "changelog": "📦 5GB FILE SUPPORT: Increased file upload limit from 50MB to 5GB for large transcription files. Supports AssemblyAI and Deepgram for processing up to 5GB audio files.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
