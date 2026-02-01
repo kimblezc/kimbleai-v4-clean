@@ -1,6 +1,6 @@
 {
   "version": "11.0.1",
-  "commit": "pending",
+  "commit": "ee9fac7",
   "lastUpdated": "2026-02-01T14:19:00.000Z",
   "changelog": "🔧 FIX: Display correct version number (v11.0.1) in sidebar instead of hardcoded v5.0.0. Uses NEXT_PUBLIC_APP_VERSION environment variable.",
   "platform": "Railway",
