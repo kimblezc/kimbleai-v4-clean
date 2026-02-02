@@ -1,8 +1,8 @@
 {
-  "version": "11.0.1",
-  "commit": "8dd6e0a",
-  "lastUpdated": "2026-02-01T14:19:00.000Z",
-  "changelog": "🔧 FIX: Display correct version number (v11.0.1) in sidebar instead of hardcoded v5.0.0. Uses NEXT_PUBLIC_APP_VERSION environment variable.",
+  "version": "11.0.2",
+  "commit": "pending",
+  "lastUpdated": "2026-02-02T05:00:00.000Z",
+  "changelog": "🔧 FIX: Add missing /api/health endpoint for Railway healthcheck. Prepare for cleanup of unused Zapier, AssemblyAI, ElevenLabs, DeepSeek integrations.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
