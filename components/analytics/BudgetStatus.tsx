@@ -7,6 +7,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface BudgetStatusProps {
@@ -14,14 +15,17 @@ interface BudgetStatusProps {
 }
 
 export default function BudgetStatus({ compact = false }: BudgetStatusProps) {
+  const { data: session, status } = useSession();
   const [budgetData, setBudgetData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchBudgetStatus();
-    const interval = setInterval(fetchBudgetStatus, 60000); // Refresh every minute
-    return () => clearInterval(interval);
-  }, []);
+    if (status === 'authenticated') {
+      fetchBudgetStatus();
+      const interval = setInterval(fetchBudgetStatus, 60000); // Refresh every minute
+      return () => clearInterval(interval);
+    }
+  }, [status]);
 
   const fetchBudgetStatus = async () => {
     try {

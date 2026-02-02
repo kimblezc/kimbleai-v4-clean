@@ -23,35 +23,35 @@ const MODELS = {
     id: null,
     name: 'Auto',
     description: 'Smart routing based on task',
-    icon: '✨',
+    icon: 'AI',
     cost: 'Optimized',
   },
   'gpt-5': {
     id: 'gpt-5',
     name: 'GPT-5',
     description: 'Highest accuracy, reasoning',
-    icon: '🧠',
+    icon: 'G5',
     cost: '$$$',
   },
   'gpt-4.5': {
     id: 'gpt-4.5',
     name: 'GPT-4.5',
     description: 'Best balance of cost/quality',
-    icon: '⚡',
+    icon: 'G4',
     cost: '$$',
   },
   'claude-sonnet-4.5': {
     id: 'claude-sonnet-4.5',
     name: 'Claude Sonnet 4.5',
     description: 'Best for code analysis',
-    icon: '💻',
+    icon: 'CS',
     cost: '$$',
   },
   'gemini-2.5-flash': {
     id: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
     description: '75% cheaper, fast vision',
-    icon: '🚀',
+    icon: 'GF',
     cost: '$',
   },
 };
@@ -79,7 +79,7 @@ export default function ModelSelector({
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
       >
-        <span className="text-lg">{currentModel.icon}</span>
+        <span className="text-xs font-bold px-2 py-1 bg-purple-500 text-white rounded">{currentModel.icon}</span>
         <div className="text-left">
           <div className="text-sm font-medium text-gray-900 dark:text-white">
             {currentModel.name}
@@ -117,7 +117,7 @@ export default function ModelSelector({
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl">{MODELS.auto.icon}</span>
+                  <span className="text-xs font-bold px-2 py-1 bg-purple-500 text-white rounded">{MODELS.auto.icon}</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-gray-900 dark:text-white">
@@ -153,7 +153,7 @@ export default function ModelSelector({
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <span className="text-2xl">{model.icon}</span>
+                      <span className="text-xs font-bold px-2 py-1 bg-purple-500 text-white rounded">{model.icon}</span>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-gray-900 dark:text-white">
