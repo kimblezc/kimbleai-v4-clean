@@ -49,6 +49,12 @@ const navigation: NavItem[] = [
     description: 'Your knowledge library',
   },
   {
+    name: 'Transcriptions',
+    href: '/transcriptions',
+    icon: DocumentIcon,
+    description: 'AI-categorized audio archives',
+  },
+  {
     name: 'Analytics',
     href: '/analytics',
     icon: ChartBarIcon,

@@ -21,7 +21,7 @@ const nextConfig = {
   // Environment variables available to the browser
   env: {
     NEXT_PUBLIC_APP_NAME: 'KimbleAI',
-    NEXT_PUBLIC_APP_VERSION: '11.0.3',
+    NEXT_PUBLIC_APP_VERSION: '11.1.0',
   },
 
   // Webpack configuration

@@ -1,13 +1,14 @@
 /**
  * Voice Transcription API Endpoint
  *
- * Transcribe audio using Deepgram Nova-3
+ * Transcribe audio using Deepgram Nova-3 with intelligent categorization
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { getAIService } from '@/lib/ai/ai-service';
+import { TranscriptionAnalyzer } from '@/lib/ai/transcription-analyzer';
 import { supabase } from '@/lib/db/client';
 import { messageQueries } from '@/lib/db/queries';
 import {
@@ -109,7 +110,79 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     costUsd: result.costUsd,
   });
 
-  // 5. Save to conversation if provided
+  // 5. Analyze transcription content and suggest categorization
+  const analyzer = new TranscriptionAnalyzer();
+
+  // Get user's existing projects
+  const { data: userProjects } = await (supabase as any)
+    .from('projects')
+    .select('id, name, metadata')
+    .eq('user_id', userId);
+
+  const existingProjects = (userProjects || []).map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    category: p.metadata?.category,
+  }));
+
+  const analysis = await logger.measure(
+    'Analyze transcription content',
+    async () => await analyzer.analyzeTranscription({
+      transcript: result.transcript,
+      fileName: audioFile.name,
+      durationSeconds: result.durationSeconds,
+      existingProjects,
+    }),
+    { userId }
+  );
+
+  logger.info('Transcription analyzed', {
+    userId,
+    category: analysis.category,
+    confidence: analysis.confidence,
+    suggestedProject: analysis.suggestedProjectName,
+  });
+
+  // 6. Save transcription as a file with analysis metadata
+  const fileId = crypto.randomUUID();
+
+  await (supabase as any)
+    .from('files')
+    .insert({
+      id: fileId,
+      user_id: userId,
+      name: audioFile.name.replace(/\.[^/.]+$/, '_transcription.txt'),
+      type: 'transcription',
+      size: result.transcript.length,
+      mime_type: 'text/plain',
+      project_id: analysis.suggestedProjectId || null,
+      metadata: {
+        originalFileName: audioFile.name,
+        durationSeconds: result.durationSeconds,
+        confidence: result.confidence,
+        costUsd: result.costUsd,
+        category: analysis.category,
+        categoryConfidence: analysis.confidence,
+        suggestedProjectName: analysis.suggestedProjectName,
+        suggestedProjectId: analysis.suggestedProjectId,
+        topics: analysis.topics,
+        entities: analysis.entities,
+        summary: analysis.summary,
+        keyPoints: analysis.keyPoints,
+        isPrivate: analysis.isPrivate,
+        tags: analysis.suggestedTags,
+        transcriptionDate: new Date().toISOString(),
+      },
+      content: result.transcript,
+    });
+
+  logger.info('Transcription saved as file', {
+    userId,
+    fileId,
+    projectId: analysis.suggestedProjectId,
+  });
+
+  // 7. Save to conversation if provided
   if (conversationId) {
     await logger.measure(
       'Save transcription to conversation',
@@ -136,7 +209,7 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     });
   }
 
-  // 6. Log and return
+  // 8. Log and return
   const durationMs = Date.now() - startTime;
 
   logger.apiResponse({
@@ -161,5 +234,18 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     confidence: result.confidence,
     words: result.words,
     costUsd: result.costUsd,
+    fileId,
+    analysis: {
+      category: analysis.category,
+      confidence: analysis.confidence,
+      suggestedProjectName: analysis.suggestedProjectName,
+      suggestedProjectId: analysis.suggestedProjectId,
+      topics: analysis.topics,
+      entities: analysis.entities,
+      summary: analysis.summary,
+      keyPoints: analysis.keyPoints,
+      isPrivate: analysis.isPrivate,
+      tags: analysis.suggestedTags,
+    },
   });
 });
