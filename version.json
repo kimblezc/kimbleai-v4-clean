@@ -1,6 +1,6 @@
 {
   "version": "11.5.0",
-  "commit": "pending",
+  "commit": "7fa6af7",
   "lastUpdated": "2026-02-03T11:00:00.000Z",
   "changelog": "CHAT FIX - UUID & Schema: (1) Fixed UUID error by generating proper UUIDs for new users instead of using Google's numeric ID; (2) JWT now uses database UUID not Google ID; (3) Removed 'model' column from conversation creation; (4) Removed 'last_login_at' from user updates; (5) Signin works + chat should now work; (6) D20 50% larger; (7) Version footer via API",
   "platform": "Railway",
