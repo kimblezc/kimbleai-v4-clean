@@ -18,6 +18,7 @@ import {
   DocumentIcon,
   MicrophoneIcon,
   XMarkIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
 interface ChatInputProps {
@@ -35,8 +36,10 @@ export default function ChatInput({
   const [attachments, setAttachments] = useState<any[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   // Auto-resize textarea
@@ -178,6 +181,48 @@ export default function ChatInput({
     }
   };
 
+  // Handle audio file upload for transcription
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsTranscribing(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      const response = await fetch('/api/voice/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Transcription failed');
+      }
+
+      const data = await response.json();
+
+      // Insert transcript into input
+      setInput(prev => prev + (prev ? '\n\n' : '') + data.transcript);
+
+      // Auto-resize textarea
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      alert('Failed to transcribe audio file. Please try again.');
+    } finally {
+      setIsTranscribing(false);
+      // Reset file input
+      if (audioInputRef.current) {
+        audioInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div
       className={`px-6 py-4 ${
@@ -263,6 +308,22 @@ export default function ChatInput({
               className={`w-6 h-6 ${isRecording ? 'animate-pulse' : ''}`}
             />
           </button>
+
+          {/* Audio Transcription */}
+          <button
+            onClick={() => audioInputRef.current?.click()}
+            disabled={disabled || isTranscribing}
+            className={`p-2 rounded-lg ${
+              isTranscribing
+                ? 'text-blue-500 bg-blue-100 dark:bg-blue-900/20'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+            } disabled:opacity-50`}
+            title="Upload audio file for transcription"
+          >
+            <DocumentTextIcon
+              className={`w-6 h-6 ${isTranscribing ? 'animate-spin' : ''}`}
+            />
+          </button>
         </div>
 
         {/* Text Input */}
@@ -294,6 +355,15 @@ export default function ChatInput({
         multiple
         accept="image/*,application/pdf,.doc,.docx,.txt"
         onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Hidden Audio Input for Transcription */}
+      <input
+        ref={audioInputRef}
+        type="file"
+        accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac,.aac,.wma,.opus"
+        onChange={handleAudioUpload}
         className="hidden"
       />
     </div>

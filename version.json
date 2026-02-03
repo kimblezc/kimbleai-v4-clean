@@ -1,8 +1,8 @@
 {
-  "version": "11.1.2",
-  "commit": "057618d",
-  "lastUpdated": "2026-02-03T06:00:00.000Z",
-  "changelog": "UI REDESIGN: 3D wireframe D20, blue theme, version footer. Replaced flat D20 with transparent wireframe (blue edges, no numbers). Changed purple/pink theme to blue/cyan/black. Added version+commit footer to every page.",
+  "version": "11.2.0",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T06:30:00.000Z",
+  "changelog": "CHATGPT/CLAUDE-STYLE LAYOUT: Settings moved to upper-right header. Simplified sidebar to only Chat and Projects. Added transcription upload button to chat input bar (uploads audio file and inserts transcript).",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

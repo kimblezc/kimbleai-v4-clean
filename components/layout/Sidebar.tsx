@@ -42,30 +42,6 @@ const navigation: NavItem[] = [
     icon: FolderIcon,
     description: 'Manage your quests',
   },
-  {
-    name: 'Files',
-    href: '/files',
-    icon: DocumentIcon,
-    description: 'Your knowledge library',
-  },
-  {
-    name: 'Transcriptions',
-    href: '/transcriptions',
-    icon: DocumentIcon,
-    description: 'AI-categorized audio archives',
-  },
-  {
-    name: 'Analytics',
-    href: '/analytics',
-    icon: ChartBarIcon,
-    description: 'Track your usage & costs',
-  },
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: Cog6ToothIcon,
-    description: 'Configure your experience',
-  },
 ];
 
 export default function Sidebar() {

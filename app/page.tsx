@@ -13,7 +13,9 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/layout/Sidebar';
 import MessageList from '@/components/chat/MessageList';
 import ChatInput from '@/components/chat/ChatInput';
@@ -183,6 +185,15 @@ export default function ChatPage() {
           <div className="flex items-center gap-4">
             <CostDisplay cost={totalCost} />
             <BudgetStatus compact />
+
+            {/* Settings Button */}
+            <Link
+              href="/settings"
+              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+              title="Settings"
+            >
+              <Cog6ToothIcon className="w-6 h-6" />
+            </Link>
           </div>
         </header>
 
