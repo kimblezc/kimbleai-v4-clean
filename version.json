@@ -1,6 +1,6 @@
 {
   "version": "11.1.1",
-  "commit": "pending",
+  "commit": "fa06f1a",
   "lastUpdated": "2026-02-02T17:00:00.000Z",
   "changelog": "HOTFIX: Fix 401 authentication errors and favicon 404. Add proper session status checks before API calls, add favicon.ico for browser compatibility.",
   "platform": "Railway",
