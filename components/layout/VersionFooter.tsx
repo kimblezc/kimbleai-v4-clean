@@ -15,15 +15,21 @@ export default function VersionFooter() {
 
   useEffect(() => {
     // Fetch version info from API
-    fetch('/api/version')
+    fetch('/api/version', {
+      cache: 'no-store', // Prevent caching
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    })
       .then(res => res.json())
       .then(data => {
+        console.log('[VersionFooter] Fetched version data:', data);
         setVersion(data.version);
         setCommit(data.commit);
       })
       .catch(err => {
-        console.error('Failed to fetch version:', err);
-        setCommit('unknown');
+        console.error('[VersionFooter] Failed to fetch version:', err);
+        setCommit('error');
       });
   }, []);
 
