@@ -1,6 +1,6 @@
 {
   "version": "11.4.1",
-  "commit": "pending",
+  "commit": "90f8f67",
   "lastUpdated": "2026-02-03T10:00:00.000Z",
   "changelog": "DEBUG BUILD: (1) D20 size increased by 50% (now 60px default); (2) Version footer now fetches from /api/version endpoint; (3) Added extensive debug logging to auth callbacks and chat API; (4) New /api/auth/debug endpoint to check session status; (5) Investigating persistent 401 errors",
   "platform": "Railway",
