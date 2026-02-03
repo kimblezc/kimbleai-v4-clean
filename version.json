@@ -1,6 +1,6 @@
 {
   "version": "11.2.3",
-  "commit": "pending",
+  "commit": "fd501d3",
   "lastUpdated": "2026-02-03T07:30:00.000Z",
   "changelog": "MAJOR FIX: White 3D D20, removed purple, version footer, thinking toast. Changed D20 to WHITE wireframe with depth perception (layered opacity). Fixed layout purple→blue gradient. Added VersionFooter to all pages. Removed BudgetStatus loading button. Added 'AI is thinking' toast to chat.",
   "platform": "Railway",
