@@ -15,17 +15,17 @@ export default function Icon() {
       <div
         style={{
           fontSize: 24,
-          background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #ef4444 100%)',
+          background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#fbbf24',
+          color: '#60a5fa',
           fontWeight: 'bold',
         }}
       >
-        20
+        D20
       </div>
     ),
     {

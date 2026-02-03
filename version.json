@@ -1,8 +1,8 @@
 {
-  "version": "11.1.1",
-  "commit": "fa06f1a",
-  "lastUpdated": "2026-02-02T17:00:00.000Z",
-  "changelog": "HOTFIX: Fix 401 authentication errors and favicon 404. Add proper session status checks before API calls, add favicon.ico for browser compatibility.",
+  "version": "11.1.2",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T06:00:00.000Z",
+  "changelog": "UI REDESIGN: 3D wireframe D20, blue theme, version footer. Replaced flat D20 with transparent wireframe (blue edges, no numbers). Changed purple/pink theme to blue/cyan/black. Added version+commit footer to every page.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

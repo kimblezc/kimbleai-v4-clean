@@ -124,7 +124,7 @@ export default function Sidebar() {
                     transition-all duration-200
                     ${
                       isActive
-                        ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-white border border-purple-500/50 shadow-arcane'
+                        ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/20 text-white border border-blue-500/50 shadow-arcane'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                     }
                   `}

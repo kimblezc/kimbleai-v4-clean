@@ -1,7 +1,7 @@
 /**
  * D20 Icon Component
  *
- * Animated D20 dice with optional rotation
+ * 3D wireframe D20 dice with rotation
  */
 
 'use client';
@@ -39,15 +39,10 @@ export default function D20Icon({
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full"
       >
-        {/* D20 Shape */}
+        {/* 3D Wireframe D20 - Transparent with Blue Edges */}
         <defs>
-          <linearGradient id="d20-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#8b5cf6" />
-            <stop offset="50%" stopColor="#ec4899" />
-            <stop offset="100%" stopColor="#ef4444" />
-          </linearGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <filter id="glow-blue">
+            <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="SourceGraphic"/>
@@ -55,76 +50,43 @@ export default function D20Icon({
           </filter>
         </defs>
 
-        {/* Main D20 polygon */}
-        <path
-          d="M50 5 L90 35 L80 75 L50 95 L20 75 L10 35 Z"
-          fill="url(#d20-gradient)"
-          stroke="#a855f7"
-          strokeWidth="2"
-          opacity="0.9"
-          filter={glow ? "url(#glow)" : undefined}
-        />
+        {/* Top pyramid edges */}
+        <line x1="50" y1="10" x2="25" y2="35" stroke="#3b82f6" strokeWidth="1.5" opacity="0.8" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="50" y1="10" x2="75" y2="35" stroke="#3b82f6" strokeWidth="1.5" opacity="0.8" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="50" y1="10" x2="15" y2="50" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="50" y1="10" x2="85" y2="50" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="50" y1="10" x2="50" y2="50" stroke="#60a5fa" strokeWidth="1.5" opacity="0.9" filter={glow ? "url(#glow-blue)" : undefined} />
 
-        {/* Inner facets for 3D effect */}
-        <path
-          d="M50 5 L65 30 L50 50 L35 30 Z"
-          fill="#9333ea"
-          opacity="0.6"
-        />
-        <path
-          d="M50 50 L65 30 L80 55 Z"
-          fill="#7e22ce"
-          opacity="0.7"
-        />
-        <path
-          d="M50 50 L35 30 L20 55 Z"
-          fill="#7e22ce"
-          opacity="0.7"
-        />
-        <path
-          d="M50 50 L80 55 L65 75 Z"
-          fill="#6b21a8"
-          opacity="0.8"
-        />
-        <path
-          d="M50 50 L20 55 L35 75 Z"
-          fill="#6b21a8"
-          opacity="0.8"
-        />
-        <path
-          d="M50 50 L50 95 L65 75 Z"
-          fill="#581c87"
-          opacity="0.9"
-        />
-        <path
-          d="M50 50 L50 95 L35 75 Z"
-          fill="#581c87"
-          opacity="0.9"
-        />
+        {/* Middle ring */}
+        <line x1="25" y1="35" x2="75" y2="35" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="25" y1="35" x2="15" y2="50" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="75" y1="35" x2="85" y2="50" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="15" y1="50" x2="85" y2="50" stroke="#60a5fa" strokeWidth="1.5" opacity="0.8" filter={glow ? "url(#glow-blue)" : undefined} />
 
-        {/* "20" text in the center */}
-        <text
-          x="50"
-          y="55"
-          fontSize="20"
-          fontWeight="bold"
-          fill="#fbbf24"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          style={{ textShadow: '0 0 10px rgba(251, 191, 36, 0.8)' }}
-        >
-          20
-        </text>
+        {/* Center to middle points */}
+        <line x1="50" y1="50" x2="25" y2="35" stroke="#60a5fa" strokeWidth="1.5" opacity="0.6" />
+        <line x1="50" y1="50" x2="75" y2="35" stroke="#60a5fa" strokeWidth="1.5" opacity="0.6" />
+        <line x1="50" y1="50" x2="15" y2="50" stroke="#60a5fa" strokeWidth="1.5" opacity="0.6" />
+        <line x1="50" y1="50" x2="85" y2="50" stroke="#60a5fa" strokeWidth="1.5" opacity="0.6" />
 
-        {/* Highlight for shine effect */}
-        <ellipse
-          cx="40"
-          cy="25"
-          rx="15"
-          ry="8"
-          fill="white"
-          opacity="0.2"
-        />
+        {/* Bottom pyramid edges */}
+        <line x1="50" y1="90" x2="25" y2="65" stroke="#3b82f6" strokeWidth="1.5" opacity="0.8" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="50" y1="90" x2="75" y2="65" stroke="#3b82f6" strokeWidth="1.5" opacity="0.8" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="50" y1="90" x2="15" y2="50" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="50" y1="90" x2="85" y2="50" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="50" y1="90" x2="50" y2="50" stroke="#60a5fa" strokeWidth="1.5" opacity="0.9" filter={glow ? "url(#glow-blue)" : undefined} />
+
+        {/* Lower ring */}
+        <line x1="25" y1="65" x2="75" y2="65" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="25" y1="65" x2="15" y2="50" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" filter={glow ? "url(#glow-blue)" : undefined} />
+        <line x1="75" y1="65" x2="85" y2="50" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" filter={glow ? "url(#glow-blue)" : undefined} />
+
+        {/* Center to bottom points */}
+        <line x1="50" y1="50" x2="25" y2="65" stroke="#60a5fa" strokeWidth="1.5" opacity="0.6" />
+        <line x1="50" y1="50" x2="75" y2="65" stroke="#60a5fa" strokeWidth="1.5" opacity="0.6" />
+
+        {/* Center dot for 3D depth */}
+        <circle cx="50" cy="50" r="2" fill="#60a5fa" opacity="0.8" />
       </svg>
     </div>
   );
