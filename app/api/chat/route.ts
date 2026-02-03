@@ -23,9 +23,17 @@ export async function POST(req: NextRequest) {
     // 1. Authenticate user
     const session = await getServerSession(authOptions);
 
+    console.log('[Chat API] Auth check:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email,
+    });
+
     if (!session?.user?.id) {
+      console.error('[Chat API] Unauthorized - no session or user ID');
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', debug: { hasSession: !!session, hasUser: !!session?.user } },
         { status: 401 }
       );
     }

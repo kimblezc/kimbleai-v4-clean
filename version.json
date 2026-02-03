@@ -1,8 +1,8 @@
 {
-  "version": "11.4.0",
-  "commit": "48c7eac",
-  "lastUpdated": "2026-02-03T09:30:00.000Z",
-  "changelog": "CRITICAL AUTH FIX + TRUE 3D D20: (1) Fixed authentication - removed non-existent custom signin pages, now uses NextAuth default; (2) Restored working D20 from v4 with true 3D rotation, golden ratio mathematics, transparent wireframe showing front AND back edges; (3) Dynamic version footer reads commit from version.json; (4) All 401 errors resolved",
+  "version": "11.4.1",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T10:00:00.000Z",
+  "changelog": "DEBUG BUILD: (1) D20 size increased by 50% (now 60px default); (2) Version footer now fetches from /api/version endpoint; (3) Added extensive debug logging to auth callbacks and chat API; (4) New /api/auth/debug endpoint to check session status; (5) Investigating persistent 401 errors",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

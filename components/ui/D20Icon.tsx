@@ -16,10 +16,10 @@ interface D20IconProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const sizeMap = {
-  sm: 24,
-  md: 40,
-  lg: 64,
-  xl: 96,
+  sm: 36,   // 24 * 1.5
+  md: 60,   // 40 * 1.5
+  lg: 96,   // 64 * 1.5
+  xl: 144,  // 96 * 1.5
 };
 
 export default function D20Icon({

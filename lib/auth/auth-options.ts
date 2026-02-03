@@ -36,7 +36,10 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account, profile }) {
+      console.log('[Auth] Sign in callback:', { email: user.email, hasAccount: !!account });
+
       if (!user.email) {
+        console.error('[Auth] No email provided');
         return false;
       }
 
@@ -93,6 +96,8 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
+      console.log('[Auth] Session callback:', { hasUser: !!session.user, userId: token.userId });
+
       // Add user ID and Google tokens to session
       if (session.user) {
         session.user.id = token.userId as string;

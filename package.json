@@ -1,6 +1,6 @@
 {
   "name": "kimbleai-v5",
-  "version": "11.4.0",
+  "version": "11.4.1",
   "description": "KimbleAI v11 - Complete v5 rebuild with 5GB file support, smart model routing, and multimodal capabilities",
   "private": true,
   "scripts": {
