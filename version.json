@@ -1,8 +1,8 @@
 {
-  "version": "11.2.0",
-  "commit": "659f897",
-  "lastUpdated": "2026-02-03T06:30:00.000Z",
-  "changelog": "CHATGPT/CLAUDE-STYLE LAYOUT: Settings moved to upper-right header. Simplified sidebar to only Chat and Projects. Added transcription upload button to chat input bar (uploads audio file and inserts transcript).",
+  "version": "11.2.1",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T07:00:00.000Z",
+  "changelog": "HOTFIX: Fixed 401 errors and eternal loading button. Fixed BudgetStatus to not render when unauthenticated. Fixed authentication redirect to use useRouter hook instead of redirect() in client component.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

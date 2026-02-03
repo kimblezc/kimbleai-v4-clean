@@ -43,6 +43,12 @@ export default function BudgetStatus({ compact = false }: BudgetStatusProps) {
     }
   };
 
+  // Don't render anything if not authenticated or still loading session
+  if (status === 'loading' || status === 'unauthenticated') {
+    return null;
+  }
+
+  // Show loading only when authenticated but data not loaded yet
   if (loading || !budgetData) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">

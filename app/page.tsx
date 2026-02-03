@@ -13,7 +13,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { redirect, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/layout/Sidebar';
@@ -24,6 +24,7 @@ import CostDisplay from '@/components/chat/CostDisplay';
 import BudgetStatus from '@/components/analytics/BudgetStatus';
 
 export default function ChatPage() {
+  const router = useRouter();
   const { data: session, status } = useSession();
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,9 +33,11 @@ export default function ChatPage() {
   const [totalCost, setTotalCost] = useState(0);
 
   // Redirect if not authenticated
-  if (status === 'unauthenticated') {
-    redirect('/api/auth/signin');
-  }
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/api/auth/signin');
+    }
+  }, [status, router]);
 
   // Create new conversation on mount
   useEffect(() => {
