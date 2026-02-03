@@ -13,8 +13,8 @@ import VersionFooter from '@/components/layout/VersionFooter';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'KimbleAI v5 - D&D AI Assistant',
-  description: 'AI-powered assistant with smart model routing, multimodal capabilities, and D&D integration',
+  title: 'KimbleAI',
+  description: 'AI-powered assistant with smart model routing, multimodal capabilities, and persistent knowledge',
   icons: {
     icon: '/favicon.ico',
   },

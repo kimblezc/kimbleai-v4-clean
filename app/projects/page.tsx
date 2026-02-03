@@ -9,13 +9,17 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
+import toast, { Toaster } from 'react-hot-toast';
 import Sidebar from '@/components/layout/Sidebar';
+import ProjectModal from '@/components/projects/ProjectModal';
 import {
   PlusIcon,
   FolderIcon,
   SparklesIcon,
   FireIcon,
   BoltIcon,
+  PencilIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { FolderIcon as FolderSolidIcon } from '@heroicons/react/24/solid';
 
@@ -62,11 +66,13 @@ const statusLabels = {
 };
 
 export default function ProjectsPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status} = useSession();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'recent' | 'alpha' | 'priority'>('recent');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'archived' | 'completed'>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   // Redirect if not authenticated
   if (status === 'unauthenticated') {
@@ -97,26 +103,103 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleCreateProject = async () => {
-    const name = prompt('Enter quest name:');
-    if (!name) return;
+  const handleOpenModal = (project?: Project) => {
+    setEditingProject(project || null);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingProject(null);
+  };
+
+  const handleSaveProject = async (projectData: any) => {
+    try {
+      if (editingProject) {
+        // Update existing project
+        const response = await fetch(`/api/projects/${editingProject.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(projectData),
+        });
+
+        if (response.ok) {
+          toast.success('Project updated successfully', {
+            style: {
+              background: '#1f2937',
+              color: '#fff',
+              border: '1px solid #10b981',
+            },
+          });
+          fetchProjects();
+        } else {
+          throw new Error('Failed to update project');
+        }
+      } else {
+        // Create new project
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(projectData),
+        });
+
+        if (response.ok) {
+          toast.success('Project created successfully', {
+            style: {
+              background: '#1f2937',
+              color: '#fff',
+              border: '1px solid #10b981',
+            },
+          });
+          fetchProjects();
+        } else {
+          throw new Error('Failed to create project');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      toast.error('Failed to save project', {
+        style: {
+          background: '#1f2937',
+          color: '#fff',
+          border: '1px solid #ef4444',
+        },
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      return;
+    }
 
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          priority: 'medium',
-          status: 'active',
-        }),
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
       });
 
       if (response.ok) {
+        toast.success('Project deleted successfully', {
+          style: {
+            background: '#1f2937',
+            color: '#fff',
+            border: '1px solid #10b981',
+          },
+        });
         fetchProjects();
+      } else {
+        throw new Error('Failed to delete project');
       }
     } catch (error) {
-      console.error('Failed to create project:', error);
+      console.error('Failed to delete project:', error);
+      toast.error('Failed to delete project', {
+        style: {
+          background: '#1f2937',
+          color: '#fff',
+          border: '1px solid #ef4444',
+        },
+      });
     }
   };
 
@@ -138,7 +221,15 @@ export default function ProjectsPage() {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <Toaster position="top-right" />
       <Sidebar />
+
+      <ProjectModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveProject}
+        project={editingProject}
+      />
 
       <div className="flex-1 flex flex-col lg:ml-72">
         {/* Header */}
@@ -149,11 +240,11 @@ export default function ProjectsPage() {
               <p className="text-gray-400 mt-1">Manage your adventures and campaigns</p>
             </div>
             <button
-              onClick={handleCreateProject}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-arcane text-white rounded-lg hover:shadow-arcane-lg transition-all"
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
             >
               <PlusIcon className="w-5 h-5" />
-              New Quest
+              New Project
             </button>
           </div>
 
@@ -196,11 +287,11 @@ export default function ProjectsPage() {
               <h3 className="text-xl font-semibold text-gray-300 mb-2">No quests yet</h3>
               <p className="text-gray-500 mb-6">Create your first quest to get started</p>
               <button
-                onClick={handleCreateProject}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-arcane text-white rounded-lg hover:shadow-arcane-lg transition-all"
+                onClick={() => handleOpenModal()}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
               >
                 <PlusIcon className="w-5 h-5" />
-                Create Quest
+                Create Project
               </button>
             </div>
           ) : (
@@ -211,10 +302,34 @@ export default function ProjectsPage() {
                 return (
                   <div
                     key={project.id}
-                    className="group relative card-dnd p-6 cursor-pointer hover:scale-105 transition-all duration-200"
+                    className="group relative card-dnd p-6 hover:scale-105 transition-all duration-200"
                   >
+                    {/* Action Buttons */}
+                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenModal(project);
+                        }}
+                        className="p-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                        title="Edit project"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteProject(project.id);
+                        }}
+                        className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                        title="Delete project"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+
                     {/* Priority Badge */}
-                    <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${priorityInfo.color}`}>
+                    <div className={`absolute top-16 right-4 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${priorityInfo.color}`}>
                       {priorityInfo.label}
                     </div>
 

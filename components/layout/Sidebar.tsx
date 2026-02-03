@@ -1,7 +1,7 @@
 /**
  * Sidebar Navigation Component
  *
- * D&D-themed sidebar with navigation and user info
+ * Clean sidebar with navigation and user info
  */
 
 'use client';
@@ -79,7 +79,7 @@ export default function Sidebar() {
               <D20Icon size="md" className="group-hover:scale-110 transition-transform" />
               <div>
                 <h1 className="text-xl font-bold text-gradient">KimbleAI</h1>
-                <p className="text-xs text-gray-400">D&D AI Assistant</p>
+                <p className="text-xs text-gray-400">AI Assistant</p>
               </div>
             </Link>
           </div>
@@ -108,7 +108,7 @@ export default function Sidebar() {
                   <Icon
                     className={`
                       w-5 h-5 transition-transform group-hover:scale-110
-                      ${isActive ? 'text-purple-400' : ''}
+                      ${isActive ? 'text-blue-400' : ''}
                     `}
                   />
                   <div className="flex-1">

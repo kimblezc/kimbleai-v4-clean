@@ -18,6 +18,7 @@ import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/layout/Sidebar';
+import ConversationList from '@/components/chat/ConversationList';
 import MessageList from '@/components/chat/MessageList';
 import ChatInput from '@/components/chat/ChatInput';
 import ModelSelector from '@/components/chat/ModelSelector';
@@ -30,6 +31,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
   const [totalCost, setTotalCost] = useState(0);
 
   // Redirect if not authenticated
@@ -39,12 +41,52 @@ export default function ChatPage() {
     }
   }, [status, router]);
 
-  // Create new conversation on mount
+  // Load conversations on mount
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id && !conversationId) {
-      createConversation();
+    if (status === 'authenticated' && session?.user?.id) {
+      loadConversations();
     }
-  }, [status, session, conversationId]);
+  }, [status, session]);
+
+  // Load messages when conversation changes
+  useEffect(() => {
+    if (conversationId) {
+      loadMessages(conversationId);
+    }
+  }, [conversationId]);
+
+  const loadConversations = async () => {
+    try {
+      const response = await fetch('/api/conversations');
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations || []);
+
+        // If no conversation selected, select the first one or create new
+        if (!conversationId) {
+          if (data.conversations && data.conversations.length > 0) {
+            setConversationId(data.conversations[0].id);
+          } else {
+            createConversation();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+    }
+  };
+
+  const loadMessages = async (convId: string) => {
+    try {
+      const response = await fetch(`/api/conversations/${convId}/messages`);
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.messages || []);
+      }
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    }
+  };
 
   const createConversation = async () => {
     try {
@@ -59,10 +101,25 @@ export default function ChatPage() {
       if (response.ok) {
         const data = await response.json();
         setConversationId(data.id);
+        setMessages([]); // Clear messages for new conversation
+        loadConversations(); // Reload conversation list
+        toast.success('New conversation created', {
+          style: {
+            background: '#1f2937',
+            color: '#fff',
+            border: '1px solid #10b981',
+          },
+        });
       }
     } catch (error) {
       console.error('Failed to create conversation:', error);
+      toast.error('Failed to create conversation');
     }
+  };
+
+  const switchConversation = (convId: string) => {
+    setConversationId(convId);
+    setMessages([]); // Clear messages while loading
   };
 
   const handleSendMessage = async (content: string, attachments?: any[]) => {
@@ -194,8 +251,18 @@ export default function ChatPage() {
       {/* Sidebar */}
       <Sidebar />
 
+      {/* Conversation List Panel */}
+      <div className="hidden lg:block w-80 bg-gray-900 border-r border-gray-800 lg:ml-72">
+        <ConversationList
+          conversations={conversations}
+          activeConversationId={conversationId}
+          onSelectConversation={switchConversation}
+          onNewConversation={createConversation}
+        />
+      </div>
+
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-72">
+      <div className="flex-1 flex flex-col lg:ml-0">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700">
           <div className="flex items-center gap-4">
