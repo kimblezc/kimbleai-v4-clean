@@ -5,23 +5,65 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v10.8.0
-Latest Commit: 202844a
-Last Updated: 2026-02-01
-Status: 🚀 Deployed to Railway (5GB FILE SUPPORT)
+Latest Version: v11.1.2
+Latest Commit: 057618d
+Last Updated: 2026-02-03
+Status: 🚀 Deployed to Railway (UI REDESIGN)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **057618d** (v11.1.2) - 🎨 UI REDESIGN: 3D wireframe D20, blue theme, version footer. Replaced flat D20 with transparent wireframe (blue edges, no numbers). Changed purple/pink theme to blue/cyan/black. Added version+commit footer to every page.
+- **95cafe3** (v11.1.0) - 🤖 INTELLIGENT TRANSCRIPTION SYSTEM: AI-powered categorization with GPT-4o-mini. Auto-suggests projects, extracts topics/entities/summary. Archive UI with search/filters. Categories: professional/dnd/divorce/other.
+- **d8d3249** (v11.0.2) - ✅ RAILWAY HEALTH CHECK: Added /api/health endpoint to fix deployment failures. Validates all required environment variables.
+- **6ac357c** (v11.0.0) - 🔥 COMPLETE V5 REBUILD: Fresh start from 20k→6k lines. Removed 457 old packages, added 91 optimized ones. Clean architecture, 5GB file support, smart model routing.
 - **202844a** (v10.8.0) - 📦 5GB FILE SUPPORT: Increased file upload limit from 50MB to 5GB for large transcription files. Updated next.config.js and all file upload API routes to support up to 5GB files.
-- **e53e67f** (v10.7.5) - 📁 FILE UPLOAD UI: Added drag-and-drop file upload button to main page sidebar. Easy access to file upload modal from chat interface.
-- **797c18d** (v10.7.4) - 🛡️ SCHEMA VALIDATION SYSTEM: Comprehensive database schema validation to prevent ALL future column/type mismatch errors. Created DATABASE_SCHEMA.md, schema-validator.ts, and complete test suite.
-- **8a37aff** (v10.7.3) - 🔧 UUID FIX: Fixed file ID format to use proper UUID v4. Database expects UUID type, not 'file_' prefix strings.
-- **2f33446** (v10.7.2) - 🔧 COMPLETE DATABASE FIX: Fixed ALL column errors (category, project_id, status). Everything now stored in metadata JSONB field.
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 
 **Purpose**: This section serves as a checkpoint to ensure all changes are properly versioned, committed, and deployed. Every modification to the codebase must update this section with the new version and commit hash.
+
+---
+
+## 🤖 Autonomous Task Execution
+
+**RULE: If you have pending tasks in your todo list, start them immediately. Don't wait for permission.**
+
+### Philosophy
+> "If there's work to do, do it. The user shouldn't have to ask twice."
+
+When you have tasks in your todo list with status "pending", you should:
+1. **Automatically start** the next pending task when the current task is completed
+2. **Don't ask for permission** to continue - the user already asked you to do it
+3. **Update the todo list** as you progress through tasks
+4. **Only stop and ask** if you encounter ambiguity or need clarification
+
+### Examples:
+
+**✅ GOOD - Auto-start pending tasks:**
+```
+User: "Fix the login bug and update the docs"
+Assistant: [Creates 2 todos: "Fix login bug" and "Update docs"]
+Assistant: [Fixes login bug, marks completed]
+Assistant: [Immediately starts updating docs without asking]
+```
+
+**❌ BAD - Waiting for permission:**
+```
+User: "Fix the login bug and update the docs"
+Assistant: [Fixes login bug]
+Assistant: "The login bug is fixed. Should I update the docs now?"
+User: "Yes, I already asked you to do that."
+```
+
+### When to Stop and Ask:
+- You encounter technical ambiguity (multiple valid approaches)
+- You need user input (API keys, design preferences, etc.)
+- You discover a blocker (missing dependencies, architectural decision needed)
+- You finish ALL pending tasks
+
+### Rationale:
+Users expect you to complete all requested tasks without micro-managing. If they gave you a list of things to do, do them all. This reduces friction and makes the development process smoother.
 
 ---
 
