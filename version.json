@@ -1,8 +1,8 @@
 {
-  "version": "11.5.2",
+  "version": "11.5.3",
   "commit": "9c17ae2",
   "lastUpdated": "2026-02-03T11:30:00.000Z",
-  "changelog": "FIX OLD SESSIONS: JWT callback now automatically fixes old tokens with Google numeric IDs. Detects tokens with old format and looks up proper UUID from database. No need to sign out/in - refresh page and it auto-fixes. Version footer working. D20 at 90px.",
+  "changelog": "SESSION FIX PAGE: Visit /fix-session to automatically sign out and clear old token. JWT fix requires new signin - can't fix existing sessions. After visiting fix-session page, sign in again with Google and chat will work.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
