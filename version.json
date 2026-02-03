@@ -1,8 +1,8 @@
 {
-  "version": "11.3.0",
-  "commit": "01678db",
-  "lastUpdated": "2026-02-03T08:00:00.000Z",
-  "changelog": "PERSISTENT CHAT HISTORY + PROJECT CRUD: Added conversation list panel with full history. Messages persist and load on page refresh. Conversation switching works. Project create/edit/delete with modal UI. Toast notifications for all actions. Changed page title to 'KimbleAI'.",
+  "version": "11.3.1",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T08:15:00.000Z",
+  "changelog": "FIXED D20 ICOSAHEDRON: Geometrically correct icosahedron with proper 3D structure. 12 vertices positioned using golden ratio. 30 edges with depth-based opacity (bright front, faint back). White wireframe with vertex dots. Proper pentagonal pyramids top and bottom.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
