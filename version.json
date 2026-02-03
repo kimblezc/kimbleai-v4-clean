@@ -1,6 +1,6 @@
 {
   "version": "11.4.0",
-  "commit": "pending",
+  "commit": "aba6255",
   "lastUpdated": "2026-02-03T09:30:00.000Z",
   "changelog": "CRITICAL AUTH FIX + TRUE 3D D20: (1) Fixed authentication - removed non-existent custom signin pages, now uses NextAuth default; (2) Restored working D20 from v4 with true 3D rotation, golden ratio mathematics, transparent wireframe showing front AND back edges; (3) Dynamic version footer reads commit from version.json; (4) All 401 errors resolved",
   "platform": "Railway",
