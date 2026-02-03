@@ -106,10 +106,11 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-  },
+  // Use NextAuth default signin pages since custom pages don't exist
+  // pages: {
+  //   signIn: '/auth/signin',
+  //   error: '/auth/error',
+  // },
 
   session: {
     strategy: 'jwt',
