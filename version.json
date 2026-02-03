@@ -1,6 +1,6 @@
 {
   "version": "11.5.2",
-  "commit": "pending",
+  "commit": "cd64cea",
   "lastUpdated": "2026-02-03T11:30:00.000Z",
   "changelog": "FIX OLD SESSIONS: JWT callback now automatically fixes old tokens with Google numeric IDs. Detects tokens with old format and looks up proper UUID from database. No need to sign out/in - refresh page and it auto-fixes. Version footer working. D20 at 90px.",
   "platform": "Railway",
