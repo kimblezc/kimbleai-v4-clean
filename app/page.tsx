@@ -15,13 +15,13 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import toast, { Toaster } from 'react-hot-toast';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/layout/Sidebar';
 import MessageList from '@/components/chat/MessageList';
 import ChatInput from '@/components/chat/ChatInput';
 import ModelSelector from '@/components/chat/ModelSelector';
 import CostDisplay from '@/components/chat/CostDisplay';
-import BudgetStatus from '@/components/analytics/BudgetStatus';
 
 export default function ChatPage() {
   const router = useRouter();
@@ -77,6 +77,15 @@ export default function ChatPage() {
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+
+    // Show thinking toast
+    const thinkingToast = toast.loading('AI is thinking...', {
+      style: {
+        background: '#1f2937',
+        color: '#fff',
+        border: '1px solid #374151',
+      },
+    });
 
     try {
       const response = await fetch('/api/chat', {
@@ -143,6 +152,14 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error('Chat error:', error);
+      toast.error('Failed to send message', {
+        id: thinkingToast,
+        style: {
+          background: '#1f2937',
+          color: '#fff',
+          border: '1px solid #ef4444',
+        },
+      });
       setMessages(prev => [
         ...prev,
         {
@@ -154,6 +171,7 @@ export default function ChatPage() {
       ]);
     } finally {
       setIsLoading(false);
+      toast.dismiss(thinkingToast);
     }
   };
 
@@ -171,6 +189,8 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <Toaster position="top-right" />
+
       {/* Sidebar */}
       <Sidebar />
 
@@ -187,7 +207,6 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-4">
             <CostDisplay cost={totalCost} />
-            <BudgetStatus compact />
 
             {/* Settings Button */}
             <Link

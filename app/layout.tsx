@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+import VersionFooter from '@/components/layout/VersionFooter';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,7 +29,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-gray-900 text-gray-100 antialiased`}>
         <Providers>
-          <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
+          <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950/20 to-gray-900">
             {/* Background Pattern - D&D-themed */}
             <div className="fixed inset-0 opacity-5 pointer-events-none">
               <div className="absolute inset-0" style={{
@@ -41,6 +42,9 @@ export default function RootLayout({
             <div className="relative z-10">
               {children}
             </div>
+
+            {/* Version Footer */}
+            <VersionFooter />
           </div>
         </Providers>
       </body>

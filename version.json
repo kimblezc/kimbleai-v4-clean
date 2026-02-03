@@ -1,8 +1,8 @@
 {
-  "version": "11.2.2",
-  "commit": "5424788",
-  "lastUpdated": "2026-02-03T07:15:00.000Z",
-  "changelog": "HOTFIX: Auth errors + proper 3D Icosahedron D20. Fixed eternal loading button, 401 errors, authentication redirect. Completely rewrote D20Icon as full 3D Icosahedron wireframe with all 30 edges visible. Blue theme colors.",
+  "version": "11.2.3",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T07:30:00.000Z",
+  "changelog": "MAJOR FIX: White 3D D20, removed purple, version footer, thinking toast. Changed D20 to WHITE wireframe with depth perception (layered opacity). Fixed layout purple→blue gradient. Added VersionFooter to all pages. Removed BudgetStatus loading button. Added 'AI is thinking' toast to chat.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
