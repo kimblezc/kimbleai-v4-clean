@@ -1,6 +1,6 @@
 {
   "version": "11.5.1",
-  "commit": "120635e",
+  "commit": "ccb4825",
   "lastUpdated": "2026-02-03T11:00:00.000Z",
   "changelog": "D20 SIZE + CHAT WORKING: (1) D20 increased another 50% - now 90px default (225% total increase); (2) Chat fully working with UUID fixes; (3) Conversations load; (4) All 4 models available; (5) Version footer shows commit via /api/version",
   "platform": "Railway",
