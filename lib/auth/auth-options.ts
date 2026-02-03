@@ -73,19 +73,36 @@ export const authOptions: NextAuthOptions = {
       }
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       // Initial sign in - get database user ID by email
       if (user && user.email) {
         try {
           const dbUser = await userQueries.getByEmail(user.email);
           if (dbUser) {
             token.userId = dbUser.id; // Use database UUID, not Google ID
+            token.userEmail = user.email; // Store email for recovery
             console.log('[Auth] JWT token userId set to:', dbUser.id);
           } else {
             console.error('[Auth] User not found in database:', user.email);
           }
         } catch (error) {
           console.error('[Auth] Error getting user for JWT:', error);
+        }
+      }
+
+      // FIX OLD TOKENS: If token has old Google numeric ID, look up proper UUID
+      if (token.userId && typeof token.userId === 'string' && token.userId.length > 36) {
+        console.warn('[Auth] Detected old Google numeric ID in token, fixing...');
+        if (token.userEmail) {
+          try {
+            const dbUser = await userQueries.getByEmail(token.userEmail as string);
+            if (dbUser) {
+              token.userId = dbUser.id;
+              console.log('[Auth] Fixed old token, userId now:', dbUser.id);
+            }
+          } catch (error) {
+            console.error('[Auth] Error fixing old token:', error);
+          }
         }
       }
 

@@ -1,8 +1,8 @@
 {
-  "version": "11.5.1",
-  "commit": "e8f33cb",
-  "lastUpdated": "2026-02-03T11:00:00.000Z",
-  "changelog": "D20 SIZE + CHAT WORKING: (1) D20 increased another 50% - now 90px default (225% total increase); (2) Chat fully working with UUID fixes; (3) Conversations load; (4) All 4 models available; (5) Version footer shows commit via /api/version",
+  "version": "11.5.2",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T11:30:00.000Z",
+  "changelog": "FIX OLD SESSIONS: JWT callback now automatically fixes old tokens with Google numeric IDs. Detects tokens with old format and looks up proper UUID from database. No need to sign out/in - refresh page and it auto-fixes. Version footer working. D20 at 90px.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
