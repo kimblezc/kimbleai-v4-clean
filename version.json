@@ -1,8 +1,8 @@
 {
-  "version": "11.2.1",
+  "version": "11.2.2",
   "commit": "pending",
-  "lastUpdated": "2026-02-03T07:00:00.000Z",
-  "changelog": "HOTFIX: Fixed 401 errors and eternal loading button. Fixed BudgetStatus to not render when unauthenticated. Fixed authentication redirect to use useRouter hook instead of redirect() in client component.",
+  "lastUpdated": "2026-02-03T07:15:00.000Z",
+  "changelog": "HOTFIX: Auth errors + proper 3D Icosahedron D20. Fixed eternal loading button, 401 errors, authentication redirect. Completely rewrote D20Icon as full 3D Icosahedron wireframe with all 30 edges visible. Blue theme colors.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
