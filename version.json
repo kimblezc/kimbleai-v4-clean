@@ -1,6 +1,6 @@
 {
   "version": "11.4.2",
-  "commit": "pending",
+  "commit": "2912e41",
   "lastUpdated": "2026-02-03T10:30:00.000Z",
   "changelog": "SIGNIN FIX: Fixed 'Access Denied' error caused by google_tokens column not existing in database. (1) Removed google_tokens from signin callback; (2) Allow signin even if database update fails (temporary debug mode); (3) Users can now sign in with Google OAuth; (4) D20 size increased 50%; (5) Version footer shows commit via API endpoint",
   "platform": "Railway",
