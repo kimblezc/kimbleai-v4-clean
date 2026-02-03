@@ -1,8 +1,8 @@
 {
-  "version": "11.4.1",
-  "commit": "a57c877",
-  "lastUpdated": "2026-02-03T10:00:00.000Z",
-  "changelog": "DEBUG BUILD: (1) D20 size increased by 50% (now 60px default); (2) Version footer now fetches from /api/version endpoint; (3) Added extensive debug logging to auth callbacks and chat API; (4) New /api/auth/debug endpoint to check session status; (5) Investigating persistent 401 errors",
+  "version": "11.4.2",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T10:30:00.000Z",
+  "changelog": "SIGNIN FIX: Fixed 'Access Denied' error caused by google_tokens column not existing in database. (1) Removed google_tokens from signin callback; (2) Allow signin even if database update fails (temporary debug mode); (3) Users can now sign in with Google OAuth; (4) D20 size increased 50%; (5) Version footer shows commit via API endpoint",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
