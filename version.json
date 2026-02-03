@@ -1,6 +1,6 @@
 {
   "version": "11.3.0",
-  "commit": "pending",
+  "commit": "01678db",
   "lastUpdated": "2026-02-03T08:00:00.000Z",
   "changelog": "PERSISTENT CHAT HISTORY + PROJECT CRUD: Added conversation list panel with full history. Messages persist and load on page refresh. Conversation switching works. Project create/edit/delete with modal UI. Toast notifications for all actions. Changed page title to 'KimbleAI'.",
   "platform": "Railway",
