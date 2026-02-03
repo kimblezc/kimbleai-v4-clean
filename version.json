@@ -1,6 +1,6 @@
 {
   "version": "11.1.2",
-  "commit": "pending",
+  "commit": "057618d",
   "lastUpdated": "2026-02-03T06:00:00.000Z",
   "changelog": "UI REDESIGN: 3D wireframe D20, blue theme, version footer. Replaced flat D20 with transparent wireframe (blue edges, no numbers). Changed purple/pink theme to blue/cyan/black. Added version+commit footer to every page.",
   "platform": "Railway",
