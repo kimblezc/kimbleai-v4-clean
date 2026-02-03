@@ -1,6 +1,6 @@
 {
   "version": "11.5.3",
-  "commit": "9c17ae2",
+  "commit": "84e390b",
   "lastUpdated": "2026-02-03T11:30:00.000Z",
   "changelog": "SESSION FIX PAGE: Visit /fix-session to automatically sign out and clear old token. JWT fix requires new signin - can't fix existing sessions. After visiting fix-session page, sign in again with Google and chat will work.",
   "platform": "Railway",
