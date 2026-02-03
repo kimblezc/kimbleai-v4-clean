@@ -1,6 +1,6 @@
 {
   "version": "11.3.1",
-  "commit": "pending",
+  "commit": "faa074b",
   "lastUpdated": "2026-02-03T08:15:00.000Z",
   "changelog": "FIXED D20 ICOSAHEDRON: Geometrically correct icosahedron with proper 3D structure. 12 vertices positioned using golden ratio. 30 edges with depth-based opacity (bright front, faint back). White wireframe with vertex dots. Proper pentagonal pyramids top and bottom.",
   "platform": "Railway",
