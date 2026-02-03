@@ -36,10 +36,10 @@ export default function ChatPage() {
 
   // Create new conversation on mount
   useEffect(() => {
-    if (session?.user?.id && !conversationId) {
+    if (status === 'authenticated' && session?.user?.id && !conversationId) {
       createConversation();
     }
-  }, [session]);
+  }, [status, session, conversationId]);
 
   const createConversation = async () => {
     try {

@@ -24,6 +24,8 @@ export default function BudgetStatus({ compact = false }: BudgetStatusProps) {
       fetchBudgetStatus();
       const interval = setInterval(fetchBudgetStatus, 60000); // Refresh every minute
       return () => clearInterval(interval);
+    } else if (status === 'unauthenticated') {
+      setLoading(false);
     }
   }, [status]);
 
