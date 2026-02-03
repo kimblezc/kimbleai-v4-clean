@@ -5,6 +5,7 @@
  */
 
 import { supabase, supabaseAdmin } from './client';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * User Operations
@@ -51,13 +52,17 @@ export const userQueries = {
     name?: string;
     googleTokens?: any;
   }) {
+    // Generate a proper UUID instead of using Google's numeric ID
+    const userId = uuidv4();
+
     const { data, error } = await supabaseAdmin
       .from('users')
       .insert({
-        id: params.id,
+        id: userId,
         email: params.email,
         name: params.name,
-        google_tokens: params.googleTokens,
+        // Store Google ID in metadata if we have a column for it
+        // google_tokens: params.googleTokens,
       })
       .select()
       .single();
@@ -72,9 +77,8 @@ export const userQueries = {
   async update(userId: string, updates: Partial<{
     name: string;
     settings: any;
-    google_tokens: any;
-    last_login_at: string;
   }>) {
+    // Remove non-existent columns
     const { data, error } = await supabase
       .from('users')
       .update(updates)
@@ -262,11 +266,14 @@ export const conversationQueries = {
     model?: string;
     projectId?: string;
   }) {
+    // Remove model from params - column doesn't exist in database
+    const { model, ...dbParams } = params;
+
     const { data, error } = await supabase
       .from('conversations')
       .insert({
         user_id: userId,
-        ...params,
+        ...dbParams,
       })
       .select()
       .single();

@@ -1,8 +1,8 @@
 {
-  "version": "11.4.2",
-  "commit": "6340d44",
-  "lastUpdated": "2026-02-03T10:30:00.000Z",
-  "changelog": "SIGNIN FIX: Fixed 'Access Denied' error caused by google_tokens column not existing in database. (1) Removed google_tokens from signin callback; (2) Allow signin even if database update fails (temporary debug mode); (3) Users can now sign in with Google OAuth; (4) D20 size increased 50%; (5) Version footer shows commit via API endpoint",
+  "version": "11.5.0",
+  "commit": "pending",
+  "lastUpdated": "2026-02-03T11:00:00.000Z",
+  "changelog": "CHAT FIX - UUID & Schema: (1) Fixed UUID error by generating proper UUIDs for new users instead of using Google's numeric ID; (2) JWT now uses database UUID not Google ID; (3) Removed 'model' column from conversation creation; (4) Removed 'last_login_at' from user updates; (5) Signin works + chat should now work; (6) D20 50% larger; (7) Version footer via API",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

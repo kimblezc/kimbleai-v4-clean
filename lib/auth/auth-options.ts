@@ -57,10 +57,9 @@ export const authOptions: NextAuthOptions = {
           });
           console.log('[Auth] Created new user:', dbUser.id);
         } else {
-          // Update last login only (skip google_tokens to avoid column error)
+          // Update name only (skip last_login_at - column doesn't exist)
           await userQueries.update(dbUser.id, {
             name: user.name || undefined,
-            last_login_at: new Date().toISOString(),
           });
           console.log('[Auth] Updated existing user:', dbUser.id);
         }
@@ -75,9 +74,19 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, account }) {
-      // Initial sign in
-      if (user) {
-        token.userId = user.id;
+      // Initial sign in - get database user ID by email
+      if (user && user.email) {
+        try {
+          const dbUser = await userQueries.getByEmail(user.email);
+          if (dbUser) {
+            token.userId = dbUser.id; // Use database UUID, not Google ID
+            console.log('[Auth] JWT token userId set to:', dbUser.id);
+          } else {
+            console.error('[Auth] User not found in database:', user.email);
+          }
+        } catch (error) {
+          console.error('[Auth] Error getting user for JWT:', error);
+        }
       }
 
       // Store Google tokens in JWT
