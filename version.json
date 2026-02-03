@@ -1,6 +1,6 @@
 {
   "version": "11.2.0",
-  "commit": "pending",
+  "commit": "659f897",
   "lastUpdated": "2026-02-03T06:30:00.000Z",
   "changelog": "CHATGPT/CLAUDE-STYLE LAYOUT: Settings moved to upper-right header. Simplified sidebar to only Chat and Projects. Added transcription upload button to chat input bar (uploads audio file and inserts transcript).",
   "platform": "Railway",
