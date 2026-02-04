@@ -1,8 +1,8 @@
 {
-  "version": "11.8.4",
-  "commit": "4b08450",
-  "lastUpdated": "2026-02-04T12:00:00.000Z",
-  "changelog": "FIX: Corrected Claude Haiku 4.5 model ID (20251101 -> 20251001)",
+  "version": "11.8.5",
+  "commit": "pending",
+  "lastUpdated": "2026-02-04T12:30:00.000Z",
+  "changelog": "FIX: Corrected Gemini 3 model IDs (added -preview suffix)",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

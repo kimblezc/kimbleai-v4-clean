@@ -276,17 +276,17 @@ export class ModelRouter {
         estimatedCost: 5.00,
         features: ['coding', 'agents', 'computer use', 'highest quality', 'vision'],
       },
-      // Google Gemini 3 Series (Latest)
+      // Google Gemini 3 Series (Latest - Preview)
       'gemini-3-pro': {
         provider: 'google',
-        model: 'gemini-3-pro',
+        model: 'gemini-3-pro-preview',
         reason: 'Complex agentic workflows, adaptive thinking, 1M context',
         estimatedCost: 2.50,
         features: ['reasoning', 'agentic', '1M context', 'multimodal', 'grounding'],
       },
       'gemini-3-flash': {
         provider: 'google',
-        model: 'gemini-3-flash',
+        model: 'gemini-3-flash-preview',
         reason: 'Pro-level intelligence at Flash speed and pricing',
         estimatedCost: 1.25,
         features: ['fast', 'reasoning', 'multimodal', 'vision', 'cheap'],
@@ -294,14 +294,14 @@ export class ModelRouter {
       // Aliases for backward compatibility
       'gemini-flash': {
         provider: 'google',
-        model: 'gemini-3-flash',
+        model: 'gemini-3-flash-preview',
         reason: 'Pro-level intelligence at Flash speed and pricing',
         estimatedCost: 1.25,
         features: ['fast', 'reasoning', 'multimodal', 'vision', 'cheap'],
       },
       'gemini-pro': {
         provider: 'google',
-        model: 'gemini-3-pro',
+        model: 'gemini-3-pro-preview',
         reason: 'Complex agentic workflows, adaptive thinking, 1M context',
         estimatedCost: 2.50,
         features: ['1M context', 'reasoning', 'agentic', 'multimodal'],

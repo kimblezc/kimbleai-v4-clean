@@ -14,7 +14,8 @@
       "Bash(git rev-parse:*)",
       "Bash(railway variables:*)",
       "WebFetch(domain:docs.anthropic.com)",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:kimbleai.com)"
     ],
     "defaultMode": "bypassPermissions"
   }

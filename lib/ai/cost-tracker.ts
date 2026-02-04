@@ -194,12 +194,12 @@ export class CostTracker {
     outputTokens: number
   ): CostBreakdown {
     const pricing: Record<string, { input: number; output: number }> = {
-      // Gemini 3 Series
-      'gemini-3-flash': {
+      // Gemini 3 Series (Preview)
+      'gemini-3-flash-preview': {
         input: 1.00 / 1_000_000,
         output: 8.00 / 1_000_000,
       },
-      'gemini-3-pro': {
+      'gemini-3-pro-preview': {
         input: 2.50 / 1_000_000,
         output: 15.00 / 1_000_000,
       },
