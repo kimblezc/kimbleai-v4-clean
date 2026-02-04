@@ -115,6 +115,14 @@ export class AIService {
 
     const selection = this.router.selectModel(routingContext);
 
+    // Log model selection
+    console.log('[AI Service] Model selected:', {
+      provider: selection.provider,
+      model: selection.model,
+      reason: selection.reason,
+      taskType,
+    });
+
     // Check budget before proceeding
     const estimatedCost = this.router.estimateCost(routingContext);
     const withinBudget = await this.costTracker.checkBudget(userId, estimatedCost);
@@ -126,8 +134,15 @@ export class AIService {
     // Get the appropriate model provider
     const model = this.getModel(selection.provider, selection.model);
 
-    // Convert messages to AI SDK format
+    // Convert messages to AI SDK format with model context
     const formattedMessages = await this.formatMessages(messages);
+
+    // Add system message with model info (helps AI respond correctly when asked about itself)
+    const systemMessage = {
+      role: 'system' as const,
+      content: `You are KimbleAI, powered by ${selection.model} from ${selection.provider}. When asked about your model, respond with: "I'm running on ${selection.provider}'s ${selection.model} model." Be helpful, concise, and accurate.`,
+    };
+    const messagesWithSystem = [systemMessage, ...formattedMessages];
 
     try {
       const startTime = Date.now();
@@ -136,7 +151,7 @@ export class AIService {
         // Streaming response
         const result = await streamText({
           model,
-          messages: formattedMessages,
+          messages: messagesWithSystem,
           temperature: options.temperature,
           ...(options.maxTokens && { maxTokens: options.maxTokens }),
         });
@@ -156,7 +171,7 @@ export class AIService {
         // Non-streaming response
         const result = await generateText({
           model,
-          messages: formattedMessages,
+          messages: messagesWithSystem,
           temperature: options.temperature,
           ...(options.maxTokens && { maxTokens: options.maxTokens }),
         });

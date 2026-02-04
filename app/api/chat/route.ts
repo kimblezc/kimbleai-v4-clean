@@ -75,8 +75,10 @@ export async function POST(req: NextRequest) {
 
     // 5. Set manual model if specified
     if (model) {
+      console.log('[Chat API] Manual model selected:', model);
       aiService.setManualModel(model);
     } else {
+      console.log('[Chat API] Using smart routing (auto mode) - default: gpt-5.2');
       aiService.setAutoModel();
     }
 

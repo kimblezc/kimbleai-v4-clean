@@ -1,8 +1,8 @@
 {
-  "version": "11.8.1",
-  "commit": "86fd5e6",
-  "lastUpdated": "2026-02-04T05:00:00.000Z",
-  "changelog": "CHAT CRUD: Added edit/delete functionality for conversations with dropdown menu and inline rename.",
+  "version": "11.8.2",
+  "commit": "5eebe76",
+  "lastUpdated": "2026-02-04T05:30:00.000Z",
+  "changelog": "MODEL FIX: Added system prompt so AI correctly identifies as GPT-5.2. Added model selection logging.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
