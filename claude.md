@@ -5,18 +5,18 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.7.1
-Latest Commit: b5bf6f3
+Latest Version: v11.8.1
+Latest Commit: 9fddaba
 Last Updated: 2026-02-04
-Status: 🚀 Deployed to Railway (CHAT FIX)
+Status: 🚀 Deployed to Railway (MODEL UPGRADE + CHAT CRUD)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
-- **b5bf6f3** (v11.7.1) - 🔧 MODEL FIX: Replaced fictional AI model names (gpt-4.5, gpt-5) with real API models (gpt-4o, gpt-4-turbo). Fixes chat 502 error.
-- **d8c7738** (v11.7.0) - 🗃️ DB SCHEMA FIX: Aligned all tables to v5 schema (api_usage_log→api_cost_tracking, files→file_registry, transcriptions→audio_transcriptions).
+- **9fddaba** (v11.8.1) - 🗂️ CHAT CRUD: Added conversation edit/delete UI with dropdown menu and inline rename.
+- **52c78a6** (v11.8.0) - 🤖 MODEL UPGRADE: Upgraded to GPT-5.2, Claude 4.5, Gemini 3 - latest 2026 models. Smart routing now uses GPT-5.2 by default.
+- **dec53a6** (v11.7.3) - 🔧 CHAT FIX: Fixed DB schema alignment, fictional model names, streaming response format.
 - **057618d** (v11.1.2) - 🎨 UI REDESIGN: 3D wireframe D20, blue theme, version footer.
-- **95cafe3** (v11.1.0) - 🤖 INTELLIGENT TRANSCRIPTION SYSTEM: AI-powered categorization with GPT-4o-mini.
 - **6ac357c** (v11.0.0) - 🔥 COMPLETE V5 REBUILD: Fresh start from 20k→6k lines. Clean architecture, 5GB file support.
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
