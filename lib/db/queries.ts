@@ -164,7 +164,11 @@ export const projectQueries = {
     console.log('[projectQueries.create] Creating project for user:', userId);
     console.log('[projectQueries.create] Params:', JSON.stringify(params));
 
+    // Generate UUID for project
+    const projectId = uuidv4();
+
     const insertData = {
+      id: projectId,
       user_id: userId,
       name: params.name,
       description: params.description || null,
