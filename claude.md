@@ -5,19 +5,19 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.8.4
-Latest Commit: 4b08450
+Latest Version: v11.8.5
+Latest Commit: 3404baa
 Last Updated: 2026-02-04
-Status: Deployed to Railway (HAIKU MODEL FIX)
+Status: Deployed to Railway (GEMINI MODEL FIX)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **3404baa** (v11.8.5) - GEMINI FIX: Corrected Gemini 3 model IDs (added -preview suffix).
 - **4b08450** (v11.8.4) - HAIKU FIX: Corrected Claude Haiku 4.5 model ID (20251001 snapshot date).
 - **a303d3b** (v11.8.3) - CLAUDE FIX: Fixed Claude model IDs (correct snapshot dates). 502 errors should be resolved.
 - **9fddaba** (v11.8.1) - CHAT CRUD: Added conversation edit/delete UI with dropdown menu and inline rename.
 - **52c78a6** (v11.8.0) - MODEL UPGRADE: Upgraded to GPT-5.2, Claude 4.5, Gemini 3 - latest 2026 models.
-- **dec53a6** (v11.7.3) - CHAT FIX: Fixed DB schema alignment, fictional model names, streaming response format.
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 
