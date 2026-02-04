@@ -1,6 +1,6 @@
 {
   "version": "11.8.3",
-  "commit": "pending",
+  "commit": "28f65e3",
   "lastUpdated": "2026-02-04T06:00:00.000Z",
   "changelog": "CLAUDE FIX: Fixed Claude model IDs (correct snapshot dates). 502 errors should be resolved.",
   "platform": "Railway",
