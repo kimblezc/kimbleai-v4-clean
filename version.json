@@ -1,6 +1,6 @@
 {
   "version": "11.9.1",
-  "commit": "pending",
+  "commit": "3f6d56d",
   "lastUpdated": "2026-02-04T14:00:00.000Z",
   "changelog": "FIX: Project creation - priority 'urgent' changed to 'critical' to match DB schema",
   "platform": "Railway",
