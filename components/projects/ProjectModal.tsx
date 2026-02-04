@@ -25,8 +25,6 @@ interface ProjectModalProps {
 interface ProjectData {
   name: string;
   description: string;
-  status: 'active' | 'archived' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
 }
 
 export default function ProjectModal({
@@ -37,21 +35,15 @@ export default function ProjectModal({
 }: ProjectModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<'active' | 'archived' | 'completed'>('active');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (project) {
       setName(project.name || '');
       setDescription(project.description || '');
-      setStatus(project.status as any || 'active');
-      setPriority(project.priority as any || 'medium');
     } else {
       setName('');
       setDescription('');
-      setStatus('active');
-      setPriority('medium');
     }
   }, [project, isOpen]);
 
@@ -63,8 +55,6 @@ export default function ProjectModal({
       await onSave({
         name,
         description,
-        status,
-        priority,
       });
       onClose();
     } catch (error) {
@@ -129,39 +119,6 @@ export default function ProjectModal({
                 className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-neutral-600 resize-none"
                 placeholder="Enter project description (optional)"
               />
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                Status
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
-                className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-neutral-600"
-              >
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-
-            {/* Priority */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                Priority
-              </label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as any)}
-                className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-neutral-600"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
             </div>
 
             {/* Actions */}

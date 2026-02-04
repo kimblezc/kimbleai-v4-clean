@@ -24,46 +24,18 @@ interface Project {
   id: string;
   name: string;
   description?: string;
-  status: 'active' | 'archived' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
   color?: string;
   icon?: string;
   conversation_count?: number;
   total_cost_usd?: number;
   created_at: string;
+  updated_at: string;
 }
-
-const priorityConfig = {
-  low: {
-    color: 'bg-neutral-600',
-    label: 'Low',
-  },
-  medium: {
-    color: 'bg-neutral-500',
-    label: 'Medium',
-  },
-  high: {
-    color: 'bg-neutral-400',
-    label: 'High',
-  },
-  critical: {
-    color: 'bg-white text-black',
-    label: 'Critical',
-  },
-};
-
-const statusLabels = {
-  active: 'In Progress',
-  archived: 'On Hold',
-  completed: 'Completed',
-};
 
 export default function ProjectsPage() {
   const { data: session, status} = useSession();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'recent' | 'alpha' | 'priority'>('recent');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'archived' | 'completed'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
@@ -76,15 +48,12 @@ export default function ProjectsPage() {
     if (session) {
       fetchProjects();
     }
-  }, [session, sortBy, filterStatus]);
+  }, [session]);
 
   const fetchProjects = async () => {
     try {
-      const params = new URLSearchParams();
-      if (sortBy) params.append('sortBy', sortBy);
-      if (filterStatus !== 'all') params.append('status', filterStatus);
-
-      const response = await fetch(`/api/projects?${params}`);
+      // Always sort by most recently updated
+      const response = await fetch('/api/projects?sortBy=recent');
       if (response.ok) {
         const data = await response.json();
         setProjects(data.projects || []);
@@ -215,35 +184,6 @@ export default function ProjectsPage() {
             </button>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-neutral-500">Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white focus:outline-none focus:border-neutral-600"
-              >
-                <option value="recent">Recent</option>
-                <option value="alpha">A-Z</option>
-                <option value="priority">Priority</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-neutral-500">Filter:</span>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-3 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white focus:outline-none focus:border-neutral-600"
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-          </div>
         </header>
 
         {/* Projects Grid */}
@@ -263,10 +203,7 @@ export default function ProjectsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project) => {
-                const priorityInfo = priorityConfig[project.priority];
-
-                return (
+              {projects.map((project) => (
                   <div
                     key={project.id}
                     className="group relative bg-neutral-900 border border-neutral-800 rounded-xl p-6 hover:border-neutral-700 transition-all"
@@ -289,11 +226,6 @@ export default function ProjectsPage() {
                       </button>
                     </div>
 
-                    {/* Priority Badge */}
-                    <div className={`absolute top-16 right-4 px-2 py-1 rounded text-xs font-medium ${priorityInfo.color}`}>
-                      {priorityInfo.label}
-                    </div>
-
                     {/* Icon */}
                     <div className="w-12 h-12 rounded-lg bg-neutral-800 p-2.5 mb-4">
                       <FolderSolidIcon className="w-full h-full text-neutral-400" />
@@ -311,10 +243,9 @@ export default function ProjectsPage() {
                     )}
 
                     {/* Stats */}
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-neutral-600">{statusLabels[project.status]}</span>
+                    <div className="flex items-center justify-between text-sm text-neutral-600">
                       {project.conversation_count !== undefined && (
-                        <span className="text-neutral-600">{project.conversation_count} chats</span>
+                        <span>{project.conversation_count} chats</span>
                       )}
                     </div>
 
@@ -329,8 +260,7 @@ export default function ProjectsPage() {
                       </div>
                     )}
                   </div>
-                );
-              })}
+                ))}
             </div>
           )}
         </main>

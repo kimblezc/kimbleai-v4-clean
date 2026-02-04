@@ -1,8 +1,8 @@
 {
-  "version": "11.9.1",
-  "commit": "3f6d56d",
-  "lastUpdated": "2026-02-04T14:00:00.000Z",
-  "changelog": "FIX: Project creation - priority 'urgent' changed to 'critical' to match DB schema",
+  "version": "11.9.2",
+  "commit": "pending",
+  "lastUpdated": "2026-02-04T14:30:00.000Z",
+  "changelog": "UI: Simplified projects - removed status/priority, sorted by recent activity",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
