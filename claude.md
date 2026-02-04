@@ -5,19 +5,19 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.9.0
-Latest Commit: e6075d5
+Latest Version: v11.9.1
+Latest Commit: 21058f0
 Last Updated: 2026-02-04
-Status: Deployed to Railway (UI OVERHAUL)
+Status: Deployed to Railway (DB SCHEMA FIX)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **21058f0** (v11.9.1) - FIX: Project creation - priority 'urgent' changed to 'critical' to match DB schema.
 - **e6075d5** (v11.9.0) - UI: ChatGPT-style unified sidebar, true dark mode (no blue).
 - **572287d** (v11.8.6) - UI: Removed D&D themed labels from projects page.
 - **3404baa** (v11.8.5) - GEMINI FIX: Corrected Gemini 3 model IDs (added -preview suffix).
 - **4b08450** (v11.8.4) - HAIKU FIX: Corrected Claude Haiku 4.5 model ID (20251001 snapshot date).
-- **a303d3b** (v11.8.3) - CLAUDE FIX: Fixed Claude model IDs (correct snapshot dates). 502 errors should be resolved.
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 
