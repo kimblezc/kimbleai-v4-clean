@@ -269,9 +269,13 @@ export const conversationQueries = {
     // Remove model from params - column doesn't exist in database
     const { model, ...dbParams } = params;
 
+    // Generate UUID for conversation
+    const conversationId = uuidv4();
+
     const { data, error } = await supabase
       .from('conversations')
       .insert({
+        id: conversationId,
         user_id: userId,
         ...dbParams,
       })
@@ -344,16 +348,20 @@ export const messageQueries = {
     attachments?: any[];
     embedding?: number[];
   }) {
+    // Generate UUID for message
+    const messageId = uuidv4();
+
     const { data, error } = await supabase
       .from('messages')
       .insert({
+        id: messageId,
         conversation_id: params.conversationId,
         role: params.role,
         content: params.content,
         model: params.model,
         tokens_used: params.tokensUsed,
         cost_usd: params.costUsd,
-        attachments: params.attachments,
+        // attachments column doesn't exist - skip it
         embedding: params.embedding,
       })
       .select()

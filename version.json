@@ -1,8 +1,8 @@
 {
-  "version": "11.5.3",
-  "commit": "84e390b",
-  "lastUpdated": "2026-02-03T11:30:00.000Z",
-  "changelog": "SESSION FIX PAGE: Visit /fix-session to automatically sign out and clear old token. JWT fix requires new signin - can't fix existing sessions. After visiting fix-session page, sign in again with Google and chat will work.",
+  "version": "11.6.0",
+  "commit": "pending",
+  "lastUpdated": "2026-02-04T02:20:00.000Z",
+  "changelog": "CHAT WORKING: Fixed conversation & message creation. (1) Conversations now generate UUID IDs; (2) Messages generate UUID IDs; (3) Removed 'attachments' column from message insert; (4) Chat fully functional end-to-end; (5) D20 at 90px; (6) Version footer shows commit",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
