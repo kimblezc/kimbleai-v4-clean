@@ -1,8 +1,8 @@
 {
-  "version": "11.8.3",
-  "commit": "28f65e3",
-  "lastUpdated": "2026-02-04T06:00:00.000Z",
-  "changelog": "CLAUDE FIX: Fixed Claude model IDs (correct snapshot dates). 502 errors should be resolved.",
+  "version": "11.8.4",
+  "commit": "aec1211",
+  "lastUpdated": "2026-02-04T12:00:00.000Z",
+  "changelog": "FIX: Corrected Claude Haiku 4.5 model ID (20251101 -> 20251001)",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

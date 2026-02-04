@@ -12,7 +12,9 @@
       "Bash(railway status:*)",
       "Bash(Start-Sleep -Seconds 60)",
       "Bash(git rev-parse:*)",
-      "Bash(railway variables:*)"
+      "Bash(railway variables:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:ai.google.dev)"
     ],
     "defaultMode": "bypassPermissions"
   }

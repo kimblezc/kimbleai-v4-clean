@@ -256,7 +256,7 @@ export class ModelRouter {
       },
       'claude-haiku-4.5': {
         provider: 'anthropic',
-        model: 'claude-haiku-4-5-20251101',
+        model: 'claude-haiku-4-5-20251001',
         reason: 'Fastest Claude model, cost-effective',
         estimatedCost: 1.00,  // $1/1M input tokens
         features: ['fast', 'cheap', 'general tasks', 'text'],
