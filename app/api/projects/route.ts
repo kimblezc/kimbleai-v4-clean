@@ -94,7 +94,7 @@ export const POST = asyncHandler(async (req: NextRequest) => {
 
   validateRequired(body, ['name']);
 
-  const { name, description, color, icon, priority } = body;
+  const { name, description, color, icon, status, priority } = body;
 
   logger.apiRequest({
     method: 'POST',
@@ -111,6 +111,7 @@ export const POST = asyncHandler(async (req: NextRequest) => {
       description,
       color,
       icon,
+      status,
       priority,
     }),
     { userId, projectName: name }

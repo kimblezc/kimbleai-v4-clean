@@ -158,13 +158,19 @@ export const projectQueries = {
     description?: string;
     color?: string;
     icon?: string;
+    status?: 'active' | 'archived' | 'completed';
     priority?: 'low' | 'medium' | 'high' | 'urgent';
   }) {
     const { data, error } = await supabase
       .from('projects')
       .insert({
         user_id: userId,
-        ...params,
+        name: params.name,
+        description: params.description,
+        color: params.color,
+        icon: params.icon,
+        status: params.status || 'active',
+        priority: params.priority || 'medium',
       })
       .select()
       .single();
