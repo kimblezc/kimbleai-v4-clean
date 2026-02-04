@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -48,6 +48,14 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [versionInfo, setVersionInfo] = useState({ version: process.env.NEXT_PUBLIC_APP_VERSION || '11.0.0', commit: '' });
+
+  useEffect(() => {
+    fetch('/api/version', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => setVersionInfo({ version: data.version, commit: data.commit }))
+      .catch(() => {});
+  }, []);
 
   return (
     <>
@@ -155,7 +163,7 @@ export default function Sidebar() {
           {/* Footer */}
           <div className="p-4 border-t border-gray-800">
             <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>v{process.env.NEXT_PUBLIC_APP_VERSION || '11.0.0'}</span>
+              <span>v{versionInfo.version}{versionInfo.commit ? ` @ ${versionInfo.commit}` : ''}</span>
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 Online
