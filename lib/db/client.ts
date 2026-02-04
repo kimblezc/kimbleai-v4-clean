@@ -17,6 +17,11 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
+// Warn if service role key is missing (required for server-side operations)
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn('[Supabase] Missing SUPABASE_SERVICE_ROLE_KEY - server-side operations may fail');
+}
+
 // Client for regular operations (Row Level Security enabled)
 export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -30,9 +35,10 @@ export const supabase = createClient(
 );
 
 // Admin client for server-side operations (bypasses RLS)
+// Falls back to anon key if service role key is not available
 export const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   {
     auth: {
       persistSession: false,

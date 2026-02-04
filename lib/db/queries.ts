@@ -161,22 +161,39 @@ export const projectQueries = {
     status?: 'active' | 'archived' | 'completed' | 'paused';
     priority?: 'low' | 'medium' | 'high' | 'critical';
   }) {
+    console.log('[projectQueries.create] Creating project for user:', userId);
+    console.log('[projectQueries.create] Params:', JSON.stringify(params));
+
+    const insertData = {
+      user_id: userId,
+      name: params.name,
+      description: params.description || null,
+      color: params.color || '#6366f1', // Default indigo color
+      status: params.status || 'active',
+      priority: params.priority || 'medium',
+      tags: [],
+      metadata: {},
+    };
+
+    console.log('[projectQueries.create] Insert data:', JSON.stringify(insertData));
+
     const { data, error } = await supabaseAdmin
       .from('projects')
-      .insert({
-        user_id: userId,
-        name: params.name,
-        description: params.description || null,
-        color: params.color || '#6366f1', // Default indigo color
-        status: params.status || 'active',
-        priority: params.priority || 'medium',
-        tags: [],
-        metadata: {},
-      })
+      .insert(insertData)
       .select()
       .single();
 
-    if (error) throw new Error(`Failed to create project: ${error.message}`);
+    if (error) {
+      console.error('[projectQueries.create] Supabase error:', JSON.stringify({
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      }));
+      throw new Error(`Failed to create project: ${error.message} (code: ${error.code}, hint: ${error.hint || 'none'})`);
+    }
+
+    console.log('[projectQueries.create] Success, created project:', data?.id);
     return data;
   },
 
