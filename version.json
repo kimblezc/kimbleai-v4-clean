@@ -1,6 +1,6 @@
 {
   "version": "11.9.2",
-  "commit": "pending",
+  "commit": "d8df127",
   "lastUpdated": "2026-02-04T14:30:00.000Z",
   "changelog": "UI: Simplified projects - removed status/priority, sorted by recent activity",
   "platform": "Railway",
