@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         async start(controller) {
           try {
             for await (const chunk of result.textStream) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ chunk })}\n\n`));
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
             }
 
             // Stream complete - save assistant message

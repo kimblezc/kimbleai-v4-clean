@@ -1,8 +1,8 @@
 {
-  "version": "11.7.0",
-  "commit": "b2f06f5",
-  "lastUpdated": "2026-02-04T08:30:00.000Z",
-  "changelog": "DB SCHEMA FIX: Aligned all tables to v5 schema. (1) api_usage_log→api_cost_tracking; (2) files→file_registry; (3) transcriptions→audio_transcriptions; (4) Removed non-existent columns; (5) Made cost tracking non-blocking",
+  "version": "11.7.1",
+  "commit": "b5bf6f3",
+  "lastUpdated": "2026-02-04T03:05:00.000Z",
+  "changelog": "MODEL FIX: Replaced fictional AI model names with real API models. gpt-4.5→gpt-4o, gpt-5→gpt-4-turbo, claude-sonnet-4.5→claude-sonnet, gemini-2.5-flash→gemini-flash. Fixes chat 502 error.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

@@ -5,19 +5,19 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.1.2
-Latest Commit: 057618d
-Last Updated: 2026-02-03
-Status: 🚀 Deployed to Railway (UI REDESIGN)
+Latest Version: v11.7.1
+Latest Commit: b5bf6f3
+Last Updated: 2026-02-04
+Status: 🚀 Deployed to Railway (CHAT FIX)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
-- **057618d** (v11.1.2) - 🎨 UI REDESIGN: 3D wireframe D20, blue theme, version footer. Replaced flat D20 with transparent wireframe (blue edges, no numbers). Changed purple/pink theme to blue/cyan/black. Added version+commit footer to every page.
-- **95cafe3** (v11.1.0) - 🤖 INTELLIGENT TRANSCRIPTION SYSTEM: AI-powered categorization with GPT-4o-mini. Auto-suggests projects, extracts topics/entities/summary. Archive UI with search/filters. Categories: professional/dnd/divorce/other.
-- **d8d3249** (v11.0.2) - ✅ RAILWAY HEALTH CHECK: Added /api/health endpoint to fix deployment failures. Validates all required environment variables.
-- **6ac357c** (v11.0.0) - 🔥 COMPLETE V5 REBUILD: Fresh start from 20k→6k lines. Removed 457 old packages, added 91 optimized ones. Clean architecture, 5GB file support, smart model routing.
-- **202844a** (v10.8.0) - 📦 5GB FILE SUPPORT: Increased file upload limit from 50MB to 5GB for large transcription files. Updated next.config.js and all file upload API routes to support up to 5GB files.
+- **b5bf6f3** (v11.7.1) - 🔧 MODEL FIX: Replaced fictional AI model names (gpt-4.5, gpt-5) with real API models (gpt-4o, gpt-4-turbo). Fixes chat 502 error.
+- **d8c7738** (v11.7.0) - 🗃️ DB SCHEMA FIX: Aligned all tables to v5 schema (api_usage_log→api_cost_tracking, files→file_registry, transcriptions→audio_transcriptions).
+- **057618d** (v11.1.2) - 🎨 UI REDESIGN: 3D wireframe D20, blue theme, version footer.
+- **95cafe3** (v11.1.0) - 🤖 INTELLIGENT TRANSCRIPTION SYSTEM: AI-powered categorization with GPT-4o-mini.
+- **6ac357c** (v11.0.0) - 🔥 COMPLETE V5 REBUILD: Fresh start from 20k→6k lines. Clean architecture, 5GB file support.
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 

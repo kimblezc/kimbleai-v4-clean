@@ -10,7 +10,8 @@
       "Bash(powershell -Command \"Start-Sleep -Seconds 30; Invoke-RestMethod -Uri ''https://www.kimbleai.com/api/version''\")",
       "Bash(railway logs:*)",
       "Bash(railway status:*)",
-      "Bash(Start-Sleep -Seconds 60)"
+      "Bash(Start-Sleep -Seconds 60)",
+      "Bash(git rev-parse:*)"
     ],
     "defaultMode": "bypassPermissions"
   }
