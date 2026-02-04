@@ -319,15 +319,18 @@ export default function ChatPage() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64">
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 bg-neutral-900 border-b border-neutral-800">
-          <div className="flex items-center gap-4">
+        <header className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 bg-neutral-900 border-b border-neutral-800">
+          {/* Spacer for mobile menu button */}
+          <div className="w-10 lg:hidden" />
+
+          <div className="flex items-center gap-2 sm:gap-4">
             <ModelSelector
               selectedModel={selectedModel}
               onModelChange={handleModelChange}
             />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <CostDisplay cost={totalCost} />
           </div>
         </header>
@@ -338,7 +341,7 @@ export default function ChatPage() {
         </main>
 
         {/* Input Area */}
-        <footer className="border-t border-neutral-800 bg-neutral-900">
+        <footer className="border-t border-neutral-800 bg-neutral-900 pb-safe">
           <ChatInput
             onSendMessage={handleSendMessage}
             disabled={isLoading}

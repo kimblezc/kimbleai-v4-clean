@@ -99,10 +99,10 @@ export default function ModelSelector({
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors"
+        className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 active:bg-neutral-600 transition-colors touch-manipulation min-h-[44px]"
       >
-        <span className="text-xs font-bold px-2 py-1 bg-white text-black rounded">{currentModel.icon}</span>
-        <div className="text-left">
+        <span className="text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 bg-white text-black rounded">{currentModel.icon}</span>
+        <div className="text-left hidden xs:block">
           <div className="text-sm font-medium text-white">
             {currentModel.name}
           </div>
@@ -122,20 +122,24 @@ export default function ModelSelector({
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-10 bg-black/50 sm:bg-transparent"
             onClick={() => setIsOpen(false)}
           />
 
-          {/* Menu */}
-          <div className="absolute top-full left-0 mt-2 w-80 bg-neutral-900 rounded-lg shadow-xl border border-neutral-800 z-20">
-            <div className="p-2">
+          {/* Menu - Bottom sheet on mobile, dropdown on desktop */}
+          <div className="fixed sm:absolute bottom-0 sm:bottom-auto left-0 right-0 sm:left-0 sm:right-auto sm:top-full sm:mt-2 w-full sm:w-80 bg-neutral-900 rounded-t-2xl sm:rounded-lg shadow-xl border border-neutral-800 z-20 max-h-[70vh] sm:max-h-[400px] overflow-y-auto pb-safe">
+            {/* Drag handle for mobile */}
+            <div className="sm:hidden flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 bg-neutral-600 rounded-full" />
+            </div>
+            <div className="p-2 sm:p-2">
               {/* Auto Mode */}
               <button
                 onClick={() => handleModelSelect(null)}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                className={`w-full text-left px-4 py-3.5 sm:py-3 rounded-lg transition-colors touch-manipulation ${
                   selectedModel === null
                     ? 'bg-neutral-800'
-                    : 'hover:bg-neutral-800'
+                    : 'hover:bg-neutral-800 active:bg-neutral-700'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -168,10 +172,10 @@ export default function ModelSelector({
                   <button
                     key={key}
                     onClick={() => handleModelSelect(model.id)}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 sm:py-3 rounded-lg transition-colors touch-manipulation ${
                       selectedModel === model.id
                         ? 'bg-neutral-800'
-                        : 'hover:bg-neutral-800'
+                        : 'hover:bg-neutral-800 active:bg-neutral-700'
                     }`}
                   >
                     <div className="flex items-start gap-3">

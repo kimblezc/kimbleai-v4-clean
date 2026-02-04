@@ -139,8 +139,8 @@ export default function Sidebar({
     return (
       <div
         className={`
-          group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer
-          ${isActive ? 'bg-neutral-700' : 'hover:bg-neutral-800'}
+          group relative flex items-center gap-2 px-3 py-2.5 sm:py-2 rounded-lg cursor-pointer touch-manipulation
+          ${isActive ? 'bg-neutral-700' : 'hover:bg-neutral-800 active:bg-neutral-700'}
         `}
         onClick={() => !isEditing && onSelectConversation?.(conv.id)}
       >
@@ -171,7 +171,7 @@ export default function Sidebar({
 
             <button
               onClick={e => { e.stopPropagation(); setMenuOpenId(isMenuOpen ? null : conv.id); }}
-              className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-600"
+              className="p-1.5 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-neutral-600 touch-manipulation"
             >
               <EllipsisHorizontalIcon className="w-4 h-4 text-neutral-400" />
             </button>
@@ -208,7 +208,8 @@ export default function Sidebar({
       {/* Mobile menu button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-neutral-800 rounded-lg text-neutral-300 hover:text-white"
+        className="lg:hidden fixed top-3 left-3 z-50 p-2.5 bg-neutral-800 rounded-lg text-neutral-300 hover:text-white touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center shadow-lg"
+        aria-label={isMobileOpen ? 'Close menu' : 'Open menu'}
       >
         {isMobileOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
       </button>
@@ -216,18 +217,19 @@ export default function Sidebar({
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 z-40 h-screen w-64
+          fixed top-0 left-0 z-40 h-screen w-[85vw] max-w-[280px] sm:w-64
           bg-neutral-900 border-r border-neutral-800
-          transform transition-transform duration-200
+          transform transition-transform duration-200 ease-out
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          pt-safe pl-safe
         `}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
           {/* Header with New Chat */}
-          <div className="p-3">
+          <div className="p-3 pt-14 lg:pt-3">
             <button
               onClick={() => { onNewConversation?.(); setIsMobileOpen(false); }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-neutral-100 text-black rounded-lg font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-neutral-100 active:bg-neutral-200 text-black rounded-lg font-medium transition-colors touch-manipulation min-h-[48px]"
             >
               <PlusIcon className="w-5 h-5" />
               New Chat
@@ -261,7 +263,7 @@ export default function Sidebar({
                       <div key={project.id}>
                         <button
                           onClick={() => toggleProject(project.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-neutral-800 text-left"
+                          className="w-full flex items-center gap-2 px-3 py-2.5 sm:py-2 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 text-left touch-manipulation"
                         >
                           {isExpanded ? (
                             <ChevronDownIcon className="w-4 h-4 text-neutral-400" />
@@ -312,14 +314,14 @@ export default function Sidebar({
           </div>
 
           {/* Bottom Section */}
-          <div className="border-t border-neutral-800 p-3 space-y-2">
+          <div className="border-t border-neutral-800 p-3 space-y-2 pb-safe">
             {/* Settings Link */}
             <Link
               href="/settings"
               onClick={() => setIsMobileOpen(false)}
               className={`
-                flex items-center gap-3 px-3 py-2 rounded-lg
-                ${pathname === '/settings' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}
+                flex items-center gap-3 px-3 py-2.5 sm:py-2 rounded-lg touch-manipulation min-h-[44px]
+                ${pathname === '/settings' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 active:bg-neutral-700 hover:text-white'}
               `}
             >
               <Cog6ToothIcon className="w-5 h-5" />
@@ -328,8 +330,8 @@ export default function Sidebar({
 
             {/* User Section */}
             {session?.user && (
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center text-white text-sm font-medium">
+              <div className="flex items-center gap-3 px-3 py-2.5 sm:py-2">
+                <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                   {session.user.name?.[0] || session.user.email?.[0] || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -338,7 +340,7 @@ export default function Sidebar({
                 </div>
                 <button
                   onClick={() => signOut()}
-                  className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg"
+                  className="p-2.5 text-neutral-400 hover:text-white hover:bg-neutral-800 active:bg-neutral-700 rounded-lg touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
                   title="Sign out"
                 >
                   <ArrowLeftOnRectangleIcon className="w-5 h-5" />

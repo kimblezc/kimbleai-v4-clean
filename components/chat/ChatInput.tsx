@@ -225,7 +225,7 @@ export default function ChatInput({
 
   return (
     <div
-      className={`px-6 py-4 ${
+      className={`px-3 sm:px-6 py-3 sm:py-4 ${
         isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
       onDragEnter={handleDragEnter}
@@ -244,33 +244,33 @@ export default function ChatInput({
 
       {/* Attachments Preview */}
       {attachments.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-3 sm:mb-4 flex flex-wrap gap-2">
           {attachments.map((attachment, index) => (
             <div
               key={index}
-              className="relative group flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg"
+              className="relative group flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-100 dark:bg-gray-700 rounded-lg"
             >
               {attachment.type === 'image' && (
                 <img
                   src={attachment.url}
                   alt={attachment.name}
-                  className="w-16 h-16 object-cover rounded"
+                  className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded"
                 />
               )}
               {attachment.type === 'file' && (
-                <DocumentIcon className="w-8 h-8 text-gray-500" />
+                <DocumentIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-500" />
               )}
               {attachment.type === 'audio' && (
-                <MicrophoneIcon className="w-8 h-8 text-gray-500" />
+                <MicrophoneIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-500" />
               )}
 
-              <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[150px]">
+              <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 truncate max-w-[100px] sm:max-w-[150px]">
                 {attachment.name}
               </span>
 
               <button
                 onClick={() => removeAttachment(index)}
-                className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               >
                 <XMarkIcon className="w-4 h-4" />
               </button>
@@ -280,24 +280,24 @@ export default function ChatInput({
       )}
 
       {/* Input Area */}
-      <div className="flex items-end gap-2">
-        {/* Action Buttons */}
-        <div className="flex gap-1 mb-2">
+      <div className="flex items-end gap-1.5 sm:gap-2">
+        {/* Action Buttons - Hidden on very small screens, shown in row */}
+        <div className="hidden xs:flex gap-0.5 sm:gap-1 mb-1.5 sm:mb-2">
           {/* Image Upload */}
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+            className="p-1.5 sm:p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 touch-manipulation"
             title="Upload image or file"
           >
-            <PhotoIcon className="w-6 h-6" />
+            <PhotoIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
 
           {/* Voice Recording */}
           <button
             onClick={isRecording ? stopRecording : startRecording}
             disabled={disabled}
-            className={`p-2 rounded-lg ${
+            className={`p-1.5 sm:p-2 rounded-lg touch-manipulation ${
               isRecording
                 ? 'text-red-500 hover:text-red-700 bg-red-100 dark:bg-red-900/20'
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -305,15 +305,15 @@ export default function ChatInput({
             title={isRecording ? 'Stop recording' : 'Start voice recording'}
           >
             <MicrophoneIcon
-              className={`w-6 h-6 ${isRecording ? 'animate-pulse' : ''}`}
+              className={`w-5 h-5 sm:w-6 sm:h-6 ${isRecording ? 'animate-pulse' : ''}`}
             />
           </button>
 
-          {/* Audio Transcription */}
+          {/* Audio Transcription - Hidden on small screens */}
           <button
             onClick={() => audioInputRef.current?.click()}
             disabled={disabled || isTranscribing}
-            className={`p-2 rounded-lg ${
+            className={`hidden sm:block p-1.5 sm:p-2 rounded-lg touch-manipulation ${
               isTranscribing
                 ? 'text-blue-500 bg-blue-100 dark:bg-blue-900/20'
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -321,10 +321,20 @@ export default function ChatInput({
             title="Upload audio file for transcription"
           >
             <DocumentTextIcon
-              className={`w-6 h-6 ${isTranscribing ? 'animate-spin' : ''}`}
+              className={`w-5 h-5 sm:w-6 sm:h-6 ${isTranscribing ? 'animate-spin' : ''}`}
             />
           </button>
         </div>
+
+        {/* Mobile: Combined upload button */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled}
+          className="xs:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 touch-manipulation mb-1"
+          title="Upload"
+        >
+          <PhotoIcon className="w-5 h-5" />
+        </button>
 
         {/* Text Input */}
         <textarea
@@ -335,14 +345,14 @@ export default function ChatInput({
           placeholder="Type a message..."
           disabled={disabled}
           rows={1}
-          className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 max-h-48"
+          className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 max-h-32 sm:max-h-48 text-base"
         />
 
         {/* Send Button */}
         <button
           onClick={handleSend}
           disabled={disabled || (!input.trim() && attachments.length === 0)}
-          className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-1"
+          className="p-2.5 sm:p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-0.5 sm:mb-1 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <PaperAirplaneIcon className="w-5 h-5" />
         </button>

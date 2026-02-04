@@ -4,7 +4,7 @@
  * D&D-themed dark mode layout with providers
  */
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
@@ -12,11 +12,24 @@ import VersionFooter from '@/components/layout/VersionFooter';
 
 const inter = Inter({ subsets: ['latin'] });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
+
 export const metadata: Metadata = {
   title: 'KimbleAI',
   description: 'AI-powered assistant with smart model routing, multimodal capabilities, and persistent knowledge',
   icons: {
     icon: '/favicon.ico',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'KimbleAI',
   },
 };
 
