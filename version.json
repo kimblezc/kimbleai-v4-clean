@@ -1,8 +1,8 @@
 {
-  "version": "11.8.0",
-  "commit": "52c78a6",
-  "lastUpdated": "2026-02-04T04:30:00.000Z",
-  "changelog": "MODEL UPDATE: Upgraded to GPT-5.2, Claude 4.5, Gemini 3 - latest 2026 models. Smart routing now uses GPT-5.2 by default.",
+  "version": "11.8.1",
+  "commit": "86fd5e6",
+  "lastUpdated": "2026-02-04T05:00:00.000Z",
+  "changelog": "CHAT CRUD: Added edit/delete functionality for conversations with dropdown menu and inline rename.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

@@ -122,6 +122,65 @@ export default function ChatPage() {
     setMessages([]); // Clear messages while loading
   };
 
+  const deleteConversation = async (convId: string) => {
+    try {
+      const response = await fetch(`/api/conversations/${convId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Conversation deleted', {
+          style: {
+            background: '#1f2937',
+            color: '#fff',
+            border: '1px solid #10b981',
+          },
+        });
+        // If deleting active conversation, switch to another
+        if (convId === conversationId) {
+          const remaining = conversations.filter(c => c.id !== convId);
+          if (remaining.length > 0) {
+            setConversationId(remaining[0].id);
+          } else {
+            createConversation();
+          }
+        }
+        loadConversations();
+      } else {
+        throw new Error('Failed to delete');
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      toast.error('Failed to delete conversation');
+    }
+  };
+
+  const renameConversation = async (convId: string, newTitle: string) => {
+    try {
+      const response = await fetch(`/api/conversations/${convId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle }),
+      });
+
+      if (response.ok) {
+        toast.success('Conversation renamed', {
+          style: {
+            background: '#1f2937',
+            color: '#fff',
+            border: '1px solid #10b981',
+          },
+        });
+        loadConversations();
+      } else {
+        throw new Error('Failed to rename');
+      }
+    } catch (error) {
+      console.error('Failed to rename conversation:', error);
+      toast.error('Failed to rename conversation');
+    }
+  };
+
   const handleSendMessage = async (content: string, attachments?: any[]) => {
     if (!content.trim() && (!attachments || attachments.length === 0)) return;
 
@@ -258,6 +317,8 @@ export default function ChatPage() {
           activeConversationId={conversationId}
           onSelectConversation={switchConversation}
           onNewConversation={createConversation}
+          onDeleteConversation={deleteConversation}
+          onRenameConversation={renameConversation}
         />
       </div>
 
