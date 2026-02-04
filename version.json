@@ -1,8 +1,8 @@
 {
-  "version": "11.6.0",
-  "commit": "628dcac",
-  "lastUpdated": "2026-02-04T02:20:00.000Z",
-  "changelog": "CHAT WORKING: Fixed conversation & message creation. (1) Conversations now generate UUID IDs; (2) Messages generate UUID IDs; (3) Removed 'attachments' column from message insert; (4) Chat fully functional end-to-end; (5) D20 at 90px; (6) Version footer shows commit",
+  "version": "11.7.0",
+  "commit": "b2f06f5",
+  "lastUpdated": "2026-02-04T08:30:00.000Z",
+  "changelog": "DB SCHEMA FIX: Aligned all tables to v5 schema. (1) api_usage_log→api_cost_tracking; (2) files→file_registry; (3) transcriptions→audio_transcriptions; (4) Removed non-existent columns; (5) Made cost tracking non-blocking",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
