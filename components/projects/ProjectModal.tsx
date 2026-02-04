@@ -17,8 +17,9 @@ interface ProjectModalProps {
     id: string;
     name: string;
     description?: string;
-    status: string;
-    priority: string;
+    color?: string;
+    status?: string;
+    priority?: string;
   } | null;
 }
 

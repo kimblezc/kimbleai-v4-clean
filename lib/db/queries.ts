@@ -93,6 +93,7 @@ export const userQueries = {
 
 /**
  * Project Operations
+ * Uses supabaseAdmin for server-side operations to bypass RLS
  */
 export const projectQueries = {
   /**
@@ -102,7 +103,7 @@ export const projectQueries = {
     status?: 'active' | 'archived' | 'completed';
     sortBy?: 'recent' | 'alpha' | 'priority' | 'deadline';
   }) {
-    let query = supabase
+    let query = supabaseAdmin
       .from('projects')
       .select('*')
       .eq('user_id', userId);
@@ -140,7 +141,7 @@ export const projectQueries = {
    * Get project by ID
    */
   async getById(projectId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('projects')
       .select('*')
       .eq('id', projectId)
@@ -157,20 +158,20 @@ export const projectQueries = {
     name: string;
     description?: string;
     color?: string;
-    icon?: string;
-    status?: 'active' | 'archived' | 'completed';
+    status?: 'active' | 'archived' | 'completed' | 'paused';
     priority?: 'low' | 'medium' | 'high' | 'critical';
   }) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('projects')
       .insert({
         user_id: userId,
         name: params.name,
-        description: params.description,
-        color: params.color,
-        icon: params.icon,
+        description: params.description || null,
+        color: params.color || '#6366f1', // Default indigo color
         status: params.status || 'active',
         priority: params.priority || 'medium',
+        tags: [],
+        metadata: {},
       })
       .select()
       .single();
@@ -186,14 +187,27 @@ export const projectQueries = {
     name: string;
     description: string;
     color: string;
-    icon: string;
-    status: 'active' | 'archived' | 'completed';
+    status: 'active' | 'archived' | 'completed' | 'paused';
     priority: 'low' | 'medium' | 'high' | 'critical';
-    deadline: string;
+    tags: string[];
+    metadata: Record<string, any>;
   }>) {
-    const { data, error } = await supabase
+    // Filter out any fields that don't exist in the database schema
+    const validFields = ['name', 'description', 'color', 'status', 'priority', 'tags', 'metadata'];
+    const filteredUpdates: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (validFields.includes(key) && value !== undefined) {
+        filteredUpdates[key] = value;
+      }
+    }
+
+    // Always update the updated_at timestamp
+    filteredUpdates.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabaseAdmin
       .from('projects')
-      .update(updates)
+      .update(filteredUpdates)
       .eq('id', projectId)
       .select()
       .single();
@@ -206,7 +220,7 @@ export const projectQueries = {
    * Delete project
    */
   async delete(projectId: string) {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('projects')
       .delete()
       .eq('id', projectId);
