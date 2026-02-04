@@ -123,13 +123,13 @@
     @apply bg-gray-500;
   }
 
-  /* D&D Card Style */
-  .card-dnd {
+  /* Card Style */
+  .card, .card-dnd {
     @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg shadow-xl;
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
   }
 
-  .card-dnd:hover {
+  .card:hover, .card-dnd:hover {
     box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
   }
 

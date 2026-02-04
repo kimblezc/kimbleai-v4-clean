@@ -1,7 +1,7 @@
 /**
  * Projects Page
  *
- * D&D-themed project management (Quest Board)
+ * Project management dashboard
  */
 
 'use client';
@@ -40,22 +40,22 @@ const priorityConfig = {
   low: {
     color: 'from-blue-500 to-blue-600',
     icon: SparklesIcon,
-    label: 'Common Quest',
+    label: 'Low Priority',
   },
   medium: {
     color: 'from-green-500 to-emerald-600',
     icon: BoltIcon,
-    label: 'Uncommon Quest',
+    label: 'Medium Priority',
   },
   high: {
     color: 'from-purple-500 to-pink-600',
     icon: FireIcon,
-    label: 'Rare Quest',
+    label: 'High Priority',
   },
   urgent: {
     color: 'from-red-500 to-orange-600',
     icon: FireIcon,
-    label: 'Legendary Quest',
+    label: 'Urgent',
   },
 };
 
@@ -212,7 +212,7 @@ export default function ProjectsPage() {
             <div className="inline-block animate-spin-slow">
               <SparklesIcon className="w-12 h-12 text-purple-500" />
             </div>
-            <p className="mt-4 text-gray-400">Loading quests...</p>
+            <p className="mt-4 text-gray-400">Loading projects...</p>
           </div>
         </div>
       </div>
@@ -236,8 +236,8 @@ export default function ProjectsPage() {
         <header className="px-6 py-6 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gradient">Quest Board</h1>
-              <p className="text-gray-400 mt-1">Manage your adventures and campaigns</p>
+              <h1 className="text-3xl font-bold text-gradient">Projects</h1>
+              <p className="text-gray-400 mt-1">Manage your projects and conversations</p>
             </div>
             <button
               onClick={() => handleOpenModal()}
@@ -270,7 +270,7 @@ export default function ProjectsPage() {
                 onChange={(e) => setFilterStatus(e.target.value as any)}
                 className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                <option value="all">All Quests</option>
+                <option value="all">All Projects</option>
                 <option value="active">In Progress</option>
                 <option value="archived">On Hold</option>
                 <option value="completed">Completed</option>
@@ -284,8 +284,8 @@ export default function ProjectsPage() {
           {projects.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <FolderIcon className="w-20 h-20 text-gray-600 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-300 mb-2">No quests yet</h3>
-              <p className="text-gray-500 mb-6">Create your first quest to get started</p>
+              <h3 className="text-xl font-semibold text-gray-300 mb-2">No projects yet</h3>
+              <p className="text-gray-500 mb-6">Create your first project to get started</p>
               <button
                 onClick={() => handleOpenModal()}
                 className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
@@ -302,7 +302,7 @@ export default function ProjectsPage() {
                 return (
                   <div
                     key={project.id}
-                    className="group relative card-dnd p-6 hover:scale-105 transition-all duration-200"
+                    className="group relative bg-gray-800 border border-gray-700 rounded-xl p-6 hover:scale-105 transition-all duration-200"
                   >
                     {/* Action Buttons */}
                     <div className="absolute top-4 right-4 flex items-center gap-2">
