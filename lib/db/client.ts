@@ -42,27 +42,123 @@ export const supabaseAdmin = createClient(
 );
 
 // Type-safe database operations
+// Updated for v5 schema - matches actual Supabase tables
 export type Database = {
   public: {
     Tables: {
       users: {
         Row: {
-          id: string;
-          email: string;
-          name: string | null;
-          google_tokens: any | null;
-          settings: any | null;
-          total_tokens_used: number;
-          total_cost_usd: number;
-          monthly_budget_usd: number;
+          id: string; // UUID
+          name: string; // UNIQUE
+          email: string | null;
           created_at: string;
-          updated_at: string;
-          last_login_at: string | null;
+          role: string;
+          permissions: Record<string, any>;
         };
         Insert: Partial<Database['public']['Tables']['users']['Row']>;
         Update: Partial<Database['public']['Tables']['users']['Row']>;
       };
-      // Add other table types as needed
+      conversations: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string | null;
+          project_id: string | null;
+          is_pinned: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['conversations']['Row']>;
+        Update: Partial<Database['public']['Tables']['conversations']['Row']>;
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          role: 'user' | 'assistant' | 'system';
+          content: string;
+          embedding: number[] | null;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['messages']['Row']>;
+        Update: Partial<Database['public']['Tables']['messages']['Row']>;
+      };
+      projects: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          description: string | null;
+          color: string;
+          status: 'active' | 'completed' | 'paused' | 'archived';
+          priority: 'low' | 'medium' | 'high' | 'critical';
+          tags: string[];
+          metadata: Record<string, any>;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['projects']['Row']>;
+        Update: Partial<Database['public']['Tables']['projects']['Row']>;
+      };
+      file_registry: {
+        Row: {
+          id: string;
+          user_id: string;
+          file_source: 'upload' | 'drive' | 'email_attachment' | 'calendar_attachment' | 'link';
+          source_id: string;
+          source_metadata: Record<string, any>;
+          filename: string;
+          mime_type: string;
+          file_size: number;
+          storage_path: string;
+          preview_url: string | null;
+          processed: boolean;
+          processing_result: Record<string, any> | null;
+          projects: string[];
+          tags: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['file_registry']['Row']>;
+        Update: Partial<Database['public']['Tables']['file_registry']['Row']>;
+      };
+      audio_transcriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          project_id: string;
+          filename: string;
+          file_size: number | null;
+          duration: number | null;
+          text: string;
+          segments: Record<string, any> | null;
+          language: string;
+          status: string;
+          service: string;
+          metadata: Record<string, any>;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['audio_transcriptions']['Row']>;
+        Update: Partial<Database['public']['Tables']['audio_transcriptions']['Row']>;
+      };
+      api_cost_tracking: {
+        Row: {
+          id: string;
+          user_id: string;
+          model: string;
+          endpoint: string;
+          input_tokens: number;
+          output_tokens: number;
+          cost_usd: number;
+          cached: boolean;
+          timestamp: string;
+          metadata: Record<string, any>;
+        };
+        Insert: Partial<Database['public']['Tables']['api_cost_tracking']['Row']>;
+        Update: Partial<Database['public']['Tables']['api_cost_tracking']['Row']>;
+      };
     };
   };
 };

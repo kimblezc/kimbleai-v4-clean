@@ -43,11 +43,11 @@ export const GET = asyncHandler(async (
     userId,
   });
 
-  // 2. Get file
+  // 2. Get file (from file_registry in v5)
   const { data: file, error } = await logger.measure(
     'Get file by ID',
     async () => await supabase
-      .from('files')
+      .from('file_registry')
       .select('*')
       .eq('id', fileId)
       .eq('user_id', userId)
@@ -102,9 +102,9 @@ export const PATCH = asyncHandler(async (
     body,
   });
 
-  // 3. Verify ownership
+  // 3. Verify ownership (from file_registry in v5)
   const { data: existingFile, error: fetchError } = await supabase
-    .from('files')
+    .from('file_registry')
     .select('*')
     .eq('id', fileId)
     .eq('user_id', userId)
@@ -114,20 +114,27 @@ export const PATCH = asyncHandler(async (
     throw new NotFoundError('File');
   }
 
-  // 4. Update file metadata
-  const allowedUpdates = {
-    conversation_id: body.conversationId,
-    project_id: body.projectId,
-    metadata: body.metadata ? {
-      ...existingFile.metadata,
-      ...body.metadata,
-    } : existingFile.metadata,
-  };
+  // 4. Update file metadata (file_registry uses different column names)
+  const allowedUpdates: Record<string, any> = {};
+
+  // Handle project_id - it's an array in file_registry
+  if (body.projectId) {
+    allowedUpdates.projects = body.projectId ? [body.projectId] : [];
+  }
+
+  // Handle metadata in source_metadata
+  if (body.metadata || body.conversationId) {
+    allowedUpdates.source_metadata = {
+      ...existingFile.source_metadata,
+      ...(body.metadata || {}),
+      ...(body.conversationId ? { conversation_id: body.conversationId } : {}),
+    };
+  }
 
   const { data: updatedFile, error: updateError } = await logger.measure(
     'Update file metadata',
     async () => await supabase
-      .from('files')
+      .from('file_registry')
       .update(allowedUpdates)
       .eq('id', fileId)
       .eq('user_id', userId)

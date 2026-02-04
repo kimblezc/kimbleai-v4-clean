@@ -205,29 +205,32 @@ export class FileService {
       }
     }
 
-    // 6. Save file record to database
+    // 6. Save file record to database (file_registry table in v5)
     const fileRecord = {
-      id: fileId,
+      id: `file_reg_${fileId.replace(/-/g, '_')}`,
       user_id: userId,
-      conversation_id: conversationId,
-      project_id: projectId,
-      file_name: file.name,
-      file_size: file.size,
-      mime_type: file.type,
-      storage_path: storagePath,
-      public_url: publicUrl,
-      extracted_text: extractedText,
-      summary,
-      embedding: embedding ? `[${embedding.join(',')}]` : null,
-      metadata: {
+      file_source: 'upload' as const,
+      source_id: fileId,
+      source_metadata: {
         ...metadata,
         originalName: file.name,
         uploadedAt: new Date().toISOString(),
+        conversation_id: conversationId,
+        extracted_text: extractedText,
+        summary,
       },
+      filename: file.name,
+      mime_type: file.type,
+      file_size: file.size,
+      storage_path: storagePath,
+      preview_url: publicUrl,
+      processed: !!extractedText,
+      processing_result: extractedText ? { text: extractedText, summary } : null,
+      projects: projectId ? [projectId] : [],
     };
 
     const { error: insertError } = await this.supabase
-      .from('files')
+      .from('file_registry')
       .insert(fileRecord);
 
     if (insertError) {
@@ -240,7 +243,7 @@ export class FileService {
     }
 
     logger.dbQuery({
-      table: 'files',
+      table: 'file_registry',
       operation: 'INSERT',
       userId,
       durationMs: Date.now() - startTime,
@@ -284,9 +287,9 @@ export class FileService {
   async deleteFile(userId: string, fileId: string): Promise<void> {
     logger.info('Deleting file', { userId, fileId });
 
-    // 1. Get file record
+    // 1. Get file record from file_registry
     const { data: file, error: fetchError } = await this.supabase
-      .from('files')
+      .from('file_registry')
       .select('*')
       .eq('id', fileId)
       .eq('user_id', userId)
@@ -296,7 +299,7 @@ export class FileService {
       throw new DatabaseError('File not found');
     }
 
-    // 2. Delete from storage
+    // 2. Delete from storage (bucket is still called 'files')
     const { error: storageError } = await this.supabase.storage
       .from('files')
       .remove([file.storage_path]);
@@ -310,9 +313,9 @@ export class FileService {
       // Continue with database deletion even if storage deletion fails
     }
 
-    // 3. Delete from database
+    // 3. Delete from database (file_registry table)
     const { error: deleteError } = await this.supabase
-      .from('files')
+      .from('file_registry')
       .delete()
       .eq('id', fileId)
       .eq('user_id', userId);

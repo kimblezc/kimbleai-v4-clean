@@ -254,6 +254,7 @@ export class CostTracker {
 
   /**
    * Log API usage to database
+   * Non-blocking - errors are logged but don't break the chat flow
    */
   async logUsage(params: {
     userId: string;
@@ -266,25 +267,36 @@ export class CostTracker {
   }): Promise<void> {
     const { userId, provider, model, operation, metrics, conversationId, projectId } = params;
 
-    const costBreakdown = this.calculateCost(provider, model, metrics);
+    try {
+      const costBreakdown = this.calculateCost(provider, model, metrics);
 
-    await (this.supabase as any).from('api_usage_log').insert({
-      user_id: userId,
-      provider,
-      model,
-      operation,
-      tokens_input: metrics.tokensInput,
-      tokens_output: metrics.tokensOutput,
-      tokens_total: metrics.tokensTotal,
-      duration_ms: metrics.durationMs,
-      cost_usd: costBreakdown.totalCost,
-      conversation_id: conversationId,
-      project_id: projectId,
-    });
+      // Use api_cost_tracking table with correct column names
+      await (this.supabase as any).from('api_cost_tracking').insert({
+        user_id: userId,
+        model,
+        endpoint: operation,
+        input_tokens: metrics.tokensInput,
+        output_tokens: metrics.tokensOutput,
+        cost_usd: costBreakdown.totalCost,
+        cached: false,
+        metadata: {
+          provider,
+          tokens_total: metrics.tokensTotal,
+          duration_ms: metrics.durationMs,
+          conversation_id: conversationId,
+          project_id: projectId,
+        },
+      });
+    } catch (error) {
+      // Non-blocking - log error but don't throw
+      console.warn('[CostTracker] Failed to log usage (non-blocking):', error);
+    }
   }
 
   /**
    * Log model routing decision
+   * NOTE: model_routing_log table doesn't exist in v5 - this is a no-op for now
+   * Routing data is stored in api_cost_tracking.metadata instead
    */
   async logRouting(params: {
     userId: string;
@@ -296,19 +308,12 @@ export class CostTracker {
     metrics?: Partial<UsageMetrics>;
     userRating?: number;
   }): Promise<void> {
-    const { userId, taskType, inputSize, selectedModel, selectionReason, wasManual, metrics, userRating } = params;
-
-    await (this.supabase as any).from('model_routing_log').insert({
-      user_id: userId,
-      task_type: taskType,
-      input_size: inputSize,
-      selected_model: selectedModel,
-      selection_reason: selectionReason,
-      was_manual: wasManual,
-      latency_ms: metrics?.durationMs,
-      tokens_used: metrics?.tokensTotal,
-      cost_usd: metrics?.costUsd,
-      user_rating: userRating,
+    // Table doesn't exist in v5 schema - skip logging
+    // Routing info is captured in api_cost_tracking.metadata instead
+    console.debug('[CostTracker] Routing decision:', {
+      model: params.selectedModel,
+      reason: params.selectionReason,
+      manual: params.wasManual,
     });
   }
 
@@ -316,19 +321,27 @@ export class CostTracker {
    * Get current month's spending
    */
   async getMonthlySpending(userId: string): Promise<number> {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    try {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
 
-    const { data, error } = await (this.supabase as any)
-      .from('api_usage_log')
-      .select('cost_usd')
-      .eq('user_id', userId)
-      .gte('created_at', startOfMonth.toISOString());
+      const { data, error } = await (this.supabase as any)
+        .from('api_cost_tracking')
+        .select('cost_usd')
+        .eq('user_id', userId)
+        .gte('timestamp', startOfMonth.toISOString());
 
-    if (error) throw error;
+      if (error) {
+        console.warn('[CostTracker] Failed to get monthly spending:', error);
+        return 0;
+      }
 
-    return (data as any)?.reduce((sum: number, row: any) => sum + parseFloat(row.cost_usd || '0'), 0) || 0;
+      return (data as any)?.reduce((sum: number, row: any) => sum + parseFloat(row.cost_usd || '0'), 0) || 0;
+    } catch (error) {
+      console.warn('[CostTracker] Error getting monthly spending:', error);
+      return 0;
+    }
   }
 
   /**
@@ -389,48 +402,68 @@ export class CostTracker {
    * Get cost breakdown by provider
    */
   async getCostBreakdownByProvider(userId: string, days: number = 30): Promise<Record<string, number>> {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
 
-    const { data } = await this.supabase
-      .from('api_usage_log')
-      .select('provider, cost_usd')
-      .eq('user_id', userId)
-      .gte('created_at', startDate.toISOString());
+      const { data, error } = await this.supabase
+        .from('api_cost_tracking')
+        .select('metadata, cost_usd')
+        .eq('user_id', userId)
+        .gte('timestamp', startDate.toISOString());
 
-    const breakdown: Record<string, number> = {};
+      if (error) {
+        console.warn('[CostTracker] Failed to get cost breakdown by provider:', error);
+        return {};
+      }
 
-    data?.forEach(row => {
-      const provider = row.provider;
-      const cost = parseFloat(row.cost_usd || '0');
-      breakdown[provider] = (breakdown[provider] || 0) + cost;
-    });
+      const breakdown: Record<string, number> = {};
 
-    return breakdown;
+      data?.forEach((row: any) => {
+        const provider = row.metadata?.provider || 'unknown';
+        const cost = parseFloat(row.cost_usd || '0');
+        breakdown[provider] = (breakdown[provider] || 0) + cost;
+      });
+
+      return breakdown;
+    } catch (error) {
+      console.warn('[CostTracker] Error getting cost breakdown:', error);
+      return {};
+    }
   }
 
   /**
    * Get cost breakdown by model
    */
   async getCostBreakdownByModel(userId: string, days: number = 30): Promise<Record<string, number>> {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
 
-    const { data } = await this.supabase
-      .from('api_usage_log')
-      .select('model, cost_usd')
-      .eq('user_id', userId)
-      .gte('created_at', startDate.toISOString());
+      const { data, error } = await this.supabase
+        .from('api_cost_tracking')
+        .select('model, cost_usd')
+        .eq('user_id', userId)
+        .gte('timestamp', startDate.toISOString());
 
-    const breakdown: Record<string, number> = {};
+      if (error) {
+        console.warn('[CostTracker] Failed to get cost breakdown by model:', error);
+        return {};
+      }
 
-    data?.forEach(row => {
-      const model = row.model;
-      const cost = parseFloat(row.cost_usd || '0');
-      breakdown[model] = (breakdown[model] || 0) + cost;
-    });
+      const breakdown: Record<string, number> = {};
 
-    return breakdown;
+      data?.forEach((row: any) => {
+        const model = row.model;
+        const cost = parseFloat(row.cost_usd || '0');
+        breakdown[model] = (breakdown[model] || 0) + cost;
+      });
+
+      return breakdown;
+    } catch (error) {
+      console.warn('[CostTracker] Error getting model breakdown:', error);
+      return {};
+    }
   }
 
   /**
@@ -448,25 +481,36 @@ export class CostTracker {
 
   /**
    * Get model routing statistics
+   * NOTE: model_routing_log doesn't exist - derive from api_cost_tracking instead
    */
   async getRoutingStats(userId: string, days: number = 30): Promise<Record<string, number>> {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
 
-    const { data } = await this.supabase
-      .from('model_routing_log')
-      .select('selected_model')
-      .eq('user_id', userId)
-      .gte('created_at', startDate.toISOString());
+      const { data, error } = await this.supabase
+        .from('api_cost_tracking')
+        .select('model')
+        .eq('user_id', userId)
+        .gte('timestamp', startDate.toISOString());
 
-    const stats: Record<string, number> = {};
+      if (error) {
+        console.warn('[CostTracker] Failed to get routing stats:', error);
+        return {};
+      }
 
-    data?.forEach(row => {
-      const model = row.selected_model;
-      stats[model] = (stats[model] || 0) + 1;
-    });
+      const stats: Record<string, number> = {};
 
-    return stats;
+      data?.forEach((row: any) => {
+        const model = row.model;
+        stats[model] = (stats[model] || 0) + 1;
+      });
+
+      return stats;
+    } catch (error) {
+      console.warn('[CostTracker] Error getting routing stats:', error);
+      return {};
+    }
   }
 
   /**

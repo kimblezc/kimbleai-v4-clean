@@ -143,22 +143,25 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     suggestedProject: analysis.suggestedProjectName,
   });
 
-  // 6. Save transcription as a file with analysis metadata
-  const fileId = crypto.randomUUID();
+  // 6. Save transcription to audio_transcriptions table (v5 schema)
+  const transcriptionId = crypto.randomUUID();
 
   await (supabase as any)
-    .from('files')
+    .from('audio_transcriptions')
     .insert({
-      id: fileId,
+      id: transcriptionId,
       user_id: userId,
-      name: audioFile.name.replace(/\.[^/.]+$/, '_transcription.txt'),
-      type: 'transcription',
-      size: result.transcript.length,
-      mime_type: 'text/plain',
-      project_id: analysis.suggestedProjectId || null,
+      project_id: analysis.suggestedProjectId || 'general',
+      filename: audioFile.name,
+      file_size: audioFile.size,
+      duration: result.durationSeconds,
+      text: result.transcript,
+      segments: result.words ? { words: result.words } : null,
+      language: language || 'en',
+      status: 'completed',
+      service: 'deepgram',
       metadata: {
         originalFileName: audioFile.name,
-        durationSeconds: result.durationSeconds,
         confidence: result.confidence,
         costUsd: result.costUsd,
         category: analysis.category,
@@ -173,12 +176,14 @@ export const POST = asyncHandler(async (req: NextRequest) => {
         tags: analysis.suggestedTags,
         transcriptionDate: new Date().toISOString(),
       },
-      content: result.transcript,
     });
 
-  logger.info('Transcription saved as file', {
+  // Use transcriptionId as fileId for backward compatibility in response
+  const fileId = transcriptionId;
+
+  logger.info('Transcription saved to audio_transcriptions', {
     userId,
-    fileId,
+    transcriptionId,
     projectId: analysis.suggestedProjectId,
   });
 

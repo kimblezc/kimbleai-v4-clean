@@ -45,18 +45,20 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const limit = parseInt(searchParams.get('limit') || '50');
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  // 3. Build query
+  // 3. Build query (using file_registry table in v5)
   let query = supabase
-    .from('files')
+    .from('file_registry')
     .select('*', { count: 'exact' })
     .eq('user_id', userId);
 
   if (conversationId) {
-    query = query.eq('conversation_id', conversationId);
+    // conversation_id is in source_metadata JSONB
+    query = query.contains('source_metadata', { conversation_id: conversationId });
   }
 
   if (projectId) {
-    query = query.eq('project_id', projectId);
+    // projects is an array column
+    query = query.contains('projects', [projectId]);
   }
 
   if (mimeType) {
@@ -86,7 +88,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   }
 
   logger.dbQuery({
-    table: 'files',
+    table: 'file_registry',
     operation: 'SELECT',
     userId,
     durationMs: Date.now() - startTime,

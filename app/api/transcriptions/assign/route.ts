@@ -50,16 +50,16 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     throw new ValidationError('Either projectId or createNewProject must be provided');
   }
 
-  // 3. Verify file ownership
+  // 3. Verify transcription ownership (audio_transcriptions table in v5)
   const { data: file } = await (supabase as any)
-    .from('files')
+    .from('audio_transcriptions')
     .select('*')
     .eq('id', fileId)
     .eq('user_id', userId)
     .single();
 
   if (!file) {
-    throw new ValidationError('File not found or access denied');
+    throw new ValidationError('Transcription not found or access denied');
   }
 
   let targetProjectId = projectId;
@@ -95,9 +95,9 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     });
   }
 
-  // 5. Assign file to project
+  // 5. Assign transcription to project (audio_transcriptions table in v5)
   const { error: assignError } = await (supabase as any)
-    .from('files')
+    .from('audio_transcriptions')
     .update({
       project_id: targetProjectId,
       updated_at: new Date().toISOString(),
@@ -106,13 +106,13 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     .eq('user_id', userId);
 
   if (assignError) {
-    logger.error('Failed to assign file to project', { userId, error: assignError.message });
+    logger.error('Failed to assign transcription to project', { userId, error: assignError.message });
     throw assignError;
   }
 
   logger.info('Transcription assigned to project', {
     userId,
-    fileId,
+    transcriptionId: fileId,
     projectId: targetProjectId,
   });
 

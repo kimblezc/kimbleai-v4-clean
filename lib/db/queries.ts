@@ -121,11 +121,13 @@ export const projectQueries = {
         query = query.order('priority', { ascending: false });
         break;
       case 'deadline':
-        query = query.order('deadline', { ascending: true, nullsLast: true });
+        // deadline column doesn't exist - use updated_at instead
+        query = query.order('updated_at', { ascending: false });
         break;
       case 'recent':
       default:
-        query = query.order('last_activity_at', { ascending: false });
+        // last_activity_at doesn't exist - use updated_at
+        query = query.order('updated_at', { ascending: false });
     }
 
     const { data, error } = await query;
@@ -337,6 +339,8 @@ export const messageQueries = {
 
   /**
    * Create message
+   * Note: model, tokens_used, cost_usd columns don't exist in v5 schema
+   * Cost tracking is handled separately in api_cost_tracking table
    */
   async create(params: {
     conversationId: string;
@@ -358,10 +362,8 @@ export const messageQueries = {
         conversation_id: params.conversationId,
         role: params.role,
         content: params.content,
-        model: params.model,
-        tokens_used: params.tokensUsed,
-        cost_usd: params.costUsd,
-        // attachments column doesn't exist - skip it
+        // Note: model, tokens_used, cost_usd, attachments columns don't exist in v5
+        // Cost data is tracked in api_cost_tracking table instead
         embedding: params.embedding,
       })
       .select()
@@ -373,13 +375,14 @@ export const messageQueries = {
 
   /**
    * Update message (for editing)
+   * Note: edited_at column doesn't exist in v5 schema
    */
   async update(messageId: string, content: string) {
     const { data, error } = await supabase
       .from('messages')
       .update({
         content,
-        edited_at: new Date().toISOString(),
+        // edited_at column doesn't exist in v5 schema
       })
       .eq('id', messageId)
       .select()

@@ -42,12 +42,11 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   const limit = parseInt(searchParams.get('limit') || '50');
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  // 3. Build query
+  // 3. Build query (using audio_transcriptions table in v5)
   let query = (supabase as any)
-    .from('files')
-    .select('*, projects(name)')
+    .from('audio_transcriptions')
+    .select('*, projects:project_id(name)')
     .eq('user_id', userId)
-    .eq('type', 'transcription')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -61,7 +60,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
   }
 
   if (search) {
-    query = query.or(`name.ilike.%${search}%,content.ilike.%${search}%,metadata->summary.ilike.%${search}%`);
+    query = query.or(`filename.ilike.%${search}%,text.ilike.%${search}%,metadata->summary.ilike.%${search}%`);
   }
 
   const { data: transcriptions, error } = await query;
@@ -71,12 +70,12 @@ export const GET = asyncHandler(async (req: NextRequest) => {
     throw error;
   }
 
-  // 4. Format response
+  // 4. Format response (mapping from audio_transcriptions columns)
   const formattedTranscriptions = (transcriptions || []).map((t: any) => ({
     id: t.id,
-    name: t.name,
+    name: t.filename,
     createdAt: t.created_at,
-    durationSeconds: t.metadata?.durationSeconds || 0,
+    durationSeconds: t.duration || 0,
     category: t.metadata?.category || 'other',
     categoryConfidence: t.metadata?.categoryConfidence || 0,
     suggestedProjectName: t.metadata?.suggestedProjectName,
@@ -87,6 +86,8 @@ export const GET = asyncHandler(async (req: NextRequest) => {
     tags: t.metadata?.tags || [],
     isPrivate: t.metadata?.isPrivate || false,
     confidence: t.metadata?.confidence || 0,
+    status: t.status || 'completed',
+    text: t.text,
   }));
 
   // 5. Log and return
