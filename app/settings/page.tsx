@@ -195,10 +195,10 @@ export default function SettingsPage() {
                       onChange={(e) => setDefaultModel(e.target.value)}
                       className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
-                      <option value="gpt-5">GPT-5 (Highest accuracy)</option>
-                      <option value="gpt-4.5">GPT-4.5 (Best balance)</option>
-                      <option value="claude-sonnet-4.5">Claude Sonnet 4.5 (Code analysis)</option>
-                      <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fastest, cheapest)</option>
+                      <option value="gpt-4-turbo">GPT-4 Turbo (Highest accuracy)</option>
+                      <option value="gpt-4o">GPT-4o (Best balance)</option>
+                      <option value="claude-sonnet">Claude Sonnet (Code analysis)</option>
+                      <option value="gemini-flash">Gemini Flash (Fastest, cheapest)</option>
                     </select>
                   </div>
                 )}

@@ -26,30 +26,30 @@ const MODELS = {
     icon: 'AI',
     cost: 'Optimized',
   },
-  'gpt-5': {
-    id: 'gpt-5',
-    name: 'GPT-5',
+  'gpt-4-turbo': {
+    id: 'gpt-4-turbo',
+    name: 'GPT-4 Turbo',
     description: 'Highest accuracy, reasoning',
-    icon: 'G5',
+    icon: 'G4',
     cost: '$$$',
   },
-  'gpt-4.5': {
-    id: 'gpt-4.5',
-    name: 'GPT-4.5',
+  'gpt-4o': {
+    id: 'gpt-4o',
+    name: 'GPT-4o',
     description: 'Best balance of cost/quality',
     icon: 'G4',
     cost: '$$',
   },
-  'claude-sonnet-4.5': {
-    id: 'claude-sonnet-4.5',
-    name: 'Claude Sonnet 4.5',
+  'claude-sonnet': {
+    id: 'claude-sonnet',
+    name: 'Claude Sonnet',
     description: 'Best for code analysis',
     icon: 'CS',
     cost: '$$',
   },
-  'gemini-2.5-flash': {
-    id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
+  'gemini-flash': {
+    id: 'gemini-flash',
+    name: 'Gemini Flash',
     description: '75% cheaper, fast vision',
     icon: 'GF',
     cost: '$',

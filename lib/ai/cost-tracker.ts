@@ -55,27 +55,22 @@ export class CostTracker {
     cachedTokens: number = 0
   ): CostBreakdown {
     const pricing: Record<string, { input: number; output: number; cached: number }> = {
-      'gpt-5': {
-        input: 5.00 / 1_000_000,
-        output: 20.00 / 1_000_000,
-        cached: 2.50 / 1_000_000,
+      'gpt-4-turbo': {
+        input: 10.00 / 1_000_000,
+        output: 30.00 / 1_000_000,
+        cached: 5.00 / 1_000_000,
       },
-      'gpt-4.5': {
+      'gpt-4o': {
         input: 2.50 / 1_000_000,
         output: 10.00 / 1_000_000,
         cached: 1.25 / 1_000_000,
-      },
-      'gpt-4o': {
-        input: 5.00 / 1_000_000,
-        output: 20.00 / 1_000_000,
-        cached: 2.50 / 1_000_000,
       },
       'gpt-4o-mini': {
         input: 0.15 / 1_000_000,
         output: 0.60 / 1_000_000,
         cached: 0.075 / 1_000_000,
       },
-      'gpt-realtime': {
+      'gpt-4o-realtime-preview': {
         input: 32.00 / 1_000_000,   // Audio input tokens
         output: 64.00 / 1_000_000,  // Audio output tokens
         cached: 0.40 / 1_000_000,   // Cached audio
@@ -102,7 +97,7 @@ export class CostTracker {
       },
     };
 
-    const modelPricing = pricing[model] || pricing['gpt-4.5'];
+    const modelPricing = pricing[model] || pricing['gpt-4o'];
 
     const inputCost = (inputTokens - cachedTokens) * modelPricing.input;
     const cachedCost = cachedTokens * modelPricing.cached;

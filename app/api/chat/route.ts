@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     } else {
       // Create new conversation
       conversation = await conversationQueries.create(userId, {
-        model: model || 'gpt-4.5',
+        model: model || 'gpt-4o',
         projectId,
         title: messages[0]?.content?.slice(0, 100) || 'New conversation',
       });
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
               conversationId: conversation.id,
               role: 'assistant',
               content: fullText,
-              model: model || 'gpt-4.5',
+              model: model || 'gpt-4o',
             });
 
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));

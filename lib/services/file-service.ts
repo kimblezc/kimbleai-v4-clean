@@ -263,7 +263,7 @@ export class FileService {
     logger.costTracking({
       userId,
       provider: 'openai',
-      model: 'gpt-4.5',
+      model: 'gpt-4o',
       costUsd: totalCost,
       tokensUsed: Math.ceil((extractedText?.length || 0) / 4),
     });
