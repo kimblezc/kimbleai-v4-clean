@@ -26,7 +26,7 @@ interface ProjectData {
   name: string;
   description: string;
   status: 'active' | 'archived' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: 'low' | 'medium' | 'high' | 'critical';
 }
 
 export default function ProjectModal({
@@ -38,7 +38,7 @@ export default function ProjectModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'active' | 'archived' | 'completed'>('active');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -160,7 +160,7 @@ export default function ProjectModal({
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
-                <option value="urgent">Urgent</option>
+                <option value="critical">Critical</option>
               </select>
             </div>
 

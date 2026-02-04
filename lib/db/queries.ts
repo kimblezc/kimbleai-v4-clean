@@ -159,7 +159,7 @@ export const projectQueries = {
     color?: string;
     icon?: string;
     status?: 'active' | 'archived' | 'completed';
-    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    priority?: 'low' | 'medium' | 'high' | 'critical';
   }) {
     const { data, error } = await supabase
       .from('projects')
@@ -188,7 +188,7 @@ export const projectQueries = {
     color: string;
     icon: string;
     status: 'active' | 'archived' | 'completed';
-    priority: 'low' | 'medium' | 'high' | 'urgent';
+    priority: 'low' | 'medium' | 'high' | 'critical';
     deadline: string;
   }>) {
     const { data, error } = await supabase

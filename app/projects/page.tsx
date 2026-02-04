@@ -25,7 +25,7 @@ interface Project {
   name: string;
   description?: string;
   status: 'active' | 'archived' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: 'low' | 'medium' | 'high' | 'critical';
   color?: string;
   icon?: string;
   conversation_count?: number;
@@ -46,9 +46,9 @@ const priorityConfig = {
     color: 'bg-neutral-400',
     label: 'High',
   },
-  urgent: {
+  critical: {
     color: 'bg-white text-black',
-    label: 'Urgent',
+    label: 'Critical',
   },
 };
 

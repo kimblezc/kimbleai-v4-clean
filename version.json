@@ -1,8 +1,8 @@
 {
-  "version": "11.9.0",
-  "commit": "e6075d5",
-  "lastUpdated": "2026-02-04T13:00:00.000Z",
-  "changelog": "UI: ChatGPT-style unified sidebar, true dark mode (no blue)",
+  "version": "11.9.1",
+  "commit": "pending",
+  "lastUpdated": "2026-02-04T14:00:00.000Z",
+  "changelog": "FIX: Project creation - priority 'urgent' changed to 'critical' to match DB schema",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
