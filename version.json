@@ -1,8 +1,8 @@
 {
-  "version": "11.7.3",
-  "commit": "dec53a6",
-  "lastUpdated": "2026-02-04T03:12:00.000Z",
-  "changelog": "CHAT FIX: (1) Fixed DB schema alignment; (2) Fixed fictional model names; (3) Fixed streaming response format. Chat now working!",
+  "version": "11.8.0",
+  "commit": "7daeec7",
+  "lastUpdated": "2026-02-04T04:30:00.000Z",
+  "changelog": "MODEL UPDATE: Upgraded to GPT-5.2, Claude 4.5, Gemini 3 - latest 2026 models. Smart routing now uses GPT-5.2 by default.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

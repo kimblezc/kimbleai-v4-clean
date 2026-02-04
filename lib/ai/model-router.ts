@@ -1,11 +1,15 @@
 /**
  * Smart Model Router - Automatically selects the best AI model for each task
  *
+ * Updated: 2026-02-04 with latest models
+ *
  * Strategy:
- * - GPT-4-turbo: Complex reasoning, high accuracy needs, code generation
- * - GPT-4o: General chat, creative writing, balanced cost/quality
- * - Gemini Flash: Bulk operations, vision (75% cheaper), video
- * - Claude Sonnet: Code screenshots, UI analysis
+ * - GPT-5.2: Best general intelligence, complex tasks, agentic workflows
+ * - GPT-5.2-Codex: Specialized for coding, refactoring, migrations
+ * - Gemini 3 Pro: Complex reasoning with 1M context window
+ * - Gemini 3 Flash: Fast general-purpose with good reasoning
+ * - Claude Opus 4.5: Best for coding, agents, computer use
+ * - Claude Sonnet 4.5: Code screenshots, UI analysis, balanced
  * - Deepgram Nova-3: Audio transcription (fastest, most accurate)
  * - OpenAI Realtime API: Real-time voice chat mode
  */
@@ -83,6 +87,7 @@ export class ModelRouter {
 
   /**
    * Route based on task type and constraints
+   * Updated 2026-02-04 with latest models
    */
   private routeByTask(context: RoutingContext): ModelSelection {
     const { taskType, inputSize, budgetConstraint, qualityThreshold, requiresSpeed } = context;
@@ -92,23 +97,23 @@ export class ModelRouter {
         return this.routeChat(inputSize, qualityThreshold, budgetConstraint);
 
       case 'reasoning':
-        // Use GPT-4-turbo for complex reasoning
-        return this.getModelInfo('gpt-4-turbo');
+        // Use GPT-5.2 for complex reasoning (best general intelligence)
+        return this.getModelInfo('gpt-5.2');
 
       case 'creative':
-        // GPT-4o excels at creative tasks
-        return this.getModelInfo('gpt-4o');
+        // GPT-5.2 excels at creative tasks
+        return this.getModelInfo('gpt-5.2');
 
       case 'vision':
         return this.routeVision(inputSize, budgetConstraint);
 
       case 'code-vision':
-        // Claude Sonnet is best for code screenshots
-        return this.getModelInfo('claude-sonnet');
+        // Claude Sonnet 4.5 is best for code screenshots and UI analysis
+        return this.getModelInfo('claude-sonnet-4.5');
 
       case 'bulk':
-        // Always use Gemini Flash for bulk (cheapest)
-        return this.getModelInfo('gemini-flash');
+        // Gemini 3 Flash for bulk (fast and cheap)
+        return this.getModelInfo('gemini-3-flash');
 
       case 'transcription':
         return this.routeTranscription(requiresSpeed);
@@ -118,62 +123,64 @@ export class ModelRouter {
         return this.getModelInfo('gpt-realtime');
 
       case 'embedding':
-        // Always use OpenAI text-embedding-3-small
+        // OpenAI text-embedding-3-small
         return this.getModelInfo('text-embedding-3-small');
 
       default:
-        // Default to GPT-4o (best balance)
-        return this.getModelInfo('gpt-4o');
+        // Default to GPT-5.2 (best general intelligence)
+        return this.getModelInfo('gpt-5.2');
     }
   }
 
   /**
    * Route chat based on quality and budget
+   * Updated 2026-02-04 with GPT-5.2 as default
    */
   private routeChat(
     inputSize: number,
     qualityThreshold: RoutingContext['qualityThreshold'] = 'standard',
     budgetConstraint?: number
   ): ModelSelection {
-    // For very long inputs, use Gemini Pro (1M token context)
+    // For very long inputs, use Gemini 3 Pro (1M token context)
     if (inputSize > 100000) {
-      return this.getModelInfo('gemini-pro');
+      return this.getModelInfo('gemini-3-pro');
     }
 
     // Quality-based routing
     if (qualityThreshold === 'maximum') {
-      return this.getModelInfo('gpt-4-turbo');
+      return this.getModelInfo('gpt-5.2-pro');
     }
 
     if (qualityThreshold === 'high') {
       // Check budget
       if (budgetConstraint && budgetConstraint < 0.01) {
-        // Budget too low for GPT-4-turbo, use GPT-4o
-        return this.getModelInfo('gpt-4o');
+        // Budget too low for GPT-5.2-pro, use standard GPT-5.2
+        return this.getModelInfo('gpt-5.2');
       }
-      return this.getModelInfo('gpt-4-turbo');
+      return this.getModelInfo('gpt-5.2-pro');
     }
 
-    // Standard quality - use GPT-4o
-    return this.getModelInfo('gpt-4o');
+    // Standard quality - use GPT-5.2 (best general intelligence)
+    return this.getModelInfo('gpt-5.2');
   }
 
   /**
    * Route vision based on cost
+   * Updated 2026-02-04 with Gemini 3 Flash
    */
   private routeVision(inputSize: number, budgetConstraint?: number): ModelSelection {
-    // If budget is tight, always use Gemini Flash (75% cheaper)
+    // If budget is tight, always use Gemini 3 Flash (fast and cheap)
     if (budgetConstraint && budgetConstraint < 0.005) {
-      return this.getModelInfo('gemini-flash');
+      return this.getModelInfo('gemini-3-flash');
     }
 
-    // For batch operations (multiple images), use Gemini
+    // For batch operations (multiple images), use Gemini 3 Flash
     if (inputSize > 1000000) {  // > 1MB suggests multiple images
-      return this.getModelInfo('gemini-flash');
+      return this.getModelInfo('gemini-3-flash');
     }
 
-    // Default to Gemini Flash (best cost/quality for vision)
-    return this.getModelInfo('gemini-flash');
+    // Default to Gemini 3 Flash (best cost/quality for vision)
+    return this.getModelInfo('gemini-3-flash');
   }
 
   /**
@@ -191,30 +198,39 @@ export class ModelRouter {
 
   /**
    * Get model information
+   * Updated 2026-02-04 with latest models
    */
   private getModelInfo(model: string): ModelSelection {
     const models: Record<string, ModelSelection> = {
-      // OpenAI Models (using actual API model names)
+      // OpenAI GPT-5.2 Series (Latest - December 2025)
+      'gpt-5.2': {
+        provider: 'openai',
+        model: 'gpt-5.2',
+        reason: 'Best general intelligence, agentic tool-calling, complex tasks',
+        estimatedCost: 1.75,  // $1.75/1M input tokens
+        features: ['reasoning', 'agentic', 'multimodal', 'long context', 'tool-calling'],
+      },
+      'gpt-5.2-pro': {
+        provider: 'openai',
+        model: 'gpt-5.2-pro',
+        reason: 'Smartest and most trustworthy for difficult questions',
+        estimatedCost: 5.00,
+        features: ['highest quality', 'reasoning', 'complex tasks', 'trustworthy'],
+      },
+      'gpt-5.2-codex': {
+        provider: 'openai',
+        model: 'gpt-5.2-codex',
+        reason: 'Most advanced agentic coding model for software engineering',
+        estimatedCost: 2.50,
+        features: ['coding', 'refactoring', 'migrations', 'long-horizon', 'agentic'],
+      },
+      // OpenAI Legacy Models (still available)
       'gpt-4o': {
         provider: 'openai',
         model: 'gpt-4o',
-        reason: 'Best balance of cost and quality with multimodal',
+        reason: 'Good balance of cost and quality (being deprecated)',
         estimatedCost: 2.50,
         features: ['general chat', 'creative writing', 'vision', 'fast inference'],
-      },
-      'gpt-4o-mini': {
-        provider: 'openai',
-        model: 'gpt-4o-mini',
-        reason: 'Fast and cost-effective for simple tasks',
-        estimatedCost: 0.15,
-        features: ['text', 'fast', 'cheap', 'general tasks'],
-      },
-      'gpt-4-turbo': {
-        provider: 'openai',
-        model: 'gpt-4-turbo',
-        reason: 'Highest accuracy and reasoning capabilities',
-        estimatedCost: 10.00,
-        features: ['complex reasoning', 'multimodal', 'code generation', 'math'],
       },
       'gpt-realtime': {
         provider: 'openai',
@@ -223,35 +239,72 @@ export class ModelRouter {
         estimatedCost: 32.00,
         features: ['voice', 'real-time', 'emotions', 'interruptions'],
       },
-      // Anthropic Models (using actual API model names)
+      // Anthropic Claude 4.5 Series (Latest)
+      'claude-sonnet-4.5': {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-5-20250514',
+        reason: 'Best coding, 1M token context, excellent for UI analysis',
+        estimatedCost: 3.00,  // $3/1M input tokens
+        features: ['vision', 'code analysis', '1M context', 'safety', 'coding'],
+      },
+      'claude-opus-4.5': {
+        provider: 'anthropic',
+        model: 'claude-opus-4-5-20250514',
+        reason: 'Best for coding, agents, computer use',
+        estimatedCost: 5.00,  // $5/1M input tokens
+        features: ['coding', 'agents', 'computer use', 'highest quality', 'vision'],
+      },
+      'claude-haiku-4.5': {
+        provider: 'anthropic',
+        model: 'claude-haiku-4-5-20250514',
+        reason: 'Fastest Claude model, cost-effective',
+        estimatedCost: 1.00,  // $1/1M input tokens
+        features: ['fast', 'cheap', 'general tasks', 'text'],
+      },
+      // Aliases for backward compatibility
       'claude-sonnet': {
         provider: 'anthropic',
-        model: 'claude-sonnet-4-20250514',
-        reason: 'Best vision for code and UI analysis',
+        model: 'claude-sonnet-4-5-20250514',
+        reason: 'Best coding, 1M token context, excellent for UI analysis',
         estimatedCost: 3.00,
-        features: ['vision', 'code analysis', 'long context 200K', 'safety'],
+        features: ['vision', 'code analysis', '1M context', 'safety', 'coding'],
       },
       'claude-opus': {
         provider: 'anthropic',
-        model: 'claude-opus-4-20250514',
-        reason: 'Most capable Claude model',
-        estimatedCost: 15.00,
-        features: ['complex tasks', 'vision', 'long context', 'highest quality'],
+        model: 'claude-opus-4-5-20250514',
+        reason: 'Best for coding, agents, computer use',
+        estimatedCost: 5.00,
+        features: ['coding', 'agents', 'computer use', 'highest quality', 'vision'],
       },
-      // Google Models (using actual API model names)
+      // Google Gemini 3 Series (Latest)
+      'gemini-3-pro': {
+        provider: 'google',
+        model: 'gemini-3-pro',
+        reason: 'Complex agentic workflows, adaptive thinking, 1M context',
+        estimatedCost: 2.50,
+        features: ['reasoning', 'agentic', '1M context', 'multimodal', 'grounding'],
+      },
+      'gemini-3-flash': {
+        provider: 'google',
+        model: 'gemini-3-flash',
+        reason: 'Pro-level intelligence at Flash speed and pricing',
+        estimatedCost: 1.25,
+        features: ['fast', 'reasoning', 'multimodal', 'vision', 'cheap'],
+      },
+      // Aliases for backward compatibility
       'gemini-flash': {
         provider: 'google',
-        model: 'gemini-2.0-flash',
-        reason: 'Fastest and cheapest multimodal model',
+        model: 'gemini-3-flash',
+        reason: 'Pro-level intelligence at Flash speed and pricing',
         estimatedCost: 1.25,
-        features: ['text', 'images', 'video', 'audio', 'fast', 'cheap'],
+        features: ['fast', 'reasoning', 'multimodal', 'vision', 'cheap'],
       },
       'gemini-pro': {
         provider: 'google',
-        model: 'gemini-1.5-pro',
-        reason: 'Longest context window (1M tokens)',
+        model: 'gemini-3-pro',
+        reason: 'Complex agentic workflows, adaptive thinking, 1M context',
         estimatedCost: 2.50,
-        features: ['1M context', 'multimodal', 'deep think mode', 'video'],
+        features: ['1M context', 'reasoning', 'agentic', 'multimodal'],
       },
       // Audio Models
       'deepgram-nova-3': {
@@ -278,7 +331,7 @@ export class ModelRouter {
       },
     };
 
-    return models[model] || models['gpt-4o'];
+    return models[model] || models['gpt-5.2'];
   }
 
   /**
@@ -333,35 +386,39 @@ export class ModelRouter {
 
   /**
    * Get all available models
+   * Updated 2026-02-04 with latest models
    */
   getAvailableModels(): ModelSelection[] {
     return [
-      this.getModelInfo('gpt-4-turbo'),
-      this.getModelInfo('gpt-4o'),
-      this.getModelInfo('gpt-4o-mini'),
-      this.getModelInfo('claude-sonnet'),
-      this.getModelInfo('gemini-flash'),
-      this.getModelInfo('gemini-pro'),
+      this.getModelInfo('gpt-5.2'),
+      this.getModelInfo('gpt-5.2-pro'),
+      this.getModelInfo('gpt-5.2-codex'),
+      this.getModelInfo('claude-opus-4.5'),
+      this.getModelInfo('claude-sonnet-4.5'),
+      this.getModelInfo('claude-haiku-4.5'),
+      this.getModelInfo('gemini-3-pro'),
+      this.getModelInfo('gemini-3-flash'),
     ];
   }
 
   /**
    * Get recommended models for a task type
+   * Updated 2026-02-04 with latest models
    */
   getRecommendedModels(taskType: TaskType): ModelSelection[] {
     const recommendations: Record<TaskType, string[]> = {
-      chat: ['gpt-4o', 'gpt-4-turbo', 'gemini-flash'],
-      reasoning: ['gpt-4-turbo', 'claude-opus'],
-      creative: ['gpt-4o', 'claude-sonnet'],
-      vision: ['gemini-flash', 'gpt-4o', 'claude-sonnet'],
-      'code-vision': ['claude-sonnet', 'gpt-4o'],
-      bulk: ['gemini-flash'],
+      chat: ['gpt-5.2', 'gemini-3-flash', 'claude-sonnet-4.5'],
+      reasoning: ['gpt-5.2', 'gpt-5.2-pro', 'gemini-3-pro'],
+      creative: ['gpt-5.2', 'claude-sonnet-4.5'],
+      vision: ['gemini-3-flash', 'gpt-5.2', 'claude-sonnet-4.5'],
+      'code-vision': ['claude-sonnet-4.5', 'gpt-5.2-codex', 'claude-opus-4.5'],
+      bulk: ['gemini-3-flash', 'claude-haiku-4.5'],
       transcription: ['deepgram-nova-3', 'whisper-1'],
       'voice-chat': ['gpt-realtime'],
       embedding: ['text-embedding-3-small'],
     };
 
-    return (recommendations[taskType] || ['gpt-4o']).map(model => this.getModelInfo(model));
+    return (recommendations[taskType] || ['gpt-5.2']).map(model => this.getModelInfo(model));
   }
 }
 

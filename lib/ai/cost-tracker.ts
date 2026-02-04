@@ -47,6 +47,7 @@ export class CostTracker {
 
   /**
    * Calculate cost for OpenAI models
+   * Updated 2026-02-04 with GPT-5.2 pricing
    */
   private calculateOpenAICost(
     model: string,
@@ -55,6 +56,23 @@ export class CostTracker {
     cachedTokens: number = 0
   ): CostBreakdown {
     const pricing: Record<string, { input: number; output: number; cached: number }> = {
+      // GPT-5.2 Series (December 2025)
+      'gpt-5.2': {
+        input: 1.75 / 1_000_000,
+        output: 14.00 / 1_000_000,
+        cached: 0.175 / 1_000_000,  // 90% discount on cached
+      },
+      'gpt-5.2-pro': {
+        input: 5.00 / 1_000_000,
+        output: 40.00 / 1_000_000,
+        cached: 0.50 / 1_000_000,
+      },
+      'gpt-5.2-codex': {
+        input: 2.50 / 1_000_000,
+        output: 20.00 / 1_000_000,
+        cached: 0.25 / 1_000_000,
+      },
+      // Legacy models (being deprecated)
       'gpt-4-turbo': {
         input: 10.00 / 1_000_000,
         output: 30.00 / 1_000_000,
@@ -97,7 +115,7 @@ export class CostTracker {
       },
     };
 
-    const modelPricing = pricing[model] || pricing['gpt-4o'];
+    const modelPricing = pricing[model] || pricing['gpt-5.2'];
 
     const inputCost = (inputTokens - cachedTokens) * modelPricing.input;
     const cachedCost = cachedTokens * modelPricing.cached;
@@ -115,6 +133,7 @@ export class CostTracker {
 
   /**
    * Calculate cost for Anthropic models
+   * Updated 2026-02-04 with Claude 4.5 pricing
    */
   private calculateAnthropicCost(
     model: string,
@@ -122,13 +141,27 @@ export class CostTracker {
     outputTokens: number
   ): CostBreakdown {
     const pricing: Record<string, { input: number; output: number }> = {
+      // Claude 4.5 Series
+      'claude-sonnet-4-5-20250514': {
+        input: 3.00 / 1_000_000,
+        output: 15.00 / 1_000_000,
+      },
+      'claude-opus-4-5-20250514': {
+        input: 5.00 / 1_000_000,
+        output: 25.00 / 1_000_000,
+      },
+      'claude-haiku-4-5-20250514': {
+        input: 1.00 / 1_000_000,
+        output: 5.00 / 1_000_000,
+      },
+      // Aliases
       'claude-sonnet-4.5': {
         input: 3.00 / 1_000_000,
         output: 15.00 / 1_000_000,
       },
       'claude-opus-4.5': {
-        input: 15.00 / 1_000_000,
-        output: 75.00 / 1_000_000,
+        input: 5.00 / 1_000_000,
+        output: 25.00 / 1_000_000,
       },
       'claude-haiku-4.5': {
         input: 1.00 / 1_000_000,
@@ -136,7 +169,7 @@ export class CostTracker {
       },
     };
 
-    const modelPricing = pricing[model] || pricing['claude-sonnet-4.5'];
+    const modelPricing = pricing[model] || pricing['claude-sonnet-4-5-20250514'];
 
     const inputCost = inputTokens * modelPricing.input;
     const outputCost = outputTokens * modelPricing.output;
@@ -153,6 +186,7 @@ export class CostTracker {
 
   /**
    * Calculate cost for Google models
+   * Updated 2026-02-04 with Gemini 3 pricing
    */
   private calculateGoogleCost(
     model: string,
@@ -160,21 +194,31 @@ export class CostTracker {
     outputTokens: number
   ): CostBreakdown {
     const pricing: Record<string, { input: number; output: number }> = {
+      // Gemini 3 Series
+      'gemini-3-flash': {
+        input: 1.00 / 1_000_000,
+        output: 8.00 / 1_000_000,
+      },
+      'gemini-3-pro': {
+        input: 2.50 / 1_000_000,
+        output: 15.00 / 1_000_000,
+      },
+      // Legacy models
       'gemini-2.5-flash': {
         input: 1.25 / 1_000_000,
         output: 10.00 / 1_000_000,
       },
       'gemini-2.5-pro': {
-        input: 2.50 / 1_000_000,  // <200K tokens
+        input: 2.50 / 1_000_000,
         output: 15.00 / 1_000_000,
       },
-      'gemini-3-flash': {
-        input: 1.00 / 1_000_000,
-        output: 8.00 / 1_000_000,
+      'gemini-2.0-flash': {
+        input: 1.25 / 1_000_000,
+        output: 10.00 / 1_000_000,
       },
     };
 
-    const modelPricing = pricing[model] || pricing['gemini-2.5-flash'];
+    const modelPricing = pricing[model] || pricing['gemini-3-flash'];
 
     const inputCost = inputTokens * modelPricing.input;
     const outputCost = outputTokens * modelPricing.output;

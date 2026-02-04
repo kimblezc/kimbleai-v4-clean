@@ -677,6 +677,7 @@ export class AIService {
 
   /**
    * Get model from provider
+   * Updated 2026-02-04 with GPT-5.2 as default
    */
   private getModel(provider: string, modelName: string) {
     switch (provider) {
@@ -687,7 +688,7 @@ export class AIService {
       case 'google':
         return this.google(modelName);
       default:
-        return this.openai('gpt-4o');
+        return this.openai('gpt-5.2');
     }
   }
 
