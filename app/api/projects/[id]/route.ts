@@ -22,8 +22,9 @@ export const runtime = 'nodejs';
  */
 export const GET = asyncHandler(async (
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id: projectId } = await params;
   const startTime = Date.now();
 
   // 1. Authenticate
@@ -34,7 +35,6 @@ export const GET = asyncHandler(async (
   }
 
   const userId = session.user.id;
-  const projectId = params.id;
 
   logger.apiRequest({
     method: 'GET',
@@ -77,8 +77,9 @@ export const GET = asyncHandler(async (
  */
 export const PATCH = asyncHandler(async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id: projectId } = await params;
   const startTime = Date.now();
 
   // 1. Authenticate
@@ -89,7 +90,6 @@ export const PATCH = asyncHandler(async (
   }
 
   const userId = session.user.id;
-  const projectId = params.id;
 
   // 2. Parse body
   const body = await req.json();
@@ -144,8 +144,9 @@ export const PATCH = asyncHandler(async (
  */
 export const DELETE = asyncHandler(async (
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id: projectId } = await params;
   const startTime = Date.now();
 
   // 1. Authenticate
@@ -156,7 +157,6 @@ export const DELETE = asyncHandler(async (
   }
 
   const userId = session.user.id;
-  const projectId = params.id;
 
   logger.apiRequest({
     method: 'DELETE',

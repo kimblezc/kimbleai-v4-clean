@@ -293,11 +293,21 @@ export const conversationQueries = {
    */
   async update(conversationId: string, updates: Partial<{
     title: string;
-    is_pinned: boolean;
+    projectId: string;
+    isPinned: boolean;
   }>) {
+    // Map camelCase to snake_case for database
+    const dbUpdates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (updates.title !== undefined) dbUpdates.title = updates.title;
+    if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId;
+    if (updates.isPinned !== undefined) dbUpdates.is_pinned = updates.isPinned;
+
     const { data, error } = await supabase
       .from('conversations')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(dbUpdates)
       .eq('id', conversationId)
       .select()
       .single();
