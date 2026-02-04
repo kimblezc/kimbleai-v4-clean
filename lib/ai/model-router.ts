@@ -242,21 +242,21 @@ export class ModelRouter {
       // Anthropic Claude 4.5 Series (Latest)
       'claude-sonnet-4.5': {
         provider: 'anthropic',
-        model: 'claude-sonnet-4-5-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         reason: 'Best coding, 1M token context, excellent for UI analysis',
         estimatedCost: 3.00,  // $3/1M input tokens
         features: ['vision', 'code analysis', '1M context', 'safety', 'coding'],
       },
       'claude-opus-4.5': {
         provider: 'anthropic',
-        model: 'claude-opus-4-5-20250514',
+        model: 'claude-opus-4-5-20251101',
         reason: 'Best for coding, agents, computer use',
         estimatedCost: 5.00,  // $5/1M input tokens
         features: ['coding', 'agents', 'computer use', 'highest quality', 'vision'],
       },
       'claude-haiku-4.5': {
         provider: 'anthropic',
-        model: 'claude-haiku-4-5-20250514',
+        model: 'claude-haiku-4-5-20251101',
         reason: 'Fastest Claude model, cost-effective',
         estimatedCost: 1.00,  // $1/1M input tokens
         features: ['fast', 'cheap', 'general tasks', 'text'],
@@ -264,14 +264,14 @@ export class ModelRouter {
       // Aliases for backward compatibility
       'claude-sonnet': {
         provider: 'anthropic',
-        model: 'claude-sonnet-4-5-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         reason: 'Best coding, 1M token context, excellent for UI analysis',
         estimatedCost: 3.00,
         features: ['vision', 'code analysis', '1M context', 'safety', 'coding'],
       },
       'claude-opus': {
         provider: 'anthropic',
-        model: 'claude-opus-4-5-20250514',
+        model: 'claude-opus-4-5-20251101',
         reason: 'Best for coding, agents, computer use',
         estimatedCost: 5.00,
         features: ['coding', 'agents', 'computer use', 'highest quality', 'vision'],

@@ -11,7 +11,8 @@
       "Bash(railway logs:*)",
       "Bash(railway status:*)",
       "Bash(Start-Sleep -Seconds 60)",
-      "Bash(git rev-parse:*)"
+      "Bash(git rev-parse:*)",
+      "Bash(railway variables:*)"
     ],
     "defaultMode": "bypassPermissions"
   }

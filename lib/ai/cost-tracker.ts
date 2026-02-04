@@ -142,15 +142,15 @@ export class CostTracker {
   ): CostBreakdown {
     const pricing: Record<string, { input: number; output: number }> = {
       // Claude 4.5 Series
-      'claude-sonnet-4-5-20250514': {
+      'claude-sonnet-4-5-20250929': {
         input: 3.00 / 1_000_000,
         output: 15.00 / 1_000_000,
       },
-      'claude-opus-4-5-20250514': {
+      'claude-opus-4-5-20251101': {
         input: 5.00 / 1_000_000,
         output: 25.00 / 1_000_000,
       },
-      'claude-haiku-4-5-20250514': {
+      'claude-haiku-4-5-20251101': {
         input: 1.00 / 1_000_000,
         output: 5.00 / 1_000_000,
       },
@@ -169,7 +169,7 @@ export class CostTracker {
       },
     };
 
-    const modelPricing = pricing[model] || pricing['claude-sonnet-4-5-20250514'];
+    const modelPricing = pricing[model] || pricing['claude-sonnet-4-5-20250929'];
 
     const inputCost = inputTokens * modelPricing.input;
     const outputCost = outputTokens * modelPricing.output;

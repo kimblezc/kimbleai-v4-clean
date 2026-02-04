@@ -1,8 +1,8 @@
 {
-  "version": "11.8.2",
-  "commit": "5eebe76",
-  "lastUpdated": "2026-02-04T05:30:00.000Z",
-  "changelog": "MODEL FIX: Added system prompt so AI correctly identifies as GPT-5.2. Added model selection logging.",
+  "version": "11.8.3",
+  "commit": "pending",
+  "lastUpdated": "2026-02-04T06:00:00.000Z",
+  "changelog": "CLAUDE FIX: Fixed Claude model IDs (correct snapshot dates). 502 errors should be resolved.",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
