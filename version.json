@@ -1,6 +1,6 @@
 {
   "version": "11.6.0",
-  "commit": "7f76d14",
+  "commit": "628dcac",
   "lastUpdated": "2026-02-04T02:20:00.000Z",
   "changelog": "CHAT WORKING: Fixed conversation & message creation. (1) Conversations now generate UUID IDs; (2) Messages generate UUID IDs; (3) Removed 'attachments' column from message insert; (4) Chat fully functional end-to-end; (5) D20 at 90px; (6) Version footer shows commit",
   "platform": "Railway",
