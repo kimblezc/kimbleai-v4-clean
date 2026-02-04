@@ -4,28 +4,28 @@
 
 @layer base {
   :root {
-    /* D&D Theme - Dark Mode Colors */
-    --background: 17 24 39; /* gray-900 */
-    --foreground: 249 250 251; /* gray-50 */
+    /* True Dark Mode Colors - Blacks, Grays, Whites */
+    --background: 10 10 10; /* near black */
+    --foreground: 250 250 250; /* near white */
 
-    --primary: 59 130 246; /* blue-500 */
-    --primary-foreground: 249 250 251;
+    --primary: 250 250 250; /* white */
+    --primary-foreground: 10 10 10;
 
-    --secondary: 30 58 138; /* blue-900 - deep blue */
-    --secondary-foreground: 249 250 251;
+    --secondary: 38 38 38; /* neutral-800 */
+    --secondary-foreground: 250 250 250;
 
-    --accent: 251 191 36; /* amber-400 - gold/treasure */
-    --accent-foreground: 17 24 39;
+    --accent: 163 163 163; /* neutral-400 */
+    --accent-foreground: 10 10 10;
 
-    --muted: 55 65 81; /* gray-700 */
-    --muted-foreground: 156 163 175; /* gray-400 */
+    --muted: 64 64 64; /* neutral-700 */
+    --muted-foreground: 163 163 163; /* neutral-400 */
 
-    --destructive: 220 38 38; /* red-700 */
-    --destructive-foreground: 249 250 251;
+    --destructive: 220 38 38; /* red-600 */
+    --destructive-foreground: 250 250 250;
 
-    --border: 55 65 81; /* gray-700 */
-    --input: 55 65 81;
-    --ring: 59 130 246;
+    --border: 38 38 38; /* neutral-800 */
+    --input: 38 38 38;
+    --ring: 163 163 163;
 
     --radius: 0.5rem;
   }
@@ -38,144 +38,70 @@
 }
 
 @layer utilities {
-  /* D20 Rotating Animation */
-  @keyframes rotate-d20 {
-    0% {
-      transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+  /* Slow spin animation */
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
     }
-    25% {
-      transform: rotateX(90deg) rotateY(90deg) rotateZ(0deg);
-    }
-    50% {
-      transform: rotateX(180deg) rotateY(180deg) rotateZ(90deg);
-    }
-    75% {
-      transform: rotateX(270deg) rotateY(270deg) rotateZ(180deg);
-    }
-    100% {
-      transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg);
+    to {
+      transform: rotate(360deg);
     }
   }
 
-  .rotate-d20 {
-    animation: rotate-d20 20s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    transform-style: preserve-3d;
+  .animate-spin-slow {
+    animation: spin-slow 3s linear infinite;
   }
 
-  @keyframes rotate-d20-slow {
-    0% {
-      transform: rotateX(0deg) rotateY(0deg);
-    }
-    100% {
-      transform: rotateX(360deg) rotateY(360deg);
-    }
-  }
-
-  .rotate-d20-slow {
-    animation: rotate-d20-slow 30s linear infinite;
-    transform-style: preserve-3d;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% {
-      opacity: 0.5;
-      box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
-    }
-    50% {
-      opacity: 1;
-      box-shadow: 0 0 40px rgba(139, 92, 246, 0.8);
-    }
-  }
-
-  .pulse-glow {
-    animation: pulse-glow 3s ease-in-out infinite;
-  }
-
-  /* Gradient Text */
+  /* Gradient Text - Now grayscale */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-600;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-300 to-white;
   }
 
   .text-gradient-gold {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400;
-  }
-
-  /* Arcane Border */
-  .border-arcane {
-    border-image: linear-gradient(135deg, #3b82f6, #06b6d4, #1e40af) 1;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 via-white to-neutral-200;
   }
 
   /* Scroll Styling */
   .scrollbar-thin::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
-    @apply bg-gray-800;
+    @apply bg-neutral-900;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-gray-600 rounded-full;
+    @apply bg-neutral-700 rounded-full;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-500;
+    @apply bg-neutral-600;
   }
 
   /* Card Style */
   .card, .card-dnd {
-    @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg shadow-xl;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    @apply bg-neutral-900 border border-neutral-800 rounded-lg;
   }
 
   .card:hover, .card-dnd:hover {
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+    @apply border-neutral-700;
   }
 
   /* Button Styles */
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-  }
-
-  .btn-primary:hover {
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
-    transform: translateY(-2px);
+    @apply bg-white hover:bg-neutral-100 text-black px-4 py-2 rounded-lg font-medium transition-all duration-200;
   }
 
   .btn-secondary {
-    @apply bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200;
-  }
-
-  /* Dice Roll Animation */
-  @keyframes dice-roll {
-    0% {
-      transform: rotate(0deg) scale(1);
-    }
-    25% {
-      transform: rotate(90deg) scale(1.1);
-    }
-    50% {
-      transform: rotate(180deg) scale(1);
-    }
-    75% {
-      transform: rotate(270deg) scale(1.1);
-    }
-    100% {
-      transform: rotate(360deg) scale(1);
-    }
-  }
-
-  .dice-roll {
-    animation: dice-roll 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200;
   }
 }
 
 /* Prose Styling for Markdown */
 @layer components {
   .prose {
-    @apply text-gray-300 max-w-none;
+    @apply text-neutral-300 max-w-none;
   }
 
   .prose h1 {
@@ -203,35 +129,35 @@
   }
 
   .prose code {
-    @apply bg-gray-800 text-cyan-300 px-1.5 py-0.5 rounded text-sm font-mono;
+    @apply bg-neutral-800 text-neutral-200 px-1.5 py-0.5 rounded text-sm font-mono;
   }
 
   .prose pre {
-    @apply bg-gray-900 p-4 rounded-lg overflow-x-auto mb-4 border border-gray-700;
+    @apply bg-neutral-900 p-4 rounded-lg overflow-x-auto mb-4 border border-neutral-800;
   }
 
   .prose pre code {
-    @apply bg-transparent p-0 text-gray-300;
+    @apply bg-transparent p-0 text-neutral-300;
   }
 
   .prose a {
-    @apply text-blue-400 hover:text-blue-300 underline;
+    @apply text-white hover:text-neutral-300 underline;
   }
 
   .prose blockquote {
-    @apply border-l-4 border-blue-500 pl-4 italic text-gray-400 mb-4;
+    @apply border-l-4 border-neutral-600 pl-4 italic text-neutral-400 mb-4;
   }
 
   .prose table {
-    @apply w-full mb-4 border border-gray-700;
+    @apply w-full mb-4 border border-neutral-800;
   }
 
   .prose th {
-    @apply bg-gray-800 text-white font-bold px-4 py-2 border border-gray-700;
+    @apply bg-neutral-800 text-white font-bold px-4 py-2 border border-neutral-700;
   }
 
   .prose td {
-    @apply px-4 py-2 border border-gray-700;
+    @apply px-4 py-2 border border-neutral-800;
   }
 
   .prose img {
@@ -247,6 +173,6 @@
   }
 
   .prose hr {
-    @apply border-gray-700 my-6;
+    @apply border-neutral-800 my-6;
   }
 }

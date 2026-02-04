@@ -18,7 +18,6 @@ import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/layout/Sidebar';
-import ConversationList from '@/components/chat/ConversationList';
 import MessageList from '@/components/chat/MessageList';
 import ChatInput from '@/components/chat/ChatInput';
 import ModelSelector from '@/components/chat/ModelSelector';
@@ -105,9 +104,9 @@ export default function ChatPage() {
         loadConversations(); // Reload conversation list
         toast.success('New conversation created', {
           style: {
-            background: '#1f2937',
+            background: '#262626',
             color: '#fff',
-            border: '1px solid #10b981',
+            border: '1px solid #404040',
           },
         });
       }
@@ -131,9 +130,9 @@ export default function ChatPage() {
       if (response.ok) {
         toast.success('Conversation deleted', {
           style: {
-            background: '#1f2937',
+            background: '#262626',
             color: '#fff',
-            border: '1px solid #10b981',
+            border: '1px solid #404040',
           },
         });
         // If deleting active conversation, switch to another
@@ -166,9 +165,9 @@ export default function ChatPage() {
       if (response.ok) {
         toast.success('Conversation renamed', {
           style: {
-            background: '#1f2937',
+            background: '#262626',
             color: '#fff',
-            border: '1px solid #10b981',
+            border: '1px solid #404040',
           },
         });
         loadConversations();
@@ -197,9 +196,9 @@ export default function ChatPage() {
     // Show thinking toast
     const thinkingToast = toast.loading('AI is thinking...', {
       style: {
-        background: '#1f2937',
+        background: '#262626',
         color: '#fff',
-        border: '1px solid #374151',
+        border: '1px solid #404040',
       },
     });
 
@@ -271,9 +270,9 @@ export default function ChatPage() {
       toast.error('Failed to send message', {
         id: thinkingToast,
         style: {
-          background: '#1f2937',
+          background: '#262626',
           color: '#fff',
-          border: '1px solid #ef4444',
+          border: '1px solid #dc2626',
         },
       });
       setMessages(prev => [
@@ -297,35 +296,30 @@ export default function ChatPage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen bg-neutral-950">
+        <div className="text-lg text-neutral-400">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-neutral-950">
       <Toaster position="top-right" />
 
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Conversation List Panel */}
-      <div className="hidden lg:block w-80 bg-gray-900 border-r border-gray-800 lg:ml-72">
-        <ConversationList
-          conversations={conversations}
-          activeConversationId={conversationId}
-          onSelectConversation={switchConversation}
-          onNewConversation={createConversation}
-          onDeleteConversation={deleteConversation}
-          onRenameConversation={renameConversation}
-        />
-      </div>
+      {/* Unified Sidebar with conversations */}
+      <Sidebar
+        conversations={conversations}
+        activeConversationId={conversationId}
+        onSelectConversation={switchConversation}
+        onNewConversation={createConversation}
+        onDeleteConversation={deleteConversation}
+        onRenameConversation={renameConversation}
+      />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col lg:ml-64">
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700">
+        <header className="flex items-center justify-between px-6 py-4 bg-neutral-900 border-b border-neutral-800">
           <div className="flex items-center gap-4">
             <ModelSelector
               selectedModel={selectedModel}
@@ -335,25 +329,16 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-4">
             <CostDisplay cost={totalCost} />
-
-            {/* Settings Button */}
-            <Link
-              href="/settings"
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-              title="Settings"
-            >
-              <Cog6ToothIcon className="w-6 h-6" />
-            </Link>
           </div>
         </header>
 
         {/* Main Chat Area */}
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden bg-neutral-950">
           <MessageList messages={messages} isLoading={isLoading} />
         </main>
 
         {/* Input Area */}
-        <footer className="border-t border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+        <footer className="border-t border-neutral-800 bg-neutral-900">
           <ChatInput
             onSendMessage={handleSendMessage}
             disabled={isLoading}
