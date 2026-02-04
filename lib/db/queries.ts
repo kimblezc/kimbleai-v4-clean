@@ -164,9 +164,10 @@ export const projectQueries = {
       .insert({
         user_id: userId,
         name: params.name,
-        description: params.description,
-        color: params.color,
-        icon: params.icon,
+        description: params.description || null,
+        color: params.color || '#6b7280',
+        status: 'active',
+        priority: 'medium',
       })
       .select()
       .single();
