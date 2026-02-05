@@ -44,7 +44,7 @@ export const userQueries = {
   },
 
   /**
-   * Create new user
+   * Create new user (generates new UUID)
    */
   async create(params: {
     id: string;
@@ -61,8 +61,27 @@ export const userQueries = {
         id: userId,
         email: params.email,
         name: params.name,
-        // Store Google ID in metadata if we have a column for it
-        // google_tokens: params.googleTokens,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to create user: ${error.message}`);
+    return data;
+  },
+
+  /**
+   * Create user with specific ID (for fixing missing user records)
+   */
+  async createWithId(userId: string, params: {
+    email: string;
+    name?: string;
+  }) {
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .insert({
+        id: userId,
+        email: params.email,
+        name: params.name,
       })
       .select()
       .single();

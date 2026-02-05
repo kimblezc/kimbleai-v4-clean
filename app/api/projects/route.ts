@@ -7,13 +7,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
-import { projectQueries } from '@/lib/db/queries';
+import { projectQueries, userQueries } from '@/lib/db/queries';
 import {
   asyncHandler,
   AuthenticationError,
   validateRequired,
 } from '@/lib/utils/errors';
 import { logger } from '@/lib/utils/logger';
+
+/**
+ * Ensure user exists in database (fix for foreign key constraint)
+ */
+async function ensureUserExists(userId: string, email: string | null | undefined, name: string | null | undefined) {
+  try {
+    // First try to get by ID
+    const existingUser = await userQueries.getById(userId).catch(() => null);
+    if (existingUser) return existingUser;
+
+    // If not found by ID and we have email, try by email
+    if (email) {
+      const userByEmail = await userQueries.getByEmail(email);
+      if (userByEmail) return userByEmail;
+    }
+
+    // Create new user with the session's userId
+    logger.info('Creating missing user record', { userId, email });
+    return await userQueries.createWithId(userId, {
+      email: email || `user-${userId}@kimbleai.local`,
+      name: name || undefined,
+    });
+  } catch (error) {
+    logger.error('Failed to ensure user exists', error as Error, { userId, email });
+    throw error;
+  }
+}
 
 export const runtime = 'nodejs';
 
@@ -89,7 +116,10 @@ export const POST = asyncHandler(async (req: NextRequest) => {
 
   const userId = session.user.id;
 
-  // 2. Parse and validate body
+  // 2. Ensure user exists in database (fix foreign key constraint)
+  await ensureUserExists(userId, session.user.email, session.user.name);
+
+  // 3. Parse and validate body
   const body = await req.json();
 
   validateRequired(body, ['name']);
@@ -103,7 +133,7 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     body: { name },
   });
 
-  // 3. Create project
+  // 4. Create project
   const project = await logger.measure(
     'Create project',
     async () => await projectQueries.create(userId, {
