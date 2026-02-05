@@ -282,21 +282,24 @@ Tokens stored in JWT session for API access.
 ## Immediate Priority Tasks
 
 ### Task 11: Implement RAG for Cross-Session Memory
-**Status:** Pending
+**Status:** Complete (v11.9.14 @ 435d412)
 **Priority:** High
 
 **Problem:** Data is stored but not leveraged for context. Users lose conversational context between sessions.
 
-**Solution:**
-- Use existing vector embeddings from `lib/ai/embeddings.ts`
-- Query relevant past conversations/files when starting new chat
-- Inject relevant context into system prompt
-- Allow "remember this" commands to persist key facts
+**Implementation:**
+- Created `lib/ai/rag-service.ts` - RAG service with semantic search
+- Integrated into `app/api/chat/route.ts` - Context injection
+- Created `scripts/create-rag-tables.sql` - Database schema for user_memories
 
-**Files to examine:**
-- `lib/ai/embeddings.ts` - Vector embedding generation
-- `lib/knowledge/` - Knowledge base services
-- `app/api/chat/route.ts` - Where to inject retrieved context
+**Features:**
+- ✅ Semantic search across messages, files, and memories
+- ✅ "Remember this" commands to persist explicit facts
+- ✅ Google services integration (Gmail, Drive, Calendar)
+- ✅ Context injection into chat prompts
+- ⚠️ Requires running SQL script in Supabase to enable vector search
+
+**Note:** User must run `scripts/create-rag-tables.sql` in Supabase SQL Editor to enable vector search functions.
 
 ---
 
