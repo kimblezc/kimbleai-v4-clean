@@ -95,7 +95,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Check for "remember" commands in user message
+    // NOTE: Memory storage disabled until database is verified
     const userMessage = messages[messages.length - 1];
+    /* Temporarily disabled - re-enable after DB verification
     if (userMessage.role === 'user') {
       const rememberCommand = ragService.parseRememberCommand(userMessage.content);
       if (rememberCommand) {
@@ -113,11 +115,15 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+    */
 
     // 7. Retrieve relevant context using RAG (if enabled)
+    // NOTE: RAG is disabled until database functions are verified working
+    // To re-enable: set enableRAG to true and ensure search_all_content RPC exists
     let ragContext = '';
     let ragCost = 0;
-    if (enableRAG && userMessage.role === 'user') {
+    const ragEnabled = false; // Temporarily disabled - database functions need verification
+    if (ragEnabled && enableRAG && userMessage.role === 'user') {
       try {
         const context = await ragService.retrieveContext({
           userId,
