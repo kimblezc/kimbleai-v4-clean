@@ -291,6 +291,9 @@ export async function POST(req: NextRequest) {
     );
   } catch (error: any) {
     console.error('[Chat API] Error:', error);
+    console.error('[Chat API] Error stack:', error.stack);
+    console.error('[Chat API] Error name:', error.name);
+    console.error('[Chat API] Error cause:', error.cause);
 
     // Handle budget exceeded
     if (error.message?.includes('Budget exceeded')) {
@@ -307,6 +310,10 @@ export async function POST(req: NextRequest) {
       {
         error: 'Internal server error',
         message: error.message || 'Failed to process chat request',
+        debug: {
+          name: error.name,
+          stack: error.stack?.split('\n').slice(0, 5),
+        }
       },
       { status: 500 }
     );
