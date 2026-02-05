@@ -1,8 +1,8 @@
 {
-  "version": "11.9.14",
-  "commit": "de2a855",
+  "version": "11.9.15",
+  "commit": "6fbb0cc",
   "lastUpdated": "2026-02-05T20:00:00.000Z",
-  "changelog": "FEAT: RAG (Retrieval-Augmented Generation) for cross-session memory with Google services integration",
+  "changelog": "FIX: Use actual working model IDs (gpt-4o, gemini-1.5-pro, claude-sonnet-4)",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

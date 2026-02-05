@@ -15,7 +15,8 @@
       "Bash(railway variables:*)",
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:ai.google.dev)",
-      "WebFetch(domain:kimbleai.com)"
+      "WebFetch(domain:kimbleai.com)",
+      "WebFetch(domain:platform.openai.com)"
     ],
     "defaultMode": "bypassPermissions"
   }
