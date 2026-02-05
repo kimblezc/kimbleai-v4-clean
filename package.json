@@ -15,7 +15,11 @@
     "test:coverage": "vitest run --coverage",
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
-    "generate-types": "supabase gen types typescript --local > lib/database.types.ts"
+    "generate-types": "supabase gen types typescript --local > lib/database.types.ts",
+    "preflight": "node scripts/preflight.js",
+    "verify:deployed": "node scripts/verify-deployment.js",
+    "deploy": "npm run build && git push origin master && railway up --detach",
+    "deploy:verify": "npm run deploy && sleep 90 && npm run verify:deployed"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.45",

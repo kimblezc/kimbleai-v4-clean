@@ -1,12 +1,30 @@
 # KimbleAI Tasks
 
-## Development Workflow (MUST FOLLOW)
+## MANDATORY Development Workflow
+
+**This workflow is AUTOMATIC. Claude executes it for EVERY change without being asked.**
 
 ```
-1. READ LOGS FIRST → 2. FIX → 3. TEST LOCAL → 4. DEPLOY → 5. TEST DEPLOYED → 6. DEBUG/FIX → 7. ITERATE
+0. PREFLIGHT → 1. READ LOGS → 2. UNDERSTAND → 3. FIX → 4. TEST LOCAL → 5. DEPLOY → 6. VERIFY → 7. DEBUG → 8. ITERATE
 ```
 
-**Do not stop until the feature works in production.**
+### Quick Commands
+```bash
+npm run preflight        # Check environment before starting
+npm run build           # Test locally (MUST pass)
+npm run deploy          # Build + push + deploy
+npm run verify:deployed # Verify production health
+npm run deploy:verify   # Full deploy + verification
+```
+
+### Rules (Claude MUST follow automatically)
+1. Run `npm run build` before every commit
+2. Run `npm run verify:deployed` after every deployment
+3. Check logs if verification fails
+4. Keep iterating until all checks pass
+5. Update CLAUDE.md status after successful deployment
+
+**Do not stop until the feature works in production. Do not ask permission to continue.**
 
 ---
 
