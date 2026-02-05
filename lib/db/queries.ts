@@ -280,19 +280,30 @@ export const conversationQueries = {
 
   /**
    * Get conversation by ID with messages
+   * NOTE: Uses separate queries instead of Supabase relationship joins
+   * because FK constraints are not defined (type mismatch between UUID/TEXT)
    */
   async getById(conversationId: string) {
-    const { data, error } = await supabase
+    // Get conversation first
+    const { data: conversation, error: convError } = await supabase
       .from('conversations')
-      .select(`
-        *,
-        messages (*)
-      `)
+      .select('*')
       .eq('id', conversationId)
       .single();
 
-    if (error) throw new Error(`Failed to get conversation: ${error.message}`);
-    return data;
+    if (convError) throw new Error(`Failed to get conversation: ${convError.message}`);
+
+    // Get messages separately (no FK constraint needed)
+    const { data: messages, error: msgError } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (msgError) throw new Error(`Failed to get messages: ${msgError.message}`);
+
+    // Combine results
+    return { ...conversation, messages: messages || [] };
   },
 
   /**

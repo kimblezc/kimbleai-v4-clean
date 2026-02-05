@@ -1,8 +1,8 @@
 {
-  "version": "11.9.12",
-  "commit": "a5fbf0f",
-  "lastUpdated": "2026-02-05T18:00:00.000Z",
-  "changelog": "FEAT: Show model used in chat responses, 2x D20 size, sidebar shows all chats",
+  "version": "11.9.13",
+  "commit": "f03ee1e",
+  "lastUpdated": "2026-02-05T19:00:00.000Z",
+  "changelog": "FIX: Chat API - use separate queries instead of Supabase relationship joins",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
