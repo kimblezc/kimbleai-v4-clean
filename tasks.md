@@ -159,10 +159,16 @@ The projects feature at https://www.kimbleai.com/projects has several UX issues 
 ## Additional Tasks
 
 ### Task 6: Show Model Used in Chat Responses
-**Status:** Pending
-**File:** `components/chat/MessageList.tsx`, `app/api/chat/route.ts`
+**Status:** Complete (v11.9.12)
+**File:** `components/chat/MessageList.tsx`, `app/api/chat/route.ts`, `lib/ai/ai-service.ts`
 
 Display which AI model was used for each response to verify smart routing works.
+
+**Implementation:**
+- AI service returns `modelUsed`, `providerUsed`, `selectionReason` with stream
+- Chat API sends `model_info` event at start of stream
+- Frontend captures model info and displays badge under AI messages
+- Badge shows model name (e.g., `gpt-5.2`, `claude-opus-4.5`)
 
 ---
 
