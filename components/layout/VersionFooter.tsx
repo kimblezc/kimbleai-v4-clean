@@ -35,7 +35,7 @@ export default function VersionFooter() {
 
   return (
     <div className="fixed bottom-2 right-2 z-50">
-      <div className="text-xs text-gray-500 dark:text-gray-600 font-mono bg-gray-900/50 px-2 py-1 rounded">
+      <div className="text-xs text-neutral-500 font-mono bg-neutral-900/80 px-2 py-1 rounded border border-neutral-800">
         v{version}{commit ? ` @ ${commit}` : ''}
       </div>
     </div>
