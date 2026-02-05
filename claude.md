@@ -5,19 +5,20 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.9.9
-Latest Commit: 7fb5ea6
+Latest Version: v11.9.10
+Latest Commit: 1aa787a
 Last Updated: 2026-02-05
-Status: Deployed to Railway (AUTOMATED WORKFLOW)
+Status: Deployed to Railway (PROJECT CHAT FIX)
 Live URL: https://www.kimbleai.com
+Local Path: C:\KimbleAI (moved from OneDrive for faster builds)
 ```
 
 ### Recent Changes (Last 5 Only):
+- **1aa787a** (v11.9.10) - FIX: Project chat creation - projectId to project_id column mapping.
 - **7fb5ea6** (v11.9.9) - FEAT: Automated workflow - preflight checks, deployment verification, enhanced health API.
 - **0aa02ef** (v11.9.8) - FEAT: Project-chat integration - clickable projects, back nav, version commit, project context.
 - **7f75a3c** (v11.9.7) - FIX: Comprehensive userId architecture fix - ALL routes now validated.
 - **96846a6** (v11.9.6) - FIX: Shared ensureUserExists utility + message user_id FK.
-- **0f4299f** (v11.9.4) - FIX: Add required 'role' field and unique name to user creation.
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 
