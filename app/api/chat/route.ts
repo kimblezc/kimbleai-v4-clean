@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
+import { ensureUserExists } from '@/lib/auth/ensure-user';
 import { getAIService } from '@/lib/ai/ai-service';
 import { supabase } from '@/lib/db/client';
 import { conversationQueries, messageQueries } from '@/lib/db/queries';
@@ -38,7 +39,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const userId = session.user.id;
+    // Get validated database userId (may differ from session)
+    const userId = await ensureUserExists(
+      session.user.id,
+      session.user.email,
+      session.user.name
+    );
 
     // 2. Parse request body
     const body = await req.json();
@@ -87,6 +93,7 @@ export async function POST(req: NextRequest) {
     if (userMessage.role === 'user') {
       await messageQueries.create({
         conversationId: conversation.id,
+        userId, // CRITICAL: Required for FK constraint
         role: 'user',
         content: userMessage.content,
         attachments: userMessage.attachments,
@@ -120,6 +127,7 @@ export async function POST(req: NextRequest) {
             const fullText = await result.text;
             await messageQueries.create({
               conversationId: conversation.id,
+              userId, // CRITICAL: Required for FK constraint
               role: 'assistant',
               content: fullText,
               model: model || 'gpt-5.2',
@@ -157,6 +165,7 @@ export async function POST(req: NextRequest) {
       // Save assistant message
       await messageQueries.create({
         conversationId: conversation.id,
+        userId, // CRITICAL: Required for FK constraint
         role: 'assistant',
         content: nonStreamResult.content,
         model: nonStreamResult.model,

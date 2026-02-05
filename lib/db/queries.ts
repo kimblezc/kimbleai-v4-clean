@@ -377,6 +377,7 @@ export const messageQueries = {
    */
   async create(params: {
     conversationId: string;
+    userId: string; // REQUIRED - foreign key to users table
     role: 'user' | 'assistant' | 'system';
     content: string;
     model?: string;
@@ -393,10 +394,9 @@ export const messageQueries = {
       .insert({
         id: messageId,
         conversation_id: params.conversationId,
+        user_id: params.userId, // CRITICAL: Required for FK constraint
         role: params.role,
         content: params.content,
-        // Note: model, tokens_used, cost_usd, attachments columns don't exist in v5
-        // Cost data is tracked in api_cost_tracking table instead
         embedding: params.embedding,
       })
       .select()

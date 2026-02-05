@@ -7,53 +7,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
-import { projectQueries, userQueries } from '@/lib/db/queries';
+import { ensureUserExists } from '@/lib/auth/ensure-user';
+import { projectQueries } from '@/lib/db/queries';
 import {
   asyncHandler,
   AuthenticationError,
   validateRequired,
 } from '@/lib/utils/errors';
 import { logger } from '@/lib/utils/logger';
-
-/**
- * Ensure user exists in database and return the correct user ID
- * Returns the database user ID (may differ from session userId)
- */
-async function ensureUserExists(userId: string, email: string | null | undefined, name: string | null | undefined): Promise<string> {
-  try {
-    // First try to get by ID
-    const existingUser = await userQueries.getById(userId).catch(() => null);
-    if (existingUser) {
-      logger.info('Found user by ID', { userId });
-      return existingUser.id;
-    }
-
-    // If not found by ID and we have email, try by email
-    // IMPORTANT: Return the DB user's ID, not the session userId
-    if (email) {
-      const userByEmail = await userQueries.getByEmail(email);
-      if (userByEmail) {
-        logger.info('Found user by email, using DB userId', {
-          sessionUserId: userId,
-          dbUserId: userByEmail.id,
-          email
-        });
-        return userByEmail.id; // Use the DB user's ID!
-      }
-    }
-
-    // Create new user with the session's userId
-    logger.info('Creating missing user record', { userId, email });
-    const newUser = await userQueries.createWithId(userId, {
-      email: email || `user-${userId}@kimbleai.local`,
-      name: name || undefined,
-    });
-    return newUser.id;
-  } catch (error) {
-    logger.error('Failed to ensure user exists', error as Error, { userId, email });
-    throw error;
-  }
-}
 
 export const runtime = 'nodejs';
 

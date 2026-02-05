@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
+import { ensureUserExists } from '@/lib/auth/ensure-user';
 import { conversationQueries } from '@/lib/db/queries';
 import {
   asyncHandler,
@@ -30,7 +31,12 @@ export const GET = asyncHandler(async (req: NextRequest) => {
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Get validated database userId (may differ from session)
+  const userId = await ensureUserExists(
+    session.user.id,
+    session.user.email,
+    session.user.name
+  );
 
   logger.apiRequest({
     method: 'GET',
@@ -94,7 +100,12 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Get validated database userId (may differ from session)
+  const userId = await ensureUserExists(
+    session.user.id,
+    session.user.email,
+    session.user.name
+  );
 
   // 2. Parse and validate body
   const body = await req.json();

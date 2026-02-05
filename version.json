@@ -1,8 +1,8 @@
 {
-  "version": "11.9.5",
-  "commit": "673be92",
-  "lastUpdated": "2026-02-05T07:45:00.000Z",
-  "changelog": "FIX: Use DB userId (not session) when user found by email",
+  "version": "11.9.6",
+  "commit": "e2ce919",
+  "lastUpdated": "2026-02-05T08:15:00.000Z",
+  "changelog": "FIX: Comprehensive userId fix - shared ensureUserExists + message user_id FK",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
