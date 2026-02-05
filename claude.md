@@ -5,21 +5,96 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.9.2
-Latest Commit: cd6c8de
-Last Updated: 2026-02-04
-Status: Deployed to Railway (SIMPLIFIED PROJECTS)
+Latest Version: v11.9.3
+Latest Commit: bbc0bba
+Last Updated: 2026-02-05
+Status: Deployed to Railway (FK CONSTRAINT FIX)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **bbc0bba** (v11.9.3) - FIX: Auto-create user record to fix foreign key constraint on project creation.
 - **cd6c8de** (v11.9.2) - UI: Simplified projects - removed status/priority, sorted by recent activity.
 - **21058f0** (v11.9.1) - FIX: Project creation - priority 'urgent' changed to 'critical' to match DB schema.
 - **e6075d5** (v11.9.0) - UI: ChatGPT-style unified sidebar, true dark mode (no blue).
 - **572287d** (v11.8.6) - UI: Removed D&D themed labels from projects page.
-- **3404baa** (v11.8.5) - GEMINI FIX: Corrected Gemini 3 model IDs (added -preview suffix).
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
+
+---
+
+## Bug Fix & Testing Workflow
+
+**RULE: When fixing bugs, ALWAYS follow this autonomous testing workflow. Don't wait for the user to manually test.**
+
+### The Test-Deploy-Verify Loop
+
+```
+1. READ LOGS FIRST → 2. FIX → 3. TEST LOCAL → 4. DEPLOY → 5. TEST DEPLOYED → 6. ITERATE
+```
+
+### Step-by-Step Process
+
+#### 1. Check Logs for Actual Error
+```bash
+railway logs 2>&1 | grep -E "error|ERROR|fail|POST|GET" | tail -30
+```
+**NEVER guess at fixes. Read the actual error message first.**
+
+#### 2. Fix the Issue
+- Make the code change based on the ACTUAL error
+- Don't make assumptions about what might be wrong
+
+#### 3. Test Locally Before Deploying
+```bash
+npm run build                    # Verify it compiles
+npm run dev &                    # Start dev server
+sleep 5
+curl -X POST http://localhost:3000/api/endpoint \
+  -H "Content-Type: application/json" \
+  -d '{"test":"data"}'          # Test the endpoint
+```
+
+#### 4. Deploy to Railway
+```bash
+git add -A && git commit -m "fix: Description" && git push origin master
+railway up
+```
+
+#### 5. Verify Deployment is Live
+```bash
+# Wait for deployment (usually 60-120 seconds)
+sleep 90
+
+# Check version to confirm new code is live
+node -e "
+const https = require('https');
+https.get('https://www.kimbleai.com/api/version', (res) => {
+  let data = '';
+  res.on('data', c => data += c);
+  res.on('end', () => console.log(data));
+});
+"
+```
+
+#### 6. Test the Deployed API Directly
+```bash
+# For authenticated endpoints, check logs after user action
+railway logs 2>&1 | grep -E "POST|error" | tail -20
+
+# For public endpoints, test directly
+curl -s https://www.kimbleai.com/api/health
+```
+
+#### 7. Iterate if Still Broken
+If errors persist, go back to step 1 and repeat.
+
+### Key Principles
+- **Don't wait for user screenshots** - check logs yourself
+- **Test locally first** - catch errors before deploying
+- **Verify deployment is live** - check version endpoint
+- **Read actual errors** - don't guess at fixes
+- **Be autonomous** - keep iterating until it works
 
 ---
 
