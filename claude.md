@@ -1,5 +1,17 @@
 # KimbleAI Development Rules
 
+## Project Location
+
+**RULE: The canonical project directory is `C:\KimbleAI`. Always use this path.**
+
+```
+Project Root: C:\KimbleAI
+```
+
+This is the permanent, authoritative location for all KimbleAI development. Do not use other paths like `D:\OneDrive\Documents\kimbleai-v4-clean` - those are legacy/backup locations only.
+
+---
+
 ## Current Deployment Status
 
 **RULE: This section MUST be updated with every change to verify deployment**
@@ -10,7 +22,6 @@ Latest Commit: a5fbf0f
 Last Updated: 2026-02-05
 Status: Deployed to Railway (MODEL DISPLAY + D20 2X + SIDEBAR FIX)
 Live URL: https://www.kimbleai.com
-Local Path: C:\KimbleAI (moved from OneDrive for faster builds)
 ```
 
 ### Recent Changes (Last 5 Only):
