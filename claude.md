@@ -5,96 +5,153 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.9.7
-Latest Commit: 7f75a3c
+Latest Version: v11.9.9
+Latest Commit: 7fb5ea6
 Last Updated: 2026-02-05
-Status: Deployed to Railway (COMPREHENSIVE USER ID FIX)
+Status: Deployed to Railway (AUTOMATED WORKFLOW)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **7fb5ea6** (v11.9.9) - FEAT: Automated workflow - preflight checks, deployment verification, enhanced health API.
+- **0aa02ef** (v11.9.8) - FEAT: Project-chat integration - clickable projects, back nav, version commit, project context.
 - **7f75a3c** (v11.9.7) - FIX: Comprehensive userId architecture fix - ALL routes now validated.
 - **96846a6** (v11.9.6) - FIX: Shared ensureUserExists utility + message user_id FK.
 - **0f4299f** (v11.9.4) - FIX: Add required 'role' field and unique name to user creation.
-- **bbc0bba** (v11.9.3) - FIX: Auto-create user record to fix foreign key constraint on project creation.
-- **cd6c8de** (v11.9.2) - UI: Simplified projects - removed status/priority, sorted by recent activity.
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 
 ---
 
-## Bug Fix & Testing Workflow
+## MANDATORY Development Workflow
 
-**RULE: When fixing bugs, ALWAYS follow this autonomous testing workflow. Don't wait for the user to manually test.**
+**RULE: This workflow is AUTOMATIC and ENFORCED. Execute it for EVERY change without being asked.**
 
-### The Test-Deploy-Verify Loop
+### The Complete Workflow
 
 ```
-1. READ LOGS FIRST → 2. FIX → 3. TEST LOCAL → 4. DEPLOY → 5. TEST DEPLOYED → 6. ITERATE
+0. PREFLIGHT → 1. READ LOGS → 2. UNDERSTAND → 3. FIX → 4. TEST LOCAL → 5. DEPLOY → 6. VERIFY DEPLOYED → 7. DEBUG/FIX → 8. ITERATE
 ```
 
-### Step-by-Step Process
+**⚠️ CRITICAL: Do NOT stop until the feature works in production. This is non-negotiable.**
 
-#### 1. Check Logs for Actual Error
+---
+
+### Step 0: Preflight Check (Before ANY Work)
+```bash
+npm run preflight
+```
+This checks: git status, dependencies, env vars, version file.
+
+**Always read relevant files BEFORE making changes. Understand existing patterns.**
+
+---
+
+### Step 1: Check Logs for Actual Errors
 ```bash
 railway logs 2>&1 | grep -E "error|ERROR|fail|POST|GET" | tail -30
 ```
-**NEVER guess at fixes. Read the actual error message first.**
+**NEVER guess at fixes. Read the ACTUAL error message first.**
 
-#### 2. Fix the Issue
-- Make the code change based on the ACTUAL error
-- Don't make assumptions about what might be wrong
+---
 
-#### 3. Test Locally Before Deploying
+### Step 2: Understand the Problem
+- Read the relevant source files
+- Check existing patterns in the codebase
+- Identify ALL affected files upfront
+- Use TodoWrite to track tasks
+
+---
+
+### Step 3: Fix the Issue
+- Make changes based on ACTUAL errors
+- Follow existing code patterns
+- Don't over-engineer
+
+---
+
+### Step 4: Test Locally
 ```bash
-npm run build                    # Verify it compiles
-npm run dev &                    # Start dev server
-sleep 5
-curl -X POST http://localhost:3000/api/endpoint \
-  -H "Content-Type: application/json" \
-  -d '{"test":"data"}'          # Test the endpoint
+npm run build                    # Must pass!
 ```
+If build fails, fix and retry before proceeding.
 
-#### 4. Deploy to Railway
+---
+
+### Step 5: Deploy to Railway
 ```bash
+# Update version.json first
 git add -A && git commit -m "fix: Description" && git push origin master
-railway up
+railway up --detach
 ```
 
-#### 5. Verify Deployment is Live
+---
+
+### Step 6: Verify Deployment (MANDATORY)
 ```bash
-# Wait for deployment (usually 60-120 seconds)
+# Wait for deployment
 sleep 90
 
-# Check version to confirm new code is live
-node -e "
-const https = require('https');
-https.get('https://www.kimbleai.com/api/version', (res) => {
-  let data = '';
-  res.on('data', c => data += c);
-  res.on('end', () => console.log(data));
-});
-"
+# Run automated verification
+npm run verify:deployed
 ```
 
-#### 6. Test the Deployed API Directly
+The verification script checks:
+- ✓ Version API returns correct version/commit
+- ✓ Health API returns status: ok
+- ✓ All services healthy
+
+---
+
+### Step 7: Debug if Needed
+If verification fails:
 ```bash
-# For authenticated endpoints, check logs after user action
-railway logs 2>&1 | grep -E "POST|error" | tail -20
+railway logs 2>&1 | grep -E "error|ERROR" | tail -30
+```
+Then return to Step 3.
 
-# For public endpoints, test directly
-curl -s https://www.kimbleai.com/api/health
+---
+
+### Step 8: Iterate Until Working
+**Do not stop. Do not ask permission. Keep fixing until it works.**
+
+---
+
+### Quick Commands Reference
+```bash
+npm run preflight        # Step 0: Check environment
+npm run build           # Step 4: Test locally
+npm run deploy          # Steps 5: Build + push + deploy
+npm run verify:deployed # Step 6: Verify production
+npm run deploy:verify   # Steps 5-6: Full deploy + verify
 ```
 
-#### 7. Iterate if Still Broken
-If errors persist, go back to step 1 and repeat.
+---
+
+### Enforcement Rules
+
+**I MUST automatically:**
+1. Run `npm run build` before every commit
+2. Run `npm run verify:deployed` after every deployment
+3. Check Railway logs if verification fails
+4. Continue iterating until all checks pass
+5. Update CLAUDE.md status after successful deployment
+
+**I MUST NOT:**
+1. Stop after making changes without testing
+2. Ask user to manually verify
+3. Assume deployment worked without checking
+4. Leave broken code in production
+
+---
 
 ### Key Principles
 - **Don't wait for user screenshots** - check logs yourself
 - **Test locally first** - catch errors before deploying
-- **Verify deployment is live** - check version endpoint
+- **Verify deployment is live** - use verify:deployed script
 - **Read actual errors** - don't guess at fixes
 - **Be autonomous** - keep iterating until it works
+- **Update status** - always update CLAUDE.md after deployment
 
 ---
 
