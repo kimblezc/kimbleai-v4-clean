@@ -5,19 +5,19 @@
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.9.4
-Latest Commit: 0f4299f
+Latest Version: v11.9.7
+Latest Commit: 7f75a3c
 Last Updated: 2026-02-05
-Status: Deployed to Railway (USER ROLE FIX)
+Status: Deployed to Railway (COMPREHENSIVE USER ID FIX)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
+- **7f75a3c** (v11.9.7) - FIX: Comprehensive userId architecture fix - ALL routes now validated.
+- **96846a6** (v11.9.6) - FIX: Shared ensureUserExists utility + message user_id FK.
 - **0f4299f** (v11.9.4) - FIX: Add required 'role' field and unique name to user creation.
 - **bbc0bba** (v11.9.3) - FIX: Auto-create user record to fix foreign key constraint on project creation.
 - **cd6c8de** (v11.9.2) - UI: Simplified projects - removed status/priority, sorted by recent activity.
-- **21058f0** (v11.9.1) - FIX: Project creation - priority 'urgent' changed to 'critical' to match DB schema.
-- **e6075d5** (v11.9.0) - UI: ChatGPT-style unified sidebar, true dark mode (no blue).
 
 **Full Changelog**: See `docs/archive/2025-01-changelog/CLAUDE-CHANGELOG.md`
 

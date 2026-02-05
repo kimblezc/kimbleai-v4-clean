@@ -180,6 +180,13 @@ export const projectQueries = {
 
   /**
    * Create project
+   *
+   * IMPORTANT: If this fails with FK constraint error, the Supabase
+   * projects_user_id_fkey may reference auth.users instead of public.users.
+   * Fix by running in Supabase SQL Editor:
+   *   ALTER TABLE public.projects DROP CONSTRAINT projects_user_id_fkey;
+   *   ALTER TABLE public.projects ADD CONSTRAINT projects_user_id_fkey
+   *     FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
    */
   async create(userId: string, params: {
     name: string;
@@ -187,7 +194,7 @@ export const projectQueries = {
     color?: string;
     icon?: string;
   }) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('projects')
       .insert({
         user_id: userId,
