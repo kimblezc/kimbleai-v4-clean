@@ -1,8 +1,8 @@
 {
-  "version": "11.9.11",
-  "commit": "62f0053",
-  "lastUpdated": "2026-02-05T17:00:00.000Z",
-  "changelog": "FEAT: Restore KimbleAI logo and rotating D20 icosahedron to all pages",
+  "version": "11.9.12",
+  "commit": "8f3a401",
+  "lastUpdated": "2026-02-05T18:00:00.000Z",
+  "changelog": "FEAT: Show model used in chat responses, 2x D20 size, sidebar shows all chats",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

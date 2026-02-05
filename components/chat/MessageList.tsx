@@ -16,6 +16,8 @@ interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  model?: string;  // Task 6: Show model used for AI responses
+  provider?: string;
   attachments?: Array<{
     type: 'image' | 'file' | 'audio';
     url: string;
@@ -135,15 +137,21 @@ export default function MessageList({ messages, isLoading }: MessageListProps) {
               </ReactMarkdown>
             </div>
 
-            {/* Timestamp */}
+            {/* Timestamp and Model Info (Task 6) */}
             <div
-              className={`mt-2 text-xs ${
+              className={`mt-2 flex items-center gap-2 text-xs ${
                 message.role === 'user'
                   ? 'text-blue-100'
                   : 'text-gray-500 dark:text-gray-400'
               }`}
             >
-              {new Date(message.timestamp).toLocaleTimeString()}
+              <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
+              {/* Show model used for assistant messages (Task 6) */}
+              {message.role === 'assistant' && message.model && (
+                <span className="px-2 py-0.5 bg-neutral-700 rounded-full text-neutral-300 text-[10px] font-mono">
+                  {message.model}
+                </span>
+              )}
             </div>
           </div>
 

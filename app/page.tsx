@@ -90,19 +90,25 @@ function ChatPageContent() {
 
   const loadConversations = async () => {
     try {
-      // Filter by project if one is selected
-      const url = activeProjectId
-        ? `/api/conversations?projectId=${activeProjectId}`
-        : '/api/conversations';
-      const response = await fetch(url);
+      // Always load ALL conversations - Sidebar needs full list to show:
+      // 1. Project chats (grouped under projects)
+      // 2. Recent chats (unassociated with any project)
+      const response = await fetch('/api/conversations');
       if (response.ok) {
         const data = await response.json();
         setConversations(data.conversations || []);
 
-        // If no conversation selected, select the first one or create new
+        // If no conversation selected, select based on active project filter
         if (!conversationId) {
-          if (data.conversations && data.conversations.length > 0) {
-            setConversationId(data.conversations[0].id);
+          let relevantConversations = data.conversations || [];
+          if (activeProjectId) {
+            // If project is selected, prefer conversations from that project
+            relevantConversations = relevantConversations.filter(
+              (c: any) => c.project_id === activeProjectId
+            );
+          }
+          if (relevantConversations.length > 0) {
+            setConversationId(relevantConversations[0].id);
           } else {
             createConversation();
           }
@@ -279,11 +285,15 @@ function ChatPageContent() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = '';
+      let modelUsed = '';
+      let providerUsed = '';
 
       const assistantMessageObj = {
         role: 'assistant' as const,
         content: '',
         timestamp: new Date(),
+        model: undefined as string | undefined,
+        provider: undefined as string | undefined,
       };
 
       setMessages(prev => [...prev, assistantMessageObj]);
@@ -303,11 +313,28 @@ function ChatPageContent() {
 
               try {
                 const parsed = JSON.parse(data);
+
+                // Task 6: Capture model info at start of stream
+                if (parsed.type === 'model_info') {
+                  modelUsed = parsed.model;
+                  providerUsed = parsed.provider;
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].model = modelUsed;
+                    newMessages[newMessages.length - 1].provider = providerUsed;
+                    return newMessages;
+                  });
+                  continue;
+                }
+
                 if (parsed.content) {
                   assistantMessage += parsed.content;
                   setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1].content = assistantMessage;
+                    // Preserve model info
+                    if (modelUsed) newMessages[newMessages.length - 1].model = modelUsed;
+                    if (providerUsed) newMessages[newMessages.length - 1].provider = providerUsed;
                     return newMessages;
                   });
                 }

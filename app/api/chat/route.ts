@@ -114,23 +114,37 @@ export async function POST(req: NextRequest) {
 
     // 8. Handle streaming response
     if (stream && 'textStream' in result) {
+      // Extract model info from result (added by AI service for Task 6)
+      const modelUsed = (result as any).modelUsed || model || 'gpt-5.2';
+      const providerUsed = (result as any).providerUsed || 'openai';
+      const selectionReason = (result as any).selectionReason || 'default';
+
       // Return streaming response
       const encoder = new TextEncoder();
       const streamResponse = new ReadableStream({
         async start(controller) {
           try {
+            // Send model info at start of stream (Task 6: show model used)
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'model_info',
+              model: modelUsed,
+              provider: providerUsed,
+              reason: selectionReason,
+              conversationId: conversation.id
+            })}\n\n`));
+
             for await (const chunk of result.textStream) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
             }
 
-            // Stream complete - save assistant message
+            // Stream complete - save assistant message with model used
             const fullText = await result.text;
             await messageQueries.create({
               conversationId: conversation.id,
               userId, // CRITICAL: Required for FK constraint
               role: 'assistant',
               content: fullText,
-              model: model || 'gpt-5.2',
+              model: modelUsed,
             });
 
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));

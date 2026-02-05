@@ -166,7 +166,13 @@ export class AIService {
           options.projectId
         );
 
-        return result;
+        // Return stream with model selection info for Task 6 (show model used)
+        return {
+          ...result,
+          modelUsed: selection.model,
+          providerUsed: selection.provider,
+          selectionReason: selection.reason,
+        };
       } else {
         // Non-streaming response
         const result = await generateText({
