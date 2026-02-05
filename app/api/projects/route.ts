@@ -16,26 +16,39 @@ import {
 import { logger } from '@/lib/utils/logger';
 
 /**
- * Ensure user exists in database (fix for foreign key constraint)
+ * Ensure user exists in database and return the correct user ID
+ * Returns the database user ID (may differ from session userId)
  */
-async function ensureUserExists(userId: string, email: string | null | undefined, name: string | null | undefined) {
+async function ensureUserExists(userId: string, email: string | null | undefined, name: string | null | undefined): Promise<string> {
   try {
     // First try to get by ID
     const existingUser = await userQueries.getById(userId).catch(() => null);
-    if (existingUser) return existingUser;
+    if (existingUser) {
+      logger.info('Found user by ID', { userId });
+      return existingUser.id;
+    }
 
     // If not found by ID and we have email, try by email
+    // IMPORTANT: Return the DB user's ID, not the session userId
     if (email) {
       const userByEmail = await userQueries.getByEmail(email);
-      if (userByEmail) return userByEmail;
+      if (userByEmail) {
+        logger.info('Found user by email, using DB userId', {
+          sessionUserId: userId,
+          dbUserId: userByEmail.id,
+          email
+        });
+        return userByEmail.id; // Use the DB user's ID!
+      }
     }
 
     // Create new user with the session's userId
     logger.info('Creating missing user record', { userId, email });
-    return await userQueries.createWithId(userId, {
+    const newUser = await userQueries.createWithId(userId, {
       email: email || `user-${userId}@kimbleai.local`,
       name: name || undefined,
     });
+    return newUser.id;
   } catch (error) {
     logger.error('Failed to ensure user exists', error as Error, { userId, email });
     throw error;
@@ -114,10 +127,11 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  const sessionUserId = session.user.id;
 
-  // 2. Ensure user exists in database (fix foreign key constraint)
-  await ensureUserExists(userId, session.user.email, session.user.name);
+  // 2. Ensure user exists in database and get the correct DB user ID
+  // This may return a different ID if user exists by email with different ID
+  const dbUserId = await ensureUserExists(sessionUserId, session.user.email, session.user.name);
 
   // 3. Parse and validate body
   const body = await req.json();
@@ -129,14 +143,14 @@ export const POST = asyncHandler(async (req: NextRequest) => {
   logger.apiRequest({
     method: 'POST',
     path: '/api/projects',
-    userId,
+    userId: dbUserId,
     body: { name },
   });
 
-  // 4. Create project
+  // 4. Create project with the correct DB user ID
   const project = await logger.measure(
     'Create project',
-    async () => await projectQueries.create(userId, {
+    async () => await projectQueries.create(dbUserId, {
       name,
       description,
       color,
@@ -144,18 +158,18 @@ export const POST = asyncHandler(async (req: NextRequest) => {
       status,
       priority,
     }),
-    { userId, projectName: name }
+    { userId: dbUserId, projectName: name }
   );
 
   logger.dbQuery({
     table: 'projects',
     operation: 'INSERT',
-    userId,
+    userId: dbUserId,
     durationMs: Date.now() - startTime,
   });
 
   logger.info('Project created successfully', {
-    userId,
+    userId: dbUserId,
     projectId: project.id,
     projectName: project.name,
   });
@@ -168,7 +182,7 @@ export const POST = asyncHandler(async (req: NextRequest) => {
     path: '/api/projects',
     status: 201,
     durationMs,
-    userId,
+    userId: dbUserId,
   });
 
   return NextResponse.json(project, { status: 201 });
