@@ -1,6 +1,6 @@
 {
   "version": "11.9.8",
-  "commit": "c67e4e5",
+  "commit": "e5712b2",
   "lastUpdated": "2026-02-05T12:00:00.000Z",
   "changelog": "FEAT: Project-chat integration - clickable projects, back navigation, version commit display, project context in main page",
   "platform": "Railway",
