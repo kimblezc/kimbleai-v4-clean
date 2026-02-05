@@ -1,6 +1,6 @@
 {
   "version": "11.9.13",
-  "commit": "f03ee1e",
+  "commit": "0995ad9",
   "lastUpdated": "2026-02-05T19:00:00.000Z",
   "changelog": "FIX: Chat API - use separate queries instead of Supabase relationship joins",
   "platform": "Railway",
