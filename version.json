@@ -1,8 +1,8 @@
 {
-  "version": "11.9.9",
-  "commit": "119f3d9",
-  "lastUpdated": "2026-02-05T14:00:00.000Z",
-  "changelog": "FEAT: Automated workflow - preflight checks, deployment verification, enhanced health API",
+  "version": "11.9.10",
+  "commit": "679be5b",
+  "lastUpdated": "2026-02-05T16:00:00.000Z",
+  "changelog": "FIX: Project chat creation - fix projectId to project_id column mapping",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

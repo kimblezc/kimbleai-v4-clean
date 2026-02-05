@@ -303,19 +303,22 @@ export const conversationQueries = {
     model?: string;
     projectId?: string;
   }) {
-    // Remove model from params - column doesn't exist in database
-    const { model, ...dbParams } = params;
-
     // Generate UUID for conversation
     const conversationId = uuidv4();
 
+    // Build insert object with snake_case column names
+    const insertData: Record<string, any> = {
+      id: conversationId,
+      user_id: userId,
+    };
+
+    if (params.title) insertData.title = params.title;
+    if (params.projectId) insertData.project_id = params.projectId;
+    // Note: model is not stored in conversations table
+
     const { data, error } = await supabase
       .from('conversations')
-      .insert({
-        id: conversationId,
-        user_id: userId,
-        ...dbParams,
-      })
+      .insert(insertData)
       .select()
       .single();
 
