@@ -1,8 +1,8 @@
 {
-  "version": "11.9.10",
-  "commit": "eddda46",
-  "lastUpdated": "2026-02-05T16:00:00.000Z",
-  "changelog": "FIX: Project chat creation - fix projectId to project_id column mapping",
+  "version": "11.9.11",
+  "commit": "5824d13",
+  "lastUpdated": "2026-02-05T17:00:00.000Z",
+  "changelog": "FEAT: Restore KimbleAI logo and rotating D20 icosahedron to all pages",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

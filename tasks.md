@@ -1,5 +1,20 @@
 # KimbleAI Tasks
 
+## MANDATORY UI Branding Rules
+
+**RULE: Every page MUST have the D20 and KimbleAI logo in the upper left.**
+
+Requirements:
+- Rotating wireframe D20 icosahedron
+- "KimbleAI" text next to it
+- Clicking EITHER returns to main page (kimbleai.com)
+- Component: `components/layout/Logo.tsx`
+- Included via: `components/layout/Sidebar.tsx`
+
+If the D20 or KimbleAI text is missing from ANY page, fix it immediately.
+
+---
+
 ## MANDATORY Development Workflow
 
 **This workflow is AUTOMATIC. Claude executes it for EVERY change without being asked.**

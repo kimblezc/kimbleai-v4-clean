@@ -29,6 +29,7 @@ import {
   TrashIcon,
   CheckIcon,
 } from '@heroicons/react/24/outline';
+import Logo from './Logo';
 
 interface Conversation {
   id: string;
@@ -227,6 +228,11 @@ export default function Sidebar({
         `}
       >
         <div className="flex flex-col h-full">
+          {/* Logo - D20 and KimbleAI text */}
+          <div className="p-4 border-b border-neutral-800">
+            <Logo size="md" />
+          </div>
+
           {/* Header with New Chat */}
           <div className="p-3">
             <button
