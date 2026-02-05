@@ -1,5 +1,15 @@
 # KimbleAI Tasks
 
+## Development Workflow (MUST FOLLOW)
+
+```
+1. READ LOGS FIRST → 2. FIX → 3. TEST LOCAL → 4. DEPLOY → 5. TEST DEPLOYED → 6. DEBUG/FIX → 7. ITERATE
+```
+
+**Do not stop until the feature works in production.**
+
+---
+
 ## Project-Chat Integration Fixes
 
 ### Issue Summary
