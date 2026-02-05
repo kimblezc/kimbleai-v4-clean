@@ -1,8 +1,8 @@
 {
-  "version": "11.9.3",
-  "commit": "2be6ba6",
-  "lastUpdated": "2026-02-05T06:00:00.000Z",
-  "changelog": "FIX: Auto-create user record to fix foreign key constraint on project creation",
+  "version": "11.9.4",
+  "commit": "7be080f",
+  "lastUpdated": "2026-02-05T07:30:00.000Z",
+  "changelog": "FIX: Add required role field and unique name to user creation",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
