@@ -44,7 +44,9 @@ export const userQueries = {
   },
 
   /**
-   * Create new user (generates new UUID)
+   * Create new user with the provided ID
+   * CRITICAL: Must use params.id, not generate a new UUID!
+   * The ID comes from NextAuth session and must match for FK constraints.
    */
   async create(params: {
     id: string;
@@ -52,15 +54,18 @@ export const userQueries = {
     name?: string;
     googleTokens?: any;
   }) {
-    // Generate a proper UUID instead of using Google's numeric ID
-    const userId = uuidv4();
+    // CRITICAL FIX: Use the provided ID, not a generated UUID
+    // The provided ID comes from the NextAuth session and must be consistent
+    // across all database operations for foreign key relationships to work.
+    const userName = params.name || `User_${params.id.substring(0, 8)}`;
 
     const { data, error } = await supabaseAdmin
       .from('users')
       .insert({
-        id: userId,
+        id: params.id,  // USE PROVIDED ID - critical for FK constraints
         email: params.email,
-        name: params.name,
+        name: userName,
+        role: 'user',  // Required field
       })
       .select()
       .single();

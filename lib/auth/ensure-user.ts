@@ -26,40 +26,78 @@ export async function ensureUserExists(
   email: string | null | undefined,
   name: string | null | undefined
 ): Promise<string> {
+  logger.info('[ensureUserExists] Starting validation', {
+    sessionUserId,
+    email: email || 'none',
+    hasName: !!name,
+  });
+
   try {
-    // First try to get by ID
-    const existingUser = await userQueries.getById(sessionUserId).catch(() => null);
+    // Step 1: Try to get user by session ID
+    logger.info('[ensureUserExists] Step 1: Looking up by session ID', { sessionUserId });
+    const existingUser = await userQueries.getById(sessionUserId).catch((err) => {
+      logger.info('[ensureUserExists] User not found by ID (expected for new users)', {
+        sessionUserId,
+        error: err?.message || 'unknown'
+      });
+      return null;
+    });
+
     if (existingUser) {
+      logger.info('[ensureUserExists] SUCCESS: Found user by ID', {
+        sessionUserId,
+        dbUserId: existingUser.id,
+        dbEmail: existingUser.email,
+      });
       return existingUser.id;
     }
 
-    // If not found by ID and we have email, try by email
-    // IMPORTANT: Return the DB user's ID, not the session userId
+    // Step 2: Try to find user by email
     if (email) {
+      logger.info('[ensureUserExists] Step 2: Looking up by email', { email });
       const userByEmail = await userQueries.getByEmail(email);
+
       if (userByEmail) {
-        logger.info('Found user by email, using DB userId', {
+        logger.info('[ensureUserExists] SUCCESS: Found user by email - USING DB userId', {
           sessionUserId,
           dbUserId: userByEmail.id,
-          email
+          email,
+          note: 'Session ID differs from DB ID - this is expected for Google OAuth users'
         });
-        return userByEmail.id; // Use the DB user's ID!
+        return userByEmail.id; // CRITICAL: Use the DB user's ID, not session ID!
       }
+      logger.info('[ensureUserExists] User not found by email', { email });
     }
 
-    // Create new user with the session's userId
-    logger.info('Creating missing user record', { sessionUserId, email });
+    // Step 3: Create new user
+    logger.info('[ensureUserExists] Step 3: Creating new user record', {
+      sessionUserId,
+      email: email || `user-${sessionUserId}@kimbleai.local`,
+      name: name || `User_${sessionUserId.substring(0, 8)}`,
+    });
 
-    // Generate a unique name if not provided (name column may be UNIQUE and required)
     const userName = name || `User_${sessionUserId.substring(0, 8)}`;
+    const userEmail = email || `user-${sessionUserId}@kimbleai.local`;
 
     const newUser = await userQueries.createWithId(sessionUserId, {
-      email: email || `user-${sessionUserId}@kimbleai.local`,
+      email: userEmail,
       name: userName,
     });
+
+    logger.info('[ensureUserExists] SUCCESS: Created new user', {
+      sessionUserId,
+      createdUserId: newUser.id,
+      email: userEmail,
+      name: userName,
+    });
+
     return newUser.id;
   } catch (error) {
-    logger.error('Failed to ensure user exists', error as Error, { sessionUserId, email });
+    logger.error('[ensureUserExists] FAILED to ensure user exists', error as Error, {
+      sessionUserId,
+      email,
+      errorMessage: (error as Error)?.message || 'unknown'
+    });
     throw error;
   }
 }

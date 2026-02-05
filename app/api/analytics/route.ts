@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
+import { ensureUserExists } from '@/lib/auth/ensure-user';
 import { getAIService } from '@/lib/ai/ai-service';
 import { supabase } from '@/lib/db/client';
 import { asyncHandler, AuthenticationError } from '@/lib/utils/errors';
@@ -24,7 +25,8 @@ export const GET = asyncHandler(async (_req: NextRequest) => {
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Validate user exists in DB and get correct userId
+  const userId = await ensureUserExists(session.user.id, session.user.email, session.user.name);
 
   logger.apiRequest({
     method: 'GET',

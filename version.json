@@ -1,8 +1,8 @@
 {
-  "version": "11.9.6",
-  "commit": "e2ce919",
-  "lastUpdated": "2026-02-05T08:15:00.000Z",
-  "changelog": "FIX: Comprehensive userId fix - shared ensureUserExists + message user_id FK",
+  "version": "11.9.7",
+  "commit": "a29dcdb",
+  "lastUpdated": "2026-02-05T09:00:00.000Z",
+  "changelog": "FIX: Comprehensive userId architecture fix - fixed userQueries.create(), added ensureUserExists to ALL routes",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

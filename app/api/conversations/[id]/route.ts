@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
+import { ensureUserExists } from '@/lib/auth/ensure-user';
 import { conversationQueries } from '@/lib/db/queries';
 import {
   asyncHandler,
@@ -34,7 +35,8 @@ export const GET = asyncHandler(async (
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Validate user exists in DB and get correct userId
+  const userId = await ensureUserExists(session.user.id, session.user.email, session.user.name);
 
   logger.apiRequest({
     method: 'GET',
@@ -85,7 +87,8 @@ export const PUT = asyncHandler(async (
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Validate user exists in DB and get correct userId
+  const userId = await ensureUserExists(session.user.id, session.user.email, session.user.name);
 
   // 2. Parse body
   const body = await req.json();
@@ -153,7 +156,8 @@ export const DELETE = asyncHandler(async (
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Validate user exists in DB and get correct userId
+  const userId = await ensureUserExists(session.user.id, session.user.email, session.user.name);
 
   logger.apiRequest({
     method: 'DELETE',

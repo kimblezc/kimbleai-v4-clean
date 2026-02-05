@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
+import { ensureUserExists } from '@/lib/auth/ensure-user';
 import { supabase } from '@/lib/db/client';
 
 export const runtime = 'nodejs';
@@ -26,7 +27,8 @@ export async function GET(
       );
     }
 
-    const userId = session.user.id;
+    // Validate user exists in DB and get correct userId
+    const userId = await ensureUserExists(session.user.id, session.user.email, session.user.name);
     const conversationId = params.id;
 
     // 2. Verify conversation belongs to user

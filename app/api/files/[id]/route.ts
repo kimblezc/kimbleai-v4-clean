@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
+import { ensureUserExists } from '@/lib/auth/ensure-user';
 import { supabase } from '@/lib/db/client';
 import { FileService } from '@/lib/services/file-service';
 import {
@@ -34,7 +35,8 @@ export const GET = asyncHandler(async (
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Validate user exists in DB and get correct userId
+  const userId = await ensureUserExists(session.user.id, session.user.email, session.user.name);
   const fileId = params.id;
 
   logger.apiRequest({
@@ -89,7 +91,8 @@ export const PATCH = asyncHandler(async (
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Validate user exists in DB and get correct userId
+  const userId = await ensureUserExists(session.user.id, session.user.email, session.user.name);
   const fileId = params.id;
 
   // 2. Parse body
@@ -183,7 +186,8 @@ export const DELETE = asyncHandler(async (
     throw new AuthenticationError();
   }
 
-  const userId = session.user.id;
+  // Validate user exists in DB and get correct userId
+  const userId = await ensureUserExists(session.user.id, session.user.email, session.user.name);
   const fileId = params.id;
 
   logger.apiRequest({
