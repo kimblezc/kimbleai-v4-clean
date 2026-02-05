@@ -8,7 +8,7 @@
 Latest Version: v11.9.11
 Latest Commit: 62f0053
 Last Updated: 2026-02-05
-Status: Deploying to Railway (D20 LOGO RESTORATION)
+Status: Deployed to Railway (D20 LOGO RESTORATION)
 Live URL: https://www.kimbleai.com
 Local Path: C:\KimbleAI (moved from OneDrive for faster builds)
 ```
@@ -90,12 +90,14 @@ railway up --detach
 
 ### Step 6: Verify Deployment (MANDATORY)
 ```bash
-# Wait for deployment
-sleep 90
+# Wait for deployment (typically 60-150 seconds)
+sleep 120
 
 # Run automated verification
 npm run verify:deployed
 ```
+
+**Note:** Railway deployments typically take 60-150 seconds. If verification shows old version, wait longer.
 
 The verification script checks:
 - ✓ Version API returns correct version/commit
