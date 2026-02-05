@@ -76,12 +76,16 @@ export const userQueries = {
     email: string;
     name?: string;
   }) {
+    // Generate a unique name if not provided (name column is UNIQUE and required)
+    const userName = params.name || `User_${userId.substring(0, 8)}`;
+
     const { data, error } = await supabaseAdmin
       .from('users')
       .insert({
         id: userId,
         email: params.email,
-        name: params.name,
+        name: userName,
+        role: 'user', // Required field with default
       })
       .select()
       .single();
