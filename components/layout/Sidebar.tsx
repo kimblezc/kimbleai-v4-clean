@@ -46,7 +46,9 @@ interface Project {
 interface SidebarProps {
   conversations?: Conversation[];
   activeConversationId?: string | null;
+  activeProjectId?: string | null;
   onSelectConversation?: (id: string) => void;
+  onSelectProject?: (id: string | null) => void;
   onNewConversation?: () => void;
   onDeleteConversation?: (id: string) => void;
   onRenameConversation?: (id: string, newTitle: string) => void;
@@ -55,7 +57,9 @@ interface SidebarProps {
 export default function Sidebar({
   conversations = [],
   activeConversationId,
+  activeProjectId,
   onSelectConversation,
+  onSelectProject,
   onNewConversation,
   onDeleteConversation,
   onRenameConversation,
@@ -255,21 +259,36 @@ export default function Sidebar({
                 <div className="space-y-1">
                   {projects.map(project => {
                     const isExpanded = expandedProjects.has(project.id);
+                    const isSelected = activeProjectId === project.id;
                     const projectConvs = getConversationsForProject(project.id);
 
                     return (
                       <div key={project.id}>
                         <button
-                          onClick={() => toggleProject(project.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-neutral-800 text-left"
+                          onClick={() => {
+                            // Toggle selection: if already selected, deselect; otherwise select
+                            if (onSelectProject) {
+                              onSelectProject(isSelected ? null : project.id);
+                            }
+                            // Also expand the project when selected
+                            if (!isExpanded) {
+                              toggleProject(project.id);
+                            }
+                          }}
+                          className={`
+                            w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors
+                            ${isSelected ? 'bg-neutral-700 border border-neutral-600' : 'hover:bg-neutral-800'}
+                          `}
                         >
                           {isExpanded ? (
                             <ChevronDownIcon className="w-4 h-4 text-neutral-400" />
                           ) : (
                             <ChevronRightIcon className="w-4 h-4 text-neutral-400" />
                           )}
-                          <FolderIcon className="w-4 h-4 text-neutral-400" />
-                          <span className="flex-1 text-sm text-neutral-300 truncate">{project.name}</span>
+                          <FolderIcon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-neutral-400'}`} />
+                          <span className={`flex-1 text-sm truncate ${isSelected ? 'text-white font-medium' : 'text-neutral-300'}`}>
+                            {project.name}
+                          </span>
                           {projectConvs.length > 0 && (
                             <span className="text-xs text-neutral-500">{projectConvs.length}</span>
                           )}
@@ -277,7 +296,21 @@ export default function Sidebar({
 
                         {isExpanded && (
                           <div className="ml-6 mt-1 space-y-1">
-                            {projectConvs.length === 0 ? (
+                            {/* New chat in project button */}
+                            {isSelected && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onNewConversation?.();
+                                  setIsMobileOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors"
+                              >
+                                <PlusIcon className="w-4 h-4" />
+                                New chat in project
+                              </button>
+                            )}
+                            {projectConvs.length === 0 && !isSelected ? (
                               <div className="px-3 py-2 text-xs text-neutral-500">No chats</div>
                             ) : (
                               projectConvs.map(conv => (
@@ -348,7 +381,7 @@ export default function Sidebar({
 
             {/* Version */}
             <div className="flex items-center justify-between px-3 text-xs text-neutral-600">
-              <span>v{versionInfo.version}</span>
+              <span>v{versionInfo.version}{versionInfo.commit ? ` @ ${versionInfo.commit}` : ''}</span>
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                 Online

@@ -1,8 +1,8 @@
 {
-  "version": "11.9.7",
-  "commit": "a29dcdb",
-  "lastUpdated": "2026-02-05T09:00:00.000Z",
-  "changelog": "FIX: Comprehensive userId architecture fix - fixed userQueries.create(), added ensureUserExists to ALL routes",
+  "version": "11.9.8",
+  "commit": "c67e4e5",
+  "lastUpdated": "2026-02-05T12:00:00.000Z",
+  "changelog": "FEAT: Project-chat integration - clickable projects, back navigation, version commit display, project context in main page",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

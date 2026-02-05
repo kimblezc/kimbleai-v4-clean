@@ -8,15 +8,19 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import Sidebar from '@/components/layout/Sidebar';
 import ProjectModal from '@/components/projects/ProjectModal';
+import VersionFooter from '@/components/layout/VersionFooter';
 import {
   PlusIcon,
   FolderIcon,
   PencilIcon,
   TrashIcon,
+  ArrowLeftIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 import { FolderIcon as FolderSolidIcon } from '@heroicons/react/24/solid';
 
@@ -34,10 +38,16 @@ interface Project {
 
 export default function ProjectsPage() {
   const { data: session, status} = useSession();
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  // Navigate to main page with project context
+  const handleProjectClick = (projectId: string) => {
+    router.push(`/?projectId=${projectId}`);
+  };
 
   // Redirect if not authenticated
   if (status === 'unauthenticated') {
@@ -170,6 +180,15 @@ export default function ProjectsPage() {
       <div className="flex-1 flex flex-col lg:ml-64">
         {/* Header */}
         <header className="px-6 py-6 bg-neutral-900 border-b border-neutral-800">
+          {/* Back Navigation */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-neutral-400 hover:text-white transition-colors mb-4"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            <span className="text-sm">Back to Chat</span>
+          </Link>
+
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-white">Projects</h1>
@@ -206,7 +225,8 @@ export default function ProjectsPage() {
               {projects.map((project) => (
                   <div
                     key={project.id}
-                    className="group relative bg-neutral-900 border border-neutral-800 rounded-xl p-6 hover:border-neutral-700 transition-all"
+                    onClick={() => handleProjectClick(project.id)}
+                    className="group relative bg-neutral-900 border border-neutral-800 rounded-xl p-6 hover:border-neutral-600 hover:bg-neutral-800/50 transition-all cursor-pointer"
                   >
                     {/* Action Buttons */}
                     <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -259,12 +279,21 @@ export default function ProjectsPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Click hint */}
+                    <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center gap-2 text-xs text-neutral-500 group-hover:text-neutral-400 transition-colors">
+                      <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                      <span>Click to view chats</span>
+                    </div>
                   </div>
                 ))}
             </div>
           )}
         </main>
       </div>
+
+      {/* Version Footer */}
+      <VersionFooter />
     </div>
   );
 }

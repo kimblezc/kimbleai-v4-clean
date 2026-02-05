@@ -11,20 +11,22 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
-import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, FolderIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/layout/Sidebar';
 import MessageList from '@/components/chat/MessageList';
 import ChatInput from '@/components/chat/ChatInput';
 import ModelSelector from '@/components/chat/ModelSelector';
 import CostDisplay from '@/components/chat/CostDisplay';
 
-export default function ChatPage() {
+// Inner component that uses useSearchParams
+function ChatPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,6 +34,11 @@ export default function ChatPage() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<any[]>([]);
   const [totalCost, setTotalCost] = useState(0);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+
+  // Get the active project name for display
+  const activeProject = projects.find(p => p.id === activeProjectId);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -40,12 +47,27 @@ export default function ChatPage() {
     }
   }, [status, router]);
 
-  // Load conversations on mount
+  // Initialize project context from URL params
+  useEffect(() => {
+    const projectIdFromUrl = searchParams.get('projectId');
+    if (projectIdFromUrl) {
+      setActiveProjectId(projectIdFromUrl);
+    }
+  }, [searchParams]);
+
+  // Load projects for display
+  useEffect(() => {
+    if (status === 'authenticated') {
+      loadProjects();
+    }
+  }, [status]);
+
+  // Load conversations on mount and when project changes
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id) {
       loadConversations();
     }
-  }, [status, session]);
+  }, [status, session, activeProjectId]);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -54,9 +76,25 @@ export default function ChatPage() {
     }
   }, [conversationId]);
 
+  const loadProjects = async () => {
+    try {
+      const response = await fetch('/api/projects');
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects || []);
+      }
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+    }
+  };
+
   const loadConversations = async () => {
     try {
-      const response = await fetch('/api/conversations');
+      // Filter by project if one is selected
+      const url = activeProjectId
+        ? `/api/conversations?projectId=${activeProjectId}`
+        : '/api/conversations';
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setConversations(data.conversations || []);
@@ -87,13 +125,14 @@ export default function ChatPage() {
     }
   };
 
-  const createConversation = async () => {
+  const createConversation = async (projectId?: string | null) => {
     try {
       const response = await fetch('/api/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: 'New Chat',
+          projectId: projectId ?? activeProjectId ?? undefined,
         }),
       });
 
@@ -114,6 +153,24 @@ export default function ChatPage() {
       console.error('Failed to create conversation:', error);
       toast.error('Failed to create conversation');
     }
+  };
+
+  // Handle project selection from sidebar
+  const handleSelectProject = (projectId: string | null) => {
+    setActiveProjectId(projectId);
+    setConversationId(null); // Clear active conversation when changing project
+    setMessages([]);
+    // Update URL without full page reload
+    if (projectId) {
+      router.push(`/?projectId=${projectId}`, { scroll: false });
+    } else {
+      router.push('/', { scroll: false });
+    }
+  };
+
+  // Clear project filter
+  const clearProjectFilter = () => {
+    handleSelectProject(null);
   };
 
   const switchConversation = (convId: string) => {
@@ -310,8 +367,10 @@ export default function ChatPage() {
       <Sidebar
         conversations={conversations}
         activeConversationId={conversationId}
+        activeProjectId={activeProjectId}
         onSelectConversation={switchConversation}
-        onNewConversation={createConversation}
+        onSelectProject={handleSelectProject}
+        onNewConversation={() => createConversation()}
         onDeleteConversation={deleteConversation}
         onRenameConversation={renameConversation}
       />
@@ -325,6 +384,23 @@ export default function ChatPage() {
               selectedModel={selectedModel}
               onModelChange={handleModelChange}
             />
+
+            {/* Active Project Indicator */}
+            {activeProject && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg">
+                <FolderIcon className="w-4 h-4 text-neutral-400" />
+                <span className="text-sm text-neutral-300 max-w-[150px] truncate">
+                  {activeProject.name}
+                </span>
+                <button
+                  onClick={clearProjectFilter}
+                  className="p-0.5 text-neutral-500 hover:text-white hover:bg-neutral-700 rounded transition-colors"
+                  title="Clear project filter"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
@@ -347,5 +423,18 @@ export default function ChatPage() {
         </footer>
       </div>
     </div>
+  );
+}
+
+// Wrap with Suspense for useSearchParams
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-neutral-950">
+        <div className="text-lg text-neutral-400">Loading...</div>
+      </div>
+    }>
+      <ChatPageContent />
+    </Suspense>
   );
 }
