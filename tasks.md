@@ -1,5 +1,17 @@
 # KimbleAI Tasks
 
+## Task Management Convention
+
+**When user says "task" or "TASK" (any case):**
+
+1. **New task** → Add to this file with "Pending" status + add to TodoWrite
+2. **Existing task** → Report current status and any blockers
+3. **Ambiguous** → Search this file, report matches or ask for clarification
+
+**Task statuses:** Pending | In Progress | Complete | Verified | Blocked
+
+---
+
 ## MANDATORY UI Branding Rules
 
 **RULE: Every page MUST have the D20 and KimbleAI logo in the upper left.**

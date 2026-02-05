@@ -1,5 +1,26 @@
 # KimbleAI Development Rules
 
+## User Communication Patterns
+
+**RULE: When the user says "task" or "TASK" (any case), they want to manage the task list.**
+
+### Behavior:
+1. **Adding a new task**: If the task doesn't exist in `tasks.md`, add it with status "Pending"
+2. **Checking existing task**: If the task exists, report its current status and progress
+3. **Multiple tasks**: Parse all tasks mentioned and handle each appropriately
+
+### Examples:
+- "task. fix the login bug" → Add new task to tasks.md, add to TodoWrite
+- "TASK check on file uploads" → Look up Task 7 status, report back
+- "task. where is the D20 fix" → Find related task, report status
+
+### Always:
+- Use TodoWrite to track active work
+- Update tasks.md for persistent task tracking
+- Acknowledge what you're doing with the task
+
+---
+
 ## Project Location
 
 **RULE: The canonical project directory is `C:\KimbleAI`. Always use this path.**
