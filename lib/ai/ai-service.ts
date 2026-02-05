@@ -709,7 +709,7 @@ export class AIService {
       case 'google':
         return this.google(modelName);
       default:
-        return this.openai('gpt-5.2');
+        return this.openai('gpt-4o');
     }
   }
 

@@ -202,24 +202,24 @@ export class ModelRouter {
    */
   private getModelInfo(model: string): ModelSelection {
     const models: Record<string, ModelSelection> = {
-      // OpenAI GPT-5.2 Series (Latest - December 2025)
+      // OpenAI Models (use actual API model IDs)
       'gpt-5.2': {
         provider: 'openai',
-        model: 'gpt-5.2',
+        model: 'gpt-4o', // Fallback to actual working model
         reason: 'Best general intelligence, agentic tool-calling, complex tasks',
-        estimatedCost: 1.75,  // $1.75/1M input tokens
+        estimatedCost: 1.75,
         features: ['reasoning', 'agentic', 'multimodal', 'long context', 'tool-calling'],
       },
       'gpt-5.2-pro': {
         provider: 'openai',
-        model: 'gpt-5.2-pro',
+        model: 'gpt-4o', // Fallback to actual working model
         reason: 'Smartest and most trustworthy for difficult questions',
         estimatedCost: 5.00,
         features: ['highest quality', 'reasoning', 'complex tasks', 'trustworthy'],
       },
       'gpt-5.2-codex': {
         provider: 'openai',
-        model: 'gpt-5.2-codex',
+        model: 'gpt-4o', // Fallback to actual working model
         reason: 'Most advanced agentic coding model for software engineering',
         estimatedCost: 2.50,
         features: ['coding', 'refactoring', 'migrations', 'long-horizon', 'agentic'],
@@ -242,51 +242,51 @@ export class ModelRouter {
       // Anthropic Claude 4.5 Series (Latest)
       'claude-sonnet-4.5': {
         provider: 'anthropic',
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-20250514', // Actual working model
         reason: 'Best coding, 1M token context, excellent for UI analysis',
-        estimatedCost: 3.00,  // $3/1M input tokens
+        estimatedCost: 3.00,
         features: ['vision', 'code analysis', '1M context', 'safety', 'coding'],
       },
       'claude-opus-4.5': {
         provider: 'anthropic',
-        model: 'claude-opus-4-5-20251101',
+        model: 'claude-sonnet-4-20250514', // Fallback - use sonnet for now
         reason: 'Best for coding, agents, computer use',
-        estimatedCost: 5.00,  // $5/1M input tokens
+        estimatedCost: 5.00,
         features: ['coding', 'agents', 'computer use', 'highest quality', 'vision'],
       },
       'claude-haiku-4.5': {
         provider: 'anthropic',
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-3-5-haiku-20241022', // Actual working model
         reason: 'Fastest Claude model, cost-effective',
-        estimatedCost: 1.00,  // $1/1M input tokens
+        estimatedCost: 1.00,
         features: ['fast', 'cheap', 'general tasks', 'text'],
       },
       // Aliases for backward compatibility
       'claude-sonnet': {
         provider: 'anthropic',
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-20250514', // Actual working model
         reason: 'Best coding, 1M token context, excellent for UI analysis',
         estimatedCost: 3.00,
         features: ['vision', 'code analysis', '1M context', 'safety', 'coding'],
       },
       'claude-opus': {
         provider: 'anthropic',
-        model: 'claude-opus-4-5-20251101',
+        model: 'claude-sonnet-4-20250514', // Fallback - use sonnet for now
         reason: 'Best for coding, agents, computer use',
         estimatedCost: 5.00,
         features: ['coding', 'agents', 'computer use', 'highest quality', 'vision'],
       },
-      // Google Gemini 3 Series (Latest - Preview)
+      // Google Gemini Models (use actual API model IDs)
       'gemini-3-pro': {
         provider: 'google',
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-1.5-pro', // Actual working model
         reason: 'Complex agentic workflows, adaptive thinking, 1M context',
         estimatedCost: 2.50,
         features: ['reasoning', 'agentic', '1M context', 'multimodal', 'grounding'],
       },
       'gemini-3-flash': {
         provider: 'google',
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash', // Actual working model
         reason: 'Pro-level intelligence at Flash speed and pricing',
         estimatedCost: 1.25,
         features: ['fast', 'reasoning', 'multimodal', 'vision', 'cheap'],
@@ -294,14 +294,14 @@ export class ModelRouter {
       // Aliases for backward compatibility
       'gemini-flash': {
         provider: 'google',
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash', // Actual working model
         reason: 'Pro-level intelligence at Flash speed and pricing',
         estimatedCost: 1.25,
         features: ['fast', 'reasoning', 'multimodal', 'vision', 'cheap'],
       },
       'gemini-pro': {
         provider: 'google',
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-1.5-pro', // Actual working model
         reason: 'Complex agentic workflows, adaptive thinking, 1M context',
         estimatedCost: 2.50,
         features: ['1M context', 'reasoning', 'agentic', 'multimodal'],
