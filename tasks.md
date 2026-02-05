@@ -380,3 +380,63 @@ Tokens stored in JWT session for API access.
 - OAuth flow for GitHub access
 - Read issues, PRs, code
 - Create issues/comments from chat
+
+---
+
+### Task 18: Claude Code Integration Research
+**Status:** Pending
+**Priority:** High
+
+**Problem:** Explore how to integrate Claude Code CLI capabilities into KimbleAI.
+
+**Research Areas:**
+- Claude Agent SDK for building custom agents
+- MCP (Model Context Protocol) servers
+- Hooks and skill system
+- Possible integration points with KimbleAI
+
+---
+
+### Task 19: MCP Integrations Research
+**Status:** Pending
+**Priority:** High
+
+**Problem:** Research potential MCP server integrations and how they could enhance KimbleAI.
+
+**Research Areas:**
+- Available MCP servers (file systems, databases, APIs)
+- Creating custom MCP servers
+- Integrating MCP with existing chat interface
+- Security considerations
+
+---
+
+### Task 20: Modern Tech Stack Assessment
+**Status:** Ongoing
+**Priority:** Medium
+
+**Problem:** Continuously evaluate modern technologies and services to find best solutions.
+
+**Areas to Monitor:**
+- AI model releases (OpenAI, Anthropic, Google)
+- New APIs and services
+- Framework updates (Next.js, React)
+- Database and vector store options
+- Voice/audio technologies
+- Agent frameworks
+
+---
+
+### Task 21: Regular Recommendations & Improvements
+**Status:** Ongoing
+**Priority:** Medium
+
+**Problem:** Provide regular recommendations on ways to improve or identify missed opportunities.
+
+**Scope:**
+- Performance optimizations
+- UX improvements
+- Cost optimizations
+- Security enhancements
+- Feature ideas based on capabilities
+- Integration opportunities
