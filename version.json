@@ -1,6 +1,6 @@
 {
   "version": "11.9.5",
-  "commit": "pending",
+  "commit": "673be92",
   "lastUpdated": "2026-02-05T07:45:00.000Z",
   "changelog": "FIX: Use DB userId (not session) when user found by email",
   "platform": "Railway",
