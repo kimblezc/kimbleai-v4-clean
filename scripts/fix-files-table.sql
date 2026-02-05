@@ -16,7 +16,7 @@
 CREATE TABLE IF NOT EXISTS public.files (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  project_id uuid REFERENCES public.projects(id) ON DELETE SET NULL,
+  project_id text, -- projects.id is TEXT, not UUID
 
   -- File metadata
   name text NOT NULL,
