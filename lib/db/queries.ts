@@ -164,6 +164,32 @@ export const projectQueries = {
     console.log('[projectQueries.create] Creating project for user:', userId);
     console.log('[projectQueries.create] Params:', JSON.stringify(params));
 
+    // First, ensure user exists in database (fix for foreign key constraint)
+    const { data: existingUser } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (!existingUser) {
+      console.log('[projectQueries.create] User not found in DB, creating user record...');
+      const { error: userError } = await supabaseAdmin
+        .from('users')
+        .insert({
+          id: userId,
+          name: 'User',
+          email: null,
+          role: 'user',
+          permissions: {},
+        });
+
+      if (userError) {
+        console.error('[projectQueries.create] Failed to create user:', userError.message);
+        throw new Error(`Failed to create user record: ${userError.message}`);
+      }
+      console.log('[projectQueries.create] User record created successfully');
+    }
+
     // Generate UUID for project
     const projectId = uuidv4();
 
