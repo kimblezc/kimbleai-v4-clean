@@ -232,3 +232,148 @@ Google OAuth configured with scopes for:
 - Calendar (read + create events)
 
 Tokens stored in JWT session for API access.
+
+---
+
+## Strategic Pillars (Ultimate Goals)
+
+### Pillar 1: Unified AI Interface
+**Status:** Partially Complete
+- ✅ Smart routing between GPT-5.2, Claude Opus 4.5, Gemini 3 Pro
+- ✅ Cost-aware processing that respects budgets
+- ✅ Automatic model selection for optimal results
+
+### Pillar 2: Perfect Memory
+**Status:** Pending
+- ✅ Vector-indexed knowledge base exists
+- ⬜ Never lose context across sessions (RAG not leveraged)
+- ✅ Project-scoped isolation for different work contexts
+
+### Pillar 3: Multi-Modal Intelligence
+**Status:** Verified
+- ✅ Text, vision, audio unified
+- ✅ Deepgram Nova-3 for transcription
+- ✅ Document processing (PDF, DOCX, spreadsheets)
+
+### Pillar 4: Workspace Integration
+**Status:** Partial
+- ✅ Deep Google Workspace integration (Gmail, Drive, Calendar)
+- ⬜ Future: Slack, Notion, GitHub integrations
+
+### Pillar 5: Self-Improvement
+**Status:** Complete
+- ✅ Automated health monitoring
+- ✅ Performance tracking
+- ✅ Idea generation for continuous evolution
+
+### Pillar 6: User Experience
+**Status:** Complete
+- ✅ Fast, responsive UI
+- ✅ Clear cost visibility
+- ✅ D&D-themed dark mode design
+
+### Pillar 7: Coding & Debugging
+**Status:** Ongoing
+- ⬜ Eternal improvement and testing
+- ⬜ Remain within cost limits
+
+---
+
+## Immediate Priority Tasks
+
+### Task 11: Implement RAG for Cross-Session Memory
+**Status:** Pending
+**Priority:** High
+
+**Problem:** Data is stored but not leveraged for context. Users lose conversational context between sessions.
+
+**Solution:**
+- Use existing vector embeddings from `lib/ai/embeddings.ts`
+- Query relevant past conversations/files when starting new chat
+- Inject relevant context into system prompt
+- Allow "remember this" commands to persist key facts
+
+**Files to examine:**
+- `lib/ai/embeddings.ts` - Vector embedding generation
+- `lib/knowledge/` - Knowledge base services
+- `app/api/chat/route.ts` - Where to inject retrieved context
+
+---
+
+### Task 12: Build Voice Chat Interface
+**Status:** Pending
+**Priority:** High
+
+**Problem:** All voice pieces exist (Deepgram transcription) but no unified voice interface.
+
+**Solution:**
+- Add microphone button to chat input
+- Real-time speech-to-text using Deepgram
+- Option for text-to-speech responses
+- Push-to-talk or voice activity detection modes
+
+**Files to examine:**
+- `app/api/voice/transcribe/route.ts` - Existing transcription
+- `components/chat/ChatInput.tsx` - Where to add mic button
+- Consider ElevenLabs or similar for TTS
+
+---
+
+### Task 13: Add Tool Calling for Agentic Workflows
+**Status:** Pending
+**Priority:** High
+
+**Problem:** AI can chat but can't take actions (agentic capability missing).
+
+**Solution:**
+- Implement function/tool calling with OpenAI and Anthropic APIs
+- Define tool schemas (web search, file operations, calendar, etc.)
+- Add confirmation UI for sensitive actions
+- Track tool usage in cost calculations
+
+**Files to examine:**
+- `lib/ai/ai-service.ts` - Add tool definitions
+- `lib/ai/providers/` - Provider-specific tool implementations
+- New: `lib/ai/tools/` - Tool definitions and handlers
+
+---
+
+### Task 14: Production Validation Testing
+**Status:** Pending
+**Priority:** Medium
+
+**Problem:** Features exist but need production validation with real user flows.
+
+**Subtasks:**
+- [ ] Test complete file upload → analysis → chat about file flow
+- [ ] Test image capture → vision analysis → follow-up chat flow
+- [ ] Test audio transcription → categorization → project assignment flow
+- [ ] Test Google integration: read Gmail, read Drive, create Calendar event
+- [ ] Test model routing with different prompt types
+- [ ] Verify cost tracking accuracy
+
+---
+
+### Task 16: Notion Integration
+**Status:** Pending
+**Priority:** Low
+
+**Problem:** No Notion integration yet.
+
+**Solution:**
+- OAuth flow for Notion access
+- Read/create pages and databases
+- Sync knowledge base with Notion pages
+
+---
+
+### Task 17: GitHub Integration
+**Status:** Pending
+**Priority:** Low
+
+**Problem:** No GitHub integration yet.
+
+**Solution:**
+- OAuth flow for GitHub access
+- Read issues, PRs, code
+- Create issues/comments from chat

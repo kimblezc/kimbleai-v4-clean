@@ -6,6 +6,8 @@
  * - Cost tracking
  * - Streaming responses
  * - Message persistence
+ * - RAG (Retrieval-Augmented Generation) for cross-session memory
+ * - Google services integration (Gmail, Drive, Calendar)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -13,6 +15,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { ensureUserExists } from '@/lib/auth/ensure-user';
 import { getAIService } from '@/lib/ai/ai-service';
+import { getRAGService } from '@/lib/ai/rag-service';
 import { supabase } from '@/lib/db/client';
 import { conversationQueries, messageQueries } from '@/lib/db/queries';
 
@@ -54,6 +57,8 @@ export async function POST(req: NextRequest) {
       projectId,
       model, // Manual model override (optional)
       stream = true,
+      enableRAG = true, // Enable RAG by default
+      includeGoogle = true, // Include Google services in RAG
     } = body;
 
     if (!messages || !Array.isArray(messages)) {
@@ -76,8 +81,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Initialize AI service
+    // 4. Initialize AI service and RAG service
     const aiService = getAIService(supabase);
+    const ragService = getRAGService(supabase);
 
     // 5. Set manual model if specified
     if (model) {
@@ -88,8 +94,80 @@ export async function POST(req: NextRequest) {
       aiService.setAutoModel();
     }
 
-    // 6. Save user message first
+    // 6. Check for "remember" commands in user message
     const userMessage = messages[messages.length - 1];
+    if (userMessage.role === 'user') {
+      const rememberCommand = ragService.parseRememberCommand(userMessage.content);
+      if (rememberCommand) {
+        try {
+          await ragService.storeMemory({
+            userId,
+            key: rememberCommand.key,
+            value: rememberCommand.value,
+            category: 'fact',
+          });
+          console.log('[Chat API] Stored memory:', rememberCommand.key);
+        } catch (error) {
+          console.warn('[Chat API] Failed to store memory:', error);
+          // Continue without blocking the chat
+        }
+      }
+    }
+
+    // 7. Retrieve relevant context using RAG (if enabled)
+    let ragContext = '';
+    let ragCost = 0;
+    if (enableRAG && userMessage.role === 'user') {
+      try {
+        const context = await ragService.retrieveContext({
+          userId,
+          query: userMessage.content,
+          projectId,
+          conversationId,
+          includeGoogle: includeGoogle && !!session.accessToken,
+          googleTokens: session.accessToken ? {
+            accessToken: session.accessToken as string,
+            refreshToken: session.refreshToken as string,
+          } : undefined,
+          maxResults: 8,
+        });
+
+        if (context.formattedContext) {
+          ragContext = context.formattedContext;
+          ragCost = context.costUsd;
+          console.log('[Chat API] RAG context retrieved:', {
+            totalResults: context.retrievedContexts.length,
+            tokens: context.totalTokens,
+            costUsd: context.costUsd,
+          });
+        }
+      } catch (error) {
+        console.warn('[Chat API] RAG retrieval failed, continuing without context:', error);
+        // Continue without RAG context
+      }
+    }
+
+    // 8. Inject RAG context into messages
+    let messagesWithContext = [...messages];
+    if (ragContext) {
+      // Insert RAG context as a system message before user messages
+      const systemMessageIndex = messagesWithContext.findIndex(m => m.role === 'system');
+      if (systemMessageIndex >= 0) {
+        // Append to existing system message
+        messagesWithContext[systemMessageIndex] = {
+          ...messagesWithContext[systemMessageIndex],
+          content: messagesWithContext[systemMessageIndex].content + '\n\n' + ragContext,
+        };
+      } else {
+        // Add new system message with context
+        messagesWithContext = [
+          { role: 'system', content: ragContext },
+          ...messagesWithContext,
+        ];
+      }
+    }
+
+    // 9. Save user message
     if (userMessage.role === 'user') {
       await messageQueries.create({
         conversationId: conversation.id,
@@ -100,10 +178,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 7. Call AI service
+    // 10. Call AI service with RAG-enhanced messages
     const result = await aiService.chat({
       userId,
-      messages,
+      messages: messagesWithContext,
       options: {
         model,
         stream,
@@ -112,7 +190,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 8. Handle streaming response
+    // 11. Handle streaming response
     if (stream && 'textStream' in result) {
       // Extract model info from result (added by AI service for Task 6)
       const modelUsed = (result as any).modelUsed || model || 'gpt-5.2';
@@ -165,7 +243,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 9. Handle non-streaming response
+    // 12. Handle non-streaming response
     if ('content' in result) {
       // Type assertion for non-streaming response
       const nonStreamResult = result as {
