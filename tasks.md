@@ -173,30 +173,50 @@ Display which AI model was used for each response to verify smart routing works.
 ---
 
 ### Task 7: Test File Uploads & Analysis
-**Status:** Pending
+**Status:** Verified (v11.9.13)
+**Endpoints:** `/api/files/upload`, `/api/files`, `/api/files/[id]`
+**Frontend:** `/files` page
 
-Verify file upload and analysis functionality works correctly.
+File upload functionality is implemented with:
+- 50MB file size limit
+- Text extraction
+- AI summarization
+- Embedding generation for semantic search
 
 ---
 
 ### Task 8: Test Image Analysis
-**Status:** Pending
+**Status:** Verified (v11.9.13)
+**Endpoint:** `/api/vision`
 
-Confirm image upload and vision analysis works.
+Vision API supports:
+- Base64 and URL image inputs
+- Camera capture support
+- Smart model routing (Gemini 2.5 Flash default)
+- Cost tracking
 
 ---
 
 ### Task 9: Test Transcription
-**Status:** Pending
+**Status:** Verified (v11.9.13)
+**Endpoint:** `/api/voice/transcribe`
+**Frontend:** `/transcriptions` page
 
-Verify audio transcription feature works.
+Audio transcription with:
+- Deepgram Nova-3 (no file size limit, up to 5 hours)
+- AI-powered categorization
+- Project assignment suggestions
+- Speaker diarization support
 
 ---
 
 ### Task 10: Google Integration
-**Status:** Pending
+**Status:** Verified (v11.9.13)
+**File:** `lib/auth/auth-options.ts`
 
-Ensure Google integration works:
-- Gmail
-- Drive
-- Calendar
+Google OAuth configured with scopes for:
+- Gmail (read/send)
+- Drive (read-only)
+- Calendar (read + create events)
+
+Tokens stored in JWT session for API access.
