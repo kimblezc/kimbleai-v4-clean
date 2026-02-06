@@ -217,6 +217,49 @@ function ChatPageContent() {
     }
   };
 
+  const deleteMultipleConversations = async (convIds: string[]) => {
+    try {
+      // Delete all conversations in parallel
+      const results = await Promise.all(
+        convIds.map(id =>
+          fetch(`/api/conversations/${id}`, { method: 'DELETE' })
+        )
+      );
+
+      const successCount = results.filter(r => r.ok).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        toast.success(`Deleted ${successCount} conversation${successCount > 1 ? 's' : ''}`, {
+          style: {
+            background: '#262626',
+            color: '#fff',
+            border: '1px solid #404040',
+          },
+        });
+      }
+
+      if (failCount > 0) {
+        toast.error(`Failed to delete ${failCount} conversation${failCount > 1 ? 's' : ''}`);
+      }
+
+      // If deleting active conversation, switch to another
+      if (conversationId && convIds.includes(conversationId)) {
+        const remaining = conversations.filter(c => !convIds.includes(c.id));
+        if (remaining.length > 0) {
+          setConversationId(remaining[0].id);
+        } else {
+          createConversation();
+        }
+      }
+
+      loadConversations();
+    } catch (error) {
+      console.error('Failed to delete conversations:', error);
+      toast.error('Failed to delete conversations');
+    }
+  };
+
   const renameConversation = async (convId: string, newTitle: string) => {
     try {
       const response = await fetch(`/api/conversations/${convId}`, {
@@ -401,6 +444,7 @@ function ChatPageContent() {
         onSelectProject={handleSelectProject}
         onNewConversation={() => createConversation()}
         onDeleteConversation={deleteConversation}
+        onDeleteMultipleConversations={deleteMultipleConversations}
         onRenameConversation={renameConversation}
       />
 

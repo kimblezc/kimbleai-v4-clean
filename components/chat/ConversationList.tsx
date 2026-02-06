@@ -2,7 +2,7 @@
  * Conversation List Component
  *
  * Displays list of conversations with ability to switch between them
- * Features: Create, Edit, Delete conversations
+ * Features: Create, Edit, Delete conversations, Multi-select delete
  */
 
 'use client';
@@ -16,7 +16,9 @@ import {
   TrashIcon,
   CheckIcon,
   XMarkIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 
 interface Conversation {
   id: string;
@@ -31,6 +33,7 @@ interface ConversationListProps {
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation?: (id: string) => void;
+  onDeleteMultipleConversations?: (ids: string[]) => void;
   onRenameConversation?: (id: string, newTitle: string) => void;
 }
 
@@ -40,11 +43,14 @@ export default function ConversationList({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  onDeleteMultipleConversations,
   onRenameConversation,
 }: ConversationListProps) {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const handleMenuToggle = (e: React.MouseEvent, convId: string) => {
     e.stopPropagation();
@@ -81,17 +87,109 @@ export default function ConversationList({
     }
   };
 
+  // Multi-select handlers
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedIds(new Set());
+    setMenuOpenId(null);
+  };
+
+  const toggleSelection = (convId: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(convId)) {
+      newSelected.delete(convId);
+    } else {
+      newSelected.add(convId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === conversations.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(conversations.map(c => c.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+
+    const count = selectedIds.size;
+    if (confirm(`Are you sure you want to delete ${count} conversation${count > 1 ? 's' : ''}? This cannot be undone.`)) {
+      if (onDeleteMultipleConversations) {
+        await onDeleteMultipleConversations(Array.from(selectedIds));
+      } else if (onDeleteConversation) {
+        // Fallback: delete one by one
+        for (const id of selectedIds) {
+          await onDeleteConversation(id);
+        }
+      }
+      setSelectedIds(new Set());
+      setSelectMode(false);
+    }
+  };
+
+  const allSelected = conversations.length > 0 && selectedIds.size === conversations.length;
+
   return (
     <div className="flex flex-col h-full">
-      {/* New Chat Button */}
+      {/* Header with New Chat / Select Mode */}
       <div className="p-4 border-b border-gray-700">
-        <button
-          onClick={onNewConversation}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
-        >
-          <PlusIcon className="w-5 h-5" />
-          New Chat
-        </button>
+        {selectMode ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">
+                {selectedIds.size} selected
+              </span>
+              <button
+                onClick={toggleSelectMode}
+                className="text-sm text-gray-400 hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={selectAll}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+              >
+                {allSelected ? 'Deselect All' : 'Select All'}
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={selectedIds.size === 0}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                  selectedIds.size === 0
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
+                }`}
+              >
+                <TrashIcon className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={onNewConversation}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+            >
+              <PlusIcon className="w-5 h-5" />
+              New Chat
+            </button>
+            {conversations.length > 0 && (onDeleteConversation || onDeleteMultipleConversations) && (
+              <button
+                onClick={toggleSelectMode}
+                className="px-3 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                title="Select multiple chats"
+              >
+                <CheckCircleIcon className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Conversations List */}
@@ -106,6 +204,7 @@ export default function ConversationList({
               const isActive = conv.id === activeConversationId;
               const isEditing = editingId === conv.id;
               const isMenuOpen = menuOpenId === conv.id;
+              const isSelected = selectedIds.has(conv.id);
               const date = new Date(conv.updated_at);
               const timeAgo = getTimeAgo(date);
 
@@ -115,21 +214,40 @@ export default function ConversationList({
                   className={`
                     relative group w-full text-left px-3 py-3 rounded-lg transition-all
                     ${
-                      isActive
+                      selectMode && isSelected
+                        ? 'bg-blue-600/30 border border-blue-500/50'
+                        : isActive
                         ? 'bg-blue-600/20 border border-blue-500/50'
                         : 'hover:bg-gray-800/50 border border-transparent'
                     }
                   `}
                 >
                   <div
-                    onClick={() => !isEditing && onSelectConversation(conv.id)}
+                    onClick={() => {
+                      if (selectMode) {
+                        toggleSelection(conv.id);
+                      } else if (!isEditing) {
+                        onSelectConversation(conv.id);
+                      }
+                    }}
                     className="flex items-start gap-2 cursor-pointer"
                   >
-                    <ChatBubbleLeftRightIcon
-                      className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                        isActive ? 'text-blue-400' : 'text-gray-400'
-                      }`}
-                    />
+                    {/* Checkbox in select mode */}
+                    {selectMode ? (
+                      <div className="mt-0.5 flex-shrink-0">
+                        {isSelected ? (
+                          <CheckCircleSolidIcon className="w-5 h-5 text-blue-500" />
+                        ) : (
+                          <CheckCircleIcon className="w-5 h-5 text-gray-500" />
+                        )}
+                      </div>
+                    ) : (
+                      <ChatBubbleLeftRightIcon
+                        className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                          isActive ? 'text-blue-400' : 'text-gray-400'
+                        }`}
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
                       {isEditing ? (
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -173,8 +291,8 @@ export default function ConversationList({
                       )}
                     </div>
 
-                    {/* Menu Button */}
-                    {!isEditing && (onDeleteConversation || onRenameConversation) && (
+                    {/* Menu Button - only show when not in select mode */}
+                    {!selectMode && !isEditing && (onDeleteConversation || onRenameConversation) && (
                       <button
                         onClick={(e) => handleMenuToggle(e, conv.id)}
                         className="absolute right-2 top-3 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-700 transition-opacity"
@@ -185,7 +303,7 @@ export default function ConversationList({
                   </div>
 
                   {/* Dropdown Menu */}
-                  {isMenuOpen && (
+                  {isMenuOpen && !selectMode && (
                     <>
                       <div
                         className="fixed inset-0 z-10"

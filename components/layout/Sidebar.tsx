@@ -4,7 +4,7 @@
  * Single sidebar with:
  * - New Chat button at top
  * - Projects section with expandable conversations
- * - Recent chats (unassigned to projects)
+ * - Recent chats (unassigned to projects) with multi-select delete
  * - User section at bottom
  */
 
@@ -28,7 +28,9 @@ import {
   PencilIcon,
   TrashIcon,
   CheckIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 import Logo from './Logo';
 
 interface Conversation {
@@ -52,6 +54,7 @@ interface SidebarProps {
   onSelectProject?: (id: string | null) => void;
   onNewConversation?: () => void;
   onDeleteConversation?: (id: string) => void;
+  onDeleteMultipleConversations?: (ids: string[]) => void;
   onRenameConversation?: (id: string, newTitle: string) => void;
 }
 
@@ -63,6 +66,7 @@ export default function Sidebar({
   onSelectProject,
   onNewConversation,
   onDeleteConversation,
+  onDeleteMultipleConversations,
   onRenameConversation,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -74,6 +78,10 @@ export default function Sidebar({
   const [editTitle, setEditTitle] = useState('');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [versionInfo, setVersionInfo] = useState({ version: '', commit: '' });
+
+  // Multi-select state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Load projects
   useEffect(() => {
@@ -136,20 +144,81 @@ export default function Sidebar({
     }
   };
 
-  const ConversationItem = ({ conv }: { conv: Conversation }) => {
+  // Multi-select handlers
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedIds(new Set());
+    setMenuOpenId(null);
+  };
+
+  const toggleSelection = (convId: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(convId)) {
+      newSelected.delete(convId);
+    } else {
+      newSelected.add(convId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectAllRecent = () => {
+    if (selectedIds.size === recentConversations.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(recentConversations.map(c => c.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+
+    const count = selectedIds.size;
+    if (confirm(`Delete ${count} conversation${count > 1 ? 's' : ''}? This cannot be undone.`)) {
+      if (onDeleteMultipleConversations) {
+        await onDeleteMultipleConversations(Array.from(selectedIds));
+      } else if (onDeleteConversation) {
+        for (const id of selectedIds) {
+          await onDeleteConversation(id);
+        }
+      }
+      setSelectedIds(new Set());
+      setSelectMode(false);
+    }
+  };
+
+  const allRecentSelected = recentConversations.length > 0 && selectedIds.size === recentConversations.length;
+
+  const ConversationItem = ({ conv, inSelectMode = false }: { conv: Conversation; inSelectMode?: boolean }) => {
     const isActive = conv.id === activeConversationId;
     const isEditing = editingId === conv.id;
     const isMenuOpen = menuOpenId === conv.id;
+    const isSelected = selectedIds.has(conv.id);
 
     return (
       <div
         className={`
           group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer
-          ${isActive ? 'bg-neutral-700' : 'hover:bg-neutral-800'}
+          ${inSelectMode && isSelected ? 'bg-blue-600/30 border border-blue-500/50' : isActive ? 'bg-neutral-700' : 'hover:bg-neutral-800'}
         `}
-        onClick={() => !isEditing && onSelectConversation?.(conv.id)}
+        onClick={() => {
+          if (inSelectMode) {
+            toggleSelection(conv.id);
+          } else if (!isEditing) {
+            onSelectConversation?.(conv.id);
+          }
+        }}
       >
-        <ChatBubbleLeftRightIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+        {inSelectMode ? (
+          <div className="flex-shrink-0">
+            {isSelected ? (
+              <CheckCircleSolidIcon className="w-4 h-4 text-blue-500" />
+            ) : (
+              <CheckCircleIcon className="w-4 h-4 text-neutral-500" />
+            )}
+          </div>
+        ) : (
+          <ChatBubbleLeftRightIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+        )}
 
         {isEditing ? (
           <div className="flex-1 flex items-center gap-1" onClick={e => e.stopPropagation()}>
@@ -174,16 +243,18 @@ export default function Sidebar({
               {conv.title || 'Untitled Chat'}
             </span>
 
-            <button
-              onClick={e => { e.stopPropagation(); setMenuOpenId(isMenuOpen ? null : conv.id); }}
-              className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-600"
-            >
-              <EllipsisHorizontalIcon className="w-4 h-4 text-neutral-400" />
-            </button>
+            {!inSelectMode && (
+              <button
+                onClick={e => { e.stopPropagation(); setMenuOpenId(isMenuOpen ? null : conv.id); }}
+                className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-600"
+              >
+                <EllipsisHorizontalIcon className="w-4 h-4 text-neutral-400" />
+              </button>
+            )}
           </>
         )}
 
-        {isMenuOpen && (
+        {isMenuOpen && !inSelectMode && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
             <div className="absolute right-0 top-8 z-20 w-32 bg-neutral-800 border border-neutral-700 rounded-lg shadow-xl py-1">
@@ -332,18 +403,63 @@ export default function Sidebar({
               )}
             </div>
 
-            {/* Recent Chats Section */}
+            {/* Recent Chats Section with Multi-Select */}
             <div>
-              <div className="px-2 py-2">
+              <div className="flex items-center justify-between px-2 py-2">
                 <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Recent</span>
+                {recentConversations.length > 0 && (onDeleteConversation || onDeleteMultipleConversations) && (
+                  <button
+                    onClick={toggleSelectMode}
+                    className="text-xs text-neutral-500 hover:text-white flex items-center gap-1"
+                    title={selectMode ? 'Cancel selection' : 'Select multiple'}
+                  >
+                    {selectMode ? (
+                      'Cancel'
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="w-3 h-3" />
+                        Select
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
+
+              {/* Select mode controls */}
+              {selectMode && recentConversations.length > 0 && (
+                <div className="px-2 py-2 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-neutral-400">
+                    <span>{selectedIds.size} selected</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={selectAllRecent}
+                      className="flex-1 px-2 py-1.5 text-xs bg-neutral-800 hover:bg-neutral-700 text-white rounded transition-colors"
+                    >
+                      {allRecentSelected ? 'Deselect All' : 'Select All'}
+                    </button>
+                    <button
+                      onClick={handleDeleteSelected}
+                      disabled={selectedIds.size === 0}
+                      className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded transition-colors ${
+                        selectedIds.size === 0
+                          ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      }`}
+                    >
+                      <TrashIcon className="w-3 h-3" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {recentConversations.length === 0 ? (
                 <div className="px-3 py-2 text-sm text-neutral-500">No recent chats</div>
               ) : (
                 <div className="space-y-1">
-                  {recentConversations.slice(0, 20).map(conv => (
-                    <ConversationItem key={conv.id} conv={conv} />
+                  {recentConversations.slice(0, 50).map(conv => (
+                    <ConversationItem key={conv.id} conv={conv} inSelectMode={selectMode} />
                   ))}
                 </div>
               )}

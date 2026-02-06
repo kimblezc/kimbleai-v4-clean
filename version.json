@@ -1,8 +1,8 @@
 {
-  "version": "11.9.22",
-  "commit": "1dc2485",
+  "version": "11.9.23",
+  "commit": "c37f065",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
-  "changelog": "FEAT: Enable RAG + update system prompt with capabilities",
+  "changelog": "FEAT: Multi-select delete for recent chats in sidebar",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
