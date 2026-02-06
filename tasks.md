@@ -440,3 +440,344 @@ Tokens stored in JWT session for API access.
 - Security enhancements
 - Feature ideas based on capabilities
 - Integration opportunities
+
+---
+
+## Implemented Tools & Integrations (v11.11.0)
+
+### Available Agentic Tools
+
+The following tools are implemented in `lib/ai/tools/` and available for AI to call:
+
+#### Web Tools (`lib/ai/tools/web.ts`)
+| Tool | Description | Confirmation |
+|------|-------------|--------------|
+| `web_search` | Search the web using Brave Search or DuckDuckGo | No |
+| `web_fetch` | Fetch and extract text from a webpage | No |
+| `get_current_time` | Get current date/time in various formats | No |
+
+#### File Tools (`lib/ai/tools/files.ts`)
+| Tool | Description | Confirmation |
+|------|-------------|--------------|
+| `list_files` | List user's uploaded files | No |
+| `get_file_content` | Get extracted text from a file | No |
+| `search_files` | Search through uploaded files | No |
+| `list_conversations` | List recent chat conversations | No |
+
+#### Calendar Tools (`lib/ai/tools/calendar.ts`)
+| Tool | Description | Confirmation |
+|------|-------------|--------------|
+| `calendar_list_events` | List upcoming Google Calendar events | No |
+| `calendar_create_event` | Create a new calendar event | **Yes** |
+| `calendar_find_free_time` | Find available time slots | No |
+
+#### Data Tools (`lib/ai/tools/data.ts`)
+| Tool | Description | Confirmation |
+|------|-------------|--------------|
+| `get_cost_analytics` | Get AI usage cost breakdown | No |
+| `get_memories` | Get saved user memories/facts | No |
+| `save_memory` | Save a new memory | No |
+| `list_projects` | List user projects | No |
+| `calculate` | Perform mathematical calculations | No |
+
+### MCP Server Support (`lib/mcp/`)
+
+MCP (Model Context Protocol) integration enables standardized connections to external services.
+
+#### Implemented Components
+- `lib/mcp/client.ts` - MCP client for connecting to servers
+- `lib/mcp/registry.ts` - Server registry and catalog
+
+#### Available MCP Server Catalog
+| Server | Category | Description | Required Env |
+|--------|----------|-------------|--------------|
+| `github` | Development | GitHub repos, issues, PRs | `GITHUB_TOKEN` |
+| `filesystem` | Data | Local file system access | - |
+| `google-drive` | Productivity | Google Drive files | `GOOGLE_ACCESS_TOKEN` |
+| `slack` | Communication | Slack messaging | `SLACK_TOKEN` |
+| `notion` | Productivity | Notion pages/databases | `NOTION_TOKEN` |
+| `postgres` | Data | PostgreSQL queries | `POSTGRES_URL` |
+| `sqlite` | Data | SQLite database access | - |
+| `brave-search` | Data | Web search | `BRAVE_API_KEY` |
+| `puppeteer` | Data | Web scraping/automation | - |
+
+### Voice Chat (`lib/voice/`)
+
+Real-time voice chat using OpenAI Realtime API with WebRTC.
+
+#### Implemented Components
+- `lib/voice/realtime.ts` - OpenAI Realtime API WebRTC connection
+- `VoiceActivityDetector` class for push-to-talk
+
+#### Voice Features
+- WebRTC connection (recommended over WebSockets)
+- Server-side Voice Activity Detection (VAD)
+- Interrupt handling for natural conversations
+- Multiple voice options (alloy, echo, fable, onyx, nova, shimmer)
+- Real-time transcription with Whisper
+
+---
+
+## Future Integrations Roadmap
+
+### Phase 1: Core Agentic (Current)
+- [x] Tool framework implementation
+- [x] MCP client foundation
+- [x] Voice chat WebRTC
+- [ ] Tool confirmation UI
+- [ ] MCP server connection UI
+
+### Phase 2: Workspace Integrations (Q2 2026)
+- [ ] Slack MCP server connection
+- [ ] Notion MCP server connection
+- [ ] GitHub MCP server connection
+- [ ] Email drafting tools
+
+### Phase 3: Advanced Agentic (Q3 2026)
+- [ ] Code execution sandbox (Pyodide)
+- [ ] Multi-step task planning
+- [ ] Autonomous task execution
+- [ ] Tool chaining
+
+### Phase 4: Collaboration (Q4 2026)
+- [ ] Shared workspaces
+- [ ] Team permissions
+- [ ] Real-time collaboration
+- [ ] Conversation branching
+
+---
+
+## New Tasks (Added 2026-02-06)
+
+### Task 22: Implement MCP Server Support
+**Status:** In Progress
+**Priority:** HIGH
+**Added:** 2026-02-06
+
+**Problem:** MCP is now the industry standard for AI integrations (adopted by OpenAI, Google, Microsoft). Missing this means manual integration work.
+
+**Research Findings:**
+- MCP donated to Linux Foundation's Agentic AI Foundation (AAIF)
+- OpenAI adopted MCP in March 2025
+- Pre-built servers exist for Slack, GitHub, Notion, Google Drive, Asana
+
+**Implementation:**
+1. Add MCP client library
+2. Create MCP server registry
+3. Build custom KimbleAI MCP server for local data
+4. Connect to community MCP servers (Slack, GitHub, Notion)
+5. Add MCP tool execution to chat
+
+**Files to create:**
+```
+lib/mcp/
+├── client.ts        # MCP client connection
+├── registry.ts      # Server registry and management
+├── executor.ts      # Tool execution handler
+└── servers/
+    └── kimbleai.ts  # Custom server for KimbleAI data
+```
+
+**Benefits:**
+- Instant access to 50+ integrations
+- Standardized tool interface
+- OAuth handling built-in
+
+---
+
+### Task 23: Upgrade Voice to OpenAI Realtime API
+**Status:** Pending
+**Priority:** HIGH
+**Added:** 2026-02-06
+
+**Problem:** Current voice uses file upload + transcription. Research shows WebRTC is recommended for voice chat.
+
+**Research Findings:**
+- OpenAI Realtime API uses WebRTC (not WebSockets)
+- LiveKit and Pipecat provide orchestration
+- DTLS 1.3 is now standard (February 2025)
+- Sub-200ms latency achievable
+
+**Implementation:**
+1. Add WebRTC connection to OpenAI Realtime API
+2. Implement voice activity detection (VAD)
+3. Add push-to-talk mode
+4. Enable interruption handling
+5. Add TTS for AI responses
+
+**Files to create:**
+```
+lib/voice/
+├── realtime.ts      # OpenAI Realtime API connection
+├── webrtc.ts        # WebRTC signaling and connection
+├── vad.ts           # Voice activity detection
+└── audio-player.ts  # Audio playback for TTS
+```
+
+**Cost consideration:** Realtime API is $32/1M tokens - use sparingly
+
+---
+
+### Task 24: Implement Agentic Tool Framework
+**Status:** In Progress
+**Priority:** HIGH
+**Added:** 2026-02-06
+
+**Problem:** AI can only chat, cannot take actions. GPT-5.2 and Claude Opus 4.5 excel at tool calling.
+
+**Research Findings:**
+- GPT-5.2 has improved tool calling (no sprawling system prompts needed)
+- Freeform tool calling allows raw text (Python, SQL) directly
+- Claude Agent SDK uses in-process MCP servers
+
+**Tool Categories to Implement:**
+1. **Web Tools**: Search, fetch URLs, scrape content
+2. **File Tools**: Read/write files, manage uploads
+3. **Code Tools**: Execute Python/JavaScript in sandbox
+4. **Calendar Tools**: Read/create Google Calendar events
+5. **Email Tools**: Draft/send Gmail (with confirmation)
+6. **Data Tools**: Query Supabase, run analytics
+
+**Files to create:**
+```
+lib/ai/tools/
+├── index.ts         # Tool registry and executor
+├── schemas.ts       # Tool JSON schemas
+├── web.ts           # Web search, fetch
+├── files.ts         # File operations
+├── code.ts          # Sandboxed code execution
+├── calendar.ts      # Google Calendar
+├── email.ts         # Gmail integration
+└── data.ts          # Database queries
+```
+
+**Security:** All tools require user confirmation for destructive actions
+
+---
+
+### Task 25: Enable Supabase Automatic Embeddings
+**Status:** Pending
+**Priority:** Medium
+**Added:** 2026-02-06
+
+**Problem:** Currently generating embeddings manually. Supabase supports automatic embedding triggers.
+
+**Research Findings:**
+- Supabase has automatic embedding generation via triggers
+- Sub-50ms query times for indexed searches
+- Can handle 1.6M+ embeddings
+
+**Implementation:**
+1. Create database trigger on messages table
+2. Auto-generate embeddings on INSERT
+3. Create trigger on files table
+4. Enable similarity search functions
+
+**SQL to add:**
+```sql
+-- Trigger function for automatic embedding
+CREATE OR REPLACE FUNCTION generate_embedding_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Call Edge Function to generate embedding
+  PERFORM net.http_post(
+    url := current_setting('app.edge_function_url') || '/generate-embedding',
+    body := json_build_object('id', NEW.id, 'content', NEW.content)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+---
+
+### Task 26: Add Code Execution Sandbox
+**Status:** Pending
+**Priority:** Medium
+**Added:** 2026-02-06
+
+**Problem:** Users can't run code snippets directly. Need safe execution environment.
+
+**Implementation:**
+1. Use Pyodide for Python in browser
+2. Add sandboxed JavaScript execution (Web Worker)
+3. Implement output capture with streaming
+4. Add memory/time limits for safety
+5. Display execution results in chat
+
+**Files to create:**
+```
+lib/sandbox/
+├── python.ts        # Pyodide Python execution
+├── javascript.ts    # Web Worker JS execution
+├── output.ts        # Output capture and streaming
+└── limits.ts        # Resource limits
+```
+
+---
+
+### Task 27: Implement Conversation Branching
+**Status:** Pending
+**Priority:** Low
+**Added:** 2026-02-06
+
+**Problem:** Can't explore "what if" scenarios without losing original context.
+
+**Implementation:**
+1. Add "Fork" button to any message
+2. Create conversation_branches table
+3. Branch visualization UI
+4. Compare branches side-by-side
+5. Merge branches back
+
+---
+
+### Task 28: Add Collaborative Workspaces
+**Status:** Pending
+**Priority:** Low
+**Added:** 2026-02-06
+
+**Problem:** No multi-user support for team projects.
+
+**Implementation:**
+1. Add workspace entity with members
+2. Shared projects with permissions (view/edit/admin)
+3. Real-time collaboration via Supabase Realtime
+4. Team cost allocation and budgets
+5. Activity feed for workspace
+
+---
+
+## Task Summary
+
+### Completed (11)
+- Tasks 1-5: Project-chat integration ✅
+- Task 6: Model display in responses ✅
+- Tasks 7-10: File, vision, transcription, Google ✅
+- Task 11: RAG service (needs SQL script) ✅
+
+### High Priority - In Progress (4)
+- Task 22: MCP Server Support 🔄
+- Task 24: Agentic Tool Framework 🔄
+- Task 12: Voice Chat Interface
+- Task 23: OpenAI Realtime API
+
+### High Priority - Pending (2)
+- Task 13: Tool Calling (merged into Task 24)
+- Task 18/19: Claude Code & MCP Research (merged into Task 22)
+
+### Medium Priority - Pending (4)
+- Task 14: Production Validation
+- Task 20: Tech Stack Assessment
+- Task 25: Automatic Embeddings
+- Task 26: Code Sandbox
+
+### Low Priority - Pending (4)
+- Task 16: Notion Integration (via MCP)
+- Task 17: GitHub Integration (via MCP)
+- Task 27: Conversation Branching
+- Task 28: Collaborative Workspaces
+
+### Ongoing (2)
+- Task 20: Modern Tech Stack Assessment
+- Task 21: Regular Recommendations

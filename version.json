@@ -1,8 +1,8 @@
 {
-  "version": "11.10.0",
-  "commit": "d8bd948",
+  "version": "11.11.0",
+  "commit": "33a7ac9",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
-  "changelog": "FEAT: Model Routing Statistics page - health monitoring, diversity metrics, cost breakdown, sidebar navigation",
+  "changelog": "FEAT: Agentic tools framework, MCP server support, Voice chat WebRTC foundation",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
