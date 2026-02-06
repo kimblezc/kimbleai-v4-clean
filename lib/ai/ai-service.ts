@@ -172,12 +172,15 @@ export class AIService {
         );
 
         // Return stream with model selection info for Task 6 (show model used)
-        return {
-          ...result,
-          modelUsed: selection.model,
-          providerUsed: selection.provider,
-          selectionReason: selection.reason,
-        };
+        // IMPORTANT: Don't spread the result! The AI SDK returns objects with getter
+        // properties (textStream, text) that are non-enumerable. Spreading loses them.
+        // Instead, add our properties directly to the result object.
+        (result as any).modelUsed = selection.model;
+        (result as any).providerUsed = selection.provider;
+        (result as any).selectionReason = selection.reason;
+
+        console.log('[AI Service] Returning result, textStream check:', 'textStream' in result);
+        return result;
       } else {
         // Non-streaming response
         const result = await generateText({

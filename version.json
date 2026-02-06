@@ -1,8 +1,8 @@
 {
-  "version": "11.9.16",
-  "commit": "4fb1b50",
+  "version": "11.9.17",
+  "commit": "a36ae61",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
-  "changelog": "DEBUG: Add step-by-step logging to identify 500 error source",
+  "changelog": "FIX: Preserve textStream getter - don't spread streamText result",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
