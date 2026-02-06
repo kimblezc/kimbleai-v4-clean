@@ -309,8 +309,15 @@ export class CostTracker {
     try {
       const costBreakdown = this.calculateCost(provider, model, metrics);
 
+      console.log('[CostTracker] Attempting to insert cost record:', {
+        userId,
+        model,
+        cost: costBreakdown.totalCost,
+        tokens: metrics.tokensTotal
+      });
+
       // Use api_cost_tracking table with correct column names
-      await (this.supabase as any).from('api_cost_tracking').insert({
+      const { data, error } = await (this.supabase as any).from('api_cost_tracking').insert({
         user_id: userId,
         model,
         endpoint: operation,
@@ -326,6 +333,12 @@ export class CostTracker {
           project_id: projectId,
         },
       });
+
+      if (error) {
+        console.error('[CostTracker] Supabase insert error:', error);
+      } else {
+        console.log('[CostTracker] Cost record inserted successfully');
+      }
     } catch (error) {
       // Non-blocking - log error but don't throw
       console.warn('[CostTracker] Failed to log usage (non-blocking):', error);

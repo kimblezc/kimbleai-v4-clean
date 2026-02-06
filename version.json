@@ -1,8 +1,8 @@
 {
-  "version": "11.9.18",
-  "commit": "8f8e5ee",
+  "version": "11.9.19",
+  "commit": "605188d",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
-  "changelog": "FIX: Add streaming usage tracking with detailed logging",
+  "changelog": "FIX: Add Supabase insert error checking for cost tracking",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
