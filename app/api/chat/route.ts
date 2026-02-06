@@ -261,6 +261,21 @@ export async function POST(req: NextRequest) {
               model: modelUsed,
             });
 
+            // Estimate cost for UI display (same logic as cost-tracker)
+            // Tokens ≈ text.length / 4
+            const estimatedTokens = Math.ceil(fullText.length / 4);
+            // Output cost per token (rough estimate for display)
+            const outputCostPerToken = providerUsed === 'anthropic' ? 0.000015 :
+                                       providerUsed === 'google' ? 0.000008 : 0.000014;
+            const estimatedCost = estimatedTokens * outputCostPerToken;
+
+            // Send cost info before [DONE]
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'cost_info',
+              costUsd: estimatedCost,
+              tokensUsed: estimatedTokens
+            })}\n\n`));
+
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
           } catch (error) {

@@ -1,8 +1,8 @@
 {
-  "version": "11.9.20",
-  "commit": "e7870d6",
+  "version": "11.9.21",
+  "commit": "9bac01d",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
-  "changelog": "FIX: Use token estimation when SDK returns 0 (v2 compatibility mode)",
+  "changelog": "FIX: Send cost info to UI after streaming completes",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

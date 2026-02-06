@@ -327,6 +327,12 @@ function ChatPageContent() {
                   continue;
                 }
 
+                // Handle cost info at end of stream
+                if (parsed.type === 'cost_info' && parsed.costUsd) {
+                  setTotalCost(prev => prev + parsed.costUsd);
+                  continue;
+                }
+
                 if (parsed.content) {
                   assistantMessage += parsed.content;
                   setMessages(prev => {
@@ -337,10 +343,6 @@ function ChatPageContent() {
                     if (providerUsed) newMessages[newMessages.length - 1].provider = providerUsed;
                     return newMessages;
                   });
-                }
-
-                if (parsed.costUsd) {
-                  setTotalCost(prev => prev + parsed.costUsd);
                 }
               } catch (e) {
                 // Skip invalid JSON
