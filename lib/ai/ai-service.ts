@@ -149,12 +149,17 @@ export class AIService {
 
       if (options.stream) {
         // Streaming response
+        console.log('[AI Service] Calling streamText with model:', model);
         const result = await streamText({
           model,
           messages: messagesWithSystem,
           temperature: options.temperature,
           ...(options.maxTokens && { maxTokens: options.maxTokens }),
         });
+
+        console.log('[AI Service] streamText result keys:', Object.keys(result));
+        console.log('[AI Service] hasTextStream:', 'textStream' in result);
+        console.log('[AI Service] hasText:', 'text' in result);
 
         // Track usage (async, non-blocking)
         this.trackStreamingUsage(
