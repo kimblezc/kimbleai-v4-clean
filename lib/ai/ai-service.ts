@@ -743,24 +743,49 @@ export class AIService {
     projectId?: string
   ) {
     try {
-      // Wait for stream to finish
+      console.log('[AI Service] Starting to track streaming usage...');
+
+      // Wait for stream to finish - result.text is a Promise that resolves when complete
       const fullText = await result.text;
       const durationMs = Date.now() - startTime;
 
-      // Estimate tokens (rough: 1 token ≈ 4 characters)
-      const tokensUsed = Math.ceil(fullText.length / 4);
+      console.log('[AI Service] Stream completed, text length:', fullText?.length || 0);
+
+      // Try to get actual usage from the SDK (available after stream completes)
+      let tokensInput = 0;
+      let tokensOutput = 0;
+
+      try {
+        // AI SDK v6 provides usage after stream completes
+        const usage = await result.usage;
+        if (usage) {
+          tokensInput = usage.promptTokens || 0;
+          tokensOutput = usage.completionTokens || 0;
+          console.log('[AI Service] Got actual usage from SDK:', { tokensInput, tokensOutput });
+        }
+      } catch (usageError) {
+        // Fallback to estimation if usage not available
+        tokensOutput = Math.ceil((fullText?.length || 0) / 4);
+        console.log('[AI Service] Estimated tokens (fallback):', tokensOutput);
+      }
 
       const metrics: UsageMetrics = {
-        tokensInput: 0,  // Not available in streaming
-        tokensOutput: tokensUsed,
-        tokensTotal: tokensUsed,
+        tokensInput,
+        tokensOutput,
+        tokensTotal: tokensInput + tokensOutput,
         durationMs,
         costUsd: this.costTracker.calculateCost(
           selection.provider,
           selection.model,
-          { tokensOutput: tokensUsed }
+          { tokensInput, tokensOutput }
         ).totalCost,
       };
+
+      console.log('[AI Service] Logging usage:', {
+        model: selection.model,
+        cost: metrics.costUsd,
+        tokens: metrics.tokensTotal
+      });
 
       await this.costTracker.logUsage({
         userId,
@@ -771,6 +796,8 @@ export class AIService {
         conversationId,
         projectId,
       });
+
+      console.log('[AI Service] Usage logged successfully');
     } catch (error) {
       console.error('[AI Service] Error tracking streaming usage:', error);
     }

@@ -1,8 +1,8 @@
 {
-  "version": "11.9.17",
-  "commit": "71d08e3",
+  "version": "11.9.18",
+  "commit": "8f8e5ee",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
-  "changelog": "FIX: Preserve textStream getter - don't spread streamText result",
+  "changelog": "FIX: Add streaming usage tracking with detailed logging",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
