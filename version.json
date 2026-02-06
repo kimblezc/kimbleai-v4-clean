@@ -1,6 +1,6 @@
 {
   "version": "11.9.16",
-  "commit": "pending",
+  "commit": "4fb1b50",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
   "changelog": "DEBUG: Add step-by-step logging to identify 500 error source",
   "platform": "Railway",
