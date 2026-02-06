@@ -1,6 +1,6 @@
 {
   "version": "11.10.0",
-  "commit": "36b0c01",
+  "commit": "d8bd948",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
   "changelog": "FEAT: Model Routing Statistics page - health monitoring, diversity metrics, cost breakdown, sidebar navigation",
   "platform": "Railway",
