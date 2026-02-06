@@ -38,17 +38,19 @@ This is the permanent, authoritative location for all KimbleAI development. Do n
 **RULE: This section MUST be updated with every change to verify deployment**
 
 ```
-Latest Version: v11.9.14
-Latest Commit: 435d412
-Last Updated: 2026-02-05
-Status: Deployed to Railway (RAG FOR CROSS-SESSION MEMORY)
+Latest Version: v11.10.0
+Latest Commit: d8bd948
+Last Updated: 2026-02-06
+Status: Deployed to Railway (MODEL ROUTING STATS PAGE)
 Live URL: https://www.kimbleai.com
 ```
 
 ### Recent Changes (Last 5 Only):
-- **435d412** (v11.9.14) - FEAT: RAG for cross-session memory with Google services integration.
-- **0995ad9** (v11.9.13) - FIX: Chat API - use separate queries instead of Supabase relationship joins.
-- **a5fbf0f** (v11.9.12) - FEAT: Show model used in chat responses, 2x D20 size, sidebar shows all chats.
+- **d8bd948** (v11.10.0) - FEAT: Model Routing Statistics page - health monitoring, diversity metrics, sidebar navigation.
+- **ebfebff** (v11.9.23) - FEAT: Multi-select delete for recent chats in sidebar.
+- **260ee6f** (v11.9.22) - FEAT: Enable RAG + update system prompt with capabilities.
+- **08bfc46** (v11.9.21) - FIX: Send cost info to UI after streaming completes.
+- **70eb571** (v11.9.20) - FIX: Use token estimation when SDK returns 0.
 - **62f0053** (v11.9.11) - FEAT: Restore KimbleAI logo and rotating D20 icosahedron to all pages.
 - **1aa787a** (v11.9.10) - FIX: Project chat creation - projectId to project_id column mapping.
 
