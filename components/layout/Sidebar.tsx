@@ -29,6 +29,8 @@ import {
   TrashIcon,
   CheckIcon,
   CheckCircleIcon,
+  ChartBarIcon,
+  CpuChipIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 import Logo from './Logo';
@@ -468,6 +470,32 @@ export default function Sidebar({
 
           {/* Bottom Section */}
           <div className="border-t border-neutral-800 p-3 space-y-2">
+            {/* Analytics Link */}
+            <Link
+              href="/analytics"
+              onClick={() => setIsMobileOpen(false)}
+              className={`
+                flex items-center gap-3 px-3 py-2 rounded-lg
+                ${pathname === '/analytics' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}
+              `}
+            >
+              <ChartBarIcon className="w-5 h-5" />
+              <span className="text-sm">Analytics</span>
+            </Link>
+
+            {/* Routing Stats Link */}
+            <Link
+              href="/routing"
+              onClick={() => setIsMobileOpen(false)}
+              className={`
+                flex items-center gap-3 px-3 py-2 rounded-lg
+                ${pathname === '/routing' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}
+              `}
+            >
+              <CpuChipIcon className="w-5 h-5" />
+              <span className="text-sm">Model Routing</span>
+            </Link>
+
             {/* Settings Link */}
             <Link
               href="/settings"

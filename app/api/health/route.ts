@@ -39,6 +39,21 @@ export async function GET() {
     // Use defaults
   }
 
+  // Check model routing configuration
+  const modelRouting = {
+    configured: true,
+    providers: {
+      openai: !!process.env.OPENAI_API_KEY,
+      anthropic: !!process.env.ANTHROPIC_API_KEY,
+      google: !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    },
+    availableProviders: [
+      process.env.OPENAI_API_KEY ? 'openai' : null,
+      process.env.ANTHROPIC_API_KEY ? 'anthropic' : null,
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ? 'google' : null,
+    ].filter(Boolean),
+  };
+
   const responseTime = Date.now() - startTime;
 
   return NextResponse.json({
@@ -54,6 +69,12 @@ export async function GET() {
       openai: requiredEnvVars.OPENAI_API_KEY,
       anthropic: requiredEnvVars.ANTHROPIC_API_KEY,
       auth: requiredEnvVars.NEXTAUTH_SECRET && requiredEnvVars.GOOGLE_CLIENT_ID,
+    },
+    modelRouting,
+    endpoints: {
+      routing: '/api/routing',
+      version: '/api/version',
+      health: '/api/health',
     },
   });
 }
