@@ -198,7 +198,7 @@ export class ModelRouter {
 
   /**
    * Get model information
-   * Updated 2026-02-04 with latest models
+   * Updated 2026-02-06 with latest models
    */
   private getModelInfo(model: string): ModelSelection {
     const models: Record<string, ModelSelection> = {
@@ -207,7 +207,7 @@ export class ModelRouter {
         provider: 'openai',
         model: 'gpt-5.2',
         reason: 'Best general intelligence, agentic tool-calling, complex tasks',
-        estimatedCost: 1.75,  // $1.75/1M input tokens
+        estimatedCost: 1.75,
         features: ['reasoning', 'agentic', 'multimodal', 'long context', 'tool-calling'],
       },
       'gpt-5.2-pro': {
@@ -224,11 +224,11 @@ export class ModelRouter {
         estimatedCost: 2.50,
         features: ['coding', 'refactoring', 'migrations', 'long-horizon', 'agentic'],
       },
-      // OpenAI Legacy Models (still available)
+      // OpenAI Legacy Models
       'gpt-4o': {
         provider: 'openai',
         model: 'gpt-4o',
-        reason: 'Good balance of cost and quality (being deprecated)',
+        reason: 'Good balance of cost and quality (legacy)',
         estimatedCost: 2.50,
         features: ['general chat', 'creative writing', 'vision', 'fast inference'],
       },
@@ -244,21 +244,21 @@ export class ModelRouter {
         provider: 'anthropic',
         model: 'claude-sonnet-4-5-20250929',
         reason: 'Best coding, 1M token context, excellent for UI analysis',
-        estimatedCost: 3.00,  // $3/1M input tokens
+        estimatedCost: 3.00,
         features: ['vision', 'code analysis', '1M context', 'safety', 'coding'],
       },
       'claude-opus-4.5': {
         provider: 'anthropic',
         model: 'claude-opus-4-5-20251101',
         reason: 'Best for coding, agents, computer use',
-        estimatedCost: 5.00,  // $5/1M input tokens
+        estimatedCost: 5.00,
         features: ['coding', 'agents', 'computer use', 'highest quality', 'vision'],
       },
       'claude-haiku-4.5': {
         provider: 'anthropic',
         model: 'claude-haiku-4-5-20251001',
         reason: 'Fastest Claude model, cost-effective',
-        estimatedCost: 1.00,  // $1/1M input tokens
+        estimatedCost: 1.00,
         features: ['fast', 'cheap', 'general tasks', 'text'],
       },
       // Aliases for backward compatibility

@@ -698,7 +698,7 @@ export class AIService {
 
   /**
    * Get model from provider
-   * Updated 2026-02-04 with GPT-5.2 as default
+   * Updated 2026-02-06 with GPT-5.2 as default
    */
   private getModel(provider: string, modelName: string) {
     switch (provider) {

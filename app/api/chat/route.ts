@@ -23,8 +23,11 @@ export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes
 
 export async function POST(req: NextRequest) {
+  let currentStep = 'init';
   try {
     // 1. Authenticate user
+    currentStep = 'auth';
+    console.log('[Chat API] Step: auth');
     const session = await getServerSession(authOptions);
 
     console.log('[Chat API] Auth check:', {
@@ -43,13 +46,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Get validated database userId (may differ from session)
+    currentStep = 'ensureUser';
+    console.log('[Chat API] Step: ensureUser');
     const userId = await ensureUserExists(
       session.user.id,
       session.user.email,
       session.user.name
     );
+    console.log('[Chat API] User validated:', userId);
 
     // 2. Parse request body
+    currentStep = 'parseBody';
+    console.log('[Chat API] Step: parseBody');
     const body = await req.json();
     const {
       messages,
@@ -60,6 +68,7 @@ export async function POST(req: NextRequest) {
       enableRAG = true, // Enable RAG by default
       includeGoogle = true, // Include Google services in RAG
     } = body;
+    console.log('[Chat API] Body parsed, messages:', messages?.length);
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -69,6 +78,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Get or create conversation
+    currentStep = 'conversation';
+    console.log('[Chat API] Step: conversation');
     let conversation;
     if (conversationId) {
       conversation = await conversationQueries.getById(conversationId);
@@ -80,12 +91,18 @@ export async function POST(req: NextRequest) {
         title: messages[0]?.content?.slice(0, 100) || 'New conversation',
       });
     }
+    console.log('[Chat API] Conversation ready:', conversation?.id);
 
     // 4. Initialize AI service and RAG service
+    currentStep = 'initServices';
+    console.log('[Chat API] Step: initServices');
     const aiService = getAIService(supabase);
     const ragService = getRAGService(supabase);
+    console.log('[Chat API] Services initialized');
 
     // 5. Set manual model if specified
+    currentStep = 'setModel';
+    console.log('[Chat API] Step: setModel');
     if (model) {
       console.log('[Chat API] Manual model selected:', model);
       aiService.setManualModel(model);
@@ -93,6 +110,7 @@ export async function POST(req: NextRequest) {
       console.log('[Chat API] Using smart routing (auto mode) - default: gpt-5.2');
       aiService.setAutoModel();
     }
+    console.log('[Chat API] Model mode set');
 
     // 6. Check for "remember" commands in user message
     // NOTE: Memory storage disabled until database is verified
@@ -174,6 +192,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 9. Save user message
+    currentStep = 'saveUserMessage';
+    console.log('[Chat API] Step: saveUserMessage');
     if (userMessage.role === 'user') {
       await messageQueries.create({
         conversationId: conversation.id,
@@ -183,8 +203,11 @@ export async function POST(req: NextRequest) {
         attachments: userMessage.attachments,
       });
     }
+    console.log('[Chat API] User message saved');
 
     // 10. Call AI service with RAG-enhanced messages
+    currentStep = 'callAI';
+    console.log('[Chat API] Step: callAI - about to call AI service...');
     const result = await aiService.chat({
       userId,
       messages: messagesWithContext,
@@ -195,6 +218,7 @@ export async function POST(req: NextRequest) {
         projectId,
       },
     });
+    console.log('[Chat API] AI call complete, hasTextStream:', 'textStream' in result);
 
     // 11. Handle streaming response
     if (stream && 'textStream' in result) {
@@ -290,6 +314,7 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   } catch (error: any) {
+    console.error('[Chat API] Error at step:', currentStep);
     console.error('[Chat API] Error:', error);
     console.error('[Chat API] Error stack:', error.stack);
     console.error('[Chat API] Error name:', error.name);
@@ -311,6 +336,7 @@ export async function POST(req: NextRequest) {
         error: 'Internal server error',
         message: error.message || 'Failed to process chat request',
         debug: {
+          step: currentStep,
           name: error.name,
           stack: error.stack?.split('\n').slice(0, 5),
         }
