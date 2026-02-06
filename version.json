@@ -1,8 +1,8 @@
 {
-  "version": "11.9.21",
-  "commit": "9bac01d",
+  "version": "11.9.22",
+  "commit": "1dc2485",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
-  "changelog": "FIX: Send cost info to UI after streaming completes",
+  "changelog": "FEAT: Enable RAG + update system prompt with capabilities",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {

@@ -136,11 +136,10 @@ export async function POST(req: NextRequest) {
     */
 
     // 7. Retrieve relevant context using RAG (if enabled)
-    // NOTE: RAG is disabled until database functions are verified working
-    // To re-enable: set enableRAG to true and ensure search_all_content RPC exists
+    // RAG provides access to past conversations, files, and user memories
     let ragContext = '';
     let ragCost = 0;
-    const ragEnabled = false; // Temporarily disabled - database functions need verification
+    const ragEnabled = true; // Enabled - provides cross-session memory
     if (ragEnabled && enableRAG && userMessage.role === 'user') {
       try {
         const context = await ragService.retrieveContext({
