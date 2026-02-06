@@ -218,7 +218,13 @@ export async function POST(req: NextRequest) {
         projectId,
       },
     });
-    console.log('[Chat API] AI call complete, hasTextStream:', 'textStream' in result);
+    console.log('[Chat API] AI call complete:', {
+      hasTextStream: 'textStream' in result,
+      hasContent: 'content' in result,
+      hasText: 'text' in result,
+      resultKeys: Object.keys(result),
+      streamRequested: stream,
+    });
 
     // 11. Handle streaming response
     if (stream && 'textStream' in result) {
