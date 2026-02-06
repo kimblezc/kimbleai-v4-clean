@@ -162,6 +162,7 @@ export class AIService {
         console.log('[AI Service] hasText:', 'text' in result);
 
         // Track usage (async, non-blocking)
+        console.log('[AI Service] About to call trackStreamingUsage...');
         this.trackStreamingUsage(
           userId,
           selection,
@@ -169,7 +170,12 @@ export class AIService {
           startTime,
           options.conversationId,
           options.projectId
-        );
+        ).then(() => {
+          console.log('[AI Service] trackStreamingUsage completed');
+        }).catch((err) => {
+          console.error('[AI Service] trackStreamingUsage failed:', err);
+        });
+        console.log('[AI Service] trackStreamingUsage called (not awaited)');
 
         // Return stream with model selection info for Task 6 (show model used)
         // IMPORTANT: Don't spread the result! The AI SDK returns objects with getter
@@ -758,15 +764,19 @@ export class AIService {
       try {
         // AI SDK v6 provides usage after stream completes
         const usage = await result.usage;
-        if (usage) {
+        if (usage && (usage.promptTokens > 0 || usage.completionTokens > 0)) {
           tokensInput = usage.promptTokens || 0;
           tokensOutput = usage.completionTokens || 0;
           console.log('[AI Service] Got actual usage from SDK:', { tokensInput, tokensOutput });
+        } else {
+          // SDK returned 0 tokens (common in v2 compatibility mode) - use estimation
+          tokensOutput = Math.ceil((fullText?.length || 0) / 4);
+          console.log('[AI Service] SDK returned 0 tokens, using estimation:', tokensOutput);
         }
       } catch (usageError) {
         // Fallback to estimation if usage not available
         tokensOutput = Math.ceil((fullText?.length || 0) / 4);
-        console.log('[AI Service] Estimated tokens (fallback):', tokensOutput);
+        console.log('[AI Service] Estimated tokens (error fallback):', tokensOutput);
       }
 
       const metrics: UsageMetrics = {

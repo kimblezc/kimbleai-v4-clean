@@ -1,8 +1,8 @@
 {
-  "version": "11.9.19",
-  "commit": "605188d",
+  "version": "11.9.20",
+  "commit": "e7870d6",
   "lastUpdated": "2026-02-06T00:00:00.000Z",
-  "changelog": "FIX: Add Supabase insert error checking for cost tracking",
+  "changelog": "FIX: Use token estimation when SDK returns 0 (v2 compatibility mode)",
   "platform": "Railway",
   "nodeVersion": "v22.17.1",
   "deployment": {
